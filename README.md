@@ -1,0 +1,2 @@
+# mcman
+Minecraft server manager

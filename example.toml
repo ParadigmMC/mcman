@@ -1,0 +1,12 @@
+name = "deezNutsSurvival"
+port = 25565
+mc_version = "1.19.4"
+
+[jar]
+type = "vanilla"
+[launcher]
+aikars_flags = true
+
+[[plugins]]
+source = "spigot"
+id = "luckperms.28140"
