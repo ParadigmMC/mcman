@@ -21,5 +21,8 @@ pub enum Error {
     #[error(transparent)]
     TomlDeserialize(#[from] toml::de::Error),
     #[error(transparent)]
-    TomlSerialize(#[from] toml::ser::Error)
+    TomlSerialize(#[from] toml::ser::Error),
+
+    #[error("can't find the server jar for version {0}")]
+    VanillaVersionNotFound(String),
 }

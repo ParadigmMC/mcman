@@ -2,6 +2,8 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
 use crate::error::Result;
+
+use self::vanilla::fetch_vanilla;
 mod vanilla;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -19,7 +21,7 @@ impl Downloadable {
     ) -> Result<impl futures_core::Stream<Item = reqwest::Result<Bytes>>> {
         match self {
             Self::URL { url } => Ok(client.get(url).send().await?.bytes_stream()),
-            Self::Vanilla { version } => Ok(())
+            Self::Vanilla { version } => fetch_vanilla(version, &client).await,
         }
     }
 }
