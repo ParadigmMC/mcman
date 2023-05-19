@@ -25,4 +25,7 @@ pub enum Error {
 
     #[error("can't find the server jar for version {0}")]
     VanillaVersionNotFound(String),
+    
+    #[error("modrinth release {0} for project {1} not found")]
+    ModrinthReleaseNotFound(String, String),
 }
