@@ -1,8 +1,11 @@
-# i wil get lost so i will put stuff in here 
+# i wil get lost so i will put stuff in here
+
 ## sources
-- [ ] URL
-- [ ] PaperMC
+
+- [x] URL
+- [x] vanilla
 - [ ] Modrinth
+- [ ] PaperMC
 - [ ] Hangar
 - [ ] Bukkit/Curseforge
 - [ ] Spigot
@@ -13,6 +16,7 @@
 - [ ] Github Releases
 
 ## commmmmmmands
+
 - [ ] mcman init --name
 - [ ] mcman build
 - [ ] mcman plugins add \<source> \<plugin> [output]
@@ -21,7 +25,9 @@
 - [ ] mcman plugins update \<all | plugin | server>
 - [ ] mcman set server \<common_alias | source> [data]
 - [ ] mcman set version \<ver>
+
 ## other stuff
+
 - [ ] vars
   - [ ] toml
   - [ ] env
