@@ -19,11 +19,12 @@ fn cli() -> Command {
         .subcommand(commands::version::cli())
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let matches = cli().get_matches();
 
     let res = match matches.subcommand() {
-        Some(("build", sub_matches)) => commands::build::run(sub_matches),
+        Some(("build", sub_matches)) => commands::build::run(sub_matches).await,
         Some(("init", sub_matches)) => commands::init::run(sub_matches),
         Some(("version", sub_matches)) => commands::version::run(sub_matches),
         _ => unreachable!(),
