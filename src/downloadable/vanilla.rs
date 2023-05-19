@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
-use crate::error::{Result, CliError, Error};
+use crate::error::{Result, Error};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct VersionManifestVersion {
@@ -39,7 +39,7 @@ struct PackageManifestDownloadServer {
 }
 
 pub async fn fetch_vanilla(
-    version: String,
+    version: &str,
     client: &reqwest::Client,
 ) -> Result<impl futures_core::Stream<Item = reqwest::Result<Bytes>>> {
     let version_manifest: VersionManifest = client
@@ -49,22 +49,22 @@ pub async fn fetch_vanilla(
         .json()
         .await?;
 
-    let mut targetVersion = version;
+    let mut target_version = version;
     
-    if targetVersion == "latest" {
-        targetVersion = version_manifest.latest.release;
+    if target_version == "latest" {
+        target_version = &version_manifest.latest.release;
     }
 
-    if targetVersion == "latest-snapshot" {
-        targetVersion = version_manifest.latest.snapshot;
+    if target_version == "latest-snapshot" {
+        target_version = &version_manifest.latest.snapshot;
     }
 
     let verdata = version_manifest.versions
         .iter()
-        .find(|&v| v.id == targetVersion);
+        .find(|&v| v.id == target_version);
 
     if verdata.is_none() {
-        return Err(Error::VanillaVersionNotFound(targetVersion));
+        return Err(Error::VanillaVersionNotFound(target_version.to_string()));
     }
 
     let package_manifest: PackageManifest = client

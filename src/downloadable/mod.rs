@@ -18,10 +18,10 @@ impl Downloadable {
     pub async fn download(
         &self,
         client: &reqwest::Client,
-    ) -> Result<impl futures_core::Stream<Item = reqwest::Result<Bytes>>> {
+    ) -> Result<Box<dyn futures_core::Stream<Item = reqwest::Result<Bytes>>>> {
         match self {
-            Self::URL { url } => Ok(client.get(url).send().await?.bytes_stream()),
-            Self::Vanilla { version } => fetch_vanilla(version, &client).await,
+            Self::URL { url } => Ok(Box::new(client.get(url).send().await?.bytes_stream())),
+            Self::Vanilla { version } => Ok(Box::new(fetch_vanilla(version, &client).await?)),
         }
     }
 }
