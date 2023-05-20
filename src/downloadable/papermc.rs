@@ -69,7 +69,7 @@ async fn fetch_papermc_builds(
             Err(FetchError::PaperMCVersionNotFound(
                 project.to_owned(),
                 "latest".to_owned(),
-            ))?
+            ))?;
         }
     }
 
@@ -100,17 +100,17 @@ async fn fetch_papermc_build(
     if build == "latest" {
         if let Some(build) = builds.last().cloned() {
             return Ok(build);
-        } else {
-            Err(FetchError::PaperMCBuildNotFound(
-                project.to_owned(),
-                version.to_owned(),
-                "latest".to_owned(),
-            ))?;
         }
+
+        Err(FetchError::PaperMCBuildNotFound(
+            project.to_owned(),
+            version.to_owned(),
+            "latest".to_owned(),
+        ))?;
     }
 
     if let Some(found_build) = builds.iter().find(|&b| b.build == build) {
-        return Ok(found_build.clone().to_owned());
+        Ok(found_build.clone())
     } else {
         Err(FetchError::PaperMCBuildNotFound(
             project.to_owned(),

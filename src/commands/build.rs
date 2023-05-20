@@ -25,7 +25,6 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         "server.jar",
         server.jar.download(&http_client).await?,
     )
-    
     .await?;
     Ok(())
 }

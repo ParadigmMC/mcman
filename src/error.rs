@@ -9,14 +9,14 @@ pub enum CliError {
     #[error("can't get package name from current path; please specify a name using --name")]
     MissingServerName,
     #[error(transparent)]
-    Indicatif(#[from] indicatif::style::TemplateError)
+    Indicatif(#[from] indicatif::style::TemplateError),
 }
 
 #[derive(Debug, Error)]
 pub enum FetchError {
     #[error("mojang: can't find the server jar for version '{0}'")]
     VanillaVersionNotFound(String),
-    
+
     #[error("modrinth: release '{0}' for project '{1}' not found")]
     ModrinthReleaseNotFound(String, String),
 
@@ -41,5 +41,5 @@ pub enum Error {
     #[error(transparent)]
     TomlDeserialize(#[from] toml::de::Error),
     #[error(transparent)]
-    TomlSerialize(#[from] toml::ser::Error)
+    TomlSerialize(#[from] toml::ser::Error),
 }

@@ -1,5 +1,6 @@
 #![deny(clippy::all)]
 #![warn(clippy::pedantic)]
+#![allow(clippy::enum_variant_names)]
 #![allow(clippy::missing_docs_in_private_items)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::module_name_repetitions)]
@@ -27,7 +28,10 @@ async fn main() {
     let res = match matches.subcommand() {
         Some(("build", sub_matches)) => commands::build::run(sub_matches).await,
         Some(("init", sub_matches)) => commands::init::run(sub_matches),
-        Some(("version", sub_matches)) => Ok(commands::version::run(sub_matches)),
+        Some(("version", sub_matches)) => {
+            commands::version::run(sub_matches);
+            Ok(())
+        }
         _ => unreachable!(),
     };
 

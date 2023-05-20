@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::error::{Result, FetchError};
+use crate::error::{FetchError, Result};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct VersionManifestVersion {
@@ -37,10 +37,7 @@ struct PackageManifestDownloadServer {
     pub url: String,
 }
 
-pub async fn fetch_vanilla(
-    version: &str,
-    client: &reqwest::Client,
-) -> Result<reqwest::Response> {
+pub async fn fetch_vanilla(version: &str, client: &reqwest::Client) -> Result<reqwest::Response> {
     let version_manifest: VersionManifest = client
         .get("https://piston-meta.mojang.com/mc/game/version_manifest.json")
         .send()
@@ -49,7 +46,7 @@ pub async fn fetch_vanilla(
         .await?;
 
     let mut target_version = version;
-    
+
     if target_version == "latest" {
         target_version = &version_manifest.latest.release;
     }
@@ -58,12 +55,15 @@ pub async fn fetch_vanilla(
         target_version = &version_manifest.latest.snapshot;
     }
 
-    let verdata = version_manifest.versions
+    let verdata = version_manifest
+        .versions
         .iter()
         .find(|&v| v.id == target_version);
 
     if verdata.is_none() {
-        Err(FetchError::VanillaVersionNotFound(target_version.to_owned()))?;
+        Err(FetchError::VanillaVersionNotFound(
+            target_version.to_owned(),
+        ))?;
     }
 
     let package_manifest: PackageManifest = client
