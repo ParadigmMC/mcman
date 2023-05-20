@@ -88,3 +88,9 @@ messages:
 
 token: ${TOKEN}
 ```
+
+## Special Thanks
+
+- [flags.sh](https://flags.sh/) for the flags and stuff
+- PaperMC and Modrinth for having an amazing API
+- You for using our project
