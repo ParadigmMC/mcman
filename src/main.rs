@@ -9,6 +9,7 @@ mod commands;
 mod downloadable;
 mod error;
 mod model;
+mod util;
 
 fn cli() -> Command {
     Command::new("mcman")
@@ -26,7 +27,7 @@ async fn main() {
     let res = match matches.subcommand() {
         Some(("build", sub_matches)) => commands::build::run(sub_matches).await,
         Some(("init", sub_matches)) => commands::init::run(sub_matches),
-        Some(("version", sub_matches)) => commands::version::run(sub_matches),
+        Some(("version", sub_matches)) => Ok(commands::version::run(sub_matches)),
         _ => unreachable!(),
     };
 

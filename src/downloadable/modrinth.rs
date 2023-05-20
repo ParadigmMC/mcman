@@ -1,7 +1,6 @@
-use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
-use crate::error::{Result, Error};
+use crate::error::{Result, FetchError};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct ModrinthVersion {
@@ -19,7 +18,7 @@ pub async fn fetch_modrinth(
     id: &str,
     version: &str,
     client: &reqwest::Client,
-) -> Result<impl futures_core::Stream<Item = reqwest::Result<Bytes>>> {
+) -> Result<reqwest::Response> {
     let project: Vec<ModrinthVersion> = client
         .get("https://api.modrinth.com/v2/project/".to_owned() + id + "/version")
         .send()
@@ -32,7 +31,7 @@ pub async fn fetch_modrinth(
         .find(|&v| v.id == version);
 
     if verdata.is_none() {
-        return Err(Error::ModrinthReleaseNotFound(id.to_owned(), version.to_owned()));
+        Err(FetchError::ModrinthReleaseNotFound(id.to_owned(), version.to_owned()))?;
     }
 
     let file = verdata
@@ -40,14 +39,13 @@ pub async fn fetch_modrinth(
         .files.first();
 
     if file.is_none() {
-        return Err(Error::ModrinthReleaseNotFound(id.to_owned(), version.to_owned()));
+        Err(FetchError::ModrinthReleaseNotFound(id.to_owned(), version.to_owned()))?;
     }
 
-    let req = client
+    let res = client
         .get(&file.unwrap().url)
         .send()
-        .await?
-        .bytes_stream();
+        .await?;
 
-    Ok(req)
+    Ok(res)
 }

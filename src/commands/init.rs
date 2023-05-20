@@ -1,6 +1,7 @@
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Write;
+use std::path::Path;
 
 use crate::error::{CliError, Result};
 use crate::model::Server;
@@ -16,7 +17,7 @@ pub fn run(matches: &ArgMatches) -> Result<()> {
     let res = std::fs::metadata("server.toml");
     if let Err(err) = res {
         if err.kind() != std::io::ErrorKind::NotFound {
-            Err(err)?
+            Err(err)?;
         }
     } else {
         Err(CliError::AlreadyExists)?;
@@ -31,7 +32,7 @@ pub fn run(matches: &ArgMatches) -> Result<()> {
             .file_name()
             .and_then(OsStr::to_str)
             .ok_or(CliError::MissingServerName)?
-            .to_string()
+            .to_owned()
     };
 
     let server = Server {
@@ -40,9 +41,10 @@ pub fn run(matches: &ArgMatches) -> Result<()> {
     };
 
     std::fs::create_dir_all("./config")?;
-    let cfg_str = toml::to_string_pretty(&server)?;
-    let mut f = File::create("server.toml")?;
-    f.write_all(cfg_str.as_bytes())?;
+    server.save(Path::new("server.toml"))?;
+
+    let mut f = File::create(".gitignore")?;
+    f.write_all(include_bytes!("../../res/default_gitignore"))?;
 
     Ok(())
 }

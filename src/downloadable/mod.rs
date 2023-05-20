@@ -1,4 +1,3 @@
-use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
 use crate::error::Result;
@@ -22,12 +21,12 @@ impl Downloadable {
     pub async fn download(
         &self,
         client: &reqwest::Client,
-    ) -> Result<Box<dyn futures_core::Stream<Item = reqwest::Result<Bytes>>>> {
+    ) -> Result<reqwest::Response> {
         match self {
-            Self::URL { url } => Ok(Box::new(client.get(url).send().await?.bytes_stream())),
-            Self::Vanilla { version } => Ok(Box::new(fetch_vanilla(version, &client).await?)),
-            Self::Modrinth { id, version } => Ok(Box::new(fetch_modrinth(id, version, &client).await?)),
-            Self::PaperMC { project, version, build } => Ok(Box::new(download_papermc_build(project, version, build, &client).await?)),
+            Self::URL { url } => Ok(client.get(url).send().await?),
+            Self::Vanilla { version } => Ok(fetch_vanilla(version, &client).await?),
+            Self::Modrinth { id, version } => Ok(fetch_modrinth(id, version, &client).await?),
+            Self::PaperMC { project, version, build } => Ok(download_papermc_build(project, version, build, &client).await?),
         }
     }
 }

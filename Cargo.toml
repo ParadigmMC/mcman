@@ -5,11 +5,11 @@ edition = "2021"
 
 
 [dependencies]
-bytes = "1.4.0"
 clap = "4.3"
-futures-core = "0.3.28"
+futures = "0.3"
+indicatif = "0.17"
 reqwest = { version = "0.11", features = ["json", "stream"] }
 serde = { version = "1.0", features = ["derive"] }
 thiserror = "1.0"
-tokio = { version = "1.28.1", features = ["macros", "rt", "rt-multi-thread"] }
+tokio = { version = "1.28", features = ["macros", "rt", "rt-multi-thread"] }
 toml = "0.7"

@@ -3,9 +3,9 @@
 ## sources
 
 - [x] URL
-- [x] vanilla
-- [ ] Modrinth
-- [ ] PaperMC
+- [x] Vanilla
+- [x] Modrinth
+- [x] PaperMC
 - [ ] Hangar
 - [ ] Bukkit/Curseforge
 - [ ] Spigot
@@ -17,7 +17,7 @@
 
 ## commmmmmmands
 
-- [ ] mcman init --name
+- [x] mcman init --name
 - [ ] mcman build
 - [ ] mcman plugins add \<source> \<plugin> [output]
 - [ ] mcman plugins remove \<plugin>
