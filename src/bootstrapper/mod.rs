@@ -1,4 +1,5 @@
-use anyhow::Result;
+use anyhow::{bail, Context, Result};
+use console::style;
 use java_properties::read;
 use regex::Regex;
 use std::collections::HashMap;
@@ -29,59 +30,82 @@ impl BootstrapContext {
     }
 }
 
-pub fn bootstrap(ctx: &BootstrapContext) {
+pub fn bootstrap(ctx: &BootstrapContext) -> anyhow::Result<()> {
     // iterate over all files
 
     // create server directory if not exists
     if !Path::new(ctx.output_dir.as_path()).exists() {
-        fs::create_dir(ctx.output_dir.as_path()).unwrap();
+        fs::create_dir(ctx.output_dir.as_path())?;
     }
 
     for entry in WalkDir::new("config") {
-        if let Err(e) = entry {
-            println!("Error occurred while bootstrapping: Can't walk directory/file {} (check permissions?): {e}",
-                &e.path().unwrap_or(Path::new("unknown")).display());
-            continue;
-        }
-
-        let entry = entry.unwrap();
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(e) => {
+                bail!(
+                    "Can't walk directory/file {} (check permissions?): {e}",
+                    &e.path().unwrap_or(Path::new("unknown")).display()
+                );
+            }
+        };
 
         if entry.file_type().is_dir() {
             continue;
         }
 
-        match bootstrap_entry(ctx, &entry) {
-            Ok(_) => {}
-            Err(e) => {
-                // todo: handle errors better, with cooler output styles etc
-                println!("Error occurred while bootstrapping: {e:#?}");
-            }
-        }
+        bootstrap_entry(ctx, &entry)?;
     }
+
+    Ok(())
 }
 
 fn bootstrap_entry(ctx: &BootstrapContext, entry: &DirEntry) -> Result<()> {
     let path = entry.path();
+    let output_path = ctx.get_output_path(path);
 
     // bootstrap contents of some types
     if let Some(ext) = path.extension() {
         match ext.to_str().unwrap_or("") {
             "properties" => {
                 let input = fs::read_to_string(path)?;
-                let output_path = ctx.get_output_path(path);
+
                 let existing_input = String::from_utf8(fs::read(&output_path).unwrap_or(vec![]))?;
                 let output = bootstrap_properties(ctx, &existing_input, &input)?;
-                fs::write(output_path, output).unwrap();
+                //probably
+                fs::create_dir_all(output_path.parent().unwrap_or(Path::new("")))?;
+                fs::write(output_path.clone(), output)
+                    .context(format!("Writing {}", output_path.display()))?;
+            }
+            "txt" | "yaml" | "yml" => {
+                let input = fs::read_to_string(path)?;
+                let output = bootstrap_string(ctx, &input);
+                fs::create_dir_all(output_path.parent().unwrap_or(Path::new("")))?;
+                fs::write(output_path.clone(), output)
+                    .context(format!("Writing {}", output_path.display()))?;
             }
             _ => {
-                fs::copy(path, ctx.get_output_path(path)).unwrap();
+                let output_path = ctx.get_output_path(path);
+                fs::create_dir_all(output_path.clone())?;
+                fs::copy(path, output_path.clone()).context(format!(
+                    "Copying {} to {}",
+                    path.display(),
+                    output_path.display()
+                ))?;
             }
         }
     } else {
-        let new_path = ctx.get_output_path(path);
-        fs::copy(path, new_path).unwrap();
+        fs::create_dir_all(output_path.clone())?;
+        fs::copy(path, output_path.clone()).context(format!(
+            "Copying {} to {}",
+            path.display(),
+            output_path.display()
+        ))?;
     }
 
+    println!(
+        "          {}",
+        style("-> ".to_owned() + &output_path.display().to_string()).dim()
+    );
     Ok(())
 }
 
@@ -109,12 +133,15 @@ pub fn bootstrap_properties(
 }
 
 pub fn bootstrap_string(ctx: &BootstrapContext, content: &str) -> String {
-    let re = Regex::new(r"\$\{(\w+)\}").unwrap();
+    let re = Regex::new(r"\$\{(\w+)(?::([^}]+))?\}").unwrap();
     let replaced = re.replace_all(content, |caps: &regex::Captures| {
-        if let Some(value) = ctx.vars.get(&caps[1]) {
+        let var_name = caps.get(2).map(|v| v.as_str()).unwrap_or_default();
+        let default_value = caps.get(2).map(|v| v.as_str()).unwrap_or_default();
+
+        if let Some(value) = ctx.vars.get(var_name) {
             value.to_string()
         } else {
-            caps[0].to_string()
+            default_value.to_owned()
         }
     });
     replaced.into_owned()

@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     fs::{read_to_string, File},
     io::Write,
     path::Path,
@@ -44,7 +45,7 @@ title {servername}
     pub fn generate_script_java(&mut self, jarname: &str, _servername: &str) -> String {
         let mut script = String::new();
 
-        // todo: custom java stuff from ~/.mcmanconfig or something idk
+        // TODO: custom java stuff from ~/.mcmanconfig or something idk
         script.push_str("java ");
 
         if self.memory > 0 {
@@ -97,6 +98,7 @@ pub struct Server {
     pub launcher: ServerLauncher,
     pub jar: Downloadable,
     pub plugins: Vec<Downloadable>,
+    pub variables: HashMap<String, String>,
 }
 
 impl Server {
@@ -124,6 +126,7 @@ impl Default for Server {
                 version: "1.19.4".to_owned(),
             },
             plugins: vec![],
+            variables: HashMap::new(),
         }
     }
 }

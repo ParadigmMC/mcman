@@ -19,9 +19,9 @@ pub async fn download_with_progress(
 
     progress_bar.set_message(filename.to_owned());
     progress_bar.set_style(
-        ProgressStyle::default_bar()
-            .template("{msg} [{wide_bar}] {bytes_per_sec}")?
-            .progress_chars("=> "),
+        ProgressStyle::with_template("{msg} [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+            .unwrap()
+            .progress_chars("#>-"),
     );
 
     let mut file = BufWriter::new(
