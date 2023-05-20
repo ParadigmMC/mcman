@@ -28,4 +28,11 @@ pub enum Error {
     
     #[error("modrinth release {0} for project {1} not found")]
     ModrinthReleaseNotFound(String, String),
+
+    #[error("papermc.io: project {0} not found")]
+    PaperMCProjectNotFound(String),
+    #[error("papermc.io: version {1} for project {0} not found")]
+    PaperMCVersionNotFound(String, String),
+    #[error("papermc.io: build {2} for {0} {1} not found")]
+    PaperMCBuildNotFound(String, String, String),
 }
