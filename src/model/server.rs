@@ -4,9 +4,10 @@ use std::{
     path::Path,
 };
 
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::{downloadable::Downloadable, error::Result};
+use crate::downloadable::Downloadable;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]

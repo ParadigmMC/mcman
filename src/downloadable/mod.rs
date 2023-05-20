@@ -1,6 +1,5 @@
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
-
-use crate::error::Result;
 
 use self::{modrinth::fetch_modrinth, papermc::download_papermc_build, vanilla::fetch_vanilla};
 mod modrinth;
@@ -31,7 +30,7 @@ pub enum Downloadable {
 impl Downloadable {
     pub async fn download(&self, client: &reqwest::Client) -> Result<reqwest::Response> {
         match self {
-            Self::Url { url } => Ok(client.get(url).send().await?),
+            Self::Url { url } => Ok(client.get(url).send().await?.error_for_status()?),
             Self::Vanilla { version } => Ok(fetch_vanilla(version, client).await?),
             Self::Modrinth { id, version } => Ok(fetch_modrinth(id, version, client).await?),
             Self::PaperMC {

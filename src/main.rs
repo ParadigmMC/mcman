@@ -5,11 +5,11 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::module_name_repetitions)]
 
+use anyhow::Result;
 use clap::Command;
 mod bootstrapper;
 mod commands;
 mod downloadable;
-mod error;
 mod model;
 mod util;
 
@@ -23,10 +23,10 @@ fn cli() -> Command {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     let matches = cli().get_matches();
 
-    let res = match matches.subcommand() {
+    match matches.subcommand() {
         Some(("build", sub_matches)) => commands::build::run(sub_matches).await,
         Some(("init", sub_matches)) => commands::init::run(sub_matches),
         Some(("version", sub_matches)) => {
@@ -34,10 +34,5 @@ async fn main() {
             Ok(())
         }
         _ => unreachable!(),
-    };
-
-    if let Err(err) = res {
-        println!("ERROR: {}", err);
-        std::process::exit(1)
     }
 }

@@ -1,6 +1,5 @@
+use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
-
-use crate::error::{FetchError, Result};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct VersionManifestVersion {
@@ -25,8 +24,6 @@ struct PackageManifest {
     pub downloads: PackageManifestDownload,
 }
 
-// ? help
-
 #[derive(Debug, Deserialize, Serialize)]
 struct PackageManifestDownload {
     pub server: PackageManifestDownloadServer,
@@ -42,6 +39,7 @@ pub async fn fetch_vanilla(version: &str, client: &reqwest::Client) -> Result<re
         .get("https://piston-meta.mojang.com/mc/game/version_manifest.json")
         .send()
         .await?
+        .error_for_status()?
         .json()
         .await?;
 
@@ -60,23 +58,23 @@ pub async fn fetch_vanilla(version: &str, client: &reqwest::Client) -> Result<re
         .iter()
         .find(|&v| v.id == target_version);
 
-    if verdata.is_none() {
-        Err(FetchError::VanillaVersionNotFound(
-            target_version.to_owned(),
-        ))?;
-    }
+    let Some(verdata) = verdata else {
+        bail!("Can't find the server jar for version {target_version}")
+    };
 
     let package_manifest: PackageManifest = client
-        .get(&verdata.unwrap().url)
+        .get(&verdata.url)
         .send()
         .await?
+        .error_for_status()?
         .json()
         .await?;
 
     let res = client
         .get(package_manifest.downloads.server.url)
         .send()
-        .await?;
+        .await?
+        .error_for_status()?;
 
     Ok(res)
 }

@@ -1,3 +1,4 @@
+use anyhow::Result;
 use java_properties::read;
 use regex::Regex;
 use std::collections::HashMap;
@@ -5,8 +6,6 @@ use std::fs;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
-
-use crate::error::Result;
 
 pub struct BootstrapContext {
     pub output_dir: PathBuf,

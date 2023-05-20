@@ -1,8 +1,9 @@
 use std::path::{Path, PathBuf};
 
+use anyhow::{Context, Result};
 use clap::{arg, value_parser, ArgMatches, Command};
 
-use crate::{error::Result, model::Server, util};
+use crate::{model::Server, util};
 
 use super::version::APP_USER_AGENT;
 
@@ -17,18 +18,16 @@ pub fn cli() -> Command {
 }
 
 pub async fn run(matches: &ArgMatches) -> Result<()> {
-    let server = Server::load(Path::new("server.toml"))?;
+    let server = Server::load(Path::new("server.toml")).context("Failed to load server.toml")?;
     let http_client = reqwest::Client::builder()
         .user_agent(APP_USER_AGENT)
-        .build()?;
+        .build()
+        .context("Failed to create HTTP client")?;
     let output_dir = matches.get_one::<PathBuf>("output").unwrap();
-    std::fs::create_dir_all(output_dir)?;
+    std::fs::create_dir_all(output_dir).context("Failed to create output directory")?;
 
-    util::download_with_progress(
-        output_dir,
-        "server.jar",
-        server.jar.download(&http_client).await?,
-    )
-    .await?;
+    util::download_with_progress(output_dir, "server.jar", server.jar, &http_client)
+        .await
+        .context("Failed to download server jar")?;
     Ok(())
 }

@@ -1,0 +1,14 @@
+name = "test"
+mc_version = "1.19.4"
+plugins = []
+
+[launcher]
+aikars_flags = true
+proxy_flags = false
+gui = false
+memory = 0
+
+[jar]
+type = "modrinth"
+id = "1"
+version = "1.19.4"

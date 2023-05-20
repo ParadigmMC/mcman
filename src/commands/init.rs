@@ -3,8 +3,8 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 
-use crate::error::{CliError, Result};
 use crate::model::Server;
+use anyhow::{anyhow, bail, Result};
 use clap::{arg, ArgMatches, Command};
 
 pub fn cli() -> Command {
@@ -20,7 +20,7 @@ pub fn run(matches: &ArgMatches) -> Result<()> {
             Err(err)?;
         }
     } else {
-        Err(CliError::AlreadyExists)?;
+        bail!("server.toml already exists");
     }
 
     let current_dir = std::env::current_dir()?;
@@ -31,7 +31,9 @@ pub fn run(matches: &ArgMatches) -> Result<()> {
         current_dir
             .file_name()
             .and_then(OsStr::to_str)
-            .ok_or(CliError::MissingServerName)?
+            .ok_or(anyhow!(
+                "Can't get server name from current path; please specify a name using --name"
+            ))?
             .to_owned()
     };
 

@@ -1,6 +1,5 @@
+use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
-
-use crate::error::{FetchError, Result};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 struct PaperMCBuild {
@@ -36,17 +35,11 @@ pub async fn fetch_papermc_versions(
     project: &str,
     client: &reqwest::Client,
 ) -> Result<Vec<String>> {
-    let res = client
-        .get("https://api.papermc.io/v2/projects/".to_owned() + project)
-        .send()
-        .await?;
-    if res.status() == reqwest::StatusCode::NOT_FOUND {
-        Err(FetchError::PaperMCProjectNotFound(project.to_owned()))?;
-    }
     let project: PaperMCProject = client
         .get("https://api.papermc.io/v2/projects/".to_owned() + project)
         .send()
         .await?
+        .error_for_status()?
         .json()
         .await?;
 
@@ -66,10 +59,7 @@ async fn fetch_papermc_builds(
         if let Some(version) = fetched_version.last().cloned() {
             target_version = version;
         } else {
-            Err(FetchError::PaperMCVersionNotFound(
-                project.to_owned(),
-                "latest".to_owned(),
-            ))?;
+            bail!("Latest version for project {project} not found");
         }
     }
 
@@ -83,6 +73,7 @@ async fn fetch_papermc_builds(
         )
         .send()
         .await?
+        .error_for_status()?
         .json()
         .await?;
 
@@ -102,21 +93,13 @@ async fn fetch_papermc_build(
             return Ok(build);
         }
 
-        Err(FetchError::PaperMCBuildNotFound(
-            project.to_owned(),
-            version.to_owned(),
-            "latest".to_owned(),
-        ))?;
+        bail!("Latest build for project {project} {version} not found");
     }
 
     if let Some(found_build) = builds.iter().find(|&b| b.build == build) {
         Ok(found_build.clone())
     } else {
-        Err(FetchError::PaperMCBuildNotFound(
-            project.to_owned(),
-            version.to_owned(),
-            build.to_owned(),
-        ))?
+        bail!("Build {build} for project {project} {version} not found");
     }
 }
 
@@ -142,5 +125,6 @@ pub async fn download_papermc_build(
                 + &filename,
         )
         .send()
-        .await?)
+        .await?
+        .error_for_status()?)
 }

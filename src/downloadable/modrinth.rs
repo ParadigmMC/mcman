@@ -1,6 +1,6 @@
+use anyhow::{bail, Result};
+use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
-
-use crate::error::{FetchError, Result};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct ModrinthVersion {
@@ -23,28 +23,21 @@ pub async fn fetch_modrinth(
         .get("https://api.modrinth.com/v2/project/".to_owned() + id + "/version")
         .send()
         .await?
+        .error_for_status()?
         .json()
         .await?;
 
     let verdata = project.iter().find(|&v| v.id == version);
 
-    if verdata.is_none() {
-        Err(FetchError::ModrinthReleaseNotFound(
-            id.to_owned(),
-            version.to_owned(),
-        ))?;
-    }
+    let Some(verdata) = verdata else {
+        bail!("Release '{version}' for project '{id}' not found");
+    };
 
-    let file = verdata.unwrap().files.first();
+    let Some(file) = verdata.files.first() else {
+        bail!("No files for project '{id}' version '{version}'");
+    };
 
-    if file.is_none() {
-        Err(FetchError::ModrinthReleaseNotFound(
-            id.to_owned(),
-            version.to_owned(),
-        ))?;
-    }
-
-    let res = client.get(&file.unwrap().url).send().await?;
+    let res = client.get(&file.url).send().await?.error_for_status()?;
 
     Ok(res)
 }
