@@ -29,11 +29,21 @@ pub enum FetchError {
 }
 
 #[derive(Debug, Error)]
+pub enum BootstrapError {
+    //#[error(transparent)]
+    //PropertiesError(#[from] java_properties::PropertiesError),
+    //#[error(transparent)]
+    //UTF8Error(#[from] std::string::FromUtf8Error),
+}
+
+#[derive(Debug, Error)]
 pub enum Error {
     #[error(transparent)]
     Cli(#[from] CliError),
     #[error(transparent)]
     Fetch(#[from] FetchError),
+    #[error(transparent)]
+    Bootstrap(#[from] BootstrapError),
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]
@@ -42,4 +52,8 @@ pub enum Error {
     TomlDeserialize(#[from] toml::de::Error),
     #[error(transparent)]
     TomlSerialize(#[from] toml::ser::Error),
+    #[error(transparent)]
+    PropertiesError(#[from] java_properties::PropertiesError),
+    #[error(transparent)]
+    UTF8Error(#[from] std::string::FromUtf8Error),
 }
