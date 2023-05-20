@@ -1,10 +1,10 @@
-use std::collections::HashMap;
-use std::fs;
-use std::io::{Cursor};
-use std::path::{Path, PathBuf};
 use java_properties::read;
 use regex::Regex;
-use walkdir::{WalkDir, DirEntry};
+use std::collections::HashMap;
+use std::fs;
+use std::io::Cursor;
+use std::path::{Path, PathBuf};
+use walkdir::{DirEntry, WalkDir};
 
 use crate::error::Result;
 
@@ -17,33 +17,31 @@ impl BootstrapContext {
     pub fn get_output_path(&self, path: &Path) -> PathBuf {
         let mut path_buf = PathBuf::new();
         let mut iter = path.components();
-    
-        if let Some(_) = iter.next() {
-            // Set first component as the output directory    
+
+        if iter.next().is_some() {
+            // Set first component as the output directory
             path_buf.push(self.output_dir.as_os_str());
         }
-    
+
         // Append the remaining components to the new path
         path_buf.extend(iter);
-    
+
         path_buf
     }
 }
 
-pub fn bootstrap(
-    ctx: &BootstrapContext,
-) {
+pub fn bootstrap(ctx: &BootstrapContext) {
     // iterate over all files
 
     // create server directory if not exists
-    if !Path::new("server").exists() {
-        fs::create_dir("server").unwrap();
+    if !Path::new(ctx.output_dir.as_path()).exists() {
+        fs::create_dir(ctx.output_dir.as_path()).unwrap();
     }
-    
+
     for entry in WalkDir::new("config") {
-        if !entry.is_ok() {
-            println!("Error occurred while bootstrapping: Can't walk directory/file {} (check permissions?)",
-                &entry.unwrap_err().path().unwrap_or(&Path::new("unknown")).display());
+        if let Err(e) = entry {
+            println!("Error occurred while bootstrapping: Can't walk directory/file {} (check permissions?): {e}",
+                &e.path().unwrap_or(Path::new("unknown")).display());
             continue;
         }
 
@@ -53,20 +51,17 @@ pub fn bootstrap(
             continue;
         }
 
-        match bootstrap_entry(&ctx, &entry) {
-            Ok(_) => {},
+        match bootstrap_entry(ctx, &entry) {
+            Ok(_) => {}
             Err(e) => {
                 // todo: handle errors better, with cooler output styles etc
-                println!("Error occurred while bootstrapping: {:#?}", e);
+                println!("Error occurred while bootstrapping: {e:#?}");
             }
         }
     }
 }
 
-fn bootstrap_entry(
-    ctx: &BootstrapContext,
-    entry: &DirEntry,
-) -> Result<()> {
+fn bootstrap_entry(ctx: &BootstrapContext, entry: &DirEntry) -> Result<()> {
     let path = entry.path();
 
     // bootstrap contents of some types
@@ -78,10 +73,10 @@ fn bootstrap_entry(
                 let existing_input = String::from_utf8(fs::read(&output_path).unwrap_or(vec![]))?;
                 let output = bootstrap_properties(ctx, &existing_input, &input)?;
                 fs::write(output_path, output).unwrap();
-            },
+            }
             _ => {
                 fs::copy(path, ctx.get_output_path(path)).unwrap();
-            },
+            }
         }
     } else {
         let new_path = ctx.get_output_path(path);
@@ -99,11 +94,11 @@ pub fn bootstrap_properties(
     let mut values = read(Cursor::new(source_content))?;
     values = values
         .iter()
-        .map(|v| (v.0.to_owned(), bootstrap_string(ctx, &v.1)))
+        .map(|v| (v.0.clone(), bootstrap_string(ctx, v.1)))
         .collect();
 
     let mut existing_values: HashMap<String, String> = read(Cursor::new(existing_content))?;
-    
+
     for (key, value) in values {
         existing_values.insert(key.clone(), value.clone());
     }
@@ -114,10 +109,7 @@ pub fn bootstrap_properties(
     Ok(String::from_utf8(buffer)?)
 }
 
-pub fn bootstrap_string(
-    ctx: &BootstrapContext,
-    content: &str,
-) -> String {
+pub fn bootstrap_string(ctx: &BootstrapContext, content: &str) -> String {
     let re = Regex::new(r"\$\{(\w+)\}").unwrap();
     let replaced = re.replace_all(content, |caps: &regex::Captures| {
         if let Some(value) = ctx.vars.get(&caps[1]) {
@@ -128,4 +120,3 @@ pub fn bootstrap_string(
     });
     replaced.into_owned()
 }
-

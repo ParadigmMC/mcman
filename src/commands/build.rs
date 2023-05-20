@@ -24,8 +24,6 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     let output_dir = matches.get_one::<PathBuf>("output").unwrap();
     std::fs::create_dir_all(output_dir)?;
 
-    
-
     util::download_with_progress(
         output_dir,
         "server.jar",

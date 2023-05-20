@@ -6,7 +6,11 @@ use tokio::{fs::File, io::BufWriter};
 
 use crate::error::{CliError, Result};
 
-pub async fn download_with_progress(dir: &Path, filename: &str, response: reqwest::Response) -> Result<()> {
+pub async fn download_with_progress(
+    dir: &Path,
+    filename: &str,
+    response: reqwest::Response,
+) -> Result<()> {
     let progress_bar =
         ProgressBar::with_draw_target(response.content_length(), ProgressDrawTarget::stderr());
 
