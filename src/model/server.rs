@@ -5,7 +5,6 @@ use std::{
 };
 
 use anyhow::Result;
-use clap::builder::Str;
 use serde::{Deserialize, Serialize};
 
 use crate::downloadable::Downloadable;
@@ -24,27 +23,25 @@ pub struct ServerLauncher {
 
 impl ServerLauncher {
     pub fn generate_script_linux(&mut self, jarname: &str, servername: &str) -> String {
-        let mut script = String::new();
-        script += "#!/bin/bash\n";
-
-        script += &self.generate_script_java(jarname, servername);
-        script += "\n";
-
-        script
+        format!(
+            "#!/bin/sh
+{}
+",
+            self.generate_script_java(jarname, servername)
+        )
     }
 
     pub fn generate_script_win(&mut self, jarname: &str, servername: &str) -> String {
-        let mut script = String::new();
-        script += "@echo off\n";
-        script += &format!("title {}\n", servername);
-
-        script += &self.generate_script_java(jarname, servername);
-        script += "\n";
-
-        script
+        format!(
+            "@echo off
+title {servername}
+{}
+",
+            self.generate_script_java(jarname, servername)
+        )
     }
 
-    pub fn generate_script_java(&mut self, jarname: &str, servername: &str) -> String {
+    pub fn generate_script_java(&mut self, jarname: &str, _servername: &str) -> String {
         let mut script = String::new();
 
         // todo: custom java stuff from ~/.mcmanconfig or something idk
@@ -82,8 +79,8 @@ impl Default for ServerLauncher {
     fn default() -> Self {
         Self {
             disable: false,
-            jvm_args: "".to_owned(),
-            game_args: "".to_owned(),
+            jvm_args: String::new(),
+            game_args: String::new(),
             aikars_flags: true,
             proxy_flags: false,
             gui: false,

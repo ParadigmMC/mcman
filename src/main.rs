@@ -4,6 +4,7 @@
 #![allow(clippy::missing_docs_in_private_items)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::module_name_repetitions)]
+#![allow(clippy::struct_excessive_bools)]
 
 use anyhow::Result;
 use clap::Command;

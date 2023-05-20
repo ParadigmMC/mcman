@@ -48,13 +48,13 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
 
     fs::write(
         output_dir.join("start.bat"),
-        &server
+        server
             .launcher
             .generate_script_win(&serverjar_name, &server.name),
     )?;
     fs::write(
         output_dir.join("start.sh"),
-        &server
+        server
             .launcher
             .generate_script_linux(&serverjar_name, &server.name),
     )?;

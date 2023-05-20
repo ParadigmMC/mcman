@@ -1,5 +1,4 @@
 use anyhow::{bail, Result};
-use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
