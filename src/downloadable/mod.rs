@@ -40,4 +40,18 @@ impl Downloadable {
             } => Ok(download_papermc_build(project, version, build, client).await?),
         }
     }
+
+    pub fn get_server_filename(&self) -> String {
+        match self {
+            Self::Url { url } => url.split('/').last().unwrap().to_string(),
+            Self::Vanilla { version } => format!("server-{}.jar", version),
+            // Modrinth shouldnt even be available but whatever tabnine
+            Self::Modrinth { id, version } => format!("{}-{}.jar", id, version),
+            Self::PaperMC {
+                project,
+                version,
+                build,
+            } => format!("{}-{}-{}.jar", project, version, build),
+        }
+    }
 }
