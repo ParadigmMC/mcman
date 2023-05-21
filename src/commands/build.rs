@@ -97,12 +97,12 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
                     style(&plugin_name).dim()
                 );
             } else {
-                println!(
+                /* println!(
                     "          ({}/{}) Downloading : {}",
                     i,
                     plugin_count,
                     style(&plugin_name).dim()
-                );
+                ); */
         
                 util::download_with_progress(
                     &output_dir.join("plugins"),

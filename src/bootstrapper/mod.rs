@@ -76,7 +76,7 @@ fn bootstrap_entry(ctx: &BootstrapContext, entry: &DirEntry) -> Result<()> {
                 fs::write(output_path.clone(), output)
                     .context(format!("Writing {}", output_path.display()))?;
             }
-            "txt" | "yaml" | "yml" => {
+            "txt" | "yaml" | "yml" | "conf" | "config" => {
                 let input = fs::read_to_string(path)?;
                 let output = bootstrap_string(ctx, &input);
                 fs::create_dir_all(output_path.parent().unwrap_or(Path::new("")))?;

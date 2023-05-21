@@ -10,19 +10,21 @@ Check out the [tutorial](./TUTORIAL.md)
 
 ## Features
 
-- Automatic setting of some values such as port
-- Automatic configuration handler
-  - Supports variables for even better configs for your servers
-- Automatic plugin/mod installation
-  - **Supports these sources:**
-  - [`modrinth`](https://modrinth.com/)
-  - [`spigot`](https://spigotmc.org/)
-  - github releases
-  - Jenkins
-  - Custom URL
+- Automatically copy plugin configurations
+  - Supports variables inside config files
+- Automatic plugin installation
+  - **Supports Plugins From:**
+  - [Modrinth](https://modrinth.com/plugins/)
+  - Custom plugins from URL
+  - (todo) github releases
+  - (todo) Jenkins
+  - (todo) [Spigot](https://spigotmc.org/)
 - Automatic server jar downloading and launch script generation
-  - **Supports:** `vanilla`, `spigot`, `paper`, `folia`, `purpur` and custom forks too
-  - **Proxies?:** It has `bungeecord`, `waterfall` and `velocity` too.
+  - **Supports:**
+    - Vanilla
+    - [PaperMC](https://papermc.io/): paper, folia, velocity, waterfall
+    - [PurpurMC](https://purpurmc.org/)
+    - Custom jars from URL
 
 ## Folder Structure
 
@@ -41,19 +43,17 @@ Dont you hate how everything is a fork of everything so there's a billion config
 And the great part is, here's the contents of 📜 `cool_server/config/server.properties`:
 
 ```properties
-server-port=25599
+server-port=${PORT}
 gamemode=creative
-motd=My cool server!
-level-name=custom_map
-max-players=50
+motd=${MOTD}
 online-mode=false
 ```
 
-The rest of the values are kept as-is! So you only have to write the values you need to be changed.
+You only need to write the values you need.
 
-This also works with YAML configurations.
+This also works with YAML configurations. (currently just copies the file, sorry!)
 
-When you run `mcman build`, mcman will bootstrap your server into the `server/` folder. You can use mcman to efficiently configure and develop your minecraft servers using git now.
+When you run `mcman build`, mcman will bootstrap your server into the `server/` folder. You can use **mcman** to efficiently configure and develop your minecraft servers using git.
 
 ## Variables
 
