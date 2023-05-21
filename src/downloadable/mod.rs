@@ -1,15 +1,17 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use self::{modrinth::fetch_modrinth, papermc::download_papermc_build, vanilla::fetch_vanilla};
+use self::{modrinth::fetch_modrinth, papermc::download_papermc_build, vanilla::fetch_vanilla, purpurmc::download_purpurmc_build};
 mod modrinth;
 mod papermc;
 mod vanilla;
+mod purpurmc;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type")]
 #[serde(rename_all = "lowercase")]
 pub enum Downloadable {
+    // sources
     Url {
         url: String,
     },
@@ -25,6 +27,18 @@ pub enum Downloadable {
         version: String,
         build: String,
     },
+    
+    // known projects
+    PurpurMC {
+        version: String,
+        build: String,
+    },
+
+    // papermc
+    Paper { version: String },
+    Folia { version: String },
+    Velocity { version: String },
+    Waterfall { version: String },
 }
 
 impl Downloadable {
@@ -38,6 +52,12 @@ impl Downloadable {
                 version,
                 build,
             } => Ok(download_papermc_build(project, version, build, client).await?),
+            Self::PurpurMC { version, build } => Ok(download_purpurmc_build(version, build, client).await?),
+
+            Self::Paper { version } => Ok(download_papermc_build("paper", version, "latest", client).await?),
+            Self::Folia { version } => Ok(download_papermc_build("folia", version, "latest", client).await?),
+            Self::Velocity { version } => Ok(download_papermc_build("velocity", version, "latest", client).await?),
+            Self::Waterfall { version } => Ok(download_papermc_build("waterfall", version, "latest", client).await?),
         }
     }
 
@@ -51,6 +71,12 @@ impl Downloadable {
                 version,
                 build,
             } => format!("{project}-{version}-{build}.jar"),
+            Self::PurpurMC { version, build } => format!("purpur-{version}-{build}.jar"),
+
+            Self::Paper { version } => format!("paper-{version}.jar"),
+            Self::Folia { version } => format!("folia-{version}.jar"),
+            Self::Velocity { version } => format!("velocity-{version}.jar"),
+            Self::Waterfall { version } => format!("waterfall-{version}.jar"),
         }
     }
 }

@@ -4,6 +4,7 @@ mc_version = "1.19.4"
 
 [jar]
 type = "vanilla"
+
 [launcher]
 aikars_flags = true
 

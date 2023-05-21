@@ -95,6 +95,7 @@ impl Default for ServerLauncher {
 pub struct Server {
     pub name: String,
     pub mc_version: String, // TODO: version type for comparing
+    pub port: u16,
     pub launcher: ServerLauncher,
     pub jar: Downloadable,
     pub plugins: Vec<Downloadable>,
@@ -121,6 +122,7 @@ impl Default for Server {
         Self {
             name: String::new(),
             mc_version: "1.19.4".to_owned(),
+            port: 25565,
             launcher: ServerLauncher::default(),
             jar: Downloadable::Vanilla {
                 version: "1.19.4".to_owned(),
