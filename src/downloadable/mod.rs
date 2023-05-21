@@ -61,7 +61,7 @@ impl Downloadable {
         }
     }
 
-    pub fn get_server_filename(&self) -> String {
+    pub fn get_filename(&self) -> String {
         match self {
             Self::Url { url } => url.split('/').last().unwrap().to_string(),
             Self::Vanilla { version } => format!("server-{version}.jar"),

@@ -40,5 +40,7 @@ pub async fn download_with_progress(
         progress_bar.set_position(bytes_downloaded as u64);
     }
 
+    progress_bar.finish_and_clear();
+
     Ok(())
 }

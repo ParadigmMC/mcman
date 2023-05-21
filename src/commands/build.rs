@@ -6,7 +6,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use clap::{arg, value_parser, ArgMatches, Command};
+use clap::{arg, value_parser, ArgMatches, Command, ArgAction};
 use console::{style, Style};
 
 use super::version::APP_USER_AGENT;
@@ -37,16 +37,14 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     std::fs::create_dir_all(output_dir).context("Failed to create output directory")?;
 
     //let term = Term::stdout();
-    let title = Style::new().cyan().bold();
-
+    let title = Style::new().blue().bold();
+    
     println!(" Building {}...", style(server.name.clone()).green().bold());
-
-    let serverjar_name = server.jar.get_server_filename();
-
+    
     // stage 1: server jar
-
     println!(" stage 1: {}", title.apply_to("Server Jar"));
-
+    
+    let serverjar_name = server.jar.get_filename();
     if output_dir.join(serverjar_name.clone()).exists() {
         println!(
             "          Skipping server jar ({})",
@@ -60,7 +58,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
 
         util::download_with_progress(
             output_dir,
-            &server.jar.get_server_filename(),
+            &server.jar.get_filename(),
             server.jar,
             &http_client,
         )
@@ -78,8 +76,52 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
             style("This server doesn't have any plugins, skipping").dim()
         );
     } else {
-        // do stuff
-        // TODO
+        let plugin_count = server.plugins.len();
+        println!(
+            "          {}",
+            style(format!("{} plugins present, processing...", plugin_count)).dim()
+        );
+
+        std::fs::create_dir_all(output_dir.join("plugins")).context("Failed to create plugins directory")?;
+
+        let mut i = 0;
+        for plugin in server.plugins {
+            i += 1;
+
+            let plugin_name = plugin.get_filename();
+            if output_dir.join("plugins").join(&plugin_name).exists() {
+                println!(
+                    "          ({}/{}) Skipping    : {}",
+                    i,
+                    plugin_count,
+                    style(&plugin_name).dim()
+                );
+            } else {
+                println!(
+                    "          ({}/{}) Downloading : {}",
+                    i,
+                    plugin_count,
+                    style(&plugin_name).dim()
+                );
+        
+                util::download_with_progress(
+                    &output_dir.join("plugins"),
+                    &plugin_name,
+                    plugin,
+                    &http_client,
+                )
+                .await
+                .context(format!("Failed to download plugin {plugin_name}"))?;
+
+                println!(
+                    "          ({}/{}) {}  : {}",
+                    i,
+                    plugin_count,
+                    style("Downloaded").green().bold(),
+                    style(&plugin_name).dim()
+                );
+            }
+        }
     }
 
     // stage 3: bootstrap

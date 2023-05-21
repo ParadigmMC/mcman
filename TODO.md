@@ -12,7 +12,7 @@
   - [ ] Spiget
   - [ ] BuildTools
 - [ ] Jenkins
-- [ ] PurpurMC
+- [x] PurpurMC
 - [ ] Github Releases
 
 ## commmmmmmands
@@ -20,7 +20,7 @@
 - [x] mcman init --name
 - [x] mcman build
   - [x] server jar
-  - [ ] plugins
+  - [x] plugins
   - [x] bootstrap files
   - [x] launcher scripts
 - [ ] mcman plugins add \<source> \<plugin> [output]
@@ -37,3 +37,4 @@
   - [x] toml
   - [ ] env
 - [ ] support git-like calls from inner folders (recurse server.toml lookup)
+- [ ] mods support (along with plugins)
