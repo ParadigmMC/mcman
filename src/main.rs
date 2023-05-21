@@ -31,7 +31,7 @@ async fn main() -> Result<()> {
     match matches.subcommand() {
         Some(("build", sub_matches)) => commands::build::run(sub_matches).await,
         Some(("init", sub_matches)) => commands::init::run(sub_matches),
-        Some(("setup", sub_matches)) => commands::setup::run(),
+        Some(("setup", _sub_matches)) => commands::setup::run(),
         Some(("version", sub_matches)) => {
             commands::version::run(sub_matches);
             Ok(())

@@ -58,7 +58,6 @@ pub fn run() -> Result<()> {
 
     if first_run {
         pick_server_name(&mut ctx)?;
-        pick_server_port(&mut ctx)?;
         pick_server_version(&mut ctx)?;
         pick_server_jar(&mut ctx)?;
     }
@@ -74,7 +73,6 @@ fn options_loop(ctx: &mut SetupContext) -> Result<()> {
             .with_prompt("What would you like to do?")
             .default(0)
             .item("Set name")
-            .item("Set port")
             .item("Set mc version")
             .item("Set jar")
             .item("Exit")
@@ -82,10 +80,9 @@ fn options_loop(ctx: &mut SetupContext) -> Result<()> {
 
         match option_sel {
             0 => pick_server_name(ctx),
-            1 => pick_server_port(ctx),
-            2 => pick_server_version(ctx),
-            3 => pick_server_jar(ctx),
-            4 => {
+            1 => pick_server_version(ctx),
+            2 => pick_server_jar(ctx),
+            3 => {
                 if Confirm::with_theme(&ctx.theme)
                     .with_prompt("Save configuration?")
                     .interact()?
@@ -125,7 +122,7 @@ fn pick_server_name(ctx: &mut SetupContext) -> Result<()> {
     Ok(())
 }
 
-fn pick_server_port(ctx: &mut SetupContext) -> Result<()> {
+/* fn pick_server_port(ctx: &mut SetupContext) -> Result<()> {
     let server_port = Input::with_theme(&ctx.theme)
         .with_prompt("Port")
         .with_initial_text(ctx.server.port.to_string())
@@ -133,7 +130,7 @@ fn pick_server_port(ctx: &mut SetupContext) -> Result<()> {
     ctx.server.port = server_port;
 
     Ok(())
-}
+} */
 
 fn pick_server_version(ctx: &mut SetupContext) -> Result<()> {
     let server_ver = Input::with_theme(&ctx.theme)
