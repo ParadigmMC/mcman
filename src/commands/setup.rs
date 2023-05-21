@@ -15,7 +15,6 @@ pub fn cli() -> Command {
 struct SetupContext {
     pub server: Server,
     pub theme: ColorfulTheme,
-    pub first_run: bool,
     pub current_dir: PathBuf,
 }
 
@@ -51,7 +50,6 @@ pub fn run() -> Result<()> {
     let mut ctx = SetupContext {
         server,
         theme,
-        first_run,
         current_dir,
     };
 

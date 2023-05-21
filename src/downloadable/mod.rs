@@ -75,7 +75,7 @@ impl Downloadable {
             }
             Self::Purpur { build } => Ok(download_purpurmc_build(&mcver, build, client).await?),
 
-            Self::Modrinth { id, version } => Ok(fetch_modrinth(id, &mcver, client).await?),
+            Self::Modrinth { id, version } => Ok(fetch_modrinth(id, version, client).await?),
             Self::Spigot { id } => Ok(download_spigot_resource(id, client).await?),
 
             Self::Paper {} => Ok(download_papermc_build("paper", &mcver, "latest", client).await?),
