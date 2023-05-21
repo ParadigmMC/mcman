@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 use crate::model::Server;
 
 use self::{
-    modrinth::fetch_modrinth, papermc::{download_papermc_build, fetch_papermc_versions, fetch_papermc_build}, purpur::{download_purpurmc_build, fetch_purpurmc_builds},
-    vanilla::fetch_vanilla, spigot::download_spigot_resource,
+    modrinth::{fetch_modrinth, fetch_modrinth_filename}, papermc::{download_papermc_build, fetch_papermc_build}, purpur::{download_purpurmc_build, fetch_purpurmc_builds},
+    vanilla::fetch_vanilla, spigot::{download_spigot_resource, fetch_spigot_resource_latest_ver},
 };
 mod modrinth;
 mod papermc;
@@ -34,7 +34,7 @@ pub enum Downloadable {
         #[serde(default = "latest")]
         build: String,
     },
-    SpigotMC {
+    Spigot {
         id: String, // weird ass api
     },
     
@@ -72,7 +72,7 @@ impl Downloadable {
             }
             
             Self::Modrinth { id, version } => Ok(fetch_modrinth(id, &mcver, client).await?),
-            Self::SpigotMC { id } => Ok(download_spigot_resource(id, client).await?),
+            Self::Spigot { id } => Ok(download_spigot_resource(id, client).await?),
 
             Self::Paper { } => {
                 Ok(download_papermc_build("paper", &mcver, "latest", client).await?)
@@ -111,10 +111,16 @@ impl Downloadable {
                 }
             },
             
-            // TODO
-            Self::Modrinth { id, version } => Ok(format!("{id}-{version}.jar")),
-            // TODO
-            Self::SpigotMC { id } => Ok(format!("{id}.jar")),
+            Self::Modrinth { id, version } => {
+                // Be like modrinth. Modrinth is cool.
+                let filename = fetch_modrinth_filename(id, version, client).await?;
+                Ok(filename)
+            },
+            Self::Spigot { id } => {
+                let ver = fetch_spigot_resource_latest_ver(id, client).await?;
+                // amazing.. bruh...
+                Ok(format!("{id}-{ver}.jar"))
+            },
 
             Self::Paper {  } => {
                 Ok(get_filename_papermc("paper", &mcver, "latest", client).await?)

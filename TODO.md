@@ -8,8 +8,8 @@
 - [x] PaperMC
 - [ ] Hangar
 - [ ] Bukkit/Curseforge
-- [ ] Spigot
-  - [ ] Spiget
+- [x] Spigot
+  - [x] Spiget
   - [ ] BuildTools
 - [ ] Jenkins
 - [x] PurpurMC

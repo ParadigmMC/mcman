@@ -15,10 +15,10 @@ Check out the [tutorial](./TUTORIAL.md)
 - Automatic plugin installation
   - **Supports Plugins From:**
   - [Modrinth](https://modrinth.com/plugins/)
+  - [Spigot](https://spigotmc.org/)
   - Custom plugins from URL
   - (todo) github releases
   - (todo) Jenkins
-  - (todo) [Spigot](https://spigotmc.org/)
 - Automatic server jar downloading and launch script generation
   - **Supports:**
     - Vanilla
