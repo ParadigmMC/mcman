@@ -9,6 +9,7 @@ repository = "https://github.com/ParadigmMC/mcman/"
 anyhow = "1.0"
 clap = "4.3"
 console = "0.15"
+dialoguer = "0.10.4"
 futures = "0.3"
 indicatif = "0.17"
 java-properties = { git = "https://github.com/ParadigmMC/java-properties.git" }
