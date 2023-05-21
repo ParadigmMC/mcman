@@ -1,10 +1,10 @@
-use anyhow::{Result, anyhow, Context};
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 
-/* 
+/*
 #[derive(Debug, Deserialize, Serialize)]
 struct SpigotResourceFile {
-    
+
 }
 
 // this api is so weird
@@ -17,7 +17,7 @@ struct SpigotVersionData {
 struct SpigotResourceVersion {
     pub name: String,
     pub id: i32,
-} 
+}
 
 pub fn get_resource_id(res: &str) -> Result<&str> {
     if res.contains('.') {
@@ -33,8 +33,11 @@ pub async fn fetch_spigot_resource_latest_ver(
     client: &reqwest::Client,
 ) -> Result<String> {
     let project: SpigotResourceVersion = client
-        .get("https://api.spiget.org/v2/resources/".to_owned()
-            + get_resource_id(id)? + "/versions/latest")
+        .get(
+            "https://api.spiget.org/v2/resources/".to_owned()
+                + get_resource_id(id)?
+                + "/versions/latest",
+        )
         .send()
         .await?
         .error_for_status()?
@@ -52,7 +55,9 @@ pub async fn download_spigot_resource(
     let id_parsed = get_resource_id(id)?;
 
     Ok(client
-        .get(format!("https://api.spiget.org/v2/resources/{id_parsed}/download"))
+        .get(format!(
+            "https://api.spiget.org/v2/resources/{id_parsed}/download"
+        ))
         .send()
         .await?
         .error_for_status()?)

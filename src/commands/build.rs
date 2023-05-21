@@ -72,7 +72,7 @@ async fn download_plugins(
     let plugin_count = server.plugins.len();
     println!(
         "          {}",
-        style(format!("{} plugins present, processing...", plugin_count)).dim()
+        style(format!("{plugin_count} plugins present, processing...")).dim()
     );
 
     std::fs::create_dir_all(output_dir.join("plugins"))

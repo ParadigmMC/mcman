@@ -147,9 +147,7 @@ fn pick_server_jar(ctx: &mut SetupContext) -> Result<()> {
         Downloadable::Vanilla {} => 0,
         Downloadable::Paper {} => 1,
         Downloadable::Folia {} => 2,
-        Downloadable::Purpur {
-            build: _,
-        } => 3,
+        Downloadable::Purpur { build: _ } => 3,
         Downloadable::Velocity {} => 4,
         Downloadable::Waterfall {} => 5,
         _ => 6,
@@ -171,7 +169,9 @@ fn pick_server_jar(ctx: &mut SetupContext) -> Result<()> {
         0 => Downloadable::Vanilla {},
         1 => Downloadable::Paper {},
         2 => Downloadable::Folia {},
-        3 => Downloadable::Purpur { build: "latest".to_owned() },
+        3 => Downloadable::Purpur {
+            build: "latest".to_owned(),
+        },
         4 => Downloadable::Velocity {},
         5 => Downloadable::Waterfall {},
         6 => Downloadable::Url {
