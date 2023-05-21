@@ -20,9 +20,7 @@ struct PurpurMCBuilds {
     pub all: Vec<String>,
 }
 
-pub async fn fetch_purpurmc_versions(
-    client: &reqwest::Client,
-) -> Result<Vec<String>> {
+pub async fn fetch_purpurmc_versions(client: &reqwest::Client) -> Result<Vec<String>> {
     let project: PurpurMCResponse = client
         .get("https://api.purpurmc.org/v2/purpur".to_owned())
         .send()
@@ -34,10 +32,7 @@ pub async fn fetch_purpurmc_versions(
     Ok(project.versions)
 }
 
-async fn fetch_purpurmc_builds(
-    version: &str,
-    client: &reqwest::Client,
-) -> Result<Vec<String>> {
+async fn fetch_purpurmc_builds(version: &str, client: &reqwest::Client) -> Result<Vec<String>> {
     let mut target_version: String = version.to_owned();
 
     if target_version == "latest" {
@@ -51,10 +46,7 @@ async fn fetch_purpurmc_builds(
     }
 
     let version: PurpurMCVersion = client
-        .get(
-            "https://api.purpurmc.org/v2/purpur/".to_owned()
-                + &target_version
-        )
+        .get("https://api.purpurmc.org/v2/purpur/".to_owned() + &target_version)
         .send()
         .await?
         .error_for_status()?
@@ -70,13 +62,7 @@ pub async fn download_purpurmc_build(
     client: &reqwest::Client,
 ) -> Result<reqwest::Response> {
     Ok(client
-        .get(
-            "https://api.purpurmc.org/v2/purpur/".to_owned()
-            + version +
-            "/"
-            + build +
-            "/download"
-        )
+        .get("https://api.purpurmc.org/v2/purpur/".to_owned() + version + "/" + build + "/download")
         .send()
         .await?
         .error_for_status()?)

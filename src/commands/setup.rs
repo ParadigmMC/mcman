@@ -1,9 +1,9 @@
-use std::{ffi::OsStr, path::PathBuf};
 use std::path::Path;
+use std::{ffi::OsStr, path::PathBuf};
 
 use crate::{downloadable::Downloadable, model::Server};
 use anyhow::{Context, Result};
-use clap::{Command, ArgMatches};
+use clap::Command;
 use console::Style;
 use dialoguer::Confirm;
 use dialoguer::{theme::ColorfulTheme, Input, Select};
@@ -38,7 +38,7 @@ pub fn run() -> Result<()> {
     let current_dir = std::env::current_dir()?;
 
     println!(" [WARNING] SETUP IS EXPERIMENTAL");
-    
+
     if first_run {
         println!(" Initializing a new server...");
     }
@@ -48,7 +48,6 @@ pub fn run() -> Result<()> {
         ..ColorfulTheme::default()
     };
 
-    
     let mut ctx = SetupContext {
         server,
         theme,
@@ -94,7 +93,7 @@ fn options_loop(ctx: &mut SetupContext) -> Result<()> {
                     println!(" -> Cancelled");
                 }
                 break;
-            },
+            }
             _ => break,
         }?;
     }
@@ -106,7 +105,8 @@ fn pick_server_name(ctx: &mut SetupContext) -> Result<()> {
     let mut def_serv_name = ctx.server.name.clone();
 
     if def_serv_name.is_empty() {
-        def_serv_name = ctx.current_dir
+        def_serv_name = ctx
+            .current_dir
             .file_name()
             .and_then(OsStr::to_str)
             .unwrap_or_default()
@@ -147,7 +147,10 @@ fn pick_server_jar(ctx: &mut SetupContext) -> Result<()> {
         Downloadable::Vanilla { version: _ } => 0,
         Downloadable::Paper { version: _ } => 1,
         Downloadable::Folia { version: _ } => 2,
-        Downloadable::Purpur { version: _, build: _ } => 3,
+        Downloadable::Purpur {
+            version: _,
+            build: _,
+        } => 3,
         Downloadable::Velocity { version: _ } => 4,
         Downloadable::Waterfall { version: _ } => 5,
         _ => 6,
@@ -190,7 +193,7 @@ fn pick_server_jar(ctx: &mut SetupContext) -> Result<()> {
                 .with_prompt("Server Jar URL")
                 .interact()?,
         },
-        _ => Downloadable::Url { url: "".to_owned() },
+        _ => Downloadable::Url { url: String::new() },
     };
 
     ctx.server.jar = jar_dl;

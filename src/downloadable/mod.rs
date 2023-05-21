@@ -1,11 +1,14 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use self::{modrinth::fetch_modrinth, papermc::download_papermc_build, vanilla::fetch_vanilla, purpur::download_purpurmc_build};
+use self::{
+    modrinth::fetch_modrinth, papermc::download_papermc_build, purpur::download_purpurmc_build,
+    vanilla::fetch_vanilla,
+};
 mod modrinth;
 mod papermc;
-mod vanilla;
 mod purpur;
+mod vanilla;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type")]
@@ -28,7 +31,7 @@ pub enum Downloadable {
         #[serde(default = "latest")]
         build: String,
     },
-    
+
     // known projects
     Purpur {
         version: String,
@@ -37,10 +40,18 @@ pub enum Downloadable {
     },
 
     // papermc
-    Paper { version: String },
-    Folia { version: String },
-    Velocity { version: String },
-    Waterfall { version: String },
+    Paper {
+        version: String,
+    },
+    Folia {
+        version: String,
+    },
+    Velocity {
+        version: String,
+    },
+    Waterfall {
+        version: String,
+    },
 }
 
 pub fn latest() -> String {
@@ -58,12 +69,22 @@ impl Downloadable {
                 version,
                 build,
             } => Ok(download_papermc_build(project, version, build, client).await?),
-            Self::Purpur { version, build } => Ok(download_purpurmc_build(version, build, client).await?),
+            Self::Purpur { version, build } => {
+                Ok(download_purpurmc_build(version, build, client).await?)
+            }
 
-            Self::Paper { version } => Ok(download_papermc_build("paper", version, "latest", client).await?),
-            Self::Folia { version } => Ok(download_papermc_build("folia", version, "latest", client).await?),
-            Self::Velocity { version } => Ok(download_papermc_build("velocity", version, "latest", client).await?),
-            Self::Waterfall { version } => Ok(download_papermc_build("waterfall", version, "latest", client).await?),
+            Self::Paper { version } => {
+                Ok(download_papermc_build("paper", version, "latest", client).await?)
+            }
+            Self::Folia { version } => {
+                Ok(download_papermc_build("folia", version, "latest", client).await?)
+            }
+            Self::Velocity { version } => {
+                Ok(download_papermc_build("velocity", version, "latest", client).await?)
+            }
+            Self::Waterfall { version } => {
+                Ok(download_papermc_build("waterfall", version, "latest", client).await?)
+            }
         }
     }
 

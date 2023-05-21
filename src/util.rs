@@ -10,7 +10,7 @@ use crate::downloadable::Downloadable;
 pub async fn download_with_progress(
     dir: &Path,
     filename: &str,
-    downloadable: Downloadable,
+    downloadable: &Downloadable,
     client: &reqwest::Client,
 ) -> Result<()> {
     let response = downloadable.download(client).await?;
