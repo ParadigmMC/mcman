@@ -2,7 +2,6 @@ use std::{
     collections::HashMap,
     fs::{self, OpenOptions},
     io::Write,
-    os::unix::prelude::OpenOptionsExt,
     path::{Path, PathBuf},
 };
 
@@ -116,6 +115,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     let mut file;
     #[cfg(target_family = "unix")]
     {
+        use os::unix::prelude::OpenOptionsExt;
         file = OpenOptions::new()
             .create(true)
             .write(true)
