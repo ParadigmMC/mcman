@@ -5,15 +5,16 @@ use futures::StreamExt;
 use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
 use tokio::{fs::File, io::BufWriter};
 
-use crate::downloadable::Downloadable;
+use crate::{downloadable::Downloadable, model::Server};
 
 pub async fn download_with_progress(
     dir: &Path,
     filename: &str,
     downloadable: &Downloadable,
+    server: &Server,
     client: &reqwest::Client,
 ) -> Result<()> {
-    let response = downloadable.download(client).await?;
+    let response = downloadable.download(server, client).await?;
     let progress_bar =
         ProgressBar::with_draw_target(response.content_length(), ProgressDrawTarget::stderr());
 

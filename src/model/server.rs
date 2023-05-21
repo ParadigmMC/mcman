@@ -95,10 +95,10 @@ impl Default for ServerLauncher {
 pub struct Server {
     pub name: String,
     pub mc_version: String, // TODO: version type for comparing
-    pub launcher: ServerLauncher,
     pub jar: Downloadable,
-    pub plugins: Vec<Downloadable>,
     pub variables: HashMap<String, String>,
+    pub launcher: ServerLauncher,
+    pub plugins: Vec<Downloadable>,
 }
 
 impl Server {
@@ -124,12 +124,10 @@ impl Default for Server {
             name: String::new(),
             mc_version: "1.19.4".to_owned(),
             //port: 25565,
-            launcher: ServerLauncher::default(),
-            jar: Downloadable::Vanilla {
-                version: "1.19.4".to_owned(),
-            },
-            plugins: vec![],
+            jar: Downloadable::Vanilla {},
             variables: vars,
+            launcher: ServerLauncher::default(),
+            plugins: vec![],
         }
     }
 }

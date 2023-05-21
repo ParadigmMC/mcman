@@ -144,15 +144,14 @@ fn pick_server_version(ctx: &mut SetupContext) -> Result<()> {
 
 fn pick_server_jar(ctx: &mut SetupContext) -> Result<()> {
     let def_jar_id = match ctx.server.jar {
-        Downloadable::Vanilla { version: _ } => 0,
-        Downloadable::Paper { version: _ } => 1,
-        Downloadable::Folia { version: _ } => 2,
+        Downloadable::Vanilla {} => 0,
+        Downloadable::Paper {} => 1,
+        Downloadable::Folia {} => 2,
         Downloadable::Purpur {
-            version: _,
             build: _,
         } => 3,
-        Downloadable::Velocity { version: _ } => 4,
-        Downloadable::Waterfall { version: _ } => 5,
+        Downloadable::Velocity {} => 4,
+        Downloadable::Waterfall {} => 5,
         _ => 6,
     };
 
@@ -169,25 +168,12 @@ fn pick_server_jar(ctx: &mut SetupContext) -> Result<()> {
         .interact()?;
 
     let jar_dl = match server_jar_type {
-        0 => Downloadable::Vanilla {
-            version: ctx.server.mc_version.clone(),
-        },
-        1 => Downloadable::Paper {
-            version: ctx.server.mc_version.clone(),
-        },
-        2 => Downloadable::Folia {
-            version: ctx.server.mc_version.clone(),
-        },
-        3 => Downloadable::Purpur {
-            version: ctx.server.mc_version.clone(),
-            build: "latest".to_owned(),
-        },
-        4 => Downloadable::Velocity {
-            version: ctx.server.mc_version.clone(),
-        },
-        5 => Downloadable::Waterfall {
-            version: ctx.server.mc_version.clone(),
-        },
+        0 => Downloadable::Vanilla {},
+        1 => Downloadable::Paper {},
+        2 => Downloadable::Folia {},
+        3 => Downloadable::Purpur { build: "latest".to_owned() },
+        4 => Downloadable::Velocity {},
+        5 => Downloadable::Waterfall {},
         6 => Downloadable::Url {
             url: Input::with_theme(&ctx.theme)
                 .with_prompt("Server Jar URL")

@@ -31,7 +31,7 @@ async fn download_server_jar(
     http_client: &reqwest::Client,
     output_dir: &Path,
 ) -> Result<String> {
-    let serverjar_name = server.jar.get_filename();
+    let serverjar_name = server.jar.get_filename(server, http_client).await?;
     if output_dir.join(serverjar_name.clone()).exists() {
         println!(
             "          Skipping server jar ({})",
@@ -45,8 +45,9 @@ async fn download_server_jar(
 
         util::download_with_progress(
             output_dir,
-            &server.jar.get_filename(),
+            &server.jar.get_filename(server, http_client).await?,
             &server.jar,
+            server,
             http_client,
         )
         .await?;
@@ -81,7 +82,7 @@ async fn download_plugins(
     for plugin in &server.plugins {
         i += 1;
 
-        let plugin_name = plugin.get_filename();
+        let plugin_name = plugin.get_filename(server, http_client).await?;
         if output_dir.join("plugins").join(&plugin_name).exists() {
             println!(
                 "          ({}/{}) Skipping    : {}",
@@ -103,6 +104,7 @@ async fn download_plugins(
             &output_dir.join("plugins"),
             &plugin_name,
             plugin,
+            server,
             http_client,
         )
         .await

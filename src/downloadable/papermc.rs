@@ -2,19 +2,19 @@ use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-struct PaperMCBuild {
+pub struct PaperMCBuild {
     pub build: String,
     pub channel: String,
     pub downloads: PaperMCBuildDownloads,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-struct PaperMCBuildDownloads {
+pub struct PaperMCBuildDownloads {
     pub application: PaperMCBuildApplication,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-struct PaperMCBuildApplication {
+pub struct PaperMCBuildApplication {
     pub name: String,
     pub sha256: String,
 }
@@ -46,7 +46,7 @@ pub async fn fetch_papermc_versions(
     Ok(project.versions)
 }
 
-async fn fetch_papermc_builds(
+pub async fn fetch_papermc_builds(
     project: &str,
     version: &str,
     client: &reqwest::Client,
@@ -80,7 +80,7 @@ async fn fetch_papermc_builds(
     Ok(project.builds)
 }
 
-async fn fetch_papermc_build(
+pub async fn fetch_papermc_build(
     project: &str,
     version: &str,
     build: &str,

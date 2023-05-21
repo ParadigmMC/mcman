@@ -1,14 +1,17 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
+use crate::model::Server;
+
 use self::{
-    modrinth::fetch_modrinth, papermc::download_papermc_build, purpur::download_purpurmc_build,
-    vanilla::fetch_vanilla,
+    modrinth::fetch_modrinth, papermc::{download_papermc_build, fetch_papermc_versions, fetch_papermc_build}, purpur::{download_purpurmc_build, fetch_purpurmc_builds},
+    vanilla::fetch_vanilla, spigot::download_spigot_resource,
 };
 mod modrinth;
 mod papermc;
 mod purpur;
 mod vanilla;
+mod spigot;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type")]
@@ -19,7 +22,7 @@ pub enum Downloadable {
         url: String,
     },
     Vanilla {
-        version: String,
+        //version: String,
     },
     Modrinth {
         id: String,
@@ -27,31 +30,26 @@ pub enum Downloadable {
     },
     PaperMC {
         project: String,
-        version: String,
+        //version: String,
         #[serde(default = "latest")]
         build: String,
     },
-
+    SpigotMC {
+        id: String, // weird ass api
+    },
+    
     // known projects
     Purpur {
-        version: String,
+        //version: String,
         #[serde(default = "latest")]
         build: String,
     },
 
     // papermc
-    Paper {
-        version: String,
-    },
-    Folia {
-        version: String,
-    },
-    Velocity {
-        version: String,
-    },
-    Waterfall {
-        version: String,
-    },
+    Paper {},
+    Folia {},
+    Velocity {},
+    Waterfall {},
 }
 
 pub fn latest() -> String {
@@ -59,51 +57,92 @@ pub fn latest() -> String {
 }
 
 impl Downloadable {
-    pub async fn download(&self, client: &reqwest::Client) -> Result<reqwest::Response> {
+    pub async fn download(&self, server: &Server, client: &reqwest::Client) -> Result<reqwest::Response> {
+        let mcver = server.mc_version.clone();
         match self {
             Self::Url { url } => Ok(client.get(url).send().await?.error_for_status()?),
-            Self::Vanilla { version } => Ok(fetch_vanilla(version, client).await?),
-            Self::Modrinth { id, version } => Ok(fetch_modrinth(id, version, client).await?),
+
+            Self::Vanilla {} => Ok(fetch_vanilla(&mcver, client).await?),
             Self::PaperMC {
                 project,
-                version,
                 build,
-            } => Ok(download_papermc_build(project, version, build, client).await?),
-            Self::Purpur { version, build } => {
-                Ok(download_purpurmc_build(version, build, client).await?)
+            } => Ok(download_papermc_build(project, &mcver, build, client).await?),
+            Self::Purpur { build } => {
+                Ok(download_purpurmc_build(&mcver, build, client).await?)
             }
+            
+            Self::Modrinth { id, version } => Ok(fetch_modrinth(id, &mcver, client).await?),
+            Self::SpigotMC { id } => Ok(download_spigot_resource(id, client).await?),
 
-            Self::Paper { version } => {
-                Ok(download_papermc_build("paper", version, "latest", client).await?)
+            Self::Paper { } => {
+                Ok(download_papermc_build("paper", &mcver, "latest", client).await?)
             }
-            Self::Folia { version } => {
-                Ok(download_papermc_build("folia", version, "latest", client).await?)
+            Self::Folia {  } => {
+                Ok(download_papermc_build("folia", &mcver, "latest", client).await?)
             }
-            Self::Velocity { version } => {
-                Ok(download_papermc_build("velocity", version, "latest", client).await?)
+            Self::Velocity {  } => {
+                Ok(download_papermc_build("velocity", &mcver, "latest", client).await?)
             }
-            Self::Waterfall { version } => {
-                Ok(download_papermc_build("waterfall", version, "latest", client).await?)
+            Self::Waterfall {  } => {
+                Ok(download_papermc_build("waterfall", &mcver, "latest", client).await?)
             }
         }
     }
 
-    pub fn get_filename(&self) -> String {
+    pub async fn get_filename(&self, server: &Server, client: &reqwest::Client) -> Result<String> {
+        let mcver = server.mc_version.clone();
         match self {
-            Self::Url { url } => url.split('/').last().unwrap().to_string(),
-            Self::Vanilla { version } => format!("server-{version}.jar"),
-            Self::Modrinth { id, version } => format!("{id}-{version}.jar"),
+            Self::Url { url } => Ok(url.split('/').last().unwrap().to_string()),
+
+            Self::Vanilla {} => Ok(format!("server-{mcver}.jar")),
             Self::PaperMC {
                 project,
-                version,
                 build,
-            } => format!("{project}-{version}-{build}.jar"),
-            Self::Purpur { version, build } => format!("purpur-{version}-{build}.jar"),
+            } => {
+                Ok(get_filename_papermc(&project, &mcver, &build, client).await?)
+            },
+            Self::Purpur { build } => {
+                if build == "latest" {
+                    let last_build = fetch_purpurmc_builds(&mcver, client)
+                        .await?.last().cloned().unwrap_or("latest".to_owned());
+                    Ok(format!("purpur-{mcver}-{last_build}.jar"))
+                } else {
+                    Ok(format!("purpur-{mcver}-{build}.jar"))
+                }
+            },
+            
+            // TODO
+            Self::Modrinth { id, version } => Ok(format!("{id}-{version}.jar")),
+            // TODO
+            Self::SpigotMC { id } => Ok(format!("{id}.jar")),
 
-            Self::Paper { version } => format!("paper-{version}.jar"),
-            Self::Folia { version } => format!("folia-{version}.jar"),
-            Self::Velocity { version } => format!("velocity-{version}.jar"),
-            Self::Waterfall { version } => format!("waterfall-{version}.jar"),
+            Self::Paper {  } => {
+                Ok(get_filename_papermc("paper", &mcver, "latest", client).await?)
+            },
+            Self::Folia {  } => {
+                Ok(get_filename_papermc("folia", &mcver, "latest", client).await?)
+            },
+            Self::Velocity {  } => {
+                Ok(get_filename_papermc("velocity", &mcver, "latest", client).await?)
+            },
+            Self::Waterfall {  } => {
+                Ok(get_filename_papermc("waterfall", &mcver, "latest", client).await?)
+            },
         }
+    }
+}
+
+async fn get_filename_papermc(
+    project: &str,
+    mcver: &str,
+    build: &str,
+    client: &reqwest::Client,
+) -> Result<String> {
+    if build == "latest" {
+        let build_id = fetch_papermc_build(&project, &mcver, &build, client)
+           .await?.build;
+        Ok(format!("{project}-{mcver}-{build_id}.jar"))
+    } else {
+        Ok(format!("{project}-{mcver}-{build}.jar"))
     }
 }

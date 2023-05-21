@@ -32,7 +32,7 @@ pub async fn fetch_purpurmc_versions(client: &reqwest::Client) -> Result<Vec<Str
     Ok(project.versions)
 }
 
-async fn fetch_purpurmc_builds(version: &str, client: &reqwest::Client) -> Result<Vec<String>> {
+pub async fn fetch_purpurmc_builds(version: &str, client: &reqwest::Client) -> Result<Vec<String>> {
     let mut target_version: String = version.to_owned();
 
     if target_version == "latest" {
