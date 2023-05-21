@@ -89,10 +89,14 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     let mut vars = HashMap::new();
 
     // TODO: read from .env file
+    // TODO: environment variables
 
     for (key, value) in &server.variables {
         vars.insert(key.clone(), value.clone());
     }
+
+    vars.insert("SERVER_NAME".to_owned(), server.name.clone());
+    vars.insert("SERVER_VERSION".to_owned(), server.mc_version.clone());
 
     bootstrap(&BootstrapContext {
         vars,

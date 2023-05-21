@@ -42,11 +42,20 @@ pub fn run(matches: &ArgMatches) -> Result<()> {
         ..Default::default()
     };
 
-    std::fs::create_dir_all("./config")?;
+    initialize_environment()?;
     server.save(Path::new("server.toml"))?;
+
+    Ok(())
+}
+
+pub fn initialize_environment() -> Result<()> {
+    std::fs::create_dir_all("./config")?;
 
     let mut f = File::create(".gitignore")?;
     f.write_all(include_bytes!("../../res/default_gitignore"))?;
+
+    let mut f = File::create("./config/server.properties")?;
+    f.write_all(include_bytes!("../../res/server.properties"))?;
 
     Ok(())
 }
