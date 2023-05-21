@@ -147,7 +147,7 @@ fn pick_server_jar(ctx: &mut SetupContext) -> Result<()> {
         Downloadable::Vanilla { version: _ } => 0,
         Downloadable::Paper { version: _ } => 1,
         Downloadable::Folia { version: _ } => 2,
-        Downloadable::PurpurMC { version: _, build: _ } => 3,
+        Downloadable::Purpur { version: _, build: _ } => 3,
         Downloadable::Velocity { version: _ } => 4,
         Downloadable::Waterfall { version: _ } => 5,
         _ => 6,
@@ -175,7 +175,7 @@ fn pick_server_jar(ctx: &mut SetupContext) -> Result<()> {
         2 => Downloadable::Folia {
             version: ctx.server.mc_version.clone(),
         },
-        3 => Downloadable::PurpurMC {
+        3 => Downloadable::Purpur {
             version: ctx.server.mc_version.clone(),
             build: "latest".to_owned(),
         },

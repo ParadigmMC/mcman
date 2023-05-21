@@ -1,11 +1,11 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use self::{modrinth::fetch_modrinth, papermc::download_papermc_build, vanilla::fetch_vanilla, purpurmc::download_purpurmc_build};
+use self::{modrinth::fetch_modrinth, papermc::download_papermc_build, vanilla::fetch_vanilla, purpur::download_purpurmc_build};
 mod modrinth;
 mod papermc;
 mod vanilla;
-mod purpurmc;
+mod purpur;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type")]
@@ -25,12 +25,14 @@ pub enum Downloadable {
     PaperMC {
         project: String,
         version: String,
+        #[serde(default = "latest")]
         build: String,
     },
     
     // known projects
-    PurpurMC {
+    Purpur {
         version: String,
+        #[serde(default = "latest")]
         build: String,
     },
 
@@ -39,6 +41,10 @@ pub enum Downloadable {
     Folia { version: String },
     Velocity { version: String },
     Waterfall { version: String },
+}
+
+pub fn latest() -> String {
+    "latest".to_owned()
 }
 
 impl Downloadable {
@@ -52,7 +58,7 @@ impl Downloadable {
                 version,
                 build,
             } => Ok(download_papermc_build(project, version, build, client).await?),
-            Self::PurpurMC { version, build } => Ok(download_purpurmc_build(version, build, client).await?),
+            Self::Purpur { version, build } => Ok(download_purpurmc_build(version, build, client).await?),
 
             Self::Paper { version } => Ok(download_papermc_build("paper", version, "latest", client).await?),
             Self::Folia { version } => Ok(download_papermc_build("folia", version, "latest", client).await?),
@@ -71,7 +77,7 @@ impl Downloadable {
                 version,
                 build,
             } => format!("{project}-{version}-{build}.jar"),
-            Self::PurpurMC { version, build } => format!("purpur-{version}-{build}.jar"),
+            Self::Purpur { version, build } => format!("purpur-{version}-{build}.jar"),
 
             Self::Paper { version } => format!("paper-{version}.jar"),
             Self::Folia { version } => format!("folia-{version}.jar"),
