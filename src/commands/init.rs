@@ -2,6 +2,7 @@ use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
+use console::{style};
 
 use crate::model::Server;
 use anyhow::{anyhow, bail, Result};
@@ -14,6 +15,11 @@ pub fn cli() -> Command {
 }
 
 pub fn run(matches: &ArgMatches) -> Result<()> {
+    println!(
+        " > {}",
+        style("initializing server...").dim()
+    );
+
     let res = std::fs::metadata("server.toml");
     if let Err(err) = res {
         if err.kind() != std::io::ErrorKind::NotFound {
@@ -44,6 +50,11 @@ pub fn run(matches: &ArgMatches) -> Result<()> {
 
     initialize_environment()?;
     server.save(Path::new("server.toml"))?;
+
+    println!(
+        " > {}",
+        style("server has been initialized").green()
+    );
 
     Ok(())
 }

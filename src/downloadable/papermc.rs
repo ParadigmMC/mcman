@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct PaperMCBuild {
-    pub build: String,
+    pub build: i32,
     pub channel: String,
     pub downloads: PaperMCBuildDownloads,
 }
@@ -96,7 +96,7 @@ pub async fn fetch_papermc_build(
         bail!("Latest build for project {project} {version} not found");
     }
 
-    if let Some(found_build) = builds.iter().find(|&b| b.build == build) {
+    if let Some(found_build) = builds.iter().find(|&b| b.build.to_string() == build) {
         Ok(found_build.clone())
     } else {
         bail!("Build {build} for project {project} {version} not found");
@@ -113,14 +113,26 @@ pub async fn download_papermc_build(
 
     let filename = build.downloads.application.name;
 
+    let mut target_version: String = version.to_owned();
+
+    if target_version == "latest" {
+        let fetched_version = fetch_papermc_versions(project, client).await?;
+
+        if let Some(version) = fetched_version.last().cloned() {
+            target_version = version;
+        } else {
+            bail!("Latest version for project {project} not found");
+        }
+    }
+
     Ok(client
         .get(
             "https://api.papermc.io/v2/projects/".to_owned()
                 + project
                 + "/versions/"
-                + version
+                + &target_version
                 + "/builds/"
-                + build_id
+                + &build.build.to_string()
                 + "/downloads/"
                 + &filename,
         )
