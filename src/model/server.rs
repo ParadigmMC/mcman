@@ -62,6 +62,7 @@ title {servername}
             script += " ";
         }
 
+        script += "-Dcom.mojang.eula.agree=true ";
         script += "-jar ";
         script += jarname;
         script += " ";
@@ -123,7 +124,6 @@ impl Default for Server {
         Self {
             name: String::new(),
             mc_version: "1.19.4".to_owned(),
-            //port: 25565,
             jar: Downloadable::Vanilla {},
             variables: vars,
             launcher: ServerLauncher::default(),

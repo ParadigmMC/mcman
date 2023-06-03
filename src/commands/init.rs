@@ -62,8 +62,14 @@ pub fn run(matches: &ArgMatches) -> Result<()> {
 pub fn initialize_environment() -> Result<()> {
     std::fs::create_dir_all("./config")?;
 
+    let mut f = File::create(".dockerignore")?;
+    f.write_all(include_bytes!("../../res/default_dockerignore"))?;
+
     let mut f = File::create(".gitignore")?;
     f.write_all(include_bytes!("../../res/default_gitignore"))?;
+
+    let mut f = File::create("Dockerfile")?;
+    f.write_all(include_bytes!("../../res/default_dockerfile"))?;
 
     let mut f = File::create("./config/server.properties")?;
     f.write_all(include_bytes!("../../res/server.properties"))?;
