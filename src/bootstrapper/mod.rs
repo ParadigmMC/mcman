@@ -46,7 +46,7 @@ where
             Ok(entry) => entry,
             Err(e) => {
                 bail!(
-                    "Can't walk directory/file {} (check permissions?): {e}",
+                    "Can't walk directory/file {}: {e}",
                     &e.path().unwrap_or(Path::new("unknown")).display()
                 );
             }

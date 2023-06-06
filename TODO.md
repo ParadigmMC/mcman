@@ -13,7 +13,8 @@
   - [ ] BuildTools
 - [ ] Jenkins
 - [x] PurpurMC
-- [ ] Github Releases
+- [x] Github Releases
+- [ ] File
 
 ## commmmmmmands
 

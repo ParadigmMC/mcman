@@ -7,6 +7,7 @@ use self::{
     modrinth::{fetch_modrinth, fetch_modrinth_filename},
     papermc::{download_papermc_build, fetch_papermc_build},
     purpur::{download_purpurmc_build, fetch_purpurmc_builds},
+    github::{download_github_release, fetch_github_release_filename},
     spigot::{download_spigot_resource, fetch_spigot_resource_latest_ver},
     vanilla::fetch_vanilla,
 };
@@ -15,22 +16,26 @@ mod papermc;
 mod purpur;
 mod spigot;
 mod vanilla;
+mod github;
 
 #[derive(Debug, Deserialize, Serialize)]
-#[serde(tag = "type")]
-#[serde(rename_all = "lowercase")]
+#[serde(tag = "type", rename_all = "lowercase")]
 pub enum Downloadable {
     // sources
     Url {
         url: String,
     },
+
     Vanilla {
         //version: String,
     },
+
+    #[serde(alias = "mr")]
     Modrinth {
         id: String,
         version: String,
     },
+
     PaperMC {
         project: String,
         //version: String,
@@ -38,8 +43,16 @@ pub enum Downloadable {
         #[serde(skip_serializing_if = "crate::util::is_default_str")]
         build: String,
     },
+
     Spigot {
         id: String, // weird ass api
+    },
+
+    #[serde(rename = "ghrel")]
+    GithubRelease {
+        repo: String,
+        tag: String,
+        asset: String,
     },
 
     // known projects
@@ -78,6 +91,7 @@ impl Downloadable {
 
             Self::Modrinth { id, version } => Ok(fetch_modrinth(id, version, client).await?),
             Self::Spigot { id } => Ok(download_spigot_resource(id, client).await?),
+            Self::GithubRelease { repo, tag, asset } => Ok(download_github_release(repo, tag, asset, client).await?),
 
             Self::Paper {} => Ok(download_papermc_build("paper", &mcver, "latest", client).await?),
             Self::Folia {} => Ok(download_papermc_build("folia", &mcver, "latest", client).await?),
@@ -122,6 +136,9 @@ impl Downloadable {
                 // amazing.. bruh...
                 Ok(format!("{id}-{ver}.jar"))
             }
+
+            // problematic stuff part 2345
+            Self::GithubRelease { repo, tag, asset } => Ok(fetch_github_release_filename(repo, tag, asset, client).await?),
 
             Self::Paper {} => Ok(get_filename_papermc("paper", &mcver, "latest", client).await?),
             Self::Folia {} => Ok(get_filename_papermc("folia", &mcver, "latest", client).await?),

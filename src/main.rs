@@ -12,7 +12,6 @@ mod bootstrapper;
 mod commands;
 mod downloadable;
 mod model;
-mod mrpack;
 mod util;
 
 fn cli() -> Command {
@@ -33,7 +32,7 @@ async fn main() -> Result<()> {
     match matches.subcommand() {
         Some(("build", sub_matches)) => commands::build::run(sub_matches).await,
         Some(("init", sub_matches)) => commands::init::run(sub_matches),
-        Some(("import", sub_matches)) => commands::import::run(sub_matches).await,
+        Some(("import", sub_matches)) => commands::import::run(sub_matches),
         Some(("setup", _sub_matches)) => commands::setup::run(),
         Some(("version", sub_matches)) => {
             commands::version::run(sub_matches);

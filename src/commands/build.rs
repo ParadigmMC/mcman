@@ -8,6 +8,7 @@ use std::{
 use anyhow::{Context, Result};
 use clap::{arg, value_parser, ArgMatches, Command};
 use console::{style, Style};
+use tokio::fs::File;
 
 use super::version::APP_USER_AGENT;
 use crate::{
@@ -43,9 +44,14 @@ async fn download_server_jar(
             style(serverjar_name.clone()).dim()
         );
 
+        let filename = &server.jar.get_filename(server, http_client).await?;
         util::download_with_progress(
-            output_dir,
-            &server.jar.get_filename(server, http_client).await?,
+            File::create(&output_dir.join(filename))
+                .await
+                .context(format!(
+                    "Failed to create output file for {filename}"
+                ))?,
+            filename,
             &server.jar,
             server,
             http_client,
@@ -95,15 +101,12 @@ async fn download_addons(
             continue;
         }
 
-        /* println!(
-            "          ({}/{}) Downloading : {}",
-            i,
-            plugin_count,
-            style(&plugin_name).dim()
-        ); */
-
         util::download_with_progress(
-            &output_dir.join(addon_type),
+            File::create(&output_dir.join(addon_type).join(addon_name.clone()))
+                .await
+                .context(format!(
+                    "Failed to create output file for {addon_name}"
+                ))?,
             &addon_name,
             addon,
             server,

@@ -1,20 +1,15 @@
 use std::{
     collections::HashMap,
-    ffi::OsStr,
     fs::{read_to_string, File},
     io::Write,
-    path::{Path, PathBuf},
+    path::Path,
 };
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
-use tempfile::TempDir;
 
-use crate::{
-    commands::version::APP_USER_AGENT, downloadable::Downloadable, mrpack::import_from_mrpack,
-    util::download_with_progress,
-};
+use crate::downloadable::Downloadable;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]
@@ -145,44 +140,11 @@ impl Server {
         self.launcher.nogui = false;
     }
 
-    pub async fn import_from_url(&mut self, urlstr: &str, is_mod: Option<bool>) -> Result<()> {
+    pub fn import_from_url(&mut self, urlstr: &str, is_mod: Option<bool>) -> Result<()> {
         let url = Url::parse(urlstr)?;
-
-        if url.path().ends_with(".mrpack") {
-            // bad idea?
-            let http_client = reqwest::Client::builder()
-                .user_agent(APP_USER_AGENT)
-                .build()
-                .context("Failed to create HTTP client")?;
-
-            let tmp_dir = TempDir::new()?;
-            let filename = url
-                .to_file_path()
-                .ok()
-                .unwrap_or(PathBuf::from("mrpack.mrpack"))
-                .file_name()
-                .unwrap_or(OsStr::new("mrpack.mrpack"))
-                .to_str()
-                .unwrap_or("mrpack.mrpack")
-                .to_owned();
-
-            download_with_progress(
-                tmp_dir.path(),
-                &filename,
-                &Downloadable::Url {
-                    url: url.to_string(),
-                },
-                self,
-                &http_client,
-            )
-            .await?;
-            import_from_mrpack(self, tmp_dir.path().join(&filename).to_str().unwrap()).await?;
-            return Ok(());
-        }
-
         match url.domain() {
             Some("cdn.modrinth.com") => {
-                self.import_from_modrinthcdn(&url, Some(true)).await?;
+                self.import_from_modrinthcdn(&url, Some(true))?;
             }
             Some("www.spigotmc.org") => {
                 // https://www.spigotmc.org/resources/http-requests.101253/
@@ -221,23 +183,7 @@ impl Server {
         Ok(())
     }
 
-    pub async fn import_mrpack(&mut self, urlstr: &str) -> Result<()> {
-        let url = Url::parse(urlstr)?;
-
-        match url.domain() {
-            Some("cdn.modrinth.com") => {
-                self.import_from_modrinthcdn(&url, Some(true)).await?;
-            }
-            Some(_) | None => {
-                self.mods.push(Downloadable::Url {
-                    url: url.to_string(),
-                });
-            }
-        }
-        Ok(())
-    }
-
-    pub async fn import_from_modrinthcdn(&mut self, url: &Url, is_mod: Option<bool>) -> Result<()> {
+    pub fn import_from_modrinthcdn(&mut self, url: &Url, is_mod: Option<bool>) -> Result<()> {
         // https://cdn.modrinth.com/data/{ID}/versions/{VERSION}/{FILENAME}
         let segments: Vec<&str> = url
             .path_segments()

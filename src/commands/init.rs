@@ -46,7 +46,7 @@ pub fn run(matches: &ArgMatches) -> Result<()> {
         ..Default::default()
     };
 
-    if matches.contains_id("proxy") {
+    if *matches.get_one::<bool>("proxy").unwrap_or(&false) {
         server.set_proxy_defaults();
         server.jar = Downloadable::Velocity {};
     }
