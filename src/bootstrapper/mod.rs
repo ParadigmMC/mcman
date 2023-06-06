@@ -73,7 +73,7 @@ fn bootstrap_entry(ctx: &BootstrapContext, entry: &DirEntry) -> Result<()> {
                 let input = fs::read_to_string(path)?;
 
                 let existing_input = String::from_utf8(fs::read(&output_path).unwrap_or(vec![]))?;
-                let output = bootstrap_properties(ctx, &existing_input, &input)?;
+                let output = bootstrap_properties(ctx, &input, &existing_input)?;
                 //probably
                 fs::create_dir_all(output_path.parent().unwrap_or(Path::new("")))?;
                 fs::write(output_path.clone(), output)
@@ -136,13 +136,9 @@ pub fn bootstrap_properties(
 }
 
 pub fn bootstrap_string(ctx: &BootstrapContext, content: &str) -> String {
-    if ctx.vars.contains_key("__NO_VARS") {
-        return content.to_owned();
-    }
-
     let re = Regex::new(r"\$\{(\w+)(?::([^}]+))?\}").unwrap();
     let replaced = re.replace_all(content, |caps: &regex::Captures| {
-        let var_name = caps.get(2).map(|v| v.as_str()).unwrap_or_default();
+        let var_name = caps.get(1).map(|v| v.as_str()).unwrap_or_default();
         let default_value = caps.get(2).map(|v| v.as_str()).unwrap_or_default();
 
         if let Some(value) = ctx.vars.get(var_name) {
