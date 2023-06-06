@@ -4,7 +4,7 @@ use std::io::Write;
 use std::path::Path;
 use console::{style};
 
-use crate::model::Server;
+use crate::{model::Server, downloadable::Downloadable};
 use anyhow::{anyhow, bail, Result};
 use clap::{arg, ArgMatches, Command};
 
@@ -12,6 +12,7 @@ pub fn cli() -> Command {
     Command::new("init")
         .about("Initializes a new MCMan-powered Minecraft server")
         .arg(arg!(--name <NAME> "The name of the server").required(false))
+        .arg(arg!(--proxy "Initialize as a proxy server (velocity latest)").required(false))
 }
 
 pub fn run(matches: &ArgMatches) -> Result<()> {
@@ -43,10 +44,15 @@ pub fn run(matches: &ArgMatches) -> Result<()> {
             .to_owned()
     };
 
-    let server = Server {
+    let mut server = Server {
         name,
         ..Default::default()
     };
+
+    if matches.contains_id("proxy") {
+        server.set_proxy_defaults()?;
+        server.jar = Downloadable::Velocity {  };
+    }
 
     initialize_environment()?;
     server.save(Path::new("server.toml"))?;

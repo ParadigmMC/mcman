@@ -56,39 +56,41 @@ async fn download_server_jar(
     Ok(serverjar_name)
 }
 
-async fn download_plugins(
+async fn download_addons(
+    addon_type: &str,
     server: &Server,
     http_client: &reqwest::Client,
     output_dir: &Path,
 ) -> Result<()> {
-    if server.plugins.is_empty() {
-        println!(
-            "          {}",
-            style("This server doesn't have any plugins, skipping").dim()
-        );
-        return Ok(());
-    }
+    let addon_count = match addon_type {
+        "plugins" => server.plugins.len(),
+        "mods" => server.mods.len(),
+        _ => unreachable!(),
+    };
 
-    let plugin_count = server.plugins.len();
     println!(
         "          {}",
-        style(format!("{plugin_count} plugins present, processing...")).dim()
+        style(format!("{addon_count} {addon_type} present, processing...")).dim()
     );
 
-    std::fs::create_dir_all(output_dir.join("plugins"))
-        .context("Failed to create plugins directory")?;
+    std::fs::create_dir_all(output_dir.join(addon_type))
+        .context(format!("Failed to create {addon_type} directory"))?;
 
     let mut i = 0;
-    for plugin in &server.plugins {
+    for addon in match addon_type {
+        "plugins" => &server.plugins,
+        "mods" => &server.mods,
+        _ => unreachable!(),
+    } {
         i += 1;
 
-        let plugin_name = plugin.get_filename(server, http_client).await?;
-        if output_dir.join("plugins").join(&plugin_name).exists() {
+        let addon_name = addon.get_filename(server, http_client).await?;
+        if output_dir.join(addon_type).join(&addon_name).exists() {
             println!(
                 "          ({}/{}) Skipping    : {}",
                 i,
-                plugin_count,
-                style(&plugin_name).dim()
+                addon_count,
+                style(&addon_name).dim()
             );
             continue;
         }
@@ -101,21 +103,21 @@ async fn download_plugins(
         ); */
 
         util::download_with_progress(
-            &output_dir.join("plugins"),
-            &plugin_name,
-            plugin,
+            &output_dir.join(addon_type),
+            &addon_name,
+            addon,
             server,
             http_client,
         )
         .await
-        .context(format!("Failed to download plugin {plugin_name}"))?;
+        .context(format!("Failed to download plugin {addon_name}"))?;
 
         println!(
             "          ({}/{}) {}  : {}",
             i,
-            plugin_count,
+            addon_count,
             style("Downloaded").green().bold(),
-            style(&plugin_name).dim()
+            style(&addon_name).dim()
         );
     }
 
@@ -137,21 +139,43 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
 
     println!(" Building {}...", style(server.name.clone()).green().bold());
 
+    let mut stage_index = 1;
+
     // stage 1: server jar
-    println!(" stage 1: {}", title.apply_to("Server Jar"));
+    println!(" stage {stage_index}: {}", title.apply_to("Server Jar"));
     let serverjar_name = download_server_jar(&server, &http_client, output_dir)
         .await
         .context("Failed to download server jar")?;
 
+    stage_index += 1;
+
+
+
     // stage 2: plugins
-    println!(" stage 2: {}", title.apply_to("Plugins"));
-    download_plugins(&server, &http_client, output_dir)
-        .await
-        .context("Failed to download plugins")?;
+    if !server.plugins.is_empty() {
+        println!(" stage {stage_index}: {}", title.apply_to("Plugins"));
+        download_addons("plugins", &server, &http_client, output_dir)
+            .await
+            .context("Failed to download plugins")?;
+    
+        stage_index += 1;
+    }
 
-    // stage 3: bootstrap
+    
 
-    println!(" stage 3: {}", title.apply_to("Configurations"));
+    // stage 3: mods
+    if !server.mods.is_empty() {
+        println!(" stage {stage_index}: {}", title.apply_to("Mods"));
+        download_addons("mods", &server, &http_client, output_dir)
+            .await
+            .context("Failed to download plugins")?;
+    
+            stage_index += 1;
+    }
+
+    // stage 4: bootstrap
+
+    println!(" stage {stage_index}: {}", title.apply_to("Configurations"));
 
     let mut vars = HashMap::new();
 
@@ -168,13 +192,15 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     bootstrap(&BootstrapContext {
         vars,
         output_dir: output_dir.clone(),
-    })?;
+    }, "config")?;
 
     println!("          {}", style("Bootstrapping complete").dim());
 
-    // stage 4: launcher scripts
+    // stage 5: launcher scripts
 
-    println!(" stage 4: {}", title.apply_to("Scripts"));
+    stage_index += 1;
+
+    println!(" stage {stage_index}: {}", title.apply_to("Scripts"));
 
     fs::write(
         output_dir.join("start.bat"),

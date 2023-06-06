@@ -30,7 +30,8 @@ impl BootstrapContext {
     }
 }
 
-pub fn bootstrap(ctx: &BootstrapContext) -> anyhow::Result<()> {
+pub fn bootstrap<P>(ctx: &BootstrapContext, folder: P) -> anyhow::Result<()>
+where P: AsRef<Path> {
     // iterate over all files
 
     // create server directory if not exists
@@ -38,7 +39,7 @@ pub fn bootstrap(ctx: &BootstrapContext) -> anyhow::Result<()> {
         fs::create_dir(ctx.output_dir.as_path())?;
     }
 
-    for entry in WalkDir::new("config") {
+    for entry in WalkDir::new(folder) {
         let entry = match entry {
             Ok(entry) => entry,
             Err(e) => {
@@ -76,7 +77,7 @@ fn bootstrap_entry(ctx: &BootstrapContext, entry: &DirEntry) -> Result<()> {
                 fs::write(output_path.clone(), output)
                     .context(format!("Writing {}", output_path.display()))?;
             }
-            "txt" | "yaml" | "yml" | "conf" | "config" => {
+            "txt" | "yaml" | "yml" | "conf" | "config" | "toml" => {
                 let input = fs::read_to_string(path)?;
                 let output = bootstrap_string(ctx, &input);
                 fs::create_dir_all(output_path.parent().unwrap_or(Path::new("")))?;
@@ -133,6 +134,10 @@ pub fn bootstrap_properties(
 }
 
 pub fn bootstrap_string(ctx: &BootstrapContext, content: &str) -> String {
+    if ctx.vars.contains_key("__NO_VARS") {
+        return content.to_owned();
+    }
+
     let re = Regex::new(r"\$\{(\w+)(?::([^}]+))?\}").unwrap();
     let replaced = re.replace_all(content, |caps: &regex::Captures| {
         let var_name = caps.get(2).map(|v| v.as_str()).unwrap_or_default();

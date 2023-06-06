@@ -1,24 +1,36 @@
 use std::{
     collections::HashMap,
+    ffi::OsStr,
     fs::{read_to_string, File},
     io::Write,
-    path::Path,
+    path::{Path, PathBuf},
 };
 
-use anyhow::Result;
+use anyhow::{anyhow, Context, Result};
+use reqwest::Url;
 use serde::{Deserialize, Serialize};
+use tempfile::TempDir;
 
-use crate::downloadable::Downloadable;
+use crate::{
+    commands::version::APP_USER_AGENT, downloadable::Downloadable, mrpack::import_from_mrpack,
+    util::download_with_progress,
+};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct ServerLauncher {
+    #[serde(skip_serializing_if = "crate::util::is_default")]
     pub disable: bool,
+    #[serde(skip_serializing_if = "crate::util::is_default")]
     pub jvm_args: String,
+    #[serde(skip_serializing_if = "crate::util::is_default")]
     pub game_args: String,
     pub aikars_flags: bool,
     pub proxy_flags: bool,
-    pub gui: bool,
+    #[serde(skip_serializing_if = "crate::util::is_default")]
+    pub eula_args: bool,
+    pub nogui: bool,
+    #[serde(skip_serializing_if = "crate::util::is_default")]
     pub memory: u8,
 }
 
@@ -49,7 +61,11 @@ title {servername}
         script.push_str("java ");
 
         if self.memory > 0 {
-            script.push_str("-Xms");
+            script += "-Xms";
+            script += &self.memory.to_string();
+            script += " -Xmx";
+            script += &self.memory.to_string();
+            script += " ";
         }
 
         if self.aikars_flags {
@@ -62,12 +78,15 @@ title {servername}
             script += " ";
         }
 
-        script += "-Dcom.mojang.eula.agree=true ";
+        if self.eula_args {
+            script += "-Dcom.mojang.eula.agree=true ";
+        }
+
         script += "-jar ";
         script += jarname;
         script += " ";
 
-        if !self.gui {
+        if self.nogui {
             script.push_str("--nogui ");
         }
 
@@ -85,7 +104,8 @@ impl Default for ServerLauncher {
             game_args: String::new(),
             aikars_flags: true,
             proxy_flags: false,
-            gui: false,
+            nogui: true,
+            eula_args: true,
             memory: 0,
         }
     }
@@ -99,7 +119,10 @@ pub struct Server {
     pub jar: Downloadable,
     pub variables: HashMap<String, String>,
     pub launcher: ServerLauncher,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub plugins: Vec<Downloadable>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub mods: Vec<Downloadable>,
 }
 
 impl Server {
@@ -115,6 +138,131 @@ impl Server {
 
         Ok(())
     }
+
+    pub fn set_proxy_defaults(&mut self) -> Result<()> {
+        self.launcher.proxy_flags = true;
+        self.launcher.aikars_flags = false;
+        self.launcher.nogui = false;
+        Ok(())
+    }
+
+    pub async fn import_from_url(&mut self, urlstr: &str, is_mod: Option<bool>) -> Result<()> {
+        let url = Url::parse(urlstr)?;
+
+        if url.path().ends_with(".mrpack") {
+            // bad idea?
+            let http_client = reqwest::Client::builder()
+                .user_agent(APP_USER_AGENT)
+                .build()
+                .context("Failed to create HTTP client")?;
+
+            let tmp_dir = TempDir::new()?;
+            let filename = url
+                .to_file_path()
+                .ok()
+                .unwrap_or(PathBuf::from("mrpack.mrpack"))
+                .file_name()
+                .unwrap_or(OsStr::new("mrpack.mrpack"))
+                .to_str()
+                .unwrap_or("mrpack.mrpack")
+                .to_owned();
+
+            download_with_progress(
+                tmp_dir.path(),
+                &filename,
+                &Downloadable::Url {
+                    url: url.to_string(),
+                },
+                &self,
+                &http_client,
+            )
+            .await?;
+            import_from_mrpack(self, tmp_dir.path().join(&filename).to_str().unwrap()).await?;
+            return Ok(());
+        }
+
+        match url.domain() {
+            Some("cdn.modrinth.com") => {
+                self.import_from_modrinthcdn(&url, Some(true)).await?;
+            }
+            Some("www.spigotmc.org") => {
+                // https://www.spigotmc.org/resources/http-requests.101253/
+
+                let segments: Vec<&str> = url
+                    .path_segments()
+                    .ok_or_else(|| anyhow!("Invalid url"))?
+                    .collect();
+
+                if segments.get(0) != Some(&"resources") {
+                    Err(anyhow!("Invalid Spigot Resource URL"))?;
+                }
+
+                let id = segments.get(1).ok_or_else(|| anyhow!("Invalid Spigot Resource URL"))?;
+
+                match is_mod {
+                    Some(true) => self.mods.push(Downloadable::Spigot {
+                        id: id.to_owned().to_owned(),
+                    }),
+                    Some(false) | None => self.plugins.push(Downloadable::Spigot {
+                        id: id.to_owned().to_owned(),
+                    }),
+                }
+            }
+            Some(_) | None => match is_mod {
+                Some(true) => self.mods.push(Downloadable::Url {
+                    url: url.to_string(),
+                }),
+                Some(false) | None => self.plugins.push(Downloadable::Url {
+                    url: url.to_string(),
+                }),
+            },
+        }
+        Ok(())
+    }
+
+    pub async fn import_mrpack(&mut self, urlstr: &str) -> Result<()> {
+        let url = Url::parse(urlstr)?;
+
+        match url.domain() {
+            Some("cdn.modrinth.com") => {
+                self.import_from_modrinthcdn(&url, Some(true)).await?;
+            }
+            Some(_) | None => {
+                self.mods.push(Downloadable::Url {
+                    url: url.to_string(),
+                })
+            }
+        }
+        Ok(())
+    }
+
+    pub async fn import_from_modrinthcdn(&mut self, url: &Url, is_mod: Option<bool>) -> Result<()> {
+        // https://cdn.modrinth.com/data/{ID}/versions/{VERSION}/{FILENAME}
+        let segments: Vec<&str> = url
+            .path_segments()
+            .ok_or_else(|| anyhow!("Invalid Modrinth CDN URL"))?
+            .collect();
+        let id = segments.get(1).ok_or_else(|| anyhow!("Invalid Modrinth CDN URL"))?;
+        let version = segments.get(3).ok_or_else(|| anyhow!("Invalid Modrinth CDN URL"))?;
+        //let filename = segments.get(4).ok_or_else(|| anyhow!("Invalid Modrinth CDN URL"))?;
+
+        if segments.get(0) != Some(&"data") || segments.get(2) != Some(&"versions") {
+            Err(anyhow!("Invalid Modrinth CDN URL"))?;
+        }
+        
+        match is_mod {
+            Some(true) | None => self.mods.push(Downloadable::Modrinth {
+                id: id.to_owned().to_owned(),
+                version: version.to_owned().to_owned(),
+            }),
+            Some(false) => self.plugins.push(Downloadable::Modrinth {
+                id: id.to_owned().to_owned(),
+                version: version.to_owned().to_owned(),
+            }),
+        }
+
+        Ok(())
+    }
 }
 
 impl Default for Server {
@@ -123,11 +271,12 @@ impl Default for Server {
         vars.insert("PORT".to_owned(), "25565".to_owned());
         Self {
             name: String::new(),
-            mc_version: "1.19.4".to_owned(),
+            mc_version: "latest".to_owned(),
             jar: Downloadable::Vanilla {},
             variables: vars,
             launcher: ServerLauncher::default(),
             plugins: vec![],
+            mods: vec![],
         }
     }
 }

@@ -35,6 +35,7 @@ pub enum Downloadable {
         project: String,
         //version: String,
         #[serde(default = "latest")]
+        #[serde(skip_serializing_if = "crate::util::is_default_str")]
         build: String,
     },
     Spigot {

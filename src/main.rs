@@ -13,6 +13,7 @@ mod commands;
 mod downloadable;
 mod model;
 mod util;
+mod mrpack;
 
 fn cli() -> Command {
     Command::new("mcman")
@@ -22,6 +23,7 @@ fn cli() -> Command {
         .subcommand(commands::init::cli())
         .subcommand(commands::version::cli())
         .subcommand(commands::setup::cli())
+        .subcommand(commands::import::cli())
 }
 
 #[tokio::main]
@@ -31,6 +33,7 @@ async fn main() -> Result<()> {
     match matches.subcommand() {
         Some(("build", sub_matches)) => commands::build::run(sub_matches).await,
         Some(("init", sub_matches)) => commands::init::run(sub_matches),
+        Some(("import", sub_matches)) => commands::import::run(sub_matches).await,
         Some(("setup", _sub_matches)) => commands::setup::run(),
         Some(("version", sub_matches)) => {
             commands::version::run(sub_matches);

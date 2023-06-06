@@ -14,7 +14,7 @@ pub async fn download_with_progress(
     server: &Server,
     client: &reqwest::Client,
 ) -> Result<()> {
-    let response = downloadable.download(server, client).await?;
+    let response = downloadable.download(server, client).await.context("downloadable download")?;
     let progress_bar =
         ProgressBar::with_draw_target(response.content_length(), ProgressDrawTarget::stderr());
 
@@ -44,4 +44,12 @@ pub async fn download_with_progress(
     progress_bar.finish_and_clear();
 
     Ok(())
+}
+
+pub fn is_default<T: Default + PartialEq>(t: &T) -> bool {
+    t == &T::default()
+}
+
+pub fn is_default_str(s: &String) -> bool {
+    s == "default"
 }
