@@ -1,5 +1,5 @@
 use anyhow::Result;
-use clap::{Command, ArgMatches};
+use clap::{ArgMatches, Command};
 
 mod url;
 

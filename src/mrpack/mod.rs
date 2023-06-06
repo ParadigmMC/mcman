@@ -1,11 +1,19 @@
-use std::{fs::{File, self}, io::{Read, self}, path::{Path, PathBuf}, collections::HashMap};
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
+use console::style;
 use serde::{Deserialize, Serialize};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::Read,
+    path::{Path, PathBuf},
+};
 use tempfile::TempDir;
 use zip::ZipArchive;
-use console::style;
 
-use crate::{model::Server, bootstrapper::{bootstrap, BootstrapContext}};
+use crate::{
+    bootstrapper::{bootstrap, BootstrapContext},
+    model::Server,
+};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde()]
@@ -43,24 +51,26 @@ pub async fn import_from_mrpack(server: &mut Server, filename: &str) -> Result<(
     println!(
         " > {}: {}",
         style("Importing MRPACK").blue(),
-        Path::new(filename).file_name().unwrap_or_default().to_string_lossy()
+        Path::new(filename)
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
     );
 
-    let mut archive = ZipArchive::new(file)
-        .context("reading mrpack zip archive")?;
+    let mut archive = ZipArchive::new(file).context("reading mrpack zip archive")?;
 
     let mut mr_index = archive.by_name("modrinth.index.json")?;
     let mut zip_content = Vec::new();
-    mr_index.read_to_end(&mut zip_content).context("reading modrinth.index.json from zip file")?;
+    mr_index
+        .read_to_end(&mut zip_content)
+        .context("reading modrinth.index.json from zip file")?;
 
-    println!(
-        " > {}",
-        style("Reading index...").blue()
-    );
+    println!(" > {}", style("Reading index...").blue());
 
     let pack: MRPackIndex = serde_json::from_slice(&zip_content)?;
     import_from_mrpack_index(server, &pack)
-        .await.context("importing from mrpack index")?;
+        .await
+        .context("importing from mrpack index")?;
 
     drop(mr_index);
 
@@ -68,35 +78,34 @@ pub async fn import_from_mrpack(server: &mut Server, filename: &str) -> Result<(
 
     // TODO: Overwrites...
 
-    println!(
-        " > {}",
-        style("Extracting...").blue()
-    );
+    println!(" > {}", style("Extracting...").blue());
 
     let tmp_dir = TempDir::new()?;
     archive.extract(&tmp_dir)?;
 
     // hacky
 
-    bootstrap(&BootstrapContext {
-        vars: HashMap::from([
-            ("__NO_VARS".to_owned(), "true".to_owned())
-        ]),
-        output_dir: PathBuf::from("."),
-    }, &tmp_dir.path().join("overrides"))
-        .context("bootstrap hack (extracting contents to tmp dir) (overrides)")?;
+    bootstrap(
+        &BootstrapContext {
+            vars: HashMap::from([("__NO_VARS".to_owned(), "true".to_owned())]),
+            output_dir: PathBuf::from("."),
+        },
+        tmp_dir.path().join("overrides"),
+    )
+    .context("bootstrap hack (extracting contents to tmp dir) (overrides)")?;
 
-    bootstrap(&BootstrapContext {
-        vars: HashMap::from([
-            ("__NO_VARS".to_owned(), "true".to_owned())
-        ]),
-        output_dir: PathBuf::from("."),
-    }, &tmp_dir.path().join("server-overrides"))
-        .context("bootstrap hack (extracting contents to tmp dir) (server overrides)")?;
+    bootstrap(
+        &BootstrapContext {
+            vars: HashMap::from([("__NO_VARS".to_owned(), "true".to_owned())]),
+            output_dir: PathBuf::from("."),
+        },
+        tmp_dir.path().join("server-overrides"),
+    )
+    .context("bootstrap hack (extracting contents to tmp dir) (server overrides)")?;
 
     // ! below is an attempt...
 
-/* 
+    /*
     println!(
         " > {}",
         style("Extracting overrides...").blue()
@@ -161,8 +170,8 @@ pub async fn import_from_mrpack_index(server: &mut Server, index: &MRPackIndex) 
             continue;
         }
 
-        server.import_mrpack(
-            f.downloads.first().context("unwrap url from downloads")?)
+        server
+            .import_mrpack(f.downloads.first().context("unwrap url from downloads")?)
             .await?;
     }
     Ok(())

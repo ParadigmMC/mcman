@@ -14,7 +14,10 @@ pub async fn download_with_progress(
     server: &Server,
     client: &reqwest::Client,
 ) -> Result<()> {
-    let response = downloadable.download(server, client).await.context("downloadable download")?;
+    let response = downloadable
+        .download(server, client)
+        .await
+        .context("downloadable download")?;
     let progress_bar =
         ProgressBar::with_draw_target(response.content_length(), ProgressDrawTarget::stderr());
 

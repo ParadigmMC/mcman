@@ -31,7 +31,9 @@ impl BootstrapContext {
 }
 
 pub fn bootstrap<P>(ctx: &BootstrapContext, folder: P) -> anyhow::Result<()>
-where P: AsRef<Path> {
+where
+    P: AsRef<Path>,
+{
     // iterate over all files
 
     // create server directory if not exists

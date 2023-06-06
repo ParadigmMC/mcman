@@ -1,6 +1,6 @@
-use std::path::Path;
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use clap::{arg, ArgMatches, Command};
+use std::path::Path;
 
 use crate::model::Server;
 
@@ -13,14 +13,14 @@ pub fn cli() -> Command {
 
 pub async fn run(matches: &ArgMatches) -> Result<()> {
     let mut server =
-       Server::load(Path::new("server.toml")).context("Failed to load server.toml")?;
-    
-    server.import_from_url(
-        matches.get_one::<String>("url")
-        .unwrap(),
-        matches.get_one::<bool>("mod").map(
-            |&b| b.to_owned()
-        )).await?;
+        Server::load(Path::new("server.toml")).context("Failed to load server.toml")?;
+
+    server
+        .import_from_url(
+            matches.get_one::<String>("url").unwrap(),
+            matches.get_one::<bool>("mod").map(|&b| b.to_owned()),
+        )
+        .await?;
 
     Ok(())
 }

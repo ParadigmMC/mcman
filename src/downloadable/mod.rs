@@ -144,7 +144,8 @@ async fn get_filename_papermc(
     if build == "latest" {
         let build_id = fetch_papermc_build(project, mcver, build, client)
             .await?
-            .build.to_string();
+            .build
+            .to_string();
         Ok(format!("{project}-{mcver}-{build_id}.jar"))
     } else {
         Ok(format!("{project}-{mcver}-{build}.jar"))

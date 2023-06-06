@@ -139,11 +139,10 @@ impl Server {
         Ok(())
     }
 
-    pub fn set_proxy_defaults(&mut self) -> Result<()> {
+    pub fn set_proxy_defaults(&mut self) {
         self.launcher.proxy_flags = true;
         self.launcher.aikars_flags = false;
         self.launcher.nogui = false;
-        Ok(())
     }
 
     pub async fn import_from_url(&mut self, urlstr: &str, is_mod: Option<bool>) -> Result<()> {
@@ -173,7 +172,7 @@ impl Server {
                 &Downloadable::Url {
                     url: url.to_string(),
                 },
-                &self,
+                self,
                 &http_client,
             )
             .await?;
@@ -193,11 +192,13 @@ impl Server {
                     .ok_or_else(|| anyhow!("Invalid url"))?
                     .collect();
 
-                if segments.get(0) != Some(&"resources") {
+                if segments.first() != Some(&"resources") {
                     Err(anyhow!("Invalid Spigot Resource URL"))?;
                 }
 
-                let id = segments.get(1).ok_or_else(|| anyhow!("Invalid Spigot Resource URL"))?;
+                let id = segments
+                    .get(1)
+                    .ok_or_else(|| anyhow!("Invalid Spigot Resource URL"))?;
 
                 match is_mod {
                     Some(true) => self.mods.push(Downloadable::Spigot {
@@ -230,7 +231,7 @@ impl Server {
             Some(_) | None => {
                 self.mods.push(Downloadable::Url {
                     url: url.to_string(),
-                })
+                });
             }
         }
         Ok(())
@@ -242,14 +243,18 @@ impl Server {
             .path_segments()
             .ok_or_else(|| anyhow!("Invalid Modrinth CDN URL"))?
             .collect();
-        let id = segments.get(1).ok_or_else(|| anyhow!("Invalid Modrinth CDN URL"))?;
-        let version = segments.get(3).ok_or_else(|| anyhow!("Invalid Modrinth CDN URL"))?;
+        let id = segments
+            .get(1)
+            .ok_or_else(|| anyhow!("Invalid Modrinth CDN URL"))?;
+        let version = segments
+            .get(3)
+            .ok_or_else(|| anyhow!("Invalid Modrinth CDN URL"))?;
         //let filename = segments.get(4).ok_or_else(|| anyhow!("Invalid Modrinth CDN URL"))?;
 
-        if segments.get(0) != Some(&"data") || segments.get(2) != Some(&"versions") {
+        if segments.first() != Some(&"data") || segments.get(2) != Some(&"versions") {
             Err(anyhow!("Invalid Modrinth CDN URL"))?;
         }
-        
+
         match is_mod {
             Some(true) | None => self.mods.push(Downloadable::Modrinth {
                 id: id.to_owned().to_owned(),

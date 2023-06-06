@@ -12,8 +12,8 @@ mod bootstrapper;
 mod commands;
 mod downloadable;
 mod model;
-mod util;
 mod mrpack;
+mod util;
 
 fn cli() -> Command {
     Command::new("mcman")

@@ -149,19 +149,15 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
 
     stage_index += 1;
 
-
-
     // stage 2: plugins
     if !server.plugins.is_empty() {
         println!(" stage {stage_index}: {}", title.apply_to("Plugins"));
         download_addons("plugins", &server, &http_client, output_dir)
             .await
             .context("Failed to download plugins")?;
-    
+
         stage_index += 1;
     }
-
-    
 
     // stage 3: mods
     if !server.mods.is_empty() {
@@ -169,8 +165,8 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         download_addons("mods", &server, &http_client, output_dir)
             .await
             .context("Failed to download plugins")?;
-    
-            stage_index += 1;
+
+        stage_index += 1;
     }
 
     // stage 4: bootstrap
@@ -189,10 +185,13 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     vars.insert("SERVER_NAME".to_owned(), server.name.clone());
     vars.insert("SERVER_VERSION".to_owned(), server.mc_version.clone());
 
-    bootstrap(&BootstrapContext {
-        vars,
-        output_dir: output_dir.clone(),
-    }, "config")?;
+    bootstrap(
+        &BootstrapContext {
+            vars,
+            output_dir: output_dir.clone(),
+        },
+        "config",
+    )?;
 
     println!("          {}", style("Bootstrapping complete").dim());
 

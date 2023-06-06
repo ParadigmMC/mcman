@@ -1,10 +1,10 @@
+use console::style;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use console::{style};
 
-use crate::{model::Server, downloadable::Downloadable};
+use crate::{downloadable::Downloadable, model::Server};
 use anyhow::{anyhow, bail, Result};
 use clap::{arg, ArgMatches, Command};
 
@@ -16,10 +16,7 @@ pub fn cli() -> Command {
 }
 
 pub fn run(matches: &ArgMatches) -> Result<()> {
-    println!(
-        " > {}",
-        style("initializing server...").dim()
-    );
+    println!(" > {}", style("initializing server...").dim());
 
     let res = std::fs::metadata("server.toml");
     if let Err(err) = res {
@@ -50,17 +47,14 @@ pub fn run(matches: &ArgMatches) -> Result<()> {
     };
 
     if matches.contains_id("proxy") {
-        server.set_proxy_defaults()?;
-        server.jar = Downloadable::Velocity {  };
+        server.set_proxy_defaults();
+        server.jar = Downloadable::Velocity {};
     }
 
     initialize_environment()?;
     server.save(Path::new("server.toml"))?;
 
-    println!(
-        " > {}",
-        style("server has been initialized").green()
-    );
+    println!(" > {}", style("server has been initialized").green());
 
     Ok(())
 }
