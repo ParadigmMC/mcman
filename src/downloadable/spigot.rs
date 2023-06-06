@@ -9,10 +9,12 @@ struct SpigotResourceVersion {
 
 pub fn get_resource_id(res: &str) -> &str {
     if let Some(i) = res.find('.') {
-        res.split_at(i).1
-    } else {
-        res
+        if i < res.len()-1 { 
+            return res.split_at(i).1
+        }
     }
+
+    res
 }
 
 pub async fn fetch_spigot_resource_latest_ver(
