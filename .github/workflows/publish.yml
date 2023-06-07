@@ -1,8 +1,6 @@
 on:
-  workflow_run:
-    workflows: [build]
-    types:
-      - completed
+  push:
+    branches: [ 'main' ]
 
 env:
   REGISTRY: ghcr.io
