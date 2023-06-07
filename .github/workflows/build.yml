@@ -1,37 +1,31 @@
-name: Build
-
 on:
   push:
-    branches:
-      - main
+  pull_request:
 
+name: Clippy and build
 jobs:
-  build:
+  clippy:
+    name: Clippy
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Set up Rust
-        uses: actions/setup-rust@v1
-
-      - name: Build for Linux
-        run: cargo build --release --target x86_64-unknown-linux-gnu
-        working-directory: ${{ github.workspace }}
-
-      - name: Archive Linux binary
-        uses: actions/upload-artifact@v2
+      - uses: actions/checkout@v3
+      - run: rustup toolchain install stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions-rs/clippy-check@v1
         with:
-          name: mcman-linux
-          path: target/x86_64-unknown-linux-gnu/release/mcman
-
-      - name: Build for Windows
-        run: cargo build --release --target x86_64-pc-windows-msvc
-        working-directory: ${{ github.workspace }}
-
-      - name: Archive Windows binary
-        uses: actions/upload-artifact@v2
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-features
+  build:
+    name: Build
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - run: rustup toolchain install stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/upload-artifact@v3
         with:
-          name: mcman-windows
-          path: target/x86_64-pc-windows-msvc/release/mcman.exe
+          name: mcman-${{ matrix.os }}
+          path: target/release/mcman*
