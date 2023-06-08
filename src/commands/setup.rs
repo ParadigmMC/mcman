@@ -176,8 +176,12 @@ fn pick_server_jar(ctx: &mut SetupContext) -> Result<()> {
             url: Input::with_theme(&ctx.theme)
                 .with_prompt("Server Jar URL")
                 .interact()?,
+            filename: None,
         },
-        _ => Downloadable::Url { url: String::new() },
+        _ => Downloadable::Url {
+            url: String::new(),
+            filename: None,
+        },
     };
 
     ctx.server.jar = jar_dl;

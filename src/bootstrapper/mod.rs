@@ -34,9 +34,6 @@ pub fn bootstrap<P>(ctx: &BootstrapContext, folder: P) -> anyhow::Result<()>
 where
     P: AsRef<Path>,
 {
-    // iterate over all files
-
-    // create server directory if not exists
     if !Path::new(ctx.output_dir.as_path()).exists() {
         fs::create_dir(ctx.output_dir.as_path())?;
     }
@@ -66,6 +63,7 @@ fn bootstrap_entry(ctx: &BootstrapContext, entry: &DirEntry) -> Result<()> {
     let path = entry.path();
     let output_path = ctx.get_output_path(path);
 
+    fs::create_dir_all(output_path.parent().unwrap_or(Path::new("")))?;
     // bootstrap contents of some types
     if let Some(ext) = path.extension() {
         match ext.to_str().unwrap_or("") {
@@ -75,20 +73,17 @@ fn bootstrap_entry(ctx: &BootstrapContext, entry: &DirEntry) -> Result<()> {
                 let existing_input = String::from_utf8(fs::read(&output_path).unwrap_or(vec![]))?;
                 let output = bootstrap_properties(ctx, &input, &existing_input)?;
                 //probably
-                fs::create_dir_all(output_path.parent().unwrap_or(Path::new("")))?;
                 fs::write(output_path.clone(), output)
                     .context(format!("Writing {}", output_path.display()))?;
             }
             "txt" | "yaml" | "yml" | "conf" | "config" | "toml" => {
                 let input = fs::read_to_string(path)?;
                 let output = bootstrap_string(ctx, &input);
-                fs::create_dir_all(output_path.parent().unwrap_or(Path::new("")))?;
                 fs::write(output_path.clone(), output)
                     .context(format!("Writing {}", output_path.display()))?;
             }
             _ => {
                 let output_path = ctx.get_output_path(path);
-                fs::create_dir_all(output_path.clone())?;
                 fs::copy(path, output_path.clone()).context(format!(
                     "Copying {} to {}",
                     path.display(),
@@ -97,7 +92,6 @@ fn bootstrap_entry(ctx: &BootstrapContext, entry: &DirEntry) -> Result<()> {
             }
         }
     } else {
-        fs::create_dir_all(output_path.clone())?;
         fs::copy(path, output_path.clone()).context(format!(
             "Copying {} to {}",
             path.display(),

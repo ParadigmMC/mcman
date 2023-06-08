@@ -9,8 +9,8 @@ struct SpigotResourceVersion {
 
 pub fn get_resource_id(res: &str) -> &str {
     if let Some(i) = res.find('.') {
-        if i < res.len()-1 { 
-            return res.split_at(i).1
+        if i < res.len() - 1 {
+            return res.split_at(i).1;
         }
     }
 

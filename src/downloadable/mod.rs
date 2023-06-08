@@ -4,19 +4,19 @@ use serde::{Deserialize, Serialize};
 use crate::model::Server;
 
 use self::{
+    github::{download_github_release, fetch_github_release_filename},
     modrinth::{fetch_modrinth, fetch_modrinth_filename},
     papermc::{download_papermc_build, fetch_papermc_build},
     purpur::{download_purpurmc_build, fetch_purpurmc_builds},
-    github::{download_github_release, fetch_github_release_filename},
     spigot::{download_spigot_resource, fetch_spigot_resource_latest_ver},
     vanilla::fetch_vanilla,
 };
+mod github;
 mod modrinth;
 mod papermc;
 mod purpur;
 mod spigot;
 mod vanilla;
-mod github;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
@@ -24,6 +24,9 @@ pub enum Downloadable {
     // sources
     Url {
         url: String,
+        #[serde(default)]
+        #[serde(skip_serializing_if = "crate::util::is_default")]
+        filename: Option<String>,
     },
 
     Vanilla {
@@ -81,7 +84,7 @@ impl Downloadable {
     ) -> Result<reqwest::Response> {
         let mcver = server.mc_version.clone();
         match self {
-            Self::Url { url } => Ok(client.get(url).send().await?.error_for_status()?),
+            Self::Url { url, filename: _ } => Ok(client.get(url).send().await?.error_for_status()?),
 
             Self::Vanilla {} => Ok(fetch_vanilla(&mcver, client).await?),
             Self::PaperMC { project, build } => {
@@ -91,7 +94,9 @@ impl Downloadable {
 
             Self::Modrinth { id, version } => Ok(fetch_modrinth(id, version, client).await?),
             Self::Spigot { id } => Ok(download_spigot_resource(id, client).await?),
-            Self::GithubRelease { repo, tag, asset } => Ok(download_github_release(repo, tag, asset, client).await?),
+            Self::GithubRelease { repo, tag, asset } => {
+                Ok(download_github_release(repo, tag, asset, client).await?)
+            }
 
             Self::Paper {} => Ok(download_papermc_build("paper", &mcver, "latest", client).await?),
             Self::Folia {} => Ok(download_papermc_build("folia", &mcver, "latest", client).await?),
@@ -107,7 +112,14 @@ impl Downloadable {
     pub async fn get_filename(&self, server: &Server, client: &reqwest::Client) -> Result<String> {
         let mcver = server.mc_version.clone();
         match self {
-            Self::Url { url } => Ok(url.split('/').last().unwrap().to_string()),
+            Self::Url { url, filename } => {
+                if let Some(filename) = filename {
+                    return Ok(filename.clone())
+                }
+
+                let url_clean = url.split('?').next().unwrap_or(url);
+                Ok(url_clean.split('/').last().unwrap().to_string())
+            },
 
             Self::Vanilla {} => Ok(format!("server-{mcver}.jar")),
             Self::PaperMC { project, build } => {
@@ -138,7 +150,9 @@ impl Downloadable {
             }
 
             // problematic stuff part 2345
-            Self::GithubRelease { repo, tag, asset } => Ok(fetch_github_release_filename(repo, tag, asset, client).await?),
+            Self::GithubRelease { repo, tag, asset } => {
+                Ok(fetch_github_release_filename(repo, tag, asset, client).await?)
+            }
 
             Self::Paper {} => Ok(get_filename_papermc("paper", &mcver, "latest", client).await?),
             Self::Folia {} => Ok(get_filename_papermc("folia", &mcver, "latest", client).await?),

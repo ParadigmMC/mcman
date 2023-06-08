@@ -15,12 +15,11 @@ pub fn run(matches: &ArgMatches) -> Result<()> {
     let mut server =
         Server::load(Path::new("server.toml")).context("Failed to load server.toml")?;
 
-    server
-        .import_from_url(
-            matches.get_one::<String>("url").unwrap(),
-            matches.get_one::<bool>("mod").map(|&b| b.to_owned()),
-        )?;
-    
+    server.import_from_url(
+        matches.get_one::<String>("url").unwrap(),
+        matches.get_one::<bool>("mod").map(|&b| b.to_owned()),
+    )?;
+
     server.save(Path::new("server.toml"))?;
 
     println!(" > Imported!");

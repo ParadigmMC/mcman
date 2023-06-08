@@ -14,7 +14,10 @@ pub struct GithubAsset {
     pub name: String,
 }
 
-pub async fn fetch_github_releases(repo: &str, client: &reqwest::Client) -> Result<Vec<GithubRelease>> {
+pub async fn fetch_github_releases(
+    repo: &str,
+    client: &reqwest::Client,
+) -> Result<Vec<GithubRelease>> {
     let releases: Vec<GithubRelease> = client
         .get("https://api.github.com/repos/".to_owned() + repo + "/releases")
         .send()
@@ -38,7 +41,8 @@ pub async fn fetch_github_release_asset(
         releases.into_iter().next()
     } else {
         releases.into_iter().find(|r| r.tag_name == tag)
-    }.ok_or(anyhow!("release not found"))?;
+    }
+    .ok_or(anyhow!("release not found"))?;
 
     let resolved_asset = if asset.is_empty() || asset == "first" {
         release.assets.into_iter().next()
@@ -47,7 +51,8 @@ pub async fn fetch_github_release_asset(
         //       for example: 'FastAsyncWorldEdit-Bukkit-2.6.1.jar'
         //       maybe also support bare asset id? current is asset filename
         release.assets.into_iter().find(|a| a.name == asset)
-    }.ok_or(anyhow!("asset not found"))?;
+    }
+    .ok_or(anyhow!("asset not found"))?;
 
     Ok(resolved_asset)
 }

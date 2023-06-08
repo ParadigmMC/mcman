@@ -174,9 +174,11 @@ impl Server {
             Some(_) | None => match is_mod {
                 Some(true) => self.mods.push(Downloadable::Url {
                     url: url.to_string(),
+                    filename: None
                 }),
                 Some(false) | None => self.plugins.push(Downloadable::Url {
                     url: url.to_string(),
+                    filename: None
                 }),
             },
         }

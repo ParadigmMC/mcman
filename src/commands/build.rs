@@ -48,9 +48,7 @@ async fn download_server_jar(
         util::download_with_progress(
             File::create(&output_dir.join(filename))
                 .await
-                .context(format!(
-                    "Failed to create output file for {filename}"
-                ))?,
+                .context(format!("Failed to create output file for {filename}"))?,
             filename,
             &server.jar,
             server,
@@ -104,9 +102,7 @@ async fn download_addons(
         util::download_with_progress(
             File::create(&output_dir.join(addon_type).join(addon_name.clone()))
                 .await
-                .context(format!(
-                    "Failed to create output file for {addon_name}"
-                ))?,
+                .context(format!("Failed to create output file for {addon_name}"))?,
             &addon_name,
             addon,
             server,
