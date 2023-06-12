@@ -55,7 +55,7 @@ title {servername}
         // TODO: custom java stuff from ~/.mcmanconfig or something idk
         script.push_str("java ");
 
-        if self.memory != "" {
+        if !self.memory.is_empty() {
             script += "-Xms";
             script += &self.memory.to_string();
             script += " -Xmx";
@@ -174,11 +174,11 @@ impl Server {
             Some(_) | None => match is_mod {
                 Some(true) => self.mods.push(Downloadable::Url {
                     url: url.to_string(),
-                    filename: None
+                    filename: None,
                 }),
                 Some(false) | None => self.plugins.push(Downloadable::Url {
                     url: url.to_string(),
-                    filename: None
+                    filename: None,
                 }),
             },
         }

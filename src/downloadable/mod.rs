@@ -84,7 +84,9 @@ impl Downloadable {
     ) -> Result<reqwest::Response> {
         let mcver = server.mc_version.clone();
         match self {
-            Self::Url { url, filename: _ } => Ok(client.get(url).send().await?.error_for_status()?),
+            Self::Url { url, filename: _ } => {
+                Ok(client.get(url).send().await?.error_for_status()?)
+            }
 
             Self::Vanilla {} => Ok(fetch_vanilla(&mcver, client).await?),
             Self::PaperMC { project, build } => {
@@ -114,12 +116,12 @@ impl Downloadable {
         match self {
             Self::Url { url, filename } => {
                 if let Some(filename) = filename {
-                    return Ok(filename.clone())
+                    return Ok(filename.clone());
                 }
 
                 let url_clean = url.split('?').next().unwrap_or(url);
                 Ok(url_clean.split('/').last().unwrap().to_string())
-            },
+            }
 
             Self::Vanilla {} => Ok(format!("server-{mcver}.jar")),
             Self::PaperMC { project, build } => {
