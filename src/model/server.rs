@@ -26,7 +26,7 @@ pub struct ServerLauncher {
     pub eula_args: bool,
     pub nogui: bool,
     #[serde(skip_serializing_if = "crate::util::is_default")]
-    pub memory: u8,
+    pub memory: String,
 }
 
 impl ServerLauncher {
@@ -55,7 +55,7 @@ title {servername}
         // TODO: custom java stuff from ~/.mcmanconfig or something idk
         script.push_str("java ");
 
-        if self.memory > 0 {
+        if self.memory != "" {
             script += "-Xms";
             script += &self.memory.to_string();
             script += " -Xmx";
@@ -101,7 +101,7 @@ impl Default for ServerLauncher {
             proxy_flags: false,
             nogui: true,
             eula_args: true,
-            memory: 0,
+            memory: String::new(),
         }
     }
 }
