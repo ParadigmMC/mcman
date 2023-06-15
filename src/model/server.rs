@@ -55,6 +55,11 @@ title {servername}
         // TODO: custom java stuff from ~/.mcmanconfig or something idk
         script.push_str("java ");
 
+        if !self.jvm_args.is_empty() {
+            script += &self.jvm_args.to_string();
+            script += " ";
+        }
+
         if !self.memory.is_empty() {
             script += "-Xms";
             script += &self.memory.to_string();
