@@ -7,7 +7,7 @@ repository = "https://github.com/ParadigmMC/mcman/"
 [profile.release]
 debug = false
 strip = true
-lto = true
+lto = "thin"
 
 [dependencies]
 anyhow = "1.0"
