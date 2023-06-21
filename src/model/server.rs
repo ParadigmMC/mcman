@@ -14,17 +14,17 @@ use crate::downloadable::Downloadable;
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct ServerLauncher {
+    pub aikars_flags: bool,
+    pub proxy_flags: bool,
+    pub nogui: bool,
     #[serde(skip_serializing_if = "crate::util::is_default")]
     pub disable: bool,
     #[serde(skip_serializing_if = "crate::util::is_default")]
     pub jvm_args: String,
     #[serde(skip_serializing_if = "crate::util::is_default")]
     pub game_args: String,
-    pub aikars_flags: bool,
-    pub proxy_flags: bool,
     #[serde(skip_serializing_if = "crate::util::is_default")]
     pub eula_args: bool,
-    pub nogui: bool,
     #[serde(skip_serializing_if = "crate::util::is_default")]
     pub memory: String,
 }
@@ -32,19 +32,14 @@ pub struct ServerLauncher {
 impl ServerLauncher {
     pub fn generate_script_linux(&mut self, jarname: &str, servername: &str) -> String {
         format!(
-            "#!/bin/sh
-{}
-",
+            "#!/bin/sh\n{}\n",
             self.generate_script_java(jarname, servername)
         )
     }
 
     pub fn generate_script_win(&mut self, jarname: &str, servername: &str) -> String {
         format!(
-            "@echo off
-title {servername}
-{}
-",
+            "@echo off\ntitle {servername}\n{}\n",
             self.generate_script_java(jarname, servername)
         )
     }
@@ -220,6 +215,17 @@ impl Server {
         }
 
         Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn format(&self, str: &str) -> String {
+        mcapi::dollar_repl(str, |key| {
+            match key {
+                "mcver" | "mcversion" => Some(self.mc_version.to_owned()),
+                // Maybe also allow self.variables? idk
+                _ => None,
+            }
+        })
     }
 }
 
