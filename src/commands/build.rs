@@ -2,7 +2,7 @@ use std::{
     collections::HashMap,
     fs::{self, OpenOptions},
     io::Write,
-    path::{Path, PathBuf},
+    path::{Path, PathBuf}, env,
 };
 
 use anyhow::{Context, Result};
@@ -174,10 +174,11 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
 
     let mut vars = HashMap::new();
 
-    // TODO: read from .env file
-    // TODO: environment variables
-
     for (key, value) in &server.variables {
+        vars.insert(key.clone(), value.clone());
+    }
+
+    for (key, value) in env::vars() {
         vars.insert(key.clone(), value.clone());
     }
 
