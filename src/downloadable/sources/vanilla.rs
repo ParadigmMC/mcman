@@ -1,0 +1,11 @@
+use anyhow::Result;
+
+pub async fn fetch_vanilla(version: &str, client: &reqwest::Client) -> Result<reqwest::Response> {
+    let version_manifest = mcapi::vanilla::fetch_version_manifest(client).await?;
+
+    Ok(match version {
+        "latest" => version_manifest.fetch_latest_release(client).await?,
+        "latest-snapshot" => version_manifest.fetch_latest_snapshot(client).await?,
+        id => version_manifest.fetch(id, client).await?,
+    }.downloads.server.download(client).await?)
+}

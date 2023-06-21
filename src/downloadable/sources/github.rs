@@ -1,6 +1,8 @@
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 
+use crate::util::match_artifact_name;
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GithubRelease {
     pub tag_name: String,
@@ -37,23 +39,16 @@ pub async fn fetch_github_release_asset(
 ) -> Result<GithubAsset> {
     let releases = fetch_github_releases(repo, client).await?;
 
-    let release = if tag == "latest" {
-        releases.into_iter().next()
-    } else {
-        releases.into_iter().find(|r| r.tag_name == tag)
-    }
-    .ok_or(anyhow!("release not found"))?;
+    let release = match tag {
+        "latest" => releases.into_iter().next(),
+        id => releases.into_iter().find(|r| r.tag_name == id),
+    }.ok_or(anyhow!("release not found"))?;
 
-    let resolved_asset = if asset.is_empty() || asset == "first" {
-        release.assets.into_iter().next()
-    } else {
-        // TODO: better asset resolving because some repos have assets named with version
-        //       for example: 'FastAsyncWorldEdit-Bukkit-2.6.1.jar'
-        //       maybe also support bare asset id? current is asset filename
-        release.assets.into_iter().find(|a| a.name == asset)
-    }
-    .ok_or(anyhow!("asset not found"))?;
-
+    let resolved_asset = match asset {
+        "" | "first" | "any" => release.assets.into_iter().next(),
+        id => release.assets.into_iter().find(|a| match_artifact_name(id, &a.name)),
+    }.ok_or(anyhow!("asset not found"))?;
+   
     Ok(resolved_asset)
 }
 
@@ -63,11 +58,10 @@ pub async fn fetch_github_release_filename(
     asset: &str,
     client: &reqwest::Client,
 ) -> Result<String> {
-    if asset.is_empty() || asset == "first" {
-        return Ok(asset.to_owned());
-    }
-    let fetched_asset = fetch_github_release_asset(repo, tag, asset, client).await?;
-    Ok(fetched_asset.name)
+    Ok(match asset {
+        "" | "first" | "any" => fetch_github_release_asset(repo, tag, asset, client).await?.name,
+        id => id.to_owned(),
+    })
 }
 
 // youre delusional, this doesnt exist
@@ -98,6 +92,7 @@ pub async fn download_github_release(
 
     Ok(client
         .get(fetched_asset.url)
+        .header("Accept", "application/octet-stream")
         .send()
         .await?
         .error_for_status()?)

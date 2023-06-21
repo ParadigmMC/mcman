@@ -1,0 +1,107 @@
+//! Bad way pls fix
+//!        - dennis
+
+use anyhow::{Result, anyhow};
+
+//pub static API_MAGIC_JOB: &str = "/api/json?tree=url,name,builds[*[url,number,result,artifacts[relativePath,fileName]]]";
+static API_MAGIC_JOB: &str = "/api/json?tree=builds[*[url,number,result]]";
+static API_MAGIC_BUILD: &str = "/api/json";
+static SUCCESS_STR: &str = "SUCCESS";
+
+fn str_process_job(job: &str) -> String {
+    job
+        .split('/')
+        .map(|j| "/job/".to_owned() + j)
+        .collect::<Vec<String>>()
+        .join("")
+}
+
+pub async fn get_jenkins_job_value(
+    client: &reqwest::Client,
+    url: &str,
+    job: &str,
+) -> Result<serde_json::Value> {
+    let base = url.to_owned()
+        + &str_process_job(job)
+        + API_MAGIC_JOB;
+    
+    let v: serde_json::Value = client.get(&base)
+        .send().await?
+        .error_for_status()?
+        .json().await?;
+
+    Ok(v)
+}
+
+pub async fn get_jenkins_build_value(
+    client: &reqwest::Client,
+    build_url: &str,
+) -> Result<serde_json::Value> {
+    let base = build_url.to_owned() + API_MAGIC_BUILD;
+    
+    let v: serde_json::Value = client.get(&base)
+        .send().await?
+        .error_for_status()?
+        .json().await?;
+
+    Ok(v)
+}
+
+/// returns (build_url, fileName, relativePath)
+pub async fn get_jenkins_filename(
+    client: &reqwest::Client,
+    url: &str,
+    job: &str,
+    build: &str,
+    artifact_id: &str,
+) -> Result<(String, String, String)> {
+    let j = get_jenkins_job_value(client, url, job).await?;
+
+    let mut filtered_builds = j["builds"].as_array().unwrap().iter()
+        .filter(|b| b["result"].as_str().unwrap() == SUCCESS_STR);
+
+    let build_url = match build {
+        // iter.first doesnt exist i guess? .next works
+        "latest" => filtered_builds.next().unwrap(),
+        id => filtered_builds
+            .find(|b| b["number"].as_i64().unwrap().to_string() == id)
+            .unwrap(),
+    }["url"].as_str().unwrap();
+
+    let v = get_jenkins_build_value(client, build_url).await?;
+
+    let mut artifacts_iter = v["artifacts"]
+        .as_array()
+        .unwrap()
+        .iter();
+        
+    let artifact = match artifact_id {
+        "first" => artifacts_iter.next(),
+        id => artifacts_iter.find(|a| a["fileName"].as_str().unwrap() == id)
+    }.ok_or(anyhow!("artifact for jenkins build artifact not found ({url};{job};{build};{artifact_id})"))?;
+
+    Ok((
+        build_url.to_owned(),
+        artifact["fileName"].as_str().unwrap().to_owned(),
+        artifact["relativePath"].as_str().unwrap().to_owned(),
+    ))
+}
+
+pub async fn download_jenkins(
+    client: &reqwest::Client,
+    url: &str,
+    job: &str,
+    build: &str,
+    artifact: &str,
+) -> Result<reqwest::Response> {
+    let (build_url, _, relative_path) = get_jenkins_filename(client, url, job, build, artifact).await?;
+
+    let download_url = build_url + "artifact/" + &relative_path;
+
+    Ok(
+        client.get(download_url)
+            .send()
+            .await?
+            .error_for_status()?
+    )
+}
