@@ -3,20 +3,16 @@ use serde::{Deserialize, Serialize};
 
 use crate::model::Server;
 
-use self::{
+use self::sources::{
     github::{download_github_release, fetch_github_release_filename},
-    modrinth::{fetch_modrinth, fetch_modrinth_filename},
+    modrinth::{download_modrinth, fetch_modrinth_filename},
     papermc::{download_papermc_build, fetch_papermc_build},
     purpur::{download_purpurmc_build, fetch_purpurmc_builds},
     spigot::{download_spigot_resource, fetch_spigot_resource_latest_ver},
-    vanilla::fetch_vanilla,
+    vanilla::fetch_vanilla, jenkins::{download_jenkins, get_jenkins_filename},
 };
-mod github;
-mod modrinth;
-mod papermc;
-mod purpur;
-mod spigot;
-mod vanilla;
+mod sources;
+mod import_url;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
@@ -58,6 +54,16 @@ pub enum Downloadable {
         asset: String,
     },
 
+    // pain in the a-
+    Jenkins {
+        url: String,
+        job: String,
+        #[serde(default = "latest")]
+        build: String,
+        #[serde(default = "first")]
+        artifact: String,
+    },
+
     // known projects
     Purpur {
         //version: String,
@@ -74,6 +80,10 @@ pub enum Downloadable {
 
 pub fn latest() -> String {
     "latest".to_owned()
+}
+
+pub fn first() -> String {
+    "first".to_owned()
 }
 
 impl Downloadable {
@@ -94,11 +104,15 @@ impl Downloadable {
             }
             Self::Purpur { build } => Ok(download_purpurmc_build(&mcver, build, client).await?),
 
-            Self::Modrinth { id, version } => Ok(fetch_modrinth(id, version, client).await?),
+            Self::Modrinth { id, version } => Ok(download_modrinth(id, version, client, None).await?),
             Self::Spigot { id } => Ok(download_spigot_resource(id, client).await?),
             Self::GithubRelease { repo, tag, asset } => {
                 Ok(download_github_release(repo, tag, asset, client).await?)
             }
+
+            Self::Jenkins { url, job, build, artifact } => Ok(
+                download_jenkins(client, url, job, build, artifact).await?
+            ),
 
             Self::Paper {} => Ok(download_papermc_build("paper", &mcver, "latest", client).await?),
             Self::Folia {} => Ok(download_papermc_build("folia", &mcver, "latest", client).await?),
@@ -141,8 +155,8 @@ impl Downloadable {
             }
 
             Self::Modrinth { id, version } => {
-                // Be like modrinth. Modrinth is cool.
-                let filename = fetch_modrinth_filename(id, version, client).await?;
+                // nvm
+                let filename = fetch_modrinth_filename(id, version, client, None).await?;
                 Ok(filename)
             }
             Self::Spigot { id } => {
@@ -154,6 +168,10 @@ impl Downloadable {
             // problematic stuff part 2345
             Self::GithubRelease { repo, tag, asset } => {
                 Ok(fetch_github_release_filename(repo, tag, asset, client).await?)
+            }
+
+            Self::Jenkins { url, job, build, artifact } => {
+                Ok(get_jenkins_filename(client, url, job, build, artifact).await?.1)
             }
 
             Self::Paper {} => Ok(get_filename_papermc("paper", &mcver, "latest", client).await?),
