@@ -1,8 +1,10 @@
 # mcman
 
+![mcman](https://media.discordapp.net/attachments/1109215116060266567/1121117662785851522/mcman_large.png)
+
 The Minecraft Server Manager
 
-<!-- todo: a screenshot here -->
+<!-- todo: a (terminal) screenshot here -->
 
 ## Getting Started
 
