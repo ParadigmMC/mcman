@@ -1,14 +1,18 @@
 use console::style;
 use dialoguer::Confirm;
-use dialoguer::{Input, Select, theme::ColorfulTheme};
-use std::{ffi::OsStr, path::PathBuf};
+use dialoguer::{theme::ColorfulTheme, Input, Select};
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
+use std::{ffi::OsStr, path::PathBuf};
 
 use crate::commands::readme;
-use crate::{downloadable::{Downloadable, sources::vanilla::fetch_latest_mcver}, model::{Server, ServerLauncher}, commands::version::APP_USER_AGENT};
-use anyhow::{bail, Result, Context};
+use crate::{
+    commands::version::APP_USER_AGENT,
+    downloadable::{sources::vanilla::fetch_latest_mcver, Downloadable},
+    model::{Server, ServerLauncher},
+};
+use anyhow::{bail, Context, Result};
 use clap::{arg, ArgMatches, Command};
 
 pub fn cli() -> Command {
@@ -66,11 +70,13 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         .interact()?;
 
     let is_proxy = serv_type == 2;
-    
+
     let mc_version = if is_proxy {
         "latest".to_owned()
     } else {
-        let latest_ver = fetch_latest_mcver(&http_client).await.context("Fetching latest version")?;
+        let latest_ver = fetch_latest_mcver(&http_client)
+            .await
+            .context("Fetching latest version")?;
 
         Input::with_theme(&theme)
             .with_prompt("Server version?")
@@ -130,9 +136,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
-pub fn initialize_environment(
-    is_proxy: bool
-) -> Result<()> {
+pub fn initialize_environment(is_proxy: bool) -> Result<()> {
     std::fs::create_dir_all("./config")?;
 
     let mut f = File::create(".dockerignore")?;

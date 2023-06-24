@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 
 pub async fn fetch_papermc_versions(
     project: &str,
@@ -14,17 +14,21 @@ pub async fn fetch_papermc_builds(
     version: &str,
     client: &reqwest::Client,
 ) -> Result<mcapi::papermc::PaperBuildsResponse> {
-    Ok(
-        mcapi::papermc::fetch_papermc_builds(client, project, &match version {
+    Ok(mcapi::papermc::fetch_papermc_builds(
+        client,
+        project,
+        &match version {
             "latest" => {
-                let v = fetch_papermc_versions(project, client)
-                    .await?;
+                let v = fetch_papermc_versions(project, client).await?;
 
-                v.last().ok_or(anyhow!("Couldn't get latest version"))?.clone()
-            },
+                v.last()
+                    .ok_or(anyhow!("Couldn't get latest version"))?
+                    .clone()
+            }
             id => id.to_owned(),
-        }).await?
+        },
     )
+    .await?)
 }
 
 pub async fn fetch_papermc_build(
@@ -34,12 +38,14 @@ pub async fn fetch_papermc_build(
     client: &reqwest::Client,
 ) -> Result<mcapi::papermc::PaperVersionBuild> {
     let builds = fetch_papermc_builds(project, version, client).await?;
-    Ok(
-        match build {
-            "latest" => builds.builds.last(),
-            id => builds.builds.iter().find(|&b| b.build.to_string() == id),
-        }.ok_or(anyhow!("Latest build for project {project} {version} not found"))?.clone()
-    )
+    Ok(match build {
+        "latest" => builds.builds.last(),
+        id => builds.builds.iter().find(|&b| b.build.to_string() == id),
+    }
+    .ok_or(anyhow!(
+        "Latest build for project {project} {version} not found"
+    ))?
+    .clone())
 }
 
 pub async fn download_papermc_build(
@@ -51,8 +57,12 @@ pub async fn download_papermc_build(
     let builds = fetch_papermc_builds(project, version, client).await?;
     let build = match build_id {
         "latest" => builds.builds.last(),
-        id => builds.builds.iter().find(|&b| b.build.to_string() == id)
-    }.ok_or(anyhow!("Build '{build_id}' for project {project} {version} not found"))?.clone();
+        id => builds.builds.iter().find(|&b| b.build.to_string() == id),
+    }
+    .ok_or(anyhow!(
+        "Build '{build_id}' for project {project} {version} not found"
+    ))?
+    .clone();
     Ok(
         mcapi::papermc::download_papermc_build(
             client,

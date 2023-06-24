@@ -1,5 +1,5 @@
-use anyhow::{Result, bail};
-use dialoguer::{Select, theme::ColorfulTheme};
+use anyhow::{bail, Result};
+use dialoguer::{theme::ColorfulTheme, Select};
 
 use super::Downloadable;
 
@@ -20,9 +20,11 @@ impl Downloadable {
             .interact()?;
 
         Ok(match jar_type {
-            0 => Self::Vanilla {  },
-            1 => Self::Paper {  },
-            2 => Self::Purpur { build: "latest".to_owned() },
+            0 => Self::Vanilla {},
+            1 => Self::Paper {},
+            2 => Self::Purpur {
+                build: "latest".to_owned(),
+            },
             _ => unreachable!(),
         })
     }
@@ -72,12 +74,12 @@ impl Downloadable {
             .interact()?;
 
         Ok(match jar_type {
-            0 => Self::Velocity {  },
-            1 => Self::Waterfall {  },
-            2 => Self::BungeeCord {  },
+            0 => Self::Velocity {},
+            1 => Self::Waterfall {},
+            2 => Self::BungeeCord {},
             3 => {
                 bail!("Please add the custom proxy jar via manually editing the server.toml file.");
-            },
+            }
             _ => unreachable!(),
         })
     }

@@ -1,22 +1,26 @@
 #![allow(dead_code)] // todo...
 #![allow(unused)]
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 
-pub async fn fetch_quilt_latest_loader(
-    client: &reqwest::Client,
-) -> Result<String> {
+pub async fn fetch_quilt_latest_loader(client: &reqwest::Client) -> Result<String> {
     let loaders = mcapi::quilt::fetch_loaders(client).await?;
 
-    Ok(loaders.first().ok_or(anyhow!("Couldn't get latest quilt loader"))?.version.clone())
+    Ok(loaders
+        .first()
+        .ok_or(anyhow!("Couldn't get latest quilt loader"))?
+        .version
+        .clone())
 }
 
-pub async fn fetch_quilt_latest_installer(
-    client: &reqwest::Client,
-) -> Result<String> {
+pub async fn fetch_quilt_latest_installer(client: &reqwest::Client) -> Result<String> {
     let installers = mcapi::quilt::fetch_installers(client).await?;
 
-    Ok(installers.first().ok_or(anyhow!("Couldn't get latest quilt installer"))?.version.clone())
+    Ok(installers
+        .first()
+        .ok_or(anyhow!("Couldn't get latest quilt installer"))?
+        .version
+        .clone())
 }
 
 pub async fn download_quilt_installer(
@@ -30,8 +34,9 @@ pub async fn download_quilt_installer(
         &match installer {
             "latest" => fetch_quilt_latest_installer(client).await?,
             id => id.to_owned(),
-        }
-    ).await?)
+        },
+    )
+    .await?)
 }
 
 pub static QUILT_DEFAULT_SERVERJAR_FILENAME: &str = "quilt-server-launch.jar";

@@ -86,10 +86,7 @@ pub struct ModrinthFile {
     // file_type omitted
 }
 
-pub async fn fetch_modrinth_project(
-    client: &reqwest::Client,
-    id: &str,
-) -> Result<ModrinthProject> {
+pub async fn fetch_modrinth_project(client: &reqwest::Client, id: &str) -> Result<ModrinthProject> {
     Ok(client
         .get("https://api.modrinth.com/v2/project/".to_owned() + id)
         .send()
@@ -129,11 +126,17 @@ pub async fn fetch_modrinth_versions(
     query: Option<(&str, &str)>,
 ) -> Result<Vec<ModrinthVersion>> {
     let versions: Vec<ModrinthVersion> = client
-        .get("https://api.modrinth.com/v2/project/".to_owned() + id + "/version"
-            + &(match query {
-                Some((jar, mcver)) => format!("?loaders=[\"{jar}\"]&game_versions=[\"{mcver}\"]"),
-                None => String::new(),
-            }))
+        .get(
+            "https://api.modrinth.com/v2/project/".to_owned()
+                + id
+                + "/version"
+                + &(match query {
+                    Some((jar, mcver)) => {
+                        format!("?loaders=[\"{jar}\"]&game_versions=[\"{mcver}\"]")
+                    }
+                    None => String::new(),
+                }),
+        )
         .send()
         .await?
         .error_for_status()?

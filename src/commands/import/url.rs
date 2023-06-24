@@ -1,9 +1,9 @@
 use anyhow::{Context, Result};
 use clap::{arg, ArgMatches, Command};
-use dialoguer::{Input, Select, theme::ColorfulTheme};
+use dialoguer::{theme::ColorfulTheme, Input, Select};
 use std::path::Path;
 
-use crate::{model::Server, downloadable::Downloadable, commands::version::APP_USER_AGENT};
+use crate::{commands::version::APP_USER_AGENT, downloadable::Downloadable, model::Server};
 
 pub fn cli() -> Command {
     Command::new("url")
@@ -22,18 +22,13 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
 
     let urlstr = match matches.get_one::<String>("url") {
         Some(url) => url.clone(),
-        None => {
-            Input::<String>::new()
-                .with_prompt("URL:")
-                .interact()?
-        }
+        None => Input::<String>::new().with_prompt("URL:").interact()?,
     };
 
     let addon = Downloadable::from_url_interactive(&http_client, &server, &urlstr).await?;
 
     let is_plugin = match server.jar {
-        Downloadable::Fabric { .. }
-        | Downloadable::Quilt { .. } => false,
+        Downloadable::Fabric { .. } | Downloadable::Quilt { .. } => false,
 
         Downloadable::GithubRelease { .. }
         | Downloadable::Jenkins { .. }
@@ -41,11 +36,9 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
             Select::with_theme(&ColorfulTheme::default())
                 .with_prompt("Import as...")
                 .default(0)
-                .items(&[
-                    "Plugin",
-                    "Mod",
-                ])
-                .interact()? == 0
+                .items(&["Plugin", "Mod"])
+                .interact()?
+                == 0
         }
 
         _ => true,

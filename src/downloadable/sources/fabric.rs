@@ -1,19 +1,23 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 
-pub async fn fetch_fabric_latest_loader(
-    client: &reqwest::Client,
-) -> Result<String> {
+pub async fn fetch_fabric_latest_loader(client: &reqwest::Client) -> Result<String> {
     let loaders = mcapi::fabric::fetch_loaders(client).await?;
 
-    Ok(loaders.first().ok_or(anyhow!("Couldn't get latest fabric loader"))?.version.clone())
+    Ok(loaders
+        .first()
+        .ok_or(anyhow!("Couldn't get latest fabric loader"))?
+        .version
+        .clone())
 }
 
-pub async fn fetch_fabric_latest_installer(
-    client: &reqwest::Client,
-) -> Result<String> {
+pub async fn fetch_fabric_latest_installer(client: &reqwest::Client) -> Result<String> {
     let installers = mcapi::fabric::fetch_installers(client).await?;
 
-    Ok(installers.first().ok_or(anyhow!("Couldn't get latest fabric installer"))?.version.clone())
+    Ok(installers
+        .first()
+        .ok_or(anyhow!("Couldn't get latest fabric installer"))?
+        .version
+        .clone())
 }
 
 pub async fn download_fabric(
@@ -32,6 +36,7 @@ pub async fn download_fabric(
         &match installer {
             "latest" => fetch_fabric_latest_installer(client).await?,
             id => id.to_owned(),
-        }
-    ).await?)
+        },
+    )
+    .await?)
 }

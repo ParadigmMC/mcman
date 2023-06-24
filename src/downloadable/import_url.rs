@@ -1,10 +1,16 @@
-use anyhow::{Result, anyhow, bail};
-use dialoguer::{Select, theme::ColorfulTheme, Input, Confirm};
+use anyhow::{anyhow, bail, Result};
+use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
 use reqwest::Url;
 
 use crate::model::Server;
 
-use super::{Downloadable, sources::{modrinth::{fetch_modrinth_versions, ModrinthVersion}, github::fetch_github_releases}};
+use super::{
+    sources::{
+        github::fetch_github_releases,
+        modrinth::{fetch_modrinth_versions, ModrinthVersion},
+    },
+    Downloadable,
+};
 
 impl Downloadable {
     pub async fn from_url_interactive(
@@ -18,16 +24,9 @@ impl Downloadable {
                 // https://cdn.modrinth.com/data/{ID}/versions/{VERSION}/{FILENAME}
                 let invalid_url = || anyhow!("Invalid Modrinth CDN URL");
 
-                let segments: Vec<&str> = url
-                    .path_segments()
-                    .ok_or_else(invalid_url)?
-                    .collect();
-                let id = segments
-                    .get(1)
-                    .ok_or_else(invalid_url)?;
-                let version = segments
-                    .get(3)
-                    .ok_or_else(invalid_url)?;
+                let segments: Vec<&str> = url.path_segments().ok_or_else(invalid_url)?.collect();
+                let id = segments.get(1).ok_or_else(invalid_url)?;
+                let version = segments.get(3).ok_or_else(invalid_url)?;
                 //let filename = segments.get(4).ok_or_else(|| anyhow!("Invalid Modrinth CDN URL"))?;
 
                 if segments.first() != Some(&"data") || segments.get(2) != Some(&"versions") {
@@ -47,24 +46,33 @@ impl Downloadable {
                     .ok_or_else(|| invalid_url("couldn't split to segments"))?
                     .collect();
 
-                if segments.first().is_none() || !vec!["mod", "plugin"].contains(segments.first().unwrap()) {
+                if segments.first().is_none()
+                    || !vec!["mod", "plugin"].contains(segments.first().unwrap())
+                {
                     Err(invalid_url("must start with /mod or /plugin"))?;
                 };
 
                 let id = segments
                     .get(1)
-                    .ok_or_else(|| invalid_url("no id"))?.to_owned().to_owned();
+                    .ok_or_else(|| invalid_url("no id"))?
+                    .to_owned()
+                    .to_owned();
 
-                let versions: Vec<ModrinthVersion> = fetch_modrinth_versions(client, &id, None).await?
+                let versions: Vec<ModrinthVersion> = fetch_modrinth_versions(client, &id, None)
+                    .await?
                     .into_iter()
                     .filter(|v| v.game_versions.contains(&server.mc_version))
                     .collect();
 
                 let version = if let Some(&"version") = segments.get(2) {
-                    let ver_num = segments.get(3)
-                        .ok_or_else(|| invalid_url("no version number in url"))?.to_owned();
+                    let ver_num = segments
+                        .get(3)
+                        .ok_or_else(|| invalid_url("no version number in url"))?
+                        .to_owned();
 
-                    versions.into_iter().find(|v| v.version_number == ver_num)
+                    versions
+                        .into_iter()
+                        .find(|v| v.version_number == ver_num)
                         .ok_or(anyhow!("Couldn't find the version '{ver_num}'"))?
                 } else {
                     if versions.is_empty() {
@@ -74,12 +82,17 @@ impl Downloadable {
                     let selection = Select::with_theme(&ColorfulTheme::default())
                         .with_prompt("Which version?")
                         .default(0)
-                        .items(&versions.iter().map(|v| {
-                            let num = &v.version_number;
-                            let name = &v.name;
-                            let compat = v.loaders.join(",");
-                            format!("[{num}] {name} / {compat}")
-                        }).collect::<Vec<String>>())
+                        .items(
+                            &versions
+                                .iter()
+                                .map(|v| {
+                                    let num = &v.version_number;
+                                    let name = &v.name;
+                                    let compat = v.loaders.join(",");
+                                    format!("[{num}] {name} / {compat}")
+                                })
+                                .collect::<Vec<String>>(),
+                        )
                         .interact()
                         .unwrap();
 
@@ -116,14 +129,17 @@ impl Downloadable {
                 // https://github.com/IPTFreedom/TotalFreedomMod/releases/tag/2022.06.08-IPT
                 // https://github.com/IPTFreedom/TotalFreedomMod/releases/download/2022.06.08-IPT/TotalFreedomMod-2022.06.08-IPT.jar
 
-                let mut segments = url
-                    .path_segments()
-                    .ok_or_else(|| anyhow!("Invalid url"))?;
+                let mut segments = url.path_segments().ok_or_else(|| anyhow!("Invalid url"))?;
 
                 let repo = [
-                    segments.next().ok_or(anyhow!("Couldn't find the repo from url"))?,
-                    segments.next().ok_or(anyhow!("Couldn't find the repo from url"))?,
-                ].join("/");
+                    segments
+                        .next()
+                        .ok_or(anyhow!("Couldn't find the repo from url"))?,
+                    segments
+                        .next()
+                        .ok_or(anyhow!("Couldn't find the repo from url"))?,
+                ]
+                .join("/");
 
                 let mut tag_opt = None;
                 let mut file_opt = None;
@@ -138,7 +154,7 @@ impl Downloadable {
                             tag_opt = Some(tag.to_owned());
 
                             println!("> Using release {tag}");
-                        },
+                        }
                         Some("download") => {
                             let invalid_url = || anyhow!("Invalid github release download url");
 
@@ -153,18 +169,18 @@ impl Downloadable {
                             file_opt = Some(file);
 
                             println!("> Using asset '{tag}'");
-                        },
+                        }
                         Some(p) => bail!("No idea what to do with releases/{p}"),
-                        None => {},
+                        None => {}
                     }
                 };
 
                 let fetched_tags = fetch_github_releases(&repo, client).await?;
 
-                let tag = if let Some(t) = tag_opt { t } else {
-                    let mut items = vec![
-                            "Always use latest release".to_owned()
-                    ];
+                let tag = if let Some(t) = tag_opt {
+                    t
+                } else {
+                    let mut items = vec!["Always use latest release".to_owned()];
 
                     for r in &fetched_tags {
                         items.push(format!("Release {}", r.name));
@@ -186,9 +202,10 @@ impl Downloadable {
 
                 let mut idx = 0;
 
-                let mut items = vec![
-                    ("first".to_owned(), "Use the first asset everytime".to_owned()),
-                ];
+                let mut items = vec![(
+                    "first".to_owned(),
+                    "Use the first asset everytime".to_owned(),
+                )];
 
                 if let Some(asset) = file_opt {
                     idx = 1;
@@ -200,11 +217,14 @@ impl Downloadable {
                     };
                 };
 
-                items.push((String::new(), if let Some(f) = file_opt {
-                    format!("Edit '{f}'")
-                } else {
-                    "Set asset manually".to_owned()
-                }));
+                items.push((
+                    String::new(),
+                    if let Some(f) = file_opt {
+                        format!("Edit '{f}'")
+                    } else {
+                        "Set asset manually".to_owned()
+                    },
+                ));
 
                 let str_list: Vec<String> = items.iter().map(|t| t.1.clone()).collect();
 
@@ -226,24 +246,16 @@ impl Downloadable {
                             .interact_text()?;
 
                         input
-                    },
+                    }
 
                     a => a.to_owned(),
                 };
 
-                Ok(Self::GithubRelease {
-                    repo,
-                    tag,
-                    asset,
-                })
+                Ok(Self::GithubRelease { repo, tag, asset })
             }
 
             Some(_) | None => {
-                let items = vec![
-                    "Add as Custom URL",
-                    "Add as Jenkins",
-                    "Nevermind, cancel",
-                ];
+                let items = vec!["Add as Custom URL", "Add as Jenkins", "Nevermind, cancel"];
                 let selection = Select::with_theme(&ColorfulTheme::default())
                     .items(&items)
                     .default(0)
@@ -265,12 +277,18 @@ impl Downloadable {
                             .default(inferred.into())
                             .interact_text()?;
 
-                        Ok(Self::Url { url: urlstr.to_owned(), filename: Some(input.clone()) })
-                    },
+                        Ok(Self::Url {
+                            url: urlstr.to_owned(),
+                            filename: Some(input),
+                        })
+                    }
                     Some(1) => {
                         // TODO: make it better
                         println!(" >>> {}", url.domain().unwrap());
-                        let j_url = if Confirm::new().with_prompt("Is this the correct jenkins server url?").interact()? {
+                        let j_url = if Confirm::new()
+                            .with_prompt("Is this the correct jenkins server url?")
+                            .interact()?
+                        {
                             url.domain().unwrap().to_owned()
                         } else {
                             Input::<String>::new()
@@ -280,16 +298,14 @@ impl Downloadable {
                                 .interact_text()?
                         };
 
-                        let job: String = Input::new()
-                            .with_prompt("Job:")
-                            .interact_text()?;
-                        
+                        let job: String = Input::new().with_prompt("Job:").interact_text()?;
+
                         let build: String = Input::new()
                             .with_prompt("Build:")
                             .with_initial_text("latest")
                             .default("latest".into())
                             .interact_text()?;
-                        
+
                         let artifact: String = Input::new()
                             .with_prompt("Artifact:")
                             .with_initial_text("first")
@@ -302,7 +318,7 @@ impl Downloadable {
                             build,
                             artifact,
                         })
-                    },
+                    }
                     None | Some(_) => bail!("Cancelled"),
                 }
             }

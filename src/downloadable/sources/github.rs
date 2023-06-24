@@ -42,13 +42,18 @@ pub async fn fetch_github_release_asset(
     let release = match tag {
         "latest" => releases.into_iter().next(),
         id => releases.into_iter().find(|r| r.tag_name == id),
-    }.ok_or(anyhow!("release not found"))?;
+    }
+    .ok_or(anyhow!("release not found"))?;
 
     let resolved_asset = match asset {
         "" | "first" | "any" => release.assets.into_iter().next(),
-        id => release.assets.into_iter().find(|a| match_artifact_name(id, &a.name)),
-    }.ok_or(anyhow!("asset not found"))?;
-   
+        id => release
+            .assets
+            .into_iter()
+            .find(|a| match_artifact_name(id, &a.name)),
+    }
+    .ok_or(anyhow!("asset not found"))?;
+
     Ok(resolved_asset)
 }
 
@@ -59,7 +64,11 @@ pub async fn fetch_github_release_filename(
     client: &reqwest::Client,
 ) -> Result<String> {
     Ok(match asset {
-        "" | "first" | "any" => fetch_github_release_asset(repo, tag, asset, client).await?.name,
+        "" | "first" | "any" => {
+            fetch_github_release_asset(repo, tag, asset, client)
+                .await?
+                .name
+        }
         id => id.to_owned(),
     })
 }

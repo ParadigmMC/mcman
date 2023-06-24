@@ -1,8 +1,10 @@
 use std::{
     collections::HashMap,
+    env,
     fs::{self, OpenOptions},
     io::Write,
-    path::{Path, PathBuf}, env, time::Instant,
+    path::{Path, PathBuf},
+    time::Instant,
 };
 
 use anyhow::{Context, Result};
@@ -13,8 +15,9 @@ use tokio::fs::File;
 use super::version::APP_USER_AGENT;
 use crate::{
     bootstrapper::{bootstrap, BootstrapContext},
+    downloadable::Downloadable,
     model::Server,
-    util, downloadable::Downloadable,
+    util,
 };
 
 pub fn cli() -> Command {
@@ -141,7 +144,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
             "          {}",
             style("start.bat and start.sh created").dim()
         );
-    }    
+    }
 
     println!(
         " Successfully built {} in {}",
@@ -182,8 +185,7 @@ async fn download_server_jar(
         .await?;
 
         match &server.jar {
-            Downloadable::Quilt { .. }
-            | Downloadable::Fabric { .. } => {
+            Downloadable::Quilt { .. } | Downloadable::Fabric { .. } => {
                 todo!()
             }
             _ => (),
