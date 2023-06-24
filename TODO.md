@@ -2,18 +2,12 @@
 
 ## sources
 
-- [x] URL
-- [x] Vanilla
-- [x] Modrinth
-- [x] PaperMC
+- [ ] Forge
+- [ ] Fabric
+- [ ] Quilt
 - [ ] Hangar
 - [ ] Bukkit/Curseforge
-- [x] Spigot
-  - [x] Spiget
-  - [ ] BuildTools
-- [ ] Jenkins
-- [x] PurpurMC
-- [x] Github Releases
+- [ ] BuildTools
 - [ ] File
 
 ## commmmmmmands
@@ -38,4 +32,5 @@
   - [x] toml
   - [ ] env
 - [ ] support git-like calls from inner folders (recurse server.toml lookup)
-- [ ] mods support (along with plugins)
+- [x] mods support (along with plugins)
+- [ ] server readme lol

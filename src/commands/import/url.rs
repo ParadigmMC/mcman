@@ -1,24 +1,61 @@
 use anyhow::{Context, Result};
 use clap::{arg, ArgMatches, Command};
+use dialoguer::{Input, Select, theme::ColorfulTheme};
 use std::path::Path;
 
-use crate::model::Server;
+use crate::{model::Server, downloadable::Downloadable, commands::version::APP_USER_AGENT};
 
 pub fn cli() -> Command {
     Command::new("url")
         .about("Import from an URL")
         .arg(arg!(<url>).required(true))
-        .arg(arg!(-m --mod "Explicitly define it as a mod").required(false))
 }
 
-pub fn run(matches: &ArgMatches) -> Result<()> {
+pub async fn run(matches: &ArgMatches) -> Result<()> {
     let mut server =
         Server::load(Path::new("server.toml")).context("Failed to load server.toml")?;
 
-    server.import_from_url(
-        matches.get_one::<String>("url").unwrap(),
-        matches.get_one::<bool>("mod").map(|&b| b.to_owned()),
-    )?;
+    let http_client = reqwest::Client::builder()
+        .user_agent(APP_USER_AGENT)
+        .build()
+        .context("Failed to create HTTP client")?;
+
+    let urlstr = match matches.get_one::<String>("url") {
+        Some(url) => url.clone(),
+        None => {
+            Input::<String>::new()
+                .with_prompt("URL:")
+                .interact()?
+        }
+    };
+
+    let addon = Downloadable::from_url_interactive(&http_client, &server, &urlstr).await?;
+
+    let is_plugin = match server.jar {
+        Downloadable::Fabric { .. }
+        | Downloadable::Quilt { .. } => false,
+
+        Downloadable::GithubRelease { .. }
+        | Downloadable::Jenkins { .. }
+        | Downloadable::Url { .. } => {
+            Select::with_theme(&ColorfulTheme::default())
+                .with_prompt("Import as...")
+                .default(0)
+                .items(&[
+                    "Plugin",
+                    "Mod",
+                ])
+                .interact()? == 0
+        }
+
+        _ => true,
+    };
+
+    if is_plugin {
+        server.plugins.push(addon);
+    } else {
+        server.mods.push(addon);
+    }
 
     server.save(Path::new("server.toml"))?;
 

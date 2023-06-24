@@ -144,11 +144,10 @@ fn pick_server_jar(ctx: &mut SetupContext) -> Result<()> {
     let def_jar_id = match ctx.server.jar {
         Downloadable::Vanilla {} => 0,
         Downloadable::Paper {} => 1,
-        Downloadable::Folia {} => 2,
-        Downloadable::Purpur { build: _ } => 3,
-        Downloadable::Velocity {} => 4,
-        Downloadable::Waterfall {} => 5,
-        _ => 6,
+        Downloadable::Purpur { build: _ } => 2,
+        Downloadable::Velocity {} => 3,
+        Downloadable::Waterfall {} => 4,
+        _ => 5,
     };
 
     let server_jar_type = Select::with_theme(&ctx.theme)
@@ -156,7 +155,6 @@ fn pick_server_jar(ctx: &mut SetupContext) -> Result<()> {
         .default(def_jar_id)
         .item("Vanilla")
         .item("Paper")
-        .item("Folia")
         .item("Purpur")
         .item("(proxy) Velocity")
         .item("(proxy) Waterfall")
@@ -166,13 +164,12 @@ fn pick_server_jar(ctx: &mut SetupContext) -> Result<()> {
     let jar_dl = match server_jar_type {
         0 => Downloadable::Vanilla {},
         1 => Downloadable::Paper {},
-        2 => Downloadable::Folia {},
-        3 => Downloadable::Purpur {
+        2 => Downloadable::Purpur {
             build: "latest".to_owned(),
         },
-        4 => Downloadable::Velocity {},
-        5 => Downloadable::Waterfall {},
-        6 => Downloadable::Url {
+        3 => Downloadable::Velocity {},
+        4 => Downloadable::Waterfall {},
+        5 => Downloadable::Url {
             url: Input::with_theme(&ctx.theme)
                 .with_prompt("Server Jar URL")
                 .interact()?,

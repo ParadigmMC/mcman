@@ -21,6 +21,7 @@ fn cli() -> Command {
         .subcommand(commands::build::cli())
         .subcommand(commands::init::cli())
         .subcommand(commands::version::cli())
+        .subcommand(commands::readme::cli())
         .subcommand(commands::setup::cli())
         .subcommand(commands::import::cli())
 }
@@ -31,8 +32,9 @@ async fn main() -> Result<()> {
 
     match matches.subcommand() {
         Some(("build", sub_matches)) => commands::build::run(sub_matches).await,
-        Some(("init", sub_matches)) => commands::init::run(sub_matches),
-        Some(("import", sub_matches)) => commands::import::run(sub_matches),
+        Some(("init", sub_matches)) => commands::init::run(sub_matches).await,
+        Some(("import", sub_matches)) => commands::import::run(sub_matches).await,
+        Some(("readme", _sub_matches)) => commands::readme::run().await,
         Some(("setup", _sub_matches)) => commands::setup::run(),
         Some(("version", sub_matches)) => {
             commands::version::run(sub_matches);

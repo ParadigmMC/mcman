@@ -9,3 +9,11 @@ pub async fn fetch_vanilla(version: &str, client: &reqwest::Client) -> Result<re
         id => version_manifest.fetch(id, client).await?,
     }.downloads.server.download(client).await?)
 }
+
+pub async fn fetch_latest_mcver(
+    client: &reqwest::Client,
+) -> Result<String> {
+    let version_manifest = mcapi::vanilla::fetch_version_manifest(client).await?;
+
+    Ok(version_manifest.latest.release)
+}

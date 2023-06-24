@@ -732,7 +732,6 @@ checksum = "518ef76f2f87365916b142844c16d8fefd85039bc5699050210a7778ee1cd1de"
 [[package]]
 name = "mcapi"
 version = "0.1.0"
-source = "git+https://github.com/ParadigmMC/mcapi.git#11354ed881215ddb340602a1ec784e5c776961f1"
 dependencies = [
  "os-version",
  "regex",

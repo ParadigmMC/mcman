@@ -5,3 +5,5 @@ pub mod purpur;
 pub mod spigot;
 pub mod vanilla;
 pub mod jenkins;
+pub mod fabric;
+pub mod quilt;

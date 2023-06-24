@@ -1,7 +1,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::model::Server;
+use crate::{model::Server, downloadable::sources::fabric::{fetch_fabric_latest_loader, fetch_fabric_latest_installer}};
 
 use self::sources::{
     github::{download_github_release, fetch_github_release_filename},
@@ -9,10 +9,16 @@ use self::sources::{
     papermc::{download_papermc_build, fetch_papermc_build},
     purpur::{download_purpurmc_build, fetch_purpurmc_builds},
     spigot::{download_spigot_resource, fetch_spigot_resource_latest_ver},
-    vanilla::fetch_vanilla, jenkins::{download_jenkins, get_jenkins_filename},
+    vanilla::fetch_vanilla, jenkins::{download_jenkins, get_jenkins_filename}, fabric::download_fabric, quilt::{download_quilt_installer, get_quilt_filename},
 };
-mod sources;
+pub mod sources;
 mod import_url;
+mod interactive;
+mod markdown;
+
+static BUNGEECORD_JENKINS: &str = "https://ci.md-5.net";
+static BUNGEECORD_JOB: &str = "BungeeCord";
+static BUNGEECORD_ARTIFACT: &str = "BungeeCord";
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
@@ -71,11 +77,27 @@ pub enum Downloadable {
         build: String,
     },
 
+    Fabric {
+        #[serde(default = "latest")]
+        loader: String,
+
+        #[serde(default = "latest")]
+        installer: String,
+    },
+
+    Quilt {
+        #[serde(default = "latest")]
+        loader: String,
+
+        #[serde(default = "latest")]
+        installer: String,
+    },
+
     // papermc
     Paper {},
-    Folia {},
     Velocity {},
     Waterfall {},
+    BungeeCord {},
 }
 
 pub fn latest() -> String {
@@ -114,13 +136,24 @@ impl Downloadable {
                 download_jenkins(client, url, job, build, artifact).await?
             ),
 
+            Self::BungeeCord {  } => Ok(
+                download_jenkins(client, BUNGEECORD_JENKINS, BUNGEECORD_JOB, "latest", BUNGEECORD_ARTIFACT).await?
+            ),
+
             Self::Paper {} => Ok(download_papermc_build("paper", &mcver, "latest", client).await?),
-            Self::Folia {} => Ok(download_papermc_build("folia", &mcver, "latest", client).await?),
             Self::Velocity {} => {
                 Ok(download_papermc_build("velocity", &mcver, "latest", client).await?)
             }
             Self::Waterfall {} => {
                 Ok(download_papermc_build("waterfall", &mcver, "latest", client).await?)
+            }
+
+            Self::Fabric { loader, installer } => {
+                Ok(download_fabric(client, &mcver, loader, installer).await?)
+            }
+
+            Self::Quilt { loader, installer } => {
+                Ok(download_quilt_installer(client, &mcver, loader, installer).await?)
             }
         }
     }
@@ -174,15 +207,97 @@ impl Downloadable {
                 Ok(get_jenkins_filename(client, url, job, build, artifact).await?.1)
             }
 
+            Self::BungeeCord {  } => {
+                let build = get_jenkins_filename(client, BUNGEECORD_JENKINS, BUNGEECORD_JOB, "latest", BUNGEECORD_ARTIFACT).await?.3;
+                Ok(format!("BungeeCord-{build}.jar"))
+            }
+
             Self::Paper {} => Ok(get_filename_papermc("paper", &mcver, "latest", client).await?),
-            Self::Folia {} => Ok(get_filename_papermc("folia", &mcver, "latest", client).await?),
             Self::Velocity {} => {
                 Ok(get_filename_papermc("velocity", &mcver, "latest", client).await?)
             }
             Self::Waterfall {} => {
                 Ok(get_filename_papermc("waterfall", &mcver, "latest", client).await?)
             }
+
+            Self::Fabric { loader, installer } => {
+                let l = match loader.as_str() {
+                    "latest" => fetch_fabric_latest_loader(client).await?,
+                    id => id.to_owned(),
+                };
+
+                let i = match installer.as_str() {
+                    "latest" => fetch_fabric_latest_installer(client).await?,
+                    id => id.to_owned(),
+                };
+
+                Ok(format!("fabric-server-mc.{mcver}-loader.{l}-launcher.{i}.jar"))
+            }
+
+            Self::Quilt { loader, .. } => {
+                Ok(get_quilt_filename(client, &mcver, loader).await?)
+            }
         }
+    }
+}
+
+impl std::fmt::Display for Downloadable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let t = match self {
+            Self::Url { url, .. } => {
+                format!("Custom URL: {url}")
+            }
+
+            Self::Vanilla {  } => "Vanilla".to_owned(),
+
+            Self::Modrinth { id, version } => {
+                format!("Modrinth Project {{
+                    id: {id}
+                    version: {version}
+                }}")
+            }
+
+            Self::Spigot { id } => format!("Spigot: {id}"),
+
+            Self::GithubRelease { repo, tag, asset } => {
+                format!("Github Release {{
+                    Repository: {repo}
+                    Release: {tag}
+                    Asset: {asset}
+                }}")
+            }
+
+            Self::Jenkins { url, job, build, artifact } => {
+                format!("Jenkins {{
+                    Jenkins URL: {url}
+                    Job: {job}
+                    Build: {build}
+                    Artifact: {artifact}
+                }}")
+            }
+
+            Self::Fabric { loader, installer } => {
+                format!("Fabric {{
+                    Loader version: {loader}
+                    Installer version: {installer}
+                }}")
+            }
+
+            Self::Quilt { loader, installer } => {
+                format!("Quilt {{
+                    Loader version: {loader}
+                    Installer version: {installer}
+                }}")
+            }
+
+            Self::BungeeCord {  } => "BungeeCord".to_owned(),
+            Self::Paper {  } => "Paper, latest".to_owned(),
+            Self::Velocity {  } => "Velocity, latest".to_owned(),
+            Self::Waterfall {  } => "Waterfall, latest".to_owned(),
+            Self::PaperMC { project, build } => format!("PaperMC/{project}, build {build}"),
+            Self::Purpur { build } => format!("Purpur, build {build}"),
+        };
+        f.write_str(&t)
     }
 }
 

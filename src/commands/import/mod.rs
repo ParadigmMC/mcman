@@ -11,9 +11,9 @@ pub fn cli() -> Command {
         .subcommand(url::cli())
 }
 
-pub fn run(matches: &ArgMatches) -> Result<()> {
+pub async fn run(matches: &ArgMatches) -> Result<()> {
     match matches.subcommand() {
-        Some(("url", sub_matches)) => url::run(sub_matches)?,
+        Some(("url", sub_matches)) => url::run(sub_matches).await?,
         _ => unreachable!(),
     }
     Ok(())

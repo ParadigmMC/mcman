@@ -1,11 +1,14 @@
 use console::style;
-use std::ffi::OsStr;
+use dialoguer::Confirm;
+use dialoguer::{Input, Select, theme::ColorfulTheme};
+use std::{ffi::OsStr, path::PathBuf};
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 
-use crate::{downloadable::Downloadable, model::Server};
-use anyhow::{anyhow, bail, Result};
+use crate::commands::readme;
+use crate::{downloadable::{Downloadable, sources::vanilla::fetch_latest_mcver}, model::{Server, ServerLauncher}, commands::version::APP_USER_AGENT};
+use anyhow::{bail, Result, Context};
 use clap::{arg, ArgMatches, Command};
 
 pub fn cli() -> Command {
@@ -15,8 +18,13 @@ pub fn cli() -> Command {
         .arg(arg!(--proxy "Initialize as a proxy server (velocity latest)").required(false))
 }
 
-pub fn run(matches: &ArgMatches) -> Result<()> {
-    println!(" > {}", style("initializing server...").dim());
+pub async fn run(matches: &ArgMatches) -> Result<()> {
+    let http_client = reqwest::Client::builder()
+        .user_agent(APP_USER_AGENT)
+        .build()
+        .context("Failed to create HTTP client")?;
+
+    println!(" > {}", style("Initializing new server...").cyan());
 
     let res = std::fs::metadata("server.toml");
     if let Err(err) = res {
@@ -35,31 +43,96 @@ pub fn run(matches: &ArgMatches) -> Result<()> {
         current_dir
             .file_name()
             .and_then(OsStr::to_str)
-            .ok_or(anyhow!(
-                "Can't get server name from current path; please specify a name using --name"
-            ))?
+            .unwrap_or("")
             .to_owned()
     };
 
-    let mut server = Server {
+    let theme = ColorfulTheme::default();
+
+    let name = Input::<String>::with_theme(&theme)
+        .with_prompt("Server name?")
+        .default(name.clone())
+        .with_initial_text(&name)
+        .interact_text()?;
+
+    let serv_type = Select::with_theme(&theme)
+        .with_prompt("Type of server?")
+        .default(0)
+        .items(&[
+            "Normal Server (vanilla, spigot, paper etc.)",
+            "Modded Server (forge, fabric, quilt etc.)",
+            "Proxy Server (velocity, bungeecord, waterfall etc.)",
+        ])
+        .interact()?;
+
+    let is_proxy = serv_type == 2;
+    
+    let mc_version = if is_proxy {
+        "latest".to_owned()
+    } else {
+        let latest_ver = fetch_latest_mcver(&http_client).await.context("Fetching latest version")?;
+
+        Input::with_theme(&theme)
+            .with_prompt("Server version?")
+            .default(latest_ver)
+            .interact_text()?
+    };
+
+    let launcher = if is_proxy {
+        ServerLauncher {
+            proxy_flags: true,
+            aikars_flags: false,
+            nogui: false,
+            ..Default::default()
+        }
+    } else {
+        ServerLauncher::default()
+    };
+
+    let jar = match serv_type {
+        0 => Downloadable::select_proxy_jar_interactive(),
+        1 => Downloadable::select_modded_jar_interactive(),
+        2 => Downloadable::select_jar_interactive(),
+        _ => unreachable!(),
+    }?;
+
+    let server = Server {
         name,
+        mc_version,
+        jar,
+        launcher,
         ..Default::default()
     };
 
-    if *matches.get_one::<bool>("proxy").unwrap_or(&false) {
-        server.set_proxy_defaults();
-        server.jar = Downloadable::Velocity {};
-    }
-
-    initialize_environment()?;
+    initialize_environment(is_proxy)?;
     server.save(Path::new("server.toml"))?;
 
-    println!(" > {}", style("server has been initialized").green());
+    let write_readme = if PathBuf::from("./README.md").exists() {
+        Confirm::with_theme(&theme)
+            .default(true)
+            .with_prompt("Overwrite README.md?")
+            .interact()?
+    } else {
+        true
+    };
+
+    if write_readme {
+        readme::initialize_readme(&server)?;
+    }
+
+    println!(" > {}", style("Server has been initialized!").cyan());
+    println!(
+        " > {} {}",
+        style("Build using").cyan(),
+        style("mcman build").bold()
+    );
 
     Ok(())
 }
 
-pub fn initialize_environment() -> Result<()> {
+pub fn initialize_environment(
+    is_proxy: bool
+) -> Result<()> {
     std::fs::create_dir_all("./config")?;
 
     let mut f = File::create(".dockerignore")?;
@@ -71,8 +144,10 @@ pub fn initialize_environment() -> Result<()> {
     let mut f = File::create("Dockerfile")?;
     f.write_all(include_bytes!("../../res/default_dockerfile"))?;
 
-    let mut f = File::create("./config/server.properties")?;
-    f.write_all(include_bytes!("../../res/server.properties"))?;
+    if !is_proxy {
+        let mut f = File::create("./config/server.properties")?;
+        f.write_all(include_bytes!("../../res/server.properties"))?;
+    }
 
     Ok(())
 }

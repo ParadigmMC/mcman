@@ -4,11 +4,27 @@ use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ModrinthProject {
+    pub slug: String,
+    pub title: String,
+    pub description: String,
+    pub categories: Vec<String>,
+    pub client_side: DependencyType,
+    pub server_side: DependencyType,
+    pub body: String,
+    pub project_type: String,
+    // ...
+    pub id: String,
+    pub team: String,
+    pub versions: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ModrinthVersion {
     pub name: String,
     pub version_number: String,
     pub changelog: String,
-    pub dependencies: Vec<String>,
+    pub dependencies: Vec<ModrinthDependency>,
     pub game_versions: Vec<String>,
     pub version_type: VersionType,
     pub loaders: Vec<String>,
@@ -25,23 +41,24 @@ pub struct ModrinthVersion {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ModrinthDependency {
-    pub version_id: String,
-    pub project_id: String,
-    pub file_name: String,
-    pub dependency_type: DependencyType,
+    pub version_id: Option<String>,
+    pub project_id: Option<String>,
+    pub file_name: Option<String>,
+    pub dependency_type: Option<DependencyType>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum DependencyType {
     Required,
     Optional,
     Incompatible,
     Embedded,
+    Unsupported,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum VersionType {
     Release,
     Beta,
@@ -49,7 +66,7 @@ pub enum VersionType {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum ModrinthStatus {
     Listed,
     Archived,
@@ -69,6 +86,19 @@ pub struct ModrinthFile {
     // file_type omitted
 }
 
+pub async fn fetch_modrinth_project(
+    client: &reqwest::Client,
+    id: &str,
+) -> Result<ModrinthProject> {
+    Ok(client
+        .get("https://api.modrinth.com/v2/project/".to_owned() + id)
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<ModrinthProject>()
+        .await?)
+}
+
 pub async fn fetch_modrinth_filename(
     id: &str,
     version: &str,
@@ -78,7 +108,7 @@ pub async fn fetch_modrinth_filename(
     let project = fetch_modrinth_versions(client, id, query).await?;
 
     let verdata = match version {
-        "latest" => project.iter().next(),
+        "latest" => project.first(),
         id => project.iter().find(|&v| v.id == id),
     };
 
@@ -124,7 +154,7 @@ pub async fn download_modrinth(
     let project = fetch_modrinth_versions(client, id, query).await?;
 
     let verdata = match version {
-        "latest" => project.iter().next(),
+        "latest" => project.first(),
         id => project.iter().find(|&v| v.id == id),
     };
 

@@ -5,8 +5,7 @@ use std::{
     path::Path,
 };
 
-use anyhow::{anyhow, Result};
-use reqwest::Url;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 use crate::downloadable::Downloadable;
@@ -134,94 +133,11 @@ impl Server {
         Ok(())
     }
 
-    pub fn set_proxy_defaults(&mut self) {
-        self.launcher.proxy_flags = true;
-        self.launcher.aikars_flags = false;
-        self.launcher.nogui = false;
-    }
-
-    pub fn import_from_url(&mut self, urlstr: &str, is_mod: Option<bool>) -> Result<()> {
-        let url = Url::parse(urlstr)?;
-        match url.domain() {
-            Some("cdn.modrinth.com") => {
-                self.import_from_modrinthcdn(&url, Some(true))?;
-            }
-            Some("www.spigotmc.org") => {
-                // https://www.spigotmc.org/resources/http-requests.101253/
-
-                let segments: Vec<&str> = url
-                    .path_segments()
-                    .ok_or_else(|| anyhow!("Invalid url"))?
-                    .collect();
-
-                if segments.first() != Some(&"resources") {
-                    Err(anyhow!("Invalid Spigot Resource URL"))?;
-                }
-
-                let id = segments
-                    .get(1)
-                    .ok_or_else(|| anyhow!("Invalid Spigot Resource URL"))?;
-
-                match is_mod {
-                    Some(true) => self.mods.push(Downloadable::Spigot {
-                        id: id.to_owned().to_owned(),
-                    }),
-                    Some(false) | None => self.plugins.push(Downloadable::Spigot {
-                        id: id.to_owned().to_owned(),
-                    }),
-                }
-            }
-            Some(_) | None => match is_mod {
-                Some(true) => self.mods.push(Downloadable::Url {
-                    url: url.to_string(),
-                    filename: None,
-                }),
-                Some(false) | None => self.plugins.push(Downloadable::Url {
-                    url: url.to_string(),
-                    filename: None,
-                }),
-            },
-        }
-        Ok(())
-    }
-
-    pub fn import_from_modrinthcdn(&mut self, url: &Url, is_mod: Option<bool>) -> Result<()> {
-        // https://cdn.modrinth.com/data/{ID}/versions/{VERSION}/{FILENAME}
-        let segments: Vec<&str> = url
-            .path_segments()
-            .ok_or_else(|| anyhow!("Invalid Modrinth CDN URL"))?
-            .collect();
-        let id = segments
-            .get(1)
-            .ok_or_else(|| anyhow!("Invalid Modrinth CDN URL"))?;
-        let version = segments
-            .get(3)
-            .ok_or_else(|| anyhow!("Invalid Modrinth CDN URL"))?;
-        //let filename = segments.get(4).ok_or_else(|| anyhow!("Invalid Modrinth CDN URL"))?;
-
-        if segments.first() != Some(&"data") || segments.get(2) != Some(&"versions") {
-            Err(anyhow!("Invalid Modrinth CDN URL"))?;
-        }
-
-        match is_mod {
-            Some(true) | None => self.mods.push(Downloadable::Modrinth {
-                id: id.to_owned().to_owned(),
-                version: version.to_owned().to_owned(),
-            }),
-            Some(false) => self.plugins.push(Downloadable::Modrinth {
-                id: id.to_owned().to_owned(),
-                version: version.to_owned().to_owned(),
-            }),
-        }
-
-        Ok(())
-    }
-
     #[allow(dead_code)]
     pub fn format(&self, str: &str) -> String {
         mcapi::dollar_repl(str, |key| {
             match key {
-                "mcver" | "mcversion" => Some(self.mc_version.to_owned()),
+                "mcver" | "mcversion" => Some(self.mc_version.clone()),
                 // Maybe also allow self.variables? idk
                 _ => None,
             }
