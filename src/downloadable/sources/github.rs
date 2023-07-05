@@ -106,3 +106,18 @@ pub async fn download_github_release(
         .await?
         .error_for_status()?)
 }
+
+pub async fn fetch_repo_description(client: &reqwest::Client, repo: &str) -> Result<String> {
+    let desc = client
+        .get("https://api.github.com/repos/".to_owned() + repo)
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<serde_json::Value>()
+        .await?["description"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+
+    Ok(desc)
+}

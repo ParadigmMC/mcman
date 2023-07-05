@@ -11,7 +11,74 @@ Index:
 
 ## CLI
 
-todo!()
+Here are a list of commands. You can type `mcman` or `mcman --help` for a basic list of it.
+
+### `mcman init`
+
+Initializes a new server in the current directory.
+
+Example:
+
+### `mcman version`
+
+Shows the version of mcman.
+
+### `mcman build`
+
+Builds the server into the [output folder](#folder-structure) using the [`server.toml`](#servertoml) and the `config/` directory.
+
+Alternatively set the output folder manually using `--output "outfolder"` option.
+
+### `mcman readme`
+
+This command refreshes the server's `README.md` file if there is any.
+
+Only the two templates inside the markdown files are refreshed:
+
+**Server Info:** This template renders information about the server.
+
+```md
+<!--start:mcman-server-->
+... content ...
+<!--end:mcman-server-->
+```
+
+Example render:
+
+| Version | Type                                       | Build    |
+| ------- | ------------------------------------------ | -------- |
+| 1.20.1  | [Paper](https://papermc.io/software/paper) | *Latest* |
+
+---
+
+**Addons List:** This template renders a list of addons (plugins or mods)
+
+```md
+<!--start:mcman-addons-->
+... content ...
+<!--end:mcman-addons-->
+```
+
+Example render:
+
+| Name | Description |
+| --- | --- |
+| [BlueMap](https://modrinth.com/plugin/bluemap) |  A Minecraft mapping tool that creates 3D models of your Minecraft worlds and displays them in a web viewer. |
+| [FastAsyncWorldEdit](https://modrinth.com/plugin/fastasyncworldedit) | Blazingly fast world manipulation for artists, builders and everyone else |
+
+---
+
+### `mcman import url <URL>`
+
+Imports a plugin or a mod from a url.
+
+Example usage:
+
+```sh
+mcman import url https://modrinth.com/plugin/imageframe
+
+mcman import url https://www.spigotmc.org/resources/armorstandeditor-reborn.94503/
+```
 
 ## Folder Structure
 
@@ -21,7 +88,7 @@ And database files are next to config files!
 When using `mcman`, your folder structure will look something like this:
 
 - 📂 **cool_server/**
-  - 📋 `server.toml`
+  - 📋 **`server.toml`**
   - 🚢 `Dockerfile`
   - 📜 `.dockerignore` and `.gitignore`
   - 📁 **config/**
@@ -72,7 +139,7 @@ export TOKEN=asdf
 ```
 
 ```bat
-rem Windows:
+:: Windows:
 set TOKEN=asdf
 ```
 
@@ -91,7 +158,7 @@ online-mode=false
 📜 `config/plugins/someplugin/bossbar.yaml`:
 
 ```yaml
-bossbar: "${WEBSITE}"
+bossbar: "${SERVER_NAME} - ${WEBSITE}"
 ```
 
 📜 `config/plugins/nice_plugin/config.yml`:
@@ -102,6 +169,13 @@ messages:
 
 token: ${TOKEN}
 ```
+
+### Special Variables
+
+- `SERVER_NAME`: name property from server.toml
+- `SERVER_VERSION`: mc_version property from server.toml
+
+---
 
 ## server.toml
 

@@ -31,8 +31,7 @@ pub fn cli() -> Command {
 }
 
 pub async fn run(matches: &ArgMatches) -> Result<()> {
-    let mut server =
-        Server::load(Path::new("server.toml")).context("Failed to load server.toml")?;
+    let mut server = Server::load().context("Failed to load server.toml")?;
     let http_client = reqwest::Client::builder()
         .user_agent(APP_USER_AGENT)
         .build()

@@ -13,6 +13,7 @@ use super::{
 };
 
 impl Downloadable {
+    #[allow(clippy::too_many_lines)]
     pub async fn from_url_interactive(
         client: &reqwest::Client,
         server: &Server,
@@ -239,7 +240,7 @@ impl Downloadable {
                     "" => {
                         let inferred = file_opt.unwrap_or("");
 
-                        let input: String = Input::new()
+                        let input: String = Input::with_theme(&ColorfulTheme::default())
                             .with_prompt("Asset name?")
                             .with_initial_text(inferred)
                             .default(inferred.into())
@@ -271,42 +272,75 @@ impl Downloadable {
                             .last()
                             .unwrap();
 
-                        let input: String = Input::new()
+                        let input: String = Input::with_theme(&ColorfulTheme::default())
                             .with_prompt("Filename?")
                             .with_initial_text(inferred)
                             .default(inferred.into())
                             .interact_text()?;
 
+                        let desc: String = Input::with_theme(&ColorfulTheme::default())
+                            .with_prompt("Optional description/comment?")
+                            .interact_text()?;
+
                         Ok(Self::Url {
                             url: urlstr.to_owned(),
                             filename: Some(input),
+                            desc: if desc.is_empty() { None } else { Some(desc) },
                         })
                     }
                     Some(1) => {
                         // TODO: make it better
-                        println!(" >>> {}", url.domain().unwrap());
-                        let j_url = if Confirm::new()
+                        println!(" >>> https://{}", url.domain().unwrap());
+                        let j_url = if Confirm::with_theme(&ColorfulTheme::default())
                             .with_prompt("Is this the correct jenkins server url?")
                             .interact()?
                         {
-                            url.domain().unwrap().to_owned()
+                            "https://".to_owned() + url.domain().unwrap()
                         } else {
-                            Input::<String>::new()
+                            Input::<String>::with_theme(&ColorfulTheme::default())
                                 .with_prompt("Jenkins URL:")
                                 .with_initial_text(urlstr)
                                 .default(urlstr.into())
                                 .interact_text()?
                         };
 
-                        let job: String = Input::new().with_prompt("Job:").interact_text()?;
+                        let inferred_job = {
+                            let mut job = String::new();
 
-                        let build: String = Input::new()
+                            if let Some(mut segments) = url.path_segments() {
+                                loop {
+                                    if segments.next().unwrap_or_default() == "job" {
+                                        if let Some(job_name) = segments.next() {
+                                            if !job.is_empty() {
+                                                job += "/";
+                                            }
+
+                                            job += job_name;
+                                        } else {
+                                            break;
+                                        }
+                                    } else {
+                                        break;
+                                    }
+                                }
+                            }
+
+                            job
+                        };
+
+                        let job: String = Input::with_theme(&ColorfulTheme::default())
+                            .with_prompt("Job?")
+                            .with_initial_text(&inferred_job)
+                            .default(inferred_job)
+                            .interact_text()?;
+
+                        let build: String = Input::with_theme(&ColorfulTheme::default())
                             .with_prompt("Build:")
                             .with_initial_text("latest")
                             .default("latest".into())
                             .interact_text()?;
 
-                        let artifact: String = Input::new()
+                        let artifact: String = Input::with_theme(&ColorfulTheme::default())
                             .with_prompt("Artifact:")
                             .with_initial_text("first")
                             .default("first".into())

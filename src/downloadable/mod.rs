@@ -26,7 +26,7 @@ static BUNGEECORD_JENKINS: &str = "https://ci.md-5.net";
 static BUNGEECORD_JOB: &str = "BungeeCord";
 static BUNGEECORD_ARTIFACT: &str = "BungeeCord";
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum Downloadable {
     // sources
@@ -35,6 +35,9 @@ pub enum Downloadable {
         #[serde(default)]
         #[serde(skip_serializing_if = "crate::util::is_default")]
         filename: Option<String>,
+        #[serde(default)]
+        #[serde(skip_serializing_if = "crate::util::is_default")]
+        desc: Option<String>,
     },
 
     Vanilla {
@@ -122,9 +125,7 @@ impl Downloadable {
     ) -> Result<reqwest::Response> {
         let mcver = server.mc_version.clone();
         match self {
-            Self::Url { url, filename: _ } => {
-                Ok(client.get(url).send().await?.error_for_status()?)
-            }
+            Self::Url { url, .. } => Ok(client.get(url).send().await?.error_for_status()?),
 
             Self::Vanilla {} => Ok(fetch_vanilla(&mcver, client).await?),
             Self::PaperMC { project, build } => {
@@ -177,7 +178,7 @@ impl Downloadable {
     pub async fn get_filename(&self, server: &Server, client: &reqwest::Client) -> Result<String> {
         let mcver = server.mc_version.clone();
         match self {
-            Self::Url { url, filename } => {
+            Self::Url { url, filename, .. } => {
                 if let Some(filename) = filename {
                     return Ok(filename.clone());
                 }

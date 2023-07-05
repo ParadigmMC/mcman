@@ -6,7 +6,7 @@
 [![docker publish](https://img.shields.io/github/actions/workflow/status/ParadigmMC/mcman/publish.yml?logo=github&label=docker%20publish)](https://github.com/ParadigmMC/mcman/actions/workflows/publish.yml)
 ![GitHub Repo stars](https://img.shields.io/github/stars/ParadigmMC/mcman?logo=github)
 
-The Minecraft Server Manager CLI
+Powerful Minecraft Server Manager CLI. Easily install jars (server, plugins & mods) and write config files. Docker and git support included.
 
 <!-- todo: a (terminal) screenshot here -->
 
@@ -34,6 +34,31 @@ The Minecraft Server Manager CLI
 ## Getting Started
 
 View the [Documentation](./DOCS.md) here.
+
+## Changelog
+
+### `0.2.0`
+
+- Wrote more [documentation](./DOCS.md)
+- New branding lol
+- Added markdown templates
+  - `markdown` in server.toml
+  - `mcman markdown` command
+- Added `launcher.properties` in server.toml
+- Added `mcman import url <URL>` command
+  - Supports modrinth, modrinth's cdn, github, spigot, jenkins and custom urls.
+  - Also wayy too interactive. For example, it'll ask for which release to use and suggest which asset to use. Similar thing in modrinth importing.
+- Added **BungeeCord** support.
+<!-- - Added **Fabric** support. -->
+<!-- - Added **Quilt** support. -->
+- Added **Jenkins** as a source.
+- Impoved `mcman init` command. It now has a little wizard!
+- Made mcman build look prettier
+- Removed `Folia` shortcut because PaperMC api does not provide it.
+
+### `0.1.0`: The Prototype
+
+Initial project
 
 ## Special Thanks
 

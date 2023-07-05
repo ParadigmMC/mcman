@@ -1,0 +1,111 @@
+{
+    "$schema": "http://json-schema.org/schema",
+    "$id": "https://raw.githubusercontent.com/ParadigmMC/mcman/main/servertoml.schema.json",
+    "definitions": {
+        "Downloadable": {
+            "type": "object",
+            "anyOf": [
+                {
+                    "properties": {
+                        "type": { "const": "vanilla" }
+                    }
+                }
+            ]
+        }
+    },
+    "title": "server.toml",
+    "description": "The mcman server.toml configuration file",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "Name of the server. Exported as 'SERVER_NAME' in bootstrapping"
+        },
+        "mc_version": {
+            "type": "string",
+            "description": "Minecraft version of the server. Used for a lot of Downloadables. Exported as 'SERVER_VERSION' in bootstrapping"
+        },
+        "jar": {
+            "description": "The server jar to use",
+            "$ref": "#/definitions/Downloadable"
+        },
+        "launcher": {
+            "type": "object",
+            "description": "Config properties for generating launch scripts",
+            "properties": {
+                "aikars_flags": {
+                    "type": "boolean",
+                    "description": "Uses aikar's flags on the launch scripts"
+                },
+                "proxy_flags": {
+                    "type": "boolean",
+                    "description": "Uses proxy-optimized flags on the launch scripts"
+                },
+                "nogui": {
+                    "type": "boolean",
+                    "description": "Adds --nogui to launch scripts"
+                },
+                "disable": {
+                    "type": "boolean",
+                    "description": "If enabled, mcman will not generate launch scripts."
+                },
+                "jvm_args": {
+                    "type": "string",
+                    "description": "Custom JVM args (before `-jar server.jar`) to append to the launch scripts"
+                },
+                "game_args": {
+                    "type": "string",
+                    "description": "Custom game args (after `-jar server.jar`) to append to the launch scripts"
+                },
+                "eula_args": {
+                    "type": "boolean",
+                    "description": "Agree to EULA using the game flag `-Dcom.mojang.eula.agree=true`"
+                },
+                "memory": {
+                    "type": "string",
+                    "description": "The memory amount to give to the server"
+                },
+                "properties": {
+                    "type": "object",
+                    "description": "The -Dsomething=something properties to add to the launcher scripts"
+                }
+            }
+        },
+        "plugins": {
+            "type": "array",
+            "items": {
+                "description": "A list of plugins",
+                "$ref": "#/definitions/Downloadable"
+            }
+        },
+        "mods": {
+            "type": "array",
+            "items": {
+                "description": "A list of mods",
+                "$ref": "#/definitions/Downloadable"
+            }
+        },
+        "variables": {
+            "type": "object",
+            "description": "Variables to use in bootstrapping"
+        },
+        "markdown": {
+            "type": "object",
+            "description": "Markdown rendering features",
+            "properties": {
+                "files": {
+                    "type": "array",
+                    "description": "List of markdown files to check and edit",
+                    "items": {
+                        "type": "string",
+                        "description": "Path to a markdown file"
+                    }
+                },
+                "auto_update": {
+                    "type": "boolean",
+                    "description": "If enabled, will automatically render on some events"
+                }
+            }
+        }
+    }
+}

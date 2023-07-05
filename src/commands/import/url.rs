@@ -1,19 +1,17 @@
 use anyhow::{Context, Result};
 use clap::{arg, ArgMatches, Command};
 use dialoguer::{theme::ColorfulTheme, Input, Select};
-use std::path::Path;
 
 use crate::{commands::version::APP_USER_AGENT, downloadable::Downloadable, model::Server};
 
 pub fn cli() -> Command {
     Command::new("url")
         .about("Import from an URL")
-        .arg(arg!(<url>).required(true))
+        .arg(arg!(<url>).required(false))
 }
 
 pub async fn run(matches: &ArgMatches) -> Result<()> {
-    let mut server =
-        Server::load(Path::new("server.toml")).context("Failed to load server.toml")?;
+    let mut server = Server::load().context("Failed to load server.toml")?;
 
     let http_client = reqwest::Client::builder()
         .user_agent(APP_USER_AGENT)
@@ -50,7 +48,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         server.mods.push(addon);
     }
 
-    server.save(Path::new("server.toml"))?;
+    server.save()?;
 
     println!(" > Imported!");
 

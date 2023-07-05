@@ -110,3 +110,24 @@ pub async fn download_jenkins(
 
     Ok(client.get(download_url).send().await?.error_for_status()?)
 }
+
+pub async fn fetch_jenkins_description(
+    client: &reqwest::Client,
+    url: &str,
+    job: &str,
+) -> Result<String> {
+    let base = url.to_owned() + &str_process_job(job) + "/api/json?tree=description";
+
+    let desc = client
+        .get(&base)
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<serde_json::Value>()
+        .await?["description"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+
+    Ok(desc)
+}

@@ -3,10 +3,9 @@ use dialoguer::Confirm;
 use dialoguer::{theme::ColorfulTheme, Input, Select};
 use std::fs::File;
 use std::io::Write;
-use std::path::Path;
 use std::{ffi::OsStr, path::PathBuf};
 
-use crate::commands::readme;
+use crate::commands::markdown;
 use crate::{
     commands::version::APP_USER_AGENT,
     downloadable::{sources::vanilla::fetch_latest_mcver, Downloadable},
@@ -19,7 +18,6 @@ pub fn cli() -> Command {
     Command::new("init")
         .about("Initializes a new MCMan-powered Minecraft server")
         .arg(arg!(--name <NAME> "The name of the server").required(false))
-        .arg(arg!(--proxy "Initialize as a proxy server (velocity latest)").required(false))
 }
 
 pub async fn run(matches: &ArgMatches) -> Result<()> {
@@ -96,9 +94,9 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     };
 
     let jar = match serv_type {
-        0 => Downloadable::select_proxy_jar_interactive(),
+        0 => Downloadable::select_jar_interactive(),
         1 => Downloadable::select_modded_jar_interactive(),
-        2 => Downloadable::select_jar_interactive(),
+        2 => Downloadable::select_proxy_jar_interactive(),
         _ => unreachable!(),
     }?;
 
@@ -111,7 +109,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     };
 
     initialize_environment(is_proxy)?;
-    server.save(Path::new("server.toml"))?;
+    server.save()?;
 
     let write_readme = if PathBuf::from("./README.md").exists() {
         Confirm::with_theme(&theme)
@@ -123,7 +121,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     };
 
     if write_readme {
-        readme::initialize_readme(&server)?;
+        markdown::initialize_readme(&server)?;
     }
 
     println!(" > {}", style("Server has been initialized!").cyan());
