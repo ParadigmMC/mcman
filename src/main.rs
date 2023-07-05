@@ -21,7 +21,9 @@ fn cli() -> Command {
         .subcommand(commands::build::cli())
         .subcommand(commands::init::cli())
         .subcommand(commands::version::cli())
-        .subcommand(commands::setup::cli())
+        .subcommand(commands::markdown::cli())
+        .subcommand(commands::info::cli())
+        .subcommand(commands::pull::cli())
         .subcommand(commands::import::cli())
 }
 
@@ -31,13 +33,12 @@ async fn main() -> Result<()> {
 
     match matches.subcommand() {
         Some(("build", sub_matches)) => commands::build::run(sub_matches).await,
-        Some(("init", sub_matches)) => commands::init::run(sub_matches),
-        Some(("import", sub_matches)) => commands::import::run(sub_matches),
-        Some(("setup", _sub_matches)) => commands::setup::run(),
-        Some(("version", sub_matches)) => {
-            commands::version::run(sub_matches);
-            Ok(())
-        }
+        Some(("init", sub_matches)) => commands::init::run(sub_matches).await,
+        Some(("import" | "i", sub_matches)) => commands::import::run(sub_matches).await,
+        Some(("markdown" | "md", _)) => commands::markdown::run().await,
+        Some(("info", _sub_matches)) => commands::info::run(),
+        Some(("pull", sub_matches)) => commands::pull::run(sub_matches),
+        Some(("version", _)) => commands::version::run().await,
         _ => unreachable!(),
     }
 }

@@ -1,8 +1,9 @@
 [package]
 name = "mcman"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
-repository = "https://github.com/ParadigmMC/mcman/"
+authors = ["ParadigmMC"]
+repository = "https://github.com/ParadigmMC/mcman"
 
 [profile.release]
 debug = false
@@ -15,10 +16,15 @@ clap = "4.3"
 console = "0.15"
 dialoguer = "0.10"
 futures = "0.3"
+indexmap = "2.0.0"
 indicatif = "0.17"
 java-properties = { git = "https://github.com/ParadigmMC/java-properties.git" }
+mcapi = { git = "https://github.com/ParadigmMC/mcapi.git" }
+#mcapi = { path = "../mcapi" }
+pathdiff = { git = "https://github.com/Manishearth/pathdiff.git" }
 regex = "1.8"
 reqwest = { version = "0.11", features = ["json", "stream", "rustls-tls"], default-features = false }
+semver = "1.0.17"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tempfile = "3.6"

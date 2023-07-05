@@ -1,26 +1,54 @@
 use anyhow::{Context, Result};
 use clap::{arg, ArgMatches, Command};
-use std::path::Path;
+use dialoguer::{theme::ColorfulTheme, Input, Select};
 
-use crate::model::Server;
+use crate::{commands::version::APP_USER_AGENT, downloadable::Downloadable, model::Server};
 
 pub fn cli() -> Command {
     Command::new("url")
         .about("Import from an URL")
-        .arg(arg!(<url>).required(true))
-        .arg(arg!(-m --mod "Explicitly define it as a mod").required(false))
+        .arg(arg!(<url>).required(false))
 }
 
-pub fn run(matches: &ArgMatches) -> Result<()> {
-    let mut server =
-        Server::load(Path::new("server.toml")).context("Failed to load server.toml")?;
+pub async fn run(matches: &ArgMatches) -> Result<()> {
+    let mut server = Server::load().context("Failed to load server.toml")?;
 
-    server.import_from_url(
-        matches.get_one::<String>("url").unwrap(),
-        matches.get_one::<bool>("mod").map(|&b| b.to_owned()),
-    )?;
+    let http_client = reqwest::Client::builder()
+        .user_agent(APP_USER_AGENT)
+        .build()
+        .context("Failed to create HTTP client")?;
 
-    server.save(Path::new("server.toml"))?;
+    let urlstr = match matches.get_one::<String>("url") {
+        Some(url) => url.clone(),
+        None => Input::<String>::new().with_prompt("URL:").interact()?,
+    };
+
+    let addon = Downloadable::from_url_interactive(&http_client, &server, &urlstr).await?;
+
+    let is_plugin = match server.jar {
+        Downloadable::Fabric { .. } | Downloadable::Quilt { .. } => false,
+
+        Downloadable::GithubRelease { .. }
+        | Downloadable::Jenkins { .. }
+        | Downloadable::Url { .. } => {
+            Select::with_theme(&ColorfulTheme::default())
+                .with_prompt("Import as...")
+                .default(0)
+                .items(&["Plugin", "Mod"])
+                .interact()?
+                == 0
+        }
+
+        _ => true,
+    };
+
+    if is_plugin {
+        server.plugins.push(addon);
+    } else {
+        server.mods.push(addon);
+    }
+
+    server.save()?;
 
     println!(" > Imported!");
 

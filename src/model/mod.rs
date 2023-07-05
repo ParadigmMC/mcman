@@ -1,2 +1,2 @@
 mod server;
-pub use server::{Server, ServerLauncher};
+pub use server::{MarkdownOptions, Server, ServerLauncher};

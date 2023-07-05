@@ -1,96 +1,68 @@
 # mcman
 
-Robust Minecraft Server Framework
+![mcman](https://media.discordapp.net/attachments/1109215116060266567/1121117662785851522/mcman_large.png)
 
-<!-- todo: a screenshot here -->
+[![builds](https://img.shields.io/github/actions/workflow/status/ParadigmMC/mcman/build.yml?logo=github)](https://github.com/ParadigmMC/mcman/actions/workflows/build.yml)
+[![docker publish](https://img.shields.io/github/actions/workflow/status/ParadigmMC/mcman/publish.yml?logo=github&label=docker%20publish)](https://github.com/ParadigmMC/mcman/actions/workflows/publish.yml)
+![GitHub Repo stars](https://img.shields.io/github/stars/ParadigmMC/mcman?logo=github)
 
-## Getting Started
+Powerful Minecraft Server Manager CLI. Easily install jars (server, plugins & mods) and write config files. Docker and git support included.
 
-Check out the [tutorial](./TUTORIAL.md)
+<!-- todo: a (terminal) screenshot here -->
 
 ## Features
 
-- Automatically copy plugin configurations
-  - Supports variables inside config files
-- Automatic plugin installation
-  - **Supports Plugins From:**
-  - [Modrinth](https://modrinth.com/plugins/)
-  - [Spigot](https://spigotmc.org/)
-  - Custom plugins from URL
-  - (todo) github releases
-  - (todo) Jenkins
-- Automatic server jar downloading and launch script generation
-  - **Supports:**
-    - Vanilla
-    - [PaperMC](https://papermc.io/): paper, folia, velocity, waterfall
-    - [PurpurMC](https://purpurmc.org/)
-    - Custom jars from URL
+- Downloads the server jar, plugins and mods according to the `server.toml` config file
+  - Always keep up to date with new serverjar builds!
+  - No more manually downloading jars - mcman auto updates them according to your `server.toml`
+  - Supports a variety of [sources](./DOCS.md#downloadable):
+    - Server jars:
+      - Vanilla
+      - PaperMC (Paper, Folia, Waterfall and Velocity)
+      - PurpurMC
+    - Plugins/Mods:
+      - Modrinth
+      - Spigot
+    - And even **Github Releases**, **Custom URL**s and **Jenkins!**
+- Bootstraps your server configuration files
+  - Allows you to use variables inside your config files
+  - Environment variables for secrets
+  - You can now use git to version-control your server without making a complex `.gitignore`!
+- Docker support out of the box
+- Easy to use
 
-## Folder Structure
+## Getting Started
 
-Dont you hate how everything is a fork of everything so there's a billion config files in your server environment? *mcman fixes that*
+View the [Documentation](./DOCS.md) here.
 
-- 📂 cool_server/
-  - 📋 server.toml
-  - 📁 config/
-    - 📜 server.properties
-  - 📁 server/
-    - ... normal bloated server env files ...
-    - ☕ server.jar
-    - 📜 server.properties
-    - 📜 bukkit/spigot/paper/commands/help/permissions/pufferfish/purpur/wepif.yml
+## Changelog
 
-And the great part is, here's the contents of 📜 `cool_server/config/server.properties`:
+### `0.2.0`
 
-```properties
-server-port=${PORT}
-gamemode=creative
-motd=${MOTD}
-online-mode=false
-```
+- Wrote more [documentation](./DOCS.md)
+- New branding lol
+- Added markdown templates
+  - `markdown` in server.toml
+  - `mcman markdown` command
+- Added `launcher.properties` in server.toml
+- Added `mcman import url <URL>` command
+  - Supports modrinth, modrinth's cdn, github, spigot, jenkins and custom urls.
+  - Also wayy too interactive. For example, it'll ask for which release to use and suggest which asset to use. Similar thing in modrinth importing.
+- Added **BungeeCord** support.
+<!-- - Added **Fabric** support. -->
+<!-- - Added **Quilt** support. -->
+- Added **Jenkins** as a source.
+- Impoved `mcman init` command. It now has a little wizard!
+- Made mcman build look prettier
+- Removed `Folia` shortcut because PaperMC api does not provide it.
 
-You only need to write the values you need.
+### `0.1.0`: The Prototype
 
-This also works with YAML configurations. (currently just copies the file, sorry!)
-
-When you run `mcman build`, mcman will bootstrap your server into the `server/` folder. You can use **mcman** to efficiently configure and develop your minecraft servers using git.
-
-## Variables
-
-Does your config have secrets? Or do you want to repeat something over multiple places? You can use the variables feature to replace values in config files like so:
-
-📋 **`server.toml`:**
-
-```toml
-# ...
-[variables]
-Prefix = "[MyEpicServer]"
-```
-
-For secrets, you can use the `.env` file:
-
-```properties
-TOKEN=asdf
-```
-
-...Or set your environment variables prefixed with "`CONFIG_`":
-
-- Windows: `set CONFIG_TOKEN=asdf`
-- MacOS and Linux: `export CONFIG_TOKEN=asdf`
-
-And then in your config files:
-
-📜 **`config/plugins/nice_plugin/config.yml`:**
-
-```yaml
-messages:
-  no_permissions: ${Prefix} You do not have the permissions.
-
-token: ${TOKEN}
-```
+Initial project
 
 ## Special Thanks
 
 - [flags.sh](https://flags.sh/) for the flags and stuff
+  - thank you aikar
 - PaperMC and Modrinth for having an amazing API
 - You for using our project

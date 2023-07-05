@@ -1,24 +1,32 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::model::Server;
+use crate::{
+    downloadable::sources::fabric::{fetch_fabric_latest_installer, fetch_fabric_latest_loader},
+    model::Server,
+};
 
-use self::{
+use self::sources::{
+    fabric::download_fabric,
     github::{download_github_release, fetch_github_release_filename},
-    modrinth::{fetch_modrinth, fetch_modrinth_filename},
+    jenkins::{download_jenkins, get_jenkins_filename},
+    modrinth::{download_modrinth, fetch_modrinth_filename},
     papermc::{download_papermc_build, fetch_papermc_build},
     purpur::{download_purpurmc_build, fetch_purpurmc_builds},
+    quilt::{download_quilt_installer, get_quilt_filename},
     spigot::{download_spigot_resource, fetch_spigot_resource_latest_ver},
     vanilla::fetch_vanilla,
 };
-mod github;
-mod modrinth;
-mod papermc;
-mod purpur;
-mod spigot;
-mod vanilla;
+mod import_url;
+mod interactive;
+mod markdown;
+pub mod sources;
 
-#[derive(Debug, Deserialize, Serialize)]
+static BUNGEECORD_JENKINS: &str = "https://ci.md-5.net";
+static BUNGEECORD_JOB: &str = "BungeeCord";
+static BUNGEECORD_ARTIFACT: &str = "BungeeCord";
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum Downloadable {
     // sources
@@ -27,6 +35,9 @@ pub enum Downloadable {
         #[serde(default)]
         #[serde(skip_serializing_if = "crate::util::is_default")]
         filename: Option<String>,
+        #[serde(default)]
+        #[serde(skip_serializing_if = "crate::util::is_default")]
+        desc: Option<String>,
     },
 
     Vanilla {
@@ -58,6 +69,16 @@ pub enum Downloadable {
         asset: String,
     },
 
+    // pain in the a-
+    Jenkins {
+        url: String,
+        job: String,
+        #[serde(default = "latest")]
+        build: String,
+        #[serde(default = "first")]
+        artifact: String,
+    },
+
     // known projects
     Purpur {
         //version: String,
@@ -65,15 +86,35 @@ pub enum Downloadable {
         build: String,
     },
 
+    Fabric {
+        #[serde(default = "latest")]
+        loader: String,
+
+        #[serde(default = "latest")]
+        installer: String,
+    },
+
+    Quilt {
+        #[serde(default = "latest")]
+        loader: String,
+
+        #[serde(default = "latest")]
+        installer: String,
+    },
+
     // papermc
     Paper {},
-    Folia {},
     Velocity {},
     Waterfall {},
+    BungeeCord {},
 }
 
 pub fn latest() -> String {
     "latest".to_owned()
+}
+
+pub fn first() -> String {
+    "first".to_owned()
 }
 
 impl Downloadable {
@@ -84,9 +125,7 @@ impl Downloadable {
     ) -> Result<reqwest::Response> {
         let mcver = server.mc_version.clone();
         match self {
-            Self::Url { url, filename: _ } => {
-                Ok(client.get(url).send().await?.error_for_status()?)
-            }
+            Self::Url { url, .. } => Ok(client.get(url).send().await?.error_for_status()?),
 
             Self::Vanilla {} => Ok(fetch_vanilla(&mcver, client).await?),
             Self::PaperMC { project, build } => {
@@ -94,19 +133,44 @@ impl Downloadable {
             }
             Self::Purpur { build } => Ok(download_purpurmc_build(&mcver, build, client).await?),
 
-            Self::Modrinth { id, version } => Ok(fetch_modrinth(id, version, client).await?),
+            Self::Modrinth { id, version } => {
+                Ok(download_modrinth(id, version, client, None).await?)
+            }
             Self::Spigot { id } => Ok(download_spigot_resource(id, client).await?),
             Self::GithubRelease { repo, tag, asset } => {
                 Ok(download_github_release(repo, tag, asset, client).await?)
             }
 
+            Self::Jenkins {
+                url,
+                job,
+                build,
+                artifact,
+            } => Ok(download_jenkins(client, url, job, build, artifact).await?),
+
+            Self::BungeeCord {} => Ok(download_jenkins(
+                client,
+                BUNGEECORD_JENKINS,
+                BUNGEECORD_JOB,
+                "latest",
+                BUNGEECORD_ARTIFACT,
+            )
+            .await?),
+
             Self::Paper {} => Ok(download_papermc_build("paper", &mcver, "latest", client).await?),
-            Self::Folia {} => Ok(download_papermc_build("folia", &mcver, "latest", client).await?),
             Self::Velocity {} => {
                 Ok(download_papermc_build("velocity", &mcver, "latest", client).await?)
             }
             Self::Waterfall {} => {
                 Ok(download_papermc_build("waterfall", &mcver, "latest", client).await?)
+            }
+
+            Self::Fabric { loader, installer } => {
+                Ok(download_fabric(client, &mcver, loader, installer).await?)
+            }
+
+            Self::Quilt { loader, installer } => {
+                Ok(download_quilt_installer(client, &mcver, loader, installer).await?)
             }
         }
     }
@@ -114,7 +178,7 @@ impl Downloadable {
     pub async fn get_filename(&self, server: &Server, client: &reqwest::Client) -> Result<String> {
         let mcver = server.mc_version.clone();
         match self {
-            Self::Url { url, filename } => {
+            Self::Url { url, filename, .. } => {
                 if let Some(filename) = filename {
                     return Ok(filename.clone());
                 }
@@ -141,8 +205,8 @@ impl Downloadable {
             }
 
             Self::Modrinth { id, version } => {
-                // Be like modrinth. Modrinth is cool.
-                let filename = fetch_modrinth_filename(id, version, client).await?;
+                // nvm
+                let filename = fetch_modrinth_filename(id, version, client, None).await?;
                 Ok(filename)
             }
             Self::Spigot { id } => {
@@ -156,15 +220,129 @@ impl Downloadable {
                 Ok(fetch_github_release_filename(repo, tag, asset, client).await?)
             }
 
+            Self::Jenkins {
+                url,
+                job,
+                build,
+                artifact,
+            } => Ok(get_jenkins_filename(client, url, job, build, artifact)
+                .await?
+                .1),
+
+            Self::BungeeCord {} => {
+                let build = get_jenkins_filename(
+                    client,
+                    BUNGEECORD_JENKINS,
+                    BUNGEECORD_JOB,
+                    "latest",
+                    BUNGEECORD_ARTIFACT,
+                )
+                .await?
+                .3;
+                Ok(format!("BungeeCord-{build}.jar"))
+            }
+
             Self::Paper {} => Ok(get_filename_papermc("paper", &mcver, "latest", client).await?),
-            Self::Folia {} => Ok(get_filename_papermc("folia", &mcver, "latest", client).await?),
             Self::Velocity {} => {
                 Ok(get_filename_papermc("velocity", &mcver, "latest", client).await?)
             }
             Self::Waterfall {} => {
                 Ok(get_filename_papermc("waterfall", &mcver, "latest", client).await?)
             }
+
+            Self::Fabric { loader, installer } => {
+                let l = match loader.as_str() {
+                    "latest" => fetch_fabric_latest_loader(client).await?,
+                    id => id.to_owned(),
+                };
+
+                let i = match installer.as_str() {
+                    "latest" => fetch_fabric_latest_installer(client).await?,
+                    id => id.to_owned(),
+                };
+
+                Ok(format!(
+                    "fabric-server-mc.{mcver}-loader.{l}-launcher.{i}.jar"
+                ))
+            }
+
+            Self::Quilt { loader, .. } => Ok(get_quilt_filename(client, &mcver, loader).await?),
         }
+    }
+}
+
+impl std::fmt::Display for Downloadable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let t = match self {
+            Self::Url { url, .. } => {
+                format!("Custom URL: {url}")
+            }
+
+            Self::Vanilla {} => "Vanilla".to_owned(),
+
+            Self::Modrinth { id, version } => {
+                format!(
+                    "Modrinth Project {{
+                    id: {id}
+                    version: {version}
+                }}"
+                )
+            }
+
+            Self::Spigot { id } => format!("Spigot: {id}"),
+
+            Self::GithubRelease { repo, tag, asset } => {
+                format!(
+                    "Github Release {{
+                    Repository: {repo}
+                    Release: {tag}
+                    Asset: {asset}
+                }}"
+                )
+            }
+
+            Self::Jenkins {
+                url,
+                job,
+                build,
+                artifact,
+            } => {
+                format!(
+                    "Jenkins {{
+                    Jenkins URL: {url}
+                    Job: {job}
+                    Build: {build}
+                    Artifact: {artifact}
+                }}"
+                )
+            }
+
+            Self::Fabric { loader, installer } => {
+                format!(
+                    "Fabric {{
+                    Loader version: {loader}
+                    Installer version: {installer}
+                }}"
+                )
+            }
+
+            Self::Quilt { loader, installer } => {
+                format!(
+                    "Quilt {{
+                    Loader version: {loader}
+                    Installer version: {installer}
+                }}"
+                )
+            }
+
+            Self::BungeeCord {} => "BungeeCord".to_owned(),
+            Self::Paper {} => "Paper, latest".to_owned(),
+            Self::Velocity {} => "Velocity, latest".to_owned(),
+            Self::Waterfall {} => "Waterfall, latest".to_owned(),
+            Self::PaperMC { project, build } => format!("PaperMC/{project}, build {build}"),
+            Self::Purpur { build } => format!("Purpur, build {build}"),
+        };
+        f.write_str(&t)
     }
 }
 

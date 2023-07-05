@@ -17,6 +17,21 @@ pub fn get_resource_id(res: &str) -> &str {
     res
 }
 
+pub async fn fetch_spigot_info(client: &reqwest::Client, id: &str) -> Result<(String, String)> {
+    let json = client
+        .get("https://api.spiget.org/v2/resources/".to_owned() + get_resource_id(id))
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<serde_json::Value>()
+        .await?;
+
+    let name = json["name"].as_str().unwrap().to_owned();
+    let tag = json["tag"].as_str().unwrap().to_owned();
+
+    Ok((name, tag))
+}
+
 pub async fn fetch_spigot_resource_latest_ver(
     id: &str,
     client: &reqwest::Client,
