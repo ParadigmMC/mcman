@@ -9,6 +9,78 @@
                     "properties": {
                         "type": { "const": "vanilla" }
                     }
+                },
+                {
+                    "properties": {
+                        "type": { "const": "url" },
+                        "url": { "type": "string" },
+                        "filename": { "type": "string" },
+                        "desc": { "type": "string" }
+                    },
+                    "required": ["type", "url"]
+                },
+                {
+                    "properties": {
+                        "type": {
+                            "anyOf": [
+                                { "const": "modrinth" },
+                                { "const": "mr" }
+                            ]
+                        },
+                        "id": { "type": "string" },
+                        "version": { "type": "string" }
+                    }
+                },
+                {
+                    "properties": {
+                        "type": { "const": "papermc" },
+                        "project": { "type": "string" },
+                        "build": {
+                            "type": "string",
+                            "default": "latest"
+                        }
+                    }
+                },
+                {
+                    "properties": {
+                        "type": { "const": "spigot" },
+                        "id": { "type": "string" }
+                    }
+                },
+                {
+                    "properties": {
+                        "type": { "const": "ghrel" },
+                        "repo": { "type": "string" },
+                        "tag": { "type": "string", "default": "latest" },
+                        "asset": { "type": "string", "default": "first" }
+                    }
+                },
+                {
+                    "properties": {
+                        "type": { "const": "jenkins" },
+                        "url": { "type": "string" },
+                        "job": { "type": "string" },
+                        "build": { "type": "string", "default": "latest" },
+                        "artifact": { "type": "string", "default": "first" }
+                    }
+                },
+                {
+                    "properties": {
+                        "type": { "const": "purpur" },
+                        "build": { "type": "string", "default": "latest" }
+                    }
+                },
+                {
+                    "properties": {
+                        "type": {
+                            "anyOf": [
+                                { "const": "paper" },
+                                { "const": "velocity" },
+                                { "const": "waterfall" },
+                                { "const": "bungeecord" }
+                            ]
+                        }
+                    }
                 }
             ]
         }

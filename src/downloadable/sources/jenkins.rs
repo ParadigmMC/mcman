@@ -3,6 +3,8 @@
 
 use anyhow::{anyhow, Result};
 
+use crate::util::match_artifact_name;
+
 //pub static API_MAGIC_JOB: &str = "/api/json?tree=url,name,builds[*[url,number,result,artifacts[relativePath,fileName]]]";
 static API_MAGIC_JOB: &str = "/api/json?tree=builds[*[url,number,result]]";
 static API_MAGIC_BUILD: &str = "/api/json";
@@ -82,7 +84,7 @@ pub async fn get_jenkins_filename(
 
     let artifact = match artifact_id {
         "first" => artifacts_iter.next(),
-        id => artifacts_iter.find(|a| a["fileName"].as_str().unwrap() == id),
+        id => artifacts_iter.find(|a| match_artifact_name(id, a["fileName"].as_str().unwrap())),
     }
     .ok_or(anyhow!(
         "artifact for jenkins build artifact not found ({url};{job};{build};{artifact_id})"

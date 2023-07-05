@@ -35,7 +35,7 @@ where
     P: AsRef<Path>,
 {
     if !Path::new(ctx.output_dir.as_path()).exists() {
-        fs::create_dir(ctx.output_dir.as_path())?;
+        fs::create_dir_all(ctx.output_dir.as_path()).context("Creating output directory")?;
     }
 
     for entry in WalkDir::new(folder) {
@@ -53,7 +53,7 @@ where
             continue;
         }
 
-        bootstrap_entry(ctx, &entry)?;
+        bootstrap_entry(ctx, &entry).context(format!("Bootstrapping [{}]", entry.path().to_string_lossy()))?;
     }
 
     Ok(())
@@ -63,7 +63,10 @@ fn bootstrap_entry(ctx: &BootstrapContext, entry: &DirEntry) -> Result<()> {
     let path = entry.path();
     let output_path = ctx.get_output_path(path);
 
-    fs::create_dir_all(output_path.parent().unwrap_or(Path::new("")))?;
+    if let Some(parent) = output_path.parent() {
+        fs::create_dir_all(parent)
+           .context(format!("Creating parent directory of [{}]", output_path.to_string_lossy()))?;
+    }
     // bootstrap contents of some types
     if let Some(ext) = path.extension() {
         match ext.to_str().unwrap_or("") {

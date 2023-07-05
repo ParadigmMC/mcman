@@ -1,7 +1,24 @@
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
+use tokio::time::sleep;
 
 use crate::util::match_artifact_name;
+
+async fn wait_ratelimit(res: reqwest::Response) -> Result<reqwest::Response> {
+    if let Some(h) = res.headers().get("x-ratelimit-remaining") {
+        if String::from_utf8_lossy(h.as_bytes()) == "1" {
+            let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+            let ratelimit_reset = String::from_utf8_lossy(res.headers()["x-ratelimit-reset"].as_bytes()).parse::<u64>()?;
+            let amount = ratelimit_reset - now;
+            println!(" (!) Github ratelimit exceeded. sleeping for {amount} seconds...");
+            sleep(Duration::from_secs(amount)).await;
+        }
+    }
+
+    Ok(res)
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GithubRelease {
@@ -20,11 +37,11 @@ pub async fn fetch_github_releases(
     repo: &str,
     client: &reqwest::Client,
 ) -> Result<Vec<GithubRelease>> {
-    let releases: Vec<GithubRelease> = client
+    let releases: Vec<GithubRelease> = wait_ratelimit(client
         .get("https://api.github.com/repos/".to_owned() + repo + "/releases")
         .send()
         .await?
-        .error_for_status()?
+        .error_for_status()?).await?
         .json()
         .await?;
 
@@ -63,14 +80,7 @@ pub async fn fetch_github_release_filename(
     asset: &str,
     client: &reqwest::Client,
 ) -> Result<String> {
-    Ok(match asset {
-        "" | "first" | "any" => {
-            fetch_github_release_asset(repo, tag, asset, client)
-                .await?
-                .name
-        }
-        id => id.to_owned(),
-    })
+    Ok(fetch_github_release_asset(repo, tag, asset, client).await?.name)
 }
 
 // youre delusional, this doesnt exist
@@ -99,19 +109,19 @@ pub async fn download_github_release(
 ) -> Result<reqwest::Response> {
     let fetched_asset = fetch_github_release_asset(repo, tag, asset, client).await?;
 
-    Ok(client
+    Ok(wait_ratelimit(client
         .get(fetched_asset.url)
         .header("Accept", "application/octet-stream")
         .send()
-        .await?
+        .await?).await?
         .error_for_status()?)
 }
 
 pub async fn fetch_repo_description(client: &reqwest::Client, repo: &str) -> Result<String> {
-    let desc = client
+    let desc = wait_ratelimit(client
         .get("https://api.github.com/repos/".to_owned() + repo)
         .send()
-        .await?
+        .await?).await?
         .error_for_status()?
         .json::<serde_json::Value>()
         .await?["description"]
