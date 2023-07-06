@@ -126,7 +126,7 @@ pub async fn fetch_repo_description(client: &reqwest::Client, repo: &str) -> Res
         .json::<serde_json::Value>()
         .await?["description"]
         .as_str()
-        .unwrap()
+        .unwrap_or_default()
         .to_owned();
 
     Ok(desc)

@@ -28,10 +28,16 @@ pub fn cli() -> Command {
                 .default_value("server")
                 .value_parser(value_parser!(PathBuf)),
         )
+        .arg(
+            arg!(--skip [stages] "Skip some stages")
+                .value_delimiter(',')
+                .default_value("")
+        )
 }
 
+#[allow(clippy::if_not_else)]
 pub async fn run(matches: &ArgMatches) -> Result<()> {
-    let mut server = Server::load().context("Failed to load server.toml")?;
+    let server = Server::load().context("Failed to load server.toml")?;
     let http_client = reqwest::Client::builder()
         .user_agent(APP_USER_AGENT)
         .build()
@@ -46,11 +52,20 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
 
     println!(" Building {}...", style(server.name.clone()).green().bold());
 
+    let skip_stages = matches
+        .get_many::<String>("skip")
+        .unwrap()
+        .collect::<Vec<&String>>();
+
     let mut stage_index = 1;
 
     let mut mark_stage = |stage_name| {
         println!(" stage {stage_index}: {}", title.apply_to(stage_name));
         stage_index += 1;
+    };
+    
+    let mark_stage_skipped = |id| {
+        println!("      {}{id}", style("-> Skipping stage ").yellow().bold());
     };
 
     // stage 1: server jar
@@ -61,88 +76,63 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         .context("Failed to download server jar")?;
 
     // stage 2: plugins
-    if !server.plugins.is_empty() {
-        mark_stage("Plugins");
-        download_addons("plugins", &server, &http_client, output_dir)
-            .await
-            .context("Failed to download plugins")?;
-    }
-
-    // stage 3: mods
-    if !server.mods.is_empty() {
-        mark_stage("Mods");
-        download_addons("mods", &server, &http_client, output_dir)
-            .await
-            .context("Failed to download plugins")?;
+    if !skip_stages.contains(&&"addons".to_owned()) {
+        if !server.plugins.is_empty() {
+            mark_stage("Plugins");
+            download_addons("plugins", &server, &http_client, output_dir)
+                .await
+                .context("Failed to download plugins")?;
+        }
+    
+        // stage 3: mods
+        if !server.mods.is_empty() {
+            mark_stage("Mods");
+            download_addons("mods", &server, &http_client, output_dir)
+                .await
+                .context("Failed to download plugins")?;
+        }
+    } else {
+        mark_stage_skipped("addons");
     }
 
     // stage 4: bootstrap
-
     mark_stage("Configurations");
 
-    let mut vars = HashMap::new();
+    if !skip_stages.contains(&&"bootstrap".to_owned()) {
+        let mut vars = HashMap::new();
 
-    for (key, value) in &server.variables {
-        vars.insert(key.clone(), value.clone());
+        for (key, value) in &server.variables {
+            vars.insert(key.clone(), value.clone());
+        }
+
+        for (key, value) in env::vars() {
+            vars.insert(key.clone(), value.clone());
+        }
+
+        vars.insert("SERVER_NAME".to_owned(), server.name.clone());
+        vars.insert("SERVER_VERSION".to_owned(), server.mc_version.clone());
+
+        bootstrap(
+            &BootstrapContext {
+                vars,
+                output_dir: output_dir.clone(),
+            },
+            "config",
+        )?;
+
+        println!("          {}", style("Bootstrapping complete").dim());
+    } else {
+        mark_stage_skipped("bootstrap");
     }
-
-    for (key, value) in env::vars() {
-        vars.insert(key.clone(), value.clone());
-    }
-
-    vars.insert("SERVER_NAME".to_owned(), server.name.clone());
-    vars.insert("SERVER_VERSION".to_owned(), server.mc_version.clone());
-
-    bootstrap(
-        &BootstrapContext {
-            vars,
-            output_dir: output_dir.clone(),
-        },
-        "config",
-    )?;
-
-    println!("          {}", style("Bootstrapping complete").dim());
 
     // stage 5: launcher scripts
-    if !server.launcher.disable {
-        mark_stage("Scripts");
-
-        fs::write(
-            output_dir.join("start.bat"),
-            server
-                .launcher
-                .generate_script_win(&serverjar_name.clone(), &server.name),
-        )?;
-
-        let mut file;
-        #[cfg(target_family = "unix")]
-        {
-            use std::os::unix::prelude::OpenOptionsExt;
-            file = OpenOptions::new()
-                .create(true)
-                .write(true)
-                .mode(0o755)
-                .open(output_dir.join("start.sh"))?;
+    if !skip_stages.contains(&&"scripts".to_owned()) {
+        if !server.launcher.disable {
+            mark_stage("Scripts");
+            create_scripts(&server, &serverjar_name, output_dir)?;
         }
-        #[cfg(not(target_family = "unix"))]
-        {
-            file = OpenOptions::new()
-                .create(true)
-                .write(true)
-                .open(output_dir.join("start.sh"))?;
-        }
-
-        file.write_all(
-            server
-                .launcher
-                .generate_script_linux(&serverjar_name, &server.name)
-                .as_bytes(),
-        )?;
-
-        println!(
-            "          {}",
-            style("start.bat and start.sh created").dim()
-        );
+    } else {
+        mark_stage_skipped("scripts");
     }
 
     println!(
@@ -253,6 +243,51 @@ async fn download_addons(
             style(&addon_name).dim()
         );
     }
+
+    Ok(())
+}
+
+fn create_scripts(
+    server: &Server,
+    serverjar_name: &str,
+    output_dir: &Path,
+) -> Result<()> {
+    fs::write(
+        output_dir.join("start.bat"),
+        server
+            .launcher
+            .generate_script_win(serverjar_name, &server.name),
+    )?;
+
+    let mut file;
+    #[cfg(target_family = "unix")]
+    {
+        use std::os::unix::prelude::OpenOptionsExt;
+        file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .mode(0o755)
+            .open(output_dir.join("start.sh"))?;
+    }
+    #[cfg(not(target_family = "unix"))]
+    {
+        file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .open(output_dir.join("start.sh"))?;
+    }
+
+    file.write_all(
+        server
+            .launcher
+            .generate_script_linux(serverjar_name, &server.name)
+            .as_bytes(),
+    )?;
+
+    println!(
+        "          {}",
+        style("start.bat and start.sh created").dim()
+    );
 
     Ok(())
 }
