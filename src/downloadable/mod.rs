@@ -13,7 +13,7 @@ use self::sources::{
     modrinth::{download_modrinth, fetch_modrinth_filename},
     papermc::{download_papermc_build, fetch_papermc_build},
     purpur::{download_purpurmc_build, fetch_purpurmc_builds},
-    quilt::{download_quilt_installer, get_quilt_filename},
+    quilt::{download_quilt_installer, get_installer_filename},
     spigot::{download_spigot_resource, fetch_spigot_resource_latest_ver},
     vanilla::fetch_vanilla,
 };
@@ -169,8 +169,8 @@ impl Downloadable {
                 Ok(download_fabric(client, &mcver, loader, installer).await?)
             }
 
-            Self::Quilt { loader, installer } => {
-                Ok(download_quilt_installer(client, &mcver, loader, installer).await?)
+            Self::Quilt { installer, .. } => {
+                Ok(download_quilt_installer(client, installer).await?)
             }
         }
     }
@@ -266,7 +266,7 @@ impl Downloadable {
                 ))
             }
 
-            Self::Quilt { loader, .. } => Ok(get_quilt_filename(client, &mcver, loader).await?),
+            Self::Quilt { installer, .. } => Ok(get_installer_filename(client, installer).await?),
         }
     }
 }

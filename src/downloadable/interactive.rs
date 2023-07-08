@@ -39,7 +39,7 @@ impl Downloadable {
         let items_str: Vec<String> = items.iter().map(|v| v.1.to_owned()).collect();
 
         let jar_type = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("Which server software to use?")
+            .with_prompt("Which (modded) server software to use?")
             .default(0)
             .items(&items_str)
             .interact()?;
