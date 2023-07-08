@@ -3,7 +3,8 @@ use dialoguer::Confirm;
 use dialoguer::{theme::ColorfulTheme, Input, Select};
 use std::fs::File;
 use std::io::Write;
-use std::{ffi::OsStr, path::PathBuf};
+use std::path::Path;
+use std::ffi::OsStr;
 
 use crate::commands::markdown;
 use crate::{
@@ -108,10 +109,10 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         ..Default::default()
     };
 
-    initialize_environment(is_proxy)?;
+    initialize_environment(is_proxy).context("Initializing environment")?;
     server.save()?;
 
-    let write_readme = if PathBuf::from("./README.md").exists() {
+    let write_readme = if Path::new("./README.md").exists() {
         Confirm::with_theme(&theme)
             .default(true)
             .with_prompt("Overwrite README.md?")
@@ -121,7 +122,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     };
 
     if write_readme {
-        markdown::initialize_readme(&server)?;
+        markdown::initialize_readme(&server).context("Initializing readme")?;
     }
 
     println!(" > {}", style("Server has been initialized!").cyan());
