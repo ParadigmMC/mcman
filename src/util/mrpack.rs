@@ -44,6 +44,7 @@ pub struct Env {
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
 pub enum EnvSupport {
     Required,
     Optional,

@@ -80,6 +80,25 @@ mcman import url https://modrinth.com/plugin/imageframe
 mcman import url https://www.spigotmc.org/resources/armorstandeditor-reborn.94503/
 ```
 
+### `mcman import mrpack <URL or file>`
+
+Imports a [mrpack](https://docs.modrinth.com/docs/modpacks/format_definition/) file (modrinth modpacks)
+
+Example usage:
+
+```sh
+# direct link
+mcman import mrpack https://cdn.modrinth.com/data/xldzprsQ/versions/xWFqQBjM/Create-Extra-full-1.1.0.mrpack
+# only /modpack urls
+mcman import mrpack https://modrinth.com/modpack/create-extra
+# local file
+mcman import mrpack My-Pack.mrpack
+```
+
+### `mcman import customs`
+
+Utility tool for re-importing all custom url downloadables in a server.
+
 ## Folder Structure
 
 In a normal server environment, everything is in one folder and a big giant mess to navigate.
@@ -215,7 +234,7 @@ Default values aren't written back to config - except for `aikars_flags`, `proxy
 disable = false # false by default
 
 # adds your own args
-jvm_args = "-Dhello=true"
+jvm_args = "-exampleidk"
 game_args = "--world abc"
 
 # use aikar's flags
@@ -227,13 +246,20 @@ proxy_flags = false
 
 # adds -Dcom.mojang.eula.agree=true
 # therefore you agree to mojang's eula
+# writes eula.txt when on fabric/quilt
 eula_args = true
 
-# adds --nogui to game args, should set to false on proxies...
+# adds --nogui to game args
 nogui = true
 
 # specify -Xmx/-Xms (memory)
 memory = "2048M"
+
+# a table of properties
+[launcher.properties]
+hello="thing"
+# ^ same as this:
+# jvm_args = "-Dhello=thing"
 ```
 
 ## Types
@@ -244,11 +270,14 @@ Below are some types used in `server.toml`
 
 A downloadable is some source of a plugin, mod or a server jar.
 
-Index of types:
+Index of sources:
 
 - [Vanilla](#vanilla)
-- [PaperMC](#papermc)
+- [Fabric](#fabric)
+- [Quilt](#quilt)
+- [PaperMC](#papermc) (Paper, Waterfall and Velocity)
 - [PurpurMC](#purpurmc)
+- [BungeeCord](#bungeecord)
 - [Modrinth](#modrinth)
 - [Spigot](#spigot)
 - [Github Releases](#github-releases)
@@ -263,20 +292,53 @@ Used for a vanilla server jar. Has no properties
 type = "vanilla"
 ```
 
+#### Fabric
+
+The [Fabric](https://fabricmc.net/) mod loader
+
+**Options:**
+
+- `type` = `"fabric"`
+- `installer`: string | `"latest"` - Installer version to use
+- `loader`: string | `"latest"` - Loader version to use
+
+```toml
+type = "fabric"
+installer = "latest"
+loader = "latest"
+```
+
+#### Quilt
+
+The [Quilt](https://quiltmc.org/) project - mod loader compatible with fabric
+
+Due to some complexities with quilt, `mcman` will need to run `java` to install the quilt server jar - keep this in mind.
+
+**Options:**
+
+- `type` = `"quilt"`
+- `installer`: string | `"latest"` - Installer version to use
+- `loader`: string | `"latest"` - Loader version to use
+
+```toml
+type = "quilt"
+installer = "latest"
+loader = "latest"
+```
+
 #### PaperMC
 
 Allows downloading a [PaperMC](https://papermc.io/) project.
 
 **Options:**
 
-- `type` = `papermc`
+- `type` = `"papermc"`
 - `project`: string - The project name
 - `build`: string | `"latest"` - Optional
 
 ```toml
 # Its recommended to use the shortcuts:
 type = "paper"
-type = "folia"
 type = "waterfall"
 type = "velocity"
 
@@ -286,7 +348,7 @@ project = "paper"
 
 # Optionally define the build if you dont want to use the latest:
 type = "papermc"
-project = "folia"
+project = "waterfall"
 build = "17"
 # Note: the shortcuts do not support the 'build' property
 ```
@@ -297,7 +359,7 @@ Downloads server jar from [PurpurMC](https://purpurmc.org/).
 
 **Options:**
 
-- `type` = `purpur`
+- `type` = `"purpur"`
 - `build`: string | `"latest"` - Optional
 
 ```toml
@@ -308,13 +370,31 @@ build = "10"
 # if omitted, uses latest
 ```
 
+#### BungeeCord
+
+BungeeCord is just a shortcut to a [jenkins](#jenkins) downloadable:
+
+```toml
+type = "bungeecord"
+```
+
+If you'd like to get a specific build, use this:
+
+```toml
+type = "jenkins"
+url = "https://ci.md-5.net"
+job = "BungeeCord"
+build = "latest"
+artifact = "BungeeCord"
+```
+
 #### Modrinth
 
 Downloads from [Modrinth](https://modrinth.com/)'s API
 
 **Options:**
 
-- `type` = `modrinth` | `mr`
+- `type` = `"modrinth"` | `"mr"`
 - `id`: string - id of the project or the slug
 - `version`: string | `"latest"` - Version ID, `"latest"` not recommended
 
@@ -332,7 +412,7 @@ This uses [Spiget](https://spiget.org/)'s API.
 
 **Options:**
 
-- `type` = `spigot`
+- `type` = `"spigot"`
 - `id`: string - id of the project
 
 You can find the ID of the resource in the URL:
@@ -355,7 +435,7 @@ Allows downloading from github releases
 
 **Options:**
 
-- `type` = `ghrel`
+- `type` = `"ghrel"`
 - `repo`: string - repository identifier, like `"ParadigmMC/mcman"`
 - `tag`: string | `"latest"` - The tag of the release
 - `asset`: string | `"first"` - The name of the asset (checks for inclusion)
@@ -376,7 +456,7 @@ Use a jenkins server
 
 **Options:**
 
-- `type` = `jenkins`
+- `type` = `"jenkins"`
 - `url`: string - url of the jenkins server
 - `job`: string - The job
 - `build`: string | `"latest"` - The build number to use
@@ -400,6 +480,13 @@ artifact = "first"
 #### Custom URL
 
 Allows you to download from a defined URL.
+
+**Options:**
+
+- `type` = `"url"`
+- `url`: string - URL to the file
+- `filename`: string? - Optional filename if you dont like the name from the url
+- `desc`: string? - Optional description (shown in markdown tables)
 
 ```toml
 [[mods]]

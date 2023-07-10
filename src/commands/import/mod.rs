@@ -3,6 +3,7 @@ use clap::{ArgMatches, Command};
 
 mod customs;
 mod url;
+mod mrpack;
 
 pub fn cli() -> Command {
     Command::new("import")
@@ -12,11 +13,13 @@ pub fn cli() -> Command {
         .arg_required_else_help(true)
         .subcommand(url::cli())
         .subcommand(customs::cli())
+        .subcommand(mrpack::cli())
 }
 
 pub async fn run(matches: &ArgMatches) -> Result<()> {
     match matches.subcommand() {
         Some(("url", sub_matches)) => url::run(sub_matches).await?,
+        Some(("mrpack", sub_matches)) => mrpack::run(sub_matches).await?,
         Some(("customs", _)) => customs::run().await?,
         _ => unreachable!(),
     }
