@@ -115,16 +115,16 @@ impl MarkdownTable {
                 for (idx, width) in col_lengths.iter().enumerate() {
                     cols.push(format!("{:width$}", self.headers[idx]));
                 }
-    
+
                 cols.join(" ")
             });
-    
+
             lines.push({
                 let mut cols = vec![];
                 for length in &col_lengths {
                     cols.push(format!("{:-^width$}", "", width = length));
                 }
-    
+
                 cols.join(" ")
             });
         }

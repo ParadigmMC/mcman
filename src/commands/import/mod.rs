@@ -2,8 +2,8 @@ use anyhow::Result;
 use clap::{ArgMatches, Command};
 
 mod customs;
-mod url;
 mod mrpack;
+mod url;
 
 pub fn cli() -> Command {
     Command::new("import")

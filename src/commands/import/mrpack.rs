@@ -1,11 +1,18 @@
-use std::{path::PathBuf, fs::File};
+use std::{fs::File, path::PathBuf};
 
 use anyhow::{Context, Result};
 use clap::{arg, ArgMatches, Command};
 use console::style;
 use tempfile::Builder;
 
-use crate::{commands::version::APP_USER_AGENT, model::Server, util::{mrpack::{import_from_mrpack, resolve_mrpack_source}, download_with_progress}};
+use crate::{
+    commands::version::APP_USER_AGENT,
+    model::Server,
+    util::{
+        download_with_progress,
+        mrpack::{import_from_mrpack, resolve_mrpack_source},
+    },
+};
 
 pub fn cli() -> Command {
     Command::new("mrpack")
@@ -28,7 +35,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     let filename = if src.starts_with("http") || src.starts_with("mr:") {
         let fname = tmp_dir.path().join("pack.mrpack");
         let file = tokio::fs::File::create(&fname).await?;
-        
+
         let downloadable = resolve_mrpack_source(src, &http_client).await?;
 
         println!(" > {}", style("Downloading mrpack...").green());
@@ -39,7 +46,8 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
             &downloadable,
             &server,
             &http_client,
-        ).await?;
+        )
+        .await?;
 
         fname
     } else {

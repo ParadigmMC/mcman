@@ -1,13 +1,24 @@
 use anyhow::{Context, Result};
 use console::style;
-use dialoguer::{Select, theme::ColorfulTheme};
+use dialoguer::{theme::ColorfulTheme, Select};
 use indexmap::IndexMap;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
-use std::{io::{Read, Seek}, path::PathBuf, fs, collections::HashMap};
+use std::{
+    collections::HashMap,
+    fs,
+    io::{Read, Seek},
+    path::PathBuf,
+};
 use zip::ZipArchive;
 
-use crate::{model::Server, downloadable::{Downloadable, sources::modrinth::{ModrinthVersion, fetch_modrinth_versions}}};
+use crate::{
+    downloadable::{
+        sources::modrinth::{fetch_modrinth_versions, ModrinthVersion},
+        Downloadable,
+    },
+    model::Server,
+};
 
 use super::md::MarkdownTable;
 
@@ -28,12 +39,13 @@ impl MRPackIndex {
         server: &mut Server,
         http_client: &reqwest::Client,
     ) -> Result<()> {
-        for f in self.files.iter().filter(|f| f.env.is_none() || f.env.as_ref().unwrap().server != EnvSupport::Unsupported) {
+        for f in self.files.iter().filter(|f| {
+            f.env.is_none() || f.env.as_ref().unwrap().server != EnvSupport::Unsupported
+        }) {
             let url = f.downloads.first().context("unwrap url from downloads")?;
-    
-            let dl = Downloadable::from_url_interactive(http_client, server, url)
-                .await?;
-    
+
+            let dl = Downloadable::from_url_interactive(http_client, server, url).await?;
+
             server.mods.push(dl);
         }
         Ok(())
@@ -66,10 +78,7 @@ pub async fn import_from_mrpack<R: Read + Seek>(
     http_client: &reqwest::Client,
     reader: R,
 ) -> Result<MRPackIndex> {
-    println!(
-        " > {}",
-        style("Importing mrpack...").cyan(),
-    );
+    println!(" > {}", style("Importing mrpack...").cyan(),);
 
     let mut archive = ZipArchive::new(reader).context("reading mrpack zip archive")?;
 
@@ -80,7 +89,6 @@ pub async fn import_from_mrpack<R: Read + Seek>(
     mr_index
         .read_to_end(&mut zip_content)
         .context("reading modrinth.index.json from zip file")?;
-
 
     let pack: MRPackIndex = serde_json::from_slice(&zip_content)?;
     pack.import_all(server, http_client)
@@ -106,14 +114,18 @@ pub async fn import_from_mrpack<R: Read + Seek>(
                 continue;
             }
 
-            server.path.join("config").join(path.strip_prefix("overrides")?)
+            server
+                .path
+                .join("config")
+                .join(path.strip_prefix("overrides")?)
+        } else if path.starts_with("server-overrides") {
+            server_overrided.push(path.clone());
+            server
+                .path
+                .join("config")
+                .join(path.strip_prefix("server-overrides")?)
         } else {
-            if path.starts_with("server-overrides") {
-                server_overrided.push(path.clone());
-                server.path.join("config").join(path.strip_prefix("server-overrides")?)
-            } else {
-                continue;
-            }
+            continue;
         };
 
         queue.push((path, real_path));
@@ -126,11 +138,12 @@ pub async fn import_from_mrpack<R: Read + Seek>(
             .read_to_end(&mut zip_content)
             .context(format!("reading {} from zip file", path.display()))?;
 
-        fs::create_dir_all(real_path.parent().unwrap())
-            .context(format!("Creating parent folder for {}", real_path.display()))?;
+        fs::create_dir_all(real_path.parent().unwrap()).context(format!(
+            "Creating parent folder for {}",
+            real_path.display()
+        ))?;
 
-        fs::write(&real_path, zip_content)
-            .context(format!("Writing {}", real_path.display()))?;
+        fs::write(&real_path, zip_content).context(format!("Writing {}", real_path.display()))?;
 
         println!("  => {}", style(path.to_string_lossy()).dim());
     }
@@ -139,21 +152,22 @@ pub async fn import_from_mrpack<R: Read + Seek>(
 }
 
 pub fn select_modrinth_version(
-    list: Vec<ModrinthVersion>,
-    server: Option<Server>,
+    list: &[ModrinthVersion],
+    server: &Option<Server>,
 ) -> ModrinthVersion {
     let mut table = MarkdownTable::new();
 
     let list = list
         .iter()
         .filter(|v| {
-        if let Some(serv) = &server {
-            if !v.game_versions.contains(&serv.mc_version) {
-                return false;
+            if let Some(serv) = &server {
+                if !v.game_versions.contains(&serv.mc_version) {
+                    return false;
+                }
             }
-        }
-        true
-    }).collect::<Vec<_>>();
+            true
+        })
+        .collect::<Vec<_>>();
 
     for v in &list {
         let mut map = IndexMap::new();
@@ -168,9 +182,7 @@ pub fn select_modrinth_version(
     let selection = Select::with_theme(&ColorfulTheme::default())
         .with_prompt("  Which version?")
         .default(0)
-        .items(
-            &table.render_ascii_lines(false)
-        )
+        .items(&table.render_ascii_lines(false))
         .interact()
         .unwrap();
 
@@ -188,26 +200,29 @@ pub async fn resolve_mrpack_source(
     } else {
         let url = Url::parse(src)?;
 
-        if url.domain() == Some("modrinth.com")
-        && url.path().starts_with("/modpack") {
-            url.path().strip_prefix("/modpack/").map(|i| i.to_owned())
+        if url.domain() == Some("modrinth.com") && url.path().starts_with("/modpack") {
+            url.path().strip_prefix("/modpack/").map(str::to_owned)
         } else {
             None
         }
     };
 
     let downloadable = if let Some(id) = modpack_id {
-        let versions: Vec<ModrinthVersion> = fetch_modrinth_versions(&http_client, &id, None)
-                .await?;
+        let versions: Vec<ModrinthVersion> =
+            fetch_modrinth_versions(http_client, &id, None).await?;
 
-        let version = select_modrinth_version(versions, None);
+        let version = select_modrinth_version(&versions, &None);
 
         Downloadable::Modrinth {
-            id: id.to_owned(),
+            id: id.clone(),
             version: version.id,
         }
     } else {
-        Downloadable::Url { url: src.to_owned(), filename: None, desc: None }
+        Downloadable::Url {
+            url: src.to_owned(),
+            filename: None,
+            desc: None,
+        }
     };
 
     Ok(downloadable)

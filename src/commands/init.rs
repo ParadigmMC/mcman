@@ -1,11 +1,11 @@
 use console::style;
 use dialoguer::Confirm;
 use dialoguer::{theme::ColorfulTheme, Input, Select};
-use tempfile::Builder;
+use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::ffi::OsStr;
+use tempfile::Builder;
 
 use crate::commands::markdown;
 use crate::util::download_with_progress;
@@ -25,6 +25,7 @@ pub fn cli() -> Command {
         .arg(arg!(--mrpack <SRC> "Import from a modrinth modpack").required(false))
 }
 
+#[allow(clippy::too_many_lines)]
 pub async fn run(matches: &ArgMatches) -> Result<()> {
     let http_client = reqwest::Client::builder()
         .user_agent(APP_USER_AGENT)
@@ -73,9 +74,9 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         };
 
         let filename = if src.starts_with("http") || src.starts_with("mr:") {
-            let fname = tmp_dir.path().join("pack.mrpack");
-            let file = tokio::fs::File::create(&fname).await?;
-            
+            let filename = tmp_dir.path().join("pack.mrpack");
+            let file = tokio::fs::File::create(&filename).await?;
+
             let downloadable = resolve_mrpack_source(src, &http_client).await?;
 
             println!(" > {}", style("Downloading mrpack...").green());
@@ -86,9 +87,10 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
                 &downloadable,
                 &server,
                 &http_client,
-            ).await?;
+            )
+            .await?;
 
-            fname
+            filename
         } else {
             PathBuf::from(src)
         };
@@ -101,8 +103,8 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
             v.clone()
         } else {
             let latest_ver = fetch_latest_mcver(&http_client)
-            .await
-            .context("Fetching latest version")?;
+                .await
+                .context("Fetching latest version")?;
 
             Input::with_theme(&theme)
                 .with_prompt("Server version?")
@@ -111,16 +113,28 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         };
 
         server.jar = {
-            if let Some(ver) = pack.dependencies.get("fabric-loader") {
-                println!(" > {} {}", style("Using fabric loader").cyan(), style(ver).bold());
-                Downloadable::Fabric { loader: ver.clone(), installer: "latest".to_owned() }
-            } else {
-                if let Some(ver) = pack.dependencies.get("quilt-loader") {
-                    println!(" > {} {}", style("Using quilt loader").cyan(), style(ver).bold());
-                    Downloadable::Quilt { loader: ver.clone(), installer: "latest".to_owned() }
-                } else {
-                    Downloadable::select_modded_jar_interactive()?
+            if let Some(ver) = pack.dependencies.get("quilt-loader") {
+                println!(
+                    " > {} {}",
+                    style("Using quilt loader").cyan(),
+                    style(ver).bold()
+                );
+                Downloadable::Quilt {
+                    loader: ver.clone(),
+                    installer: "latest".to_owned(),
                 }
+            } else if let Some(ver) = pack.dependencies.get("fabric-loader") {
+                println!(
+                    " > {} {}",
+                    style("Using fabric loader").cyan(),
+                    style(ver).bold()
+                );
+                Downloadable::Fabric {
+                    loader: ver.clone(),
+                    installer: "latest".to_owned(),
+                }
+            } else {
+                Downloadable::select_modded_jar_interactive()?
             }
         };
 

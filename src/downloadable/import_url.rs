@@ -259,7 +259,10 @@ impl Downloadable {
                     a => a.to_owned(),
                 };
 
-                println!("  > {} Github/{repo}/{tag}/{asset}", style("Imported:").green());
+                println!(
+                    "  > {} Github/{repo}/{tag}/{asset}",
+                    style("Imported:").green()
+                );
 
                 Ok(Self::GithubRelease { repo, tag, asset })
             }
@@ -303,7 +306,11 @@ impl Downloadable {
                     Some(1) => {
                         // TODO: make it better..?
                         let j_url = if Confirm::with_theme(&ColorfulTheme::default())
-                            .with_prompt("  Is this the correct jenkins server url?\n  > https://".to_owned() + url.domain().unwrap())
+                            .with_prompt(
+                                "  Is this the correct jenkins server url?\n  > https://"
+                                    .to_owned()
+                                    + url.domain().unwrap(),
+                            )
                             .interact()?
                         {
                             "https://".to_owned() + url.domain().unwrap()

@@ -169,9 +169,7 @@ impl Downloadable {
                 Ok(download_fabric(client, &mcver, loader, installer).await?)
             }
 
-            Self::Quilt { installer, .. } => {
-                Ok(download_quilt_installer(client, installer).await?)
-            }
+            Self::Quilt { installer, .. } => Ok(download_quilt_installer(client, installer).await?),
         }
     }
 
