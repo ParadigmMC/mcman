@@ -10,7 +10,9 @@ async fn wait_ratelimit(res: reqwest::Response) -> Result<reqwest::Response> {
     if let Some(h) = res.headers().get("x-ratelimit-remaining") {
         if String::from_utf8_lossy(h.as_bytes()) == "1" {
             let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
-            let ratelimit_reset = String::from_utf8_lossy(res.headers()["x-ratelimit-reset"].as_bytes()).parse::<u64>()?;
+            let ratelimit_reset =
+                String::from_utf8_lossy(res.headers()["x-ratelimit-reset"].as_bytes())
+                    .parse::<u64>()?;
             let amount = ratelimit_reset - now;
             println!(" (!) Github ratelimit exceeded. sleeping for {amount} seconds...");
             sleep(Duration::from_secs(amount)).await;
@@ -37,13 +39,16 @@ pub async fn fetch_github_releases(
     repo: &str,
     client: &reqwest::Client,
 ) -> Result<Vec<GithubRelease>> {
-    let releases: Vec<GithubRelease> = wait_ratelimit(client
-        .get("https://api.github.com/repos/".to_owned() + repo + "/releases")
-        .send()
-        .await?
-        .error_for_status()?).await?
-        .json()
-        .await?;
+    let releases: Vec<GithubRelease> = wait_ratelimit(
+        client
+            .get("https://api.github.com/repos/".to_owned() + repo + "/releases")
+            .send()
+            .await?
+            .error_for_status()?,
+    )
+    .await?
+    .json()
+    .await?;
 
     Ok(releases)
 }
@@ -80,7 +85,9 @@ pub async fn fetch_github_release_filename(
     asset: &str,
     client: &reqwest::Client,
 ) -> Result<String> {
-    Ok(fetch_github_release_asset(repo, tag, asset, client).await?.name)
+    Ok(fetch_github_release_asset(repo, tag, asset, client)
+        .await?
+        .name)
 }
 
 // youre delusional, this doesnt exist
@@ -109,22 +116,28 @@ pub async fn download_github_release(
 ) -> Result<reqwest::Response> {
     let fetched_asset = fetch_github_release_asset(repo, tag, asset, client).await?;
 
-    Ok(wait_ratelimit(client
-        .get(fetched_asset.url)
-        .header("Accept", "application/octet-stream")
-        .send()
-        .await?).await?
-        .error_for_status()?)
+    Ok(wait_ratelimit(
+        client
+            .get(fetched_asset.url)
+            .header("Accept", "application/octet-stream")
+            .send()
+            .await?,
+    )
+    .await?
+    .error_for_status()?)
 }
 
 pub async fn fetch_repo_description(client: &reqwest::Client, repo: &str) -> Result<String> {
-    let desc = wait_ratelimit(client
-        .get("https://api.github.com/repos/".to_owned() + repo)
-        .send()
-        .await?).await?
-        .error_for_status()?
-        .json::<serde_json::Value>()
-        .await?["description"]
+    let desc = wait_ratelimit(
+        client
+            .get("https://api.github.com/repos/".to_owned() + repo)
+            .send()
+            .await?,
+    )
+    .await?
+    .error_for_status()?
+    .json::<serde_json::Value>()
+    .await?["description"]
         .as_str()
         .unwrap_or_default()
         .to_owned();

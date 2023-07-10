@@ -53,7 +53,10 @@ where
             continue;
         }
 
-        bootstrap_entry(ctx, &entry).context(format!("Bootstrapping [{}]", entry.path().to_string_lossy()))?;
+        bootstrap_entry(ctx, &entry).context(format!(
+            "Bootstrapping [{}]",
+            entry.path().to_string_lossy()
+        ))?;
     }
 
     Ok(())
@@ -64,8 +67,11 @@ fn bootstrap_entry(ctx: &BootstrapContext, entry: &DirEntry) -> Result<()> {
     let output_path = ctx.get_output_path(path);
 
     if let Some(parent) = output_path.parent() {
-        std::fs::create_dir_all(parent)
-           .context(format!("Creating parent directory of [{}], dir = [{}]", output_path.to_string_lossy(), parent.to_string_lossy()))?;
+        std::fs::create_dir_all(parent).context(format!(
+            "Creating parent directory of [{}], dir = [{}]",
+            output_path.to_string_lossy(),
+            parent.to_string_lossy()
+        ))?;
     }
     // bootstrap contents of some types
     if let Some(ext) = path.extension() {

@@ -1,4 +1,5 @@
 pub mod md;
+pub mod mrpack;
 
 use anyhow::{Context, Result};
 use futures::StreamExt;

@@ -293,5 +293,10 @@ static SANITIZE_R1: &str = "<(?:\"[^\"]*\"['\"]*|'[^']*'['\"]*|[^'\">])+>";
 fn sanitize(s: &str) -> Result<String> {
     let re = Regex::new(SANITIZE_R1)?;
 
-    Ok(re.replace_all(&s.replace('\n', " ").replace('\r', "").replace("<br>", " "), "").to_string())
+    Ok(re
+        .replace_all(
+            &s.replace('\n', " ").replace('\r', "").replace("<br>", " "),
+            "",
+        )
+        .to_string())
 }

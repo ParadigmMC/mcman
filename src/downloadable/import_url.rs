@@ -1,4 +1,5 @@
 use anyhow::{anyhow, bail, Result};
+use console::style;
 use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
 use reqwest::Url;
 
@@ -33,6 +34,8 @@ impl Downloadable {
                 if segments.first() != Some(&"data") || segments.get(2) != Some(&"versions") {
                     Err(invalid_url())?;
                 }
+
+                println!("  > {} Modrinth/{id}", style("Imported:").green());
 
                 Ok(Self::Modrinth {
                     id: id.to_owned().to_owned(),
@@ -81,7 +84,7 @@ impl Downloadable {
                     }
 
                     let selection = Select::with_theme(&ColorfulTheme::default())
-                        .with_prompt("Which version?")
+                        .with_prompt("  Which version?")
                         .default(0)
                         .items(
                             &versions
@@ -99,6 +102,8 @@ impl Downloadable {
 
                     versions[selection].clone()
                 };
+
+                println!("  > {} Modrinth/{id}", style("Imported:").green());
 
                 Ok(Self::Modrinth {
                     id,
@@ -120,6 +125,8 @@ impl Downloadable {
                 let id = segments
                     .get(1)
                     .ok_or_else(|| anyhow!("Invalid Spigot Resource URL"))?;
+
+                println!("  > {} Spigot/{id}", style("Imported:").green());
 
                 Ok(Downloadable::Spigot {
                     id: id.to_owned().to_owned(),
@@ -154,7 +161,7 @@ impl Downloadable {
 
                             tag_opt = Some(tag.to_owned());
 
-                            println!("> Using release {tag}");
+                            println!("  > Implied release: {tag}");
                         }
                         Some("download") => {
                             let invalid_url = || anyhow!("Invalid github release download url");
@@ -163,13 +170,13 @@ impl Downloadable {
 
                             tag_opt = Some(tag.to_owned());
 
-                            println!("> Using release '{tag}'");
+                            println!("  > Implied release: '{tag}'");
 
                             let file = segments.next().ok_or_else(invalid_url)?;
 
                             file_opt = Some(file);
 
-                            println!("> Using asset '{tag}'");
+                            println!("  > Implied asset: '{tag}'");
                         }
                         Some(p) => bail!("No idea what to do with releases/{p}"),
                         None => {}
@@ -188,7 +195,7 @@ impl Downloadable {
                     }
 
                     let selection = Select::with_theme(&ColorfulTheme::default())
-                        .with_prompt("Which release to use?")
+                        .with_prompt("  Which release to use?")
                         .items(&items)
                         .default(0)
                         .interact_opt()?
@@ -230,7 +237,7 @@ impl Downloadable {
                 let str_list: Vec<String> = items.iter().map(|t| t.1.clone()).collect();
 
                 let selection = Select::with_theme(&ColorfulTheme::default())
-                    .with_prompt("Which asset to use?")
+                    .with_prompt("  Which asset to use?")
                     .items(&str_list)
                     .default(idx)
                     .interact_opt()?
@@ -241,7 +248,7 @@ impl Downloadable {
                         let inferred = file_opt.unwrap_or("");
 
                         let input: String = Input::with_theme(&ColorfulTheme::default())
-                            .with_prompt("Asset name?")
+                            .with_prompt("  Asset name?")
                             .with_initial_text(inferred)
                             .default(inferred.into())
                             .interact_text()?;
@@ -252,12 +259,18 @@ impl Downloadable {
                     a => a.to_owned(),
                 };
 
+                println!(
+                    "  > {} Github/{repo}/{tag}/{asset}",
+                    style("Imported:").green()
+                );
+
                 Ok(Self::GithubRelease { repo, tag, asset })
             }
 
             Some(_) | None => {
                 let items = vec!["Add as Custom URL", "Add as Jenkins", "Nevermind, cancel"];
                 let selection = Select::with_theme(&ColorfulTheme::default())
+                    .with_prompt("  How would you like to import this URL?")
                     .items(&items)
                     .default(0)
                     .interact_opt()?;
@@ -273,14 +286,16 @@ impl Downloadable {
                             .unwrap();
 
                         let input: String = Input::with_theme(&ColorfulTheme::default())
-                            .with_prompt("Filename?")
+                            .with_prompt("  Filename?")
                             .with_initial_text(inferred)
                             .default(inferred.into())
                             .interact_text()?;
 
                         let desc: String = Input::with_theme(&ColorfulTheme::default())
-                            .with_prompt("Optional description/comment?")
+                            .with_prompt("  Optional description/comment?")
                             .interact_text()?;
+
+                        println!("  > {} as URL", style("Imported:").green());
 
                         Ok(Self::Url {
                             url: urlstr.to_owned(),
@@ -289,16 +304,19 @@ impl Downloadable {
                         })
                     }
                     Some(1) => {
-                        // TODO: make it better
-                        println!(" >>> https://{}", url.domain().unwrap());
+                        // TODO: make it better..?
                         let j_url = if Confirm::with_theme(&ColorfulTheme::default())
-                            .with_prompt("Is this the correct jenkins server url?")
+                            .with_prompt(
+                                "  Is this the correct jenkins server url?\n  > https://"
+                                    .to_owned()
+                                    + url.domain().unwrap(),
+                            )
                             .interact()?
                         {
                             "https://".to_owned() + url.domain().unwrap()
                         } else {
                             Input::<String>::with_theme(&ColorfulTheme::default())
-                                .with_prompt("Jenkins URL:")
+                                .with_prompt("  Jenkins URL:")
                                 .with_initial_text(urlstr)
                                 .default(urlstr.into())
                                 .interact_text()?
@@ -329,22 +347,24 @@ impl Downloadable {
                         };
 
                         let job: String = Input::with_theme(&ColorfulTheme::default())
-                            .with_prompt("Job?")
+                            .with_prompt("  Jenkins Job:")
                             .with_initial_text(&inferred_job)
                             .default(inferred_job)
                             .interact_text()?;
 
                         let build: String = Input::with_theme(&ColorfulTheme::default())
-                            .with_prompt("Build:")
+                            .with_prompt("  Jenkins Build:")
                             .with_initial_text("latest")
                             .default("latest".into())
                             .interact_text()?;
 
                         let artifact: String = Input::with_theme(&ColorfulTheme::default())
-                            .with_prompt("Artifact:")
+                            .with_prompt("  Jenkins Artifact:")
                             .with_initial_text("first")
                             .default("first".into())
                             .interact_text()?;
+
+                        println!("  > {} Jenkins/{job}", style("Imported:").green());
 
                         Ok(Self::Jenkins {
                             url: j_url,

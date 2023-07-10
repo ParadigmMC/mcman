@@ -2,14 +2,16 @@ use std::{
     collections::HashMap,
     env,
     fs::{self, OpenOptions},
-    io::Write,
+    io::{BufRead, BufReader, Write},
     path::{Path, PathBuf},
-    time::Instant,
+    process::Stdio,
+    time::{Duration, Instant},
 };
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use clap::{arg, value_parser, ArgMatches, Command};
 use console::{style, Style};
+use indicatif::{ProgressBar, ProgressStyle};
 use tokio::fs::File;
 
 use super::version::APP_USER_AGENT;
@@ -31,7 +33,7 @@ pub fn cli() -> Command {
         .arg(
             arg!(--skip [stages] "Skip some stages")
                 .value_delimiter(',')
-                .default_value("")
+                .default_value(""),
         )
 }
 
@@ -63,7 +65,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         println!(" stage {stage_index}: {}", title.apply_to(stage_name));
         stage_index += 1;
     };
-    
+
     let mark_stage_skipped = |id| {
         println!("      {}{id}", style("-> Skipping stage ").yellow().bold());
     };
@@ -83,7 +85,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
                 .await
                 .context("Failed to download plugins")?;
         }
-    
+
         // stage 3: mods
         if !server.mods.is_empty() {
             mark_stage("Mods");
@@ -120,6 +122,19 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
             "config",
         )?;
 
+        if server.launcher.eula_args {
+            match server.jar {
+                Downloadable::Quilt { .. } | Downloadable::Fabric { .. } => {
+                    println!(
+                        "          {}",
+                        style("=> eula.txt [eula_args unsupported]").dim()
+                    );
+                    std::fs::File::create(output_dir.join("eula.txt"))?.write_all(b"eula=true")?;
+                }
+                _ => (),
+            }
+        }
+
         println!("          {}", style("Bootstrapping complete").dim());
     } else {
         mark_stage_skipped("bootstrap");
@@ -144,42 +159,140 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 async fn download_server_jar(
     server: &Server,
     http_client: &reqwest::Client,
     output_dir: &Path,
 ) -> Result<String> {
-    let serverjar_name = server.jar.get_filename(server, http_client).await?;
-    if output_dir.join(serverjar_name.clone()).exists() {
-        println!(
-            "          Skipping server jar ({})",
-            style(serverjar_name.clone()).dim()
-        );
-    } else {
-        println!(
-            "          Downloading server jar ({})",
-            style(serverjar_name.clone()).dim()
-        );
+    let serverjar_name = match &server.jar {
+        Downloadable::Quilt { loader, .. } => {
+            let installerjar_name = server.jar.get_filename(server, http_client).await?;
+            if output_dir.join(installerjar_name.clone()).exists() {
+                println!(
+                    "          Quilt installer present ({})",
+                    style(installerjar_name.clone()).dim()
+                );
+            } else {
+                println!(
+                    "          Downloading quilt installer... ({})",
+                    style(installerjar_name.clone()).dim()
+                );
 
-        let filename = &server.jar.get_filename(server, http_client).await?;
-        util::download_with_progress(
-            File::create(&output_dir.join(filename))
-                .await
-                .context(format!("Failed to create output file for {filename}"))?,
-            filename,
-            &server.jar,
-            server,
-            http_client,
-        )
-        .await?;
-
-        match &server.jar {
-            Downloadable::Quilt { .. } | Downloadable::Fabric { .. } => {
-                todo!()
+                let filename = &server.jar.get_filename(server, http_client).await?;
+                util::download_with_progress(
+                    File::create(&output_dir.join(filename))
+                        .await
+                        .context(format!("Failed to create output file for {filename}"))?,
+                    filename,
+                    &server.jar,
+                    server,
+                    http_client,
+                )
+                .await?;
             }
-            _ => (),
+
+            let serverjar_name =
+                format!("quilt-server-launch-{}-{}.jar", server.mc_version, loader);
+
+            if output_dir.join(serverjar_name.clone()).exists() {
+                println!(
+                    "          Skipping server jar ({})",
+                    style(serverjar_name.clone()).dim()
+                );
+            } else {
+                println!(
+                    "          Installing quilt server... ({})",
+                    style(serverjar_name.clone()).dim()
+                );
+
+                let mut args = vec![
+                    "-jar",
+                    &installerjar_name,
+                    "install",
+                    "server",
+                    &server.mc_version,
+                ];
+
+                if loader != "latest" {
+                    args.push(loader);
+                }
+
+                args.push("--install-dir=.");
+                args.push("--download-server");
+
+                let mut child = std::process::Command::new("java")
+                    .args(args)
+                    .current_dir(output_dir)
+                    .stdout(Stdio::piped())
+                    .spawn()
+                    .context("Running quilt-server-installer")?;
+
+                let spinner = ProgressBar::new_spinner().with_style(ProgressStyle::with_template(
+                    "          {spinner:.dim.bold} {msg}",
+                )?);
+
+                spinner.enable_steady_tick(Duration::from_millis(200));
+
+                let prefix = style("[qsi]").bold();
+
+                for line in BufReader::new(child.stdout.take().unwrap()).lines() {
+                    let line = line.unwrap();
+                    let stripped_line = line.trim();
+                    if !stripped_line.is_empty() {
+                        spinner.set_message(format!("{prefix} {stripped_line}"));
+                    }
+                }
+
+                if !child.wait()?.success() {
+                    bail!("Quilt server installer exited with non-zero code");
+                }
+
+                spinner.finish_and_clear();
+
+                println!(
+                    "          Renaming... ({})",
+                    style("quilt-server-launch.jar => ".to_owned() + &serverjar_name).dim()
+                );
+
+                fs::rename(
+                    output_dir.join("quilt-server-launch.jar"),
+                    output_dir.join(&serverjar_name),
+                )
+                .context("Renaming quilt-server-launch.jar")?;
+            }
+
+            serverjar_name
         }
-    }
+        dl => {
+            let serverjar_name = dl.get_filename(server, http_client).await?;
+            if output_dir.join(serverjar_name.clone()).exists() {
+                println!(
+                    "          Skipping server jar ({})",
+                    style(serverjar_name.clone()).dim()
+                );
+            } else {
+                println!(
+                    "          Downloading server jar ({})",
+                    style(serverjar_name.clone()).dim()
+                );
+
+                let filename = &dl.get_filename(server, http_client).await?;
+                util::download_with_progress(
+                    File::create(&output_dir.join(filename))
+                        .await
+                        .context(format!("Failed to create output file for {filename}"))?,
+                    filename,
+                    dl,
+                    server,
+                    http_client,
+                )
+                .await?;
+            }
+
+            serverjar_name
+        }
+    };
 
     Ok(serverjar_name)
 }
@@ -247,11 +360,7 @@ async fn download_addons(
     Ok(())
 }
 
-fn create_scripts(
-    server: &Server,
-    serverjar_name: &str,
-    output_dir: &Path,
-) -> Result<()> {
+fn create_scripts(server: &Server, serverjar_name: &str, output_dir: &Path) -> Result<()> {
     fs::write(
         output_dir.join("start.bat"),
         server

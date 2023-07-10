@@ -753,12 +753,13 @@ checksum = "518ef76f2f87365916b142844c16d8fefd85039bc5699050210a7778ee1cd1de"
 
 [[package]]
 name = "mcapi"
-version = "0.1.0"
-source = "git+https://github.com/ParadigmMC/mcapi.git#9f30bf384d12314943c57ebd6b521b2e7131e6a1"
+version = "0.2.0"
+source = "git+https://github.com/ParadigmMC/mcapi.git#f33186b6b008769538d019cb1e0cacd0389f1e1f"
 dependencies = [
  "os-version",
  "regex",
  "reqwest",
+ "roxmltree",
  "serde",
  "serde_json",
  "thiserror",
@@ -766,7 +767,7 @@ dependencies = [
 
 [[package]]
 name = "mcman"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -1041,6 +1042,15 @@ dependencies = [
  "untrusted",
  "web-sys",
  "winapi",
+]
+
+[[package]]
+name = "roxmltree"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d8f595a457b6b8c6cda66a48503e92ee8d19342f905948f29c383200ec9eb1d8"
+dependencies = [
+ "xmlparser",
 ]
 
 [[package]]
@@ -1832,6 +1842,12 @@ checksum = "80d0f4e272c85def139476380b12f9ac60926689dd2e01d4923222f40580869d"
 dependencies = [
  "winapi",
 ]
+
+[[package]]
+name = "xmlparser"
+version = "0.13.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4d25c75bf9ea12c4040a97f829154768bbbce366287e2dc044af160cd79a13fd"
 
 [[package]]
 name = "zeroize"
