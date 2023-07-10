@@ -43,11 +43,12 @@ View the [Documentation](./DOCS.md) here.
 
 ## Changelog
 
-### `0.3.0` (unreleased)
+### `0.2.1`
 
 - Added **Fabric** support.
 - Added **Quilt** support.
 - Added `mcman import mrpack` command.
+- `mcman init` now supports mrpacks
 
 ### `0.2.0`
 
