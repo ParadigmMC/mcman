@@ -1,15 +1,25 @@
 use anyhow::{Context, Result};
 use console::style;
+use dialoguer::{Select, theme::ColorfulTheme};
+use indexmap::IndexMap;
+use reqwest::Url;
 use serde::{Deserialize, Serialize};
-use std::{io::{Read, Seek}, path::PathBuf, fs};
+use std::{io::{Read, Seek}, path::PathBuf, fs, collections::HashMap};
 use zip::ZipArchive;
 
-use crate::{model::Server, downloadable::Downloadable};
+use crate::{model::Server, downloadable::{Downloadable, sources::modrinth::{ModrinthVersion, fetch_modrinth_versions}}};
+
+use super::md::MarkdownTable;
 
 #[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MRPackIndex {
+    pub game: String,
     pub name: String,
+    pub version_id: String,
+    pub summary: Option<String>,
     pub files: Vec<MRPackFile>,
+    pub dependencies: HashMap<String, String>,
 }
 
 impl MRPackIndex {
@@ -55,7 +65,7 @@ pub async fn import_from_mrpack<R: Read + Seek>(
     server: &mut Server,
     http_client: &reqwest::Client,
     reader: R,
-) -> Result<()> {
+) -> Result<MRPackIndex> {
     println!(
         " > {}",
         style("Importing mrpack...").cyan(),
@@ -125,5 +135,80 @@ pub async fn import_from_mrpack<R: Read + Seek>(
         println!("  => {}", style(path.to_string_lossy()).dim());
     }
 
-    Ok(())
+    Ok(pack)
+}
+
+pub fn select_modrinth_version(
+    list: Vec<ModrinthVersion>,
+    server: Option<Server>,
+) -> ModrinthVersion {
+    let mut table = MarkdownTable::new();
+
+    let list = list
+        .iter()
+        .filter(|v| {
+        if let Some(serv) = &server {
+            if !v.game_versions.contains(&serv.mc_version) {
+                return false;
+            }
+        }
+        true
+    }).collect::<Vec<_>>();
+
+    for v in &list {
+        let mut map = IndexMap::new();
+
+        map.insert("num".to_owned(), v.version_number.clone());
+        map.insert("name".to_owned(), v.name.clone());
+        map.insert("compat".to_owned(), v.loaders.join(","));
+
+        table.add_from_map(&map);
+    }
+
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("  Which version?")
+        .default(0)
+        .items(
+            &table.render_ascii_lines(false)
+        )
+        .interact()
+        .unwrap();
+
+    list[selection].clone()
+}
+
+pub async fn resolve_mrpack_source(
+    src: &str,
+    http_client: &reqwest::Client,
+) -> Result<Downloadable> {
+    println!(" > {}", style("Resolving mrpack...").green());
+
+    let modpack_id = if src.starts_with("mr:") {
+        Some(src.strip_prefix("mr:").unwrap().to_owned())
+    } else {
+        let url = Url::parse(src)?;
+
+        if url.domain() == Some("modrinth.com")
+        && url.path().starts_with("/modpack") {
+            url.path().strip_prefix("/modpack/").map(|i| i.to_owned())
+        } else {
+            None
+        }
+    };
+
+    let downloadable = if let Some(id) = modpack_id {
+        let versions: Vec<ModrinthVersion> = fetch_modrinth_versions(&http_client, &id, None)
+                .await?;
+
+        let version = select_modrinth_version(versions, None);
+
+        Downloadable::Modrinth {
+            id: id.to_owned(),
+            version: version.id,
+        }
+    } else {
+        Downloadable::Url { url: src.to_owned(), filename: None, desc: None }
+    };
+
+    Ok(downloadable)
 }

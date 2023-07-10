@@ -1,12 +1,15 @@
 use console::style;
 use dialoguer::Confirm;
 use dialoguer::{theme::ColorfulTheme, Input, Select};
+use tempfile::Builder;
 use std::fs::File;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::ffi::OsStr;
 
 use crate::commands::markdown;
+use crate::util::download_with_progress;
+use crate::util::mrpack::{import_from_mrpack, resolve_mrpack_source};
 use crate::{
     commands::version::APP_USER_AGENT,
     downloadable::{sources::vanilla::fetch_latest_mcver, Downloadable},
@@ -19,6 +22,7 @@ pub fn cli() -> Command {
     Command::new("init")
         .about("Initializes a new MCMan-powered Minecraft server")
         .arg(arg!(--name <NAME> "The name of the server").required(false))
+        .arg(arg!(--mrpack <SRC> "Import from a modrinth modpack").required(false))
 }
 
 pub async fn run(matches: &ArgMatches) -> Result<()> {
@@ -57,6 +61,96 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         .default(name.clone())
         .with_initial_text(&name)
         .interact_text()?;
+
+    if let Some(src) = matches.get_one::<String>("mrpack") {
+        println!(" > {}", style("Importing from mrpack...").cyan());
+
+        let tmp_dir = Builder::new().prefix("mcman-mrpack-import").tempdir()?;
+
+        let mut server = Server {
+            name,
+            ..Default::default()
+        };
+
+        let filename = if src.starts_with("http") || src.starts_with("mr:") {
+            let fname = tmp_dir.path().join("pack.mrpack");
+            let file = tokio::fs::File::create(&fname).await?;
+            
+            let downloadable = resolve_mrpack_source(src, &http_client).await?;
+
+            println!(" > {}", style("Downloading mrpack...").green());
+
+            download_with_progress(
+                file,
+                &format!("Downloading {src}..."),
+                &downloadable,
+                &server,
+                &http_client,
+            ).await?;
+
+            fname
+        } else {
+            PathBuf::from(src)
+        };
+
+        let f = File::open(filename).context("opening file")?;
+
+        let pack = import_from_mrpack(&mut server, &http_client, f).await?;
+
+        server.mc_version = if let Some(v) = pack.dependencies.get("minecraft") {
+            v.clone()
+        } else {
+            let latest_ver = fetch_latest_mcver(&http_client)
+            .await
+            .context("Fetching latest version")?;
+
+            Input::with_theme(&theme)
+                .with_prompt("Server version?")
+                .default(latest_ver)
+                .interact_text()?
+        };
+
+        server.jar = {
+            if let Some(ver) = pack.dependencies.get("fabric-loader") {
+                println!(" > {} {}", style("Using fabric loader").cyan(), style(ver).bold());
+                Downloadable::Fabric { loader: ver.clone(), installer: "latest".to_owned() }
+            } else {
+                if let Some(ver) = pack.dependencies.get("quilt-loader") {
+                    println!(" > {} {}", style("Using quilt loader").cyan(), style(ver).bold());
+                    Downloadable::Quilt { loader: ver.clone(), installer: "latest".to_owned() }
+                } else {
+                    Downloadable::select_modded_jar_interactive()?
+                }
+            }
+        };
+
+        println!(" > {}", style("Imported .mrpack!").green());
+
+        initialize_environment(false).context("Initializing environment")?;
+        server.save()?;
+
+        let write_readme = if Path::new("./README.md").exists() {
+            Confirm::with_theme(&theme)
+                .default(true)
+                .with_prompt("Overwrite README.md?")
+                .interact()?
+        } else {
+            true
+        };
+
+        if write_readme {
+            markdown::initialize_readme(&server).context("Initializing readme")?;
+        }
+
+        println!(" > {}", style("Server has been initialized!").cyan());
+        println!(
+            " > {} {}",
+            style("Build using").cyan(),
+            style("mcman build").bold()
+        );
+
+        return Ok(());
+    }
 
     let serv_type = Select::with_theme(&theme)
         .with_prompt("Type of server?")

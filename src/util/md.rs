@@ -92,7 +92,7 @@ impl MarkdownTable {
         lines.join("\n")
     }
 
-    pub fn render_ascii(&self) -> String {
+    pub fn render_ascii_lines(&self, headers: bool) -> Vec<String> {
         let mut col_lengths = vec![];
 
         for idx in 0..self.headers.len() {
@@ -109,23 +109,25 @@ impl MarkdownTable {
 
         let mut lines = vec![];
 
-        lines.push({
-            let mut cols = vec![];
-            for (idx, width) in col_lengths.iter().enumerate() {
-                cols.push(format!("{:width$}", self.headers[idx]));
-            }
-
-            cols.join(" ")
-        });
-
-        lines.push({
-            let mut cols = vec![];
-            for length in &col_lengths {
-                cols.push(format!("{:-^width$}", "", width = length));
-            }
-
-            cols.join(" ")
-        });
+        if headers {
+            lines.push({
+                let mut cols = vec![];
+                for (idx, width) in col_lengths.iter().enumerate() {
+                    cols.push(format!("{:width$}", self.headers[idx]));
+                }
+    
+                cols.join(" ")
+            });
+    
+            lines.push({
+                let mut cols = vec![];
+                for length in &col_lengths {
+                    cols.push(format!("{:-^width$}", "", width = length));
+                }
+    
+                cols.join(" ")
+            });
+        }
 
         for row in &self.rows {
             lines.push({
@@ -138,6 +140,10 @@ impl MarkdownTable {
             });
         }
 
-        lines.join("\n")
+        lines
+    }
+
+    pub fn render_ascii(&self) -> String {
+        self.render_ascii_lines(true).join("\n")
     }
 }

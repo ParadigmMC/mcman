@@ -13,11 +13,22 @@ Index:
 
 Here are a list of commands. You can type `mcman` or `mcman --help` for a basic list of it.
 
-### `mcman init`
+### `mcman init [--name <name>] [--mrpack <src>]`
 
 Initializes a new server in the current directory.
 
-Example:
+This command is interactive. Just run `mcman init`!
+
+The source is the same as one in [`mcman import mrpack`](#mcman-import-mrpack-src)
+
+Example using [Adrenaserver](https://modrinth.com/modpack/adrenaserver):
+
+```sh
+# these are all identical
+mcman init --mrpack mr:adrenaserver
+mcman init --mrpack https://modrinth.com/modpack/adrenaserver
+mcman init --mrpack https://cdn.modrinth.com/data/H9OFWiay/versions/2WXUgVhc/Adrenaserver-1.4.0%2B1.20.1.quilt.mrpack
+```
 
 ### `mcman version`
 
@@ -72,6 +83,13 @@ Example render:
 
 Imports a plugin or a mod from a url.
 
+Supports:
+
+- Modrinth
+- Spigot
+- Github (releases)
+- If not those, will prompt with direct url or jenkins
+
 Example usage:
 
 ```sh
@@ -80,17 +98,28 @@ mcman import url https://modrinth.com/plugin/imageframe
 mcman import url https://www.spigotmc.org/resources/armorstandeditor-reborn.94503/
 ```
 
-### `mcman import mrpack <URL or file>`
+### `mcman import mrpack <src>`
 
 Imports a [mrpack](https://docs.modrinth.com/docs/modpacks/format_definition/) file (modrinth modpacks)
 
-Example usage:
+**Note:** [`mcman init`](#mcman-init---name-name---mrpack-src) supports mrpacks
+
+The source can be:
+
+- A direct URL to a `.mrpack` file
+- A local file path
+- Modpack URL (`https://modrinth.com/modpack/{id}`)
+- Modrinth project id prefixed with `mr:`
+
+Example usages:
 
 ```sh
 # direct link
 mcman import mrpack https://cdn.modrinth.com/data/xldzprsQ/versions/xWFqQBjM/Create-Extra-full-1.1.0.mrpack
 # only /modpack urls
 mcman import mrpack https://modrinth.com/modpack/create-extra
+# prefixed
+mcman import mrpack mr:simply-skyblock
 # local file
 mcman import mrpack My-Pack.mrpack
 ```

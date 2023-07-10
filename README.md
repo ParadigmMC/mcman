@@ -29,6 +29,7 @@ Powerful Minecraft Server Manager CLI. Easily install jars (server, plugins & mo
       - Modrinth
       - Spigot
     - And even **Github Releases**, **Custom URL**s and **Jenkins!**
+  - Supports importing from [mrpack](./DOCS.md#mcman-import-mrpack-src)s!
 - Bootstraps your server configuration files
   - Allows you to use variables inside your config files
   - Environment variables for secrets
