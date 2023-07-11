@@ -25,6 +25,7 @@ pub mod sources;
 static BUNGEECORD_JENKINS: &str = "https://ci.md-5.net";
 static BUNGEECORD_JOB: &str = "BungeeCord";
 static BUNGEECORD_ARTIFACT: &str = "BungeeCord";
+static BUILDTOOLS_JENKINS: &str = "https://hub.spigotmc.org/jenkins";
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(tag = "type", rename_all = "lowercase")]
@@ -102,6 +103,11 @@ pub enum Downloadable {
         installer: String,
     },
 
+    BuildTools {
+        #[serde(skip_serializing_if = "Vec::is_empty")]
+        args: Vec<String>,
+    },
+
     // papermc
     Paper {},
     Velocity {},
@@ -154,6 +160,15 @@ impl Downloadable {
                 BUNGEECORD_JOB,
                 "latest",
                 BUNGEECORD_ARTIFACT,
+            )
+            .await?),
+
+            Self::BuildTools { .. } => Ok(download_jenkins(
+                client,
+                BUILDTOOLS_JENKINS,
+                "BuildTools",
+                "latest",
+                "BuildTools",
             )
             .await?),
 
@@ -238,6 +253,19 @@ impl Downloadable {
                 .await?
                 .3;
                 Ok(format!("BungeeCord-{build}.jar"))
+            }
+
+            Self::BuildTools { .. } => {
+                let build = get_jenkins_filename(
+                    client,
+                    BUILDTOOLS_JENKINS,
+                    "BuildTools",
+                    "latest",
+                    "BuildTools",
+                )
+                .await?
+                .3;
+                Ok(format!("BuildTools-{build}.jar"))
             }
 
             Self::Paper {} => Ok(get_filename_papermc("paper", &mcver, "latest", client).await?),
@@ -334,6 +362,7 @@ impl std::fmt::Display for Downloadable {
             }
 
             Self::BungeeCord {} => "BungeeCord".to_owned(),
+            Self::BuildTools { .. } => "BuildTools".to_owned(),
             Self::Paper {} => "Paper, latest".to_owned(),
             Self::Velocity {} => "Velocity, latest".to_owned(),
             Self::Waterfall {} => "Waterfall, latest".to_owned(),

@@ -312,6 +312,7 @@ Index of sources:
 - [Github Releases](#github-releases)
 - [Jenkins](#jenkins)
 - [Custom URL](#custom-url)
+- [BuildTools](#buildtools)
 
 #### Vanilla
 
@@ -347,7 +348,7 @@ Due to some complexities with quilt, `mcman` will need to run `java` to install 
 
 - `type` = `"quilt"`
 - `installer`: string | `"latest"` - Installer version to use
-- `loader`: string | `"latest"` - Loader version to use
+- `loader`: string | `"latest-beta"` | `"latest"` - Loader version to use
 
 ```toml
 type = "quilt"
@@ -523,4 +524,19 @@ type = "url"
 url = "https://example.com/download/Example.jar"
 # Optionally define the filename, useful if it cannot be inferred from the url
 filename = "example-mod.jar"
+```
+
+#### BuildTools
+
+Setup Spigot, Bukkit or CraftBukkit using [BuildTools](https://www.spigotmc.org/wiki/buildtools/).
+
+**Options:**
+
+- `type` = `"buildtools"`
+- `args`: string[] - Additional args, such as `["--compile", "bukkit"]` - mcman only adds `--rev {mc_version}`
+
+```toml
+[server.jar]
+type = "buildtools"
+args = []
 ```

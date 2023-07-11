@@ -19,6 +19,9 @@ impl Downloadable {
             Self::Velocity {} => "[Velocity](https://papermc.io/software/velocity)".to_owned(),
             Self::Waterfall {} => "[Waterfall](https://papermc.io/software/waterfall)".to_owned(),
             Self::Paper {} => "[Paper](https://papermc.io/software/paper)".to_owned(),
+            Self::BuildTools { .. } => {
+                "[BuildTools](https://www.spigotmc.org/wiki/buildtools/)".to_owned()
+            }
             Self::BungeeCord {} => {
                 "[BungeeCord](https://www.spigotmc.org/wiki/bungeecord/)".to_owned()
             }
@@ -223,6 +226,7 @@ impl Downloadable {
             Self::Jenkins { .. } => "Jenkins",
             Self::Modrinth { .. } => "Modrinth",
             Self::Spigot { .. } => "Spigot",
+            Self::BuildTools { .. } => "BuildTools",
         }
         .to_owned()
     }

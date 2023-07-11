@@ -12,12 +12,12 @@ use anyhow::{bail, Context, Result};
 use clap::{arg, value_parser, ArgMatches, Command};
 use console::{style, Style};
 use indicatif::{ProgressBar, ProgressStyle};
-use tokio::fs::File;
+use tokio::{fs::File, io::AsyncWriteExt};
 
 use super::version::APP_USER_AGENT;
 use crate::{
     bootstrapper::{bootstrap, BootstrapContext},
-    downloadable::Downloadable,
+    downloadable::{sources::quilt::map_quilt_loader_version, Downloadable},
     model::Server,
     util,
 };
@@ -159,6 +159,55 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
+async fn execute_child(
+    cmd: &mut std::process::Command,
+    output_dir: &Path,
+    label: &str,
+    tag: &str,
+) -> Result<()> {
+    let mut child = cmd
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .context("Running ".to_owned() + label)?;
+
+    let spinner = ProgressBar::new_spinner().with_style(ProgressStyle::with_template(
+        "          {spinner:.dim.bold} {msg}",
+    )?);
+
+    spinner.enable_steady_tick(Duration::from_millis(200));
+
+    let prefix = style(format!("[{tag}]")).bold();
+
+    let mut log_file = File::create(output_dir.join(".".to_owned() + tag + ".mcman.log")).await?;
+
+    log_file
+        .write_all(format!("=== mcman {tag} / {label} output ===").as_bytes())
+        .await?;
+
+    for buf in BufReader::new(child.stdout.take().unwrap()).lines() {
+        let buf = buf.unwrap();
+        let buf = buf.trim();
+
+        if !buf.is_empty() {
+            log_file.write_all(buf.as_bytes()).await?;
+            log_file.write_all(b"\n").await?;
+
+            if let Some(last_line) = buf.split('\n').last() {
+                spinner.set_message(format!("{prefix} {last_line}"));
+            }
+        }
+    }
+
+    if !child.wait()?.success() {
+        bail!("{label} exited with non-zero code");
+    }
+
+    spinner.finish_and_clear();
+
+    Ok(())
+}
+
 #[allow(clippy::too_many_lines)]
 async fn download_server_jar(
     server: &Server,
@@ -179,7 +228,7 @@ async fn download_server_jar(
                     style(installerjar_name.clone()).dim()
                 );
 
-                let filename = &server.jar.get_filename(server, http_client).await?;
+                let filename = &installerjar_name;
                 util::download_with_progress(
                     File::create(&output_dir.join(filename))
                         .await
@@ -192,8 +241,12 @@ async fn download_server_jar(
                 .await?;
             }
 
+            let loader_id = map_quilt_loader_version(http_client, loader)
+                .await
+                .context("getting loader version id")?;
+
             let serverjar_name =
-                format!("quilt-server-launch-{}-{}.jar", server.mc_version, loader);
+                format!("quilt-server-launch-{}-{}.jar", server.mc_version, loader_id);
 
             if output_dir.join(serverjar_name.clone()).exists() {
                 println!(
@@ -215,40 +268,22 @@ async fn download_server_jar(
                 ];
 
                 if loader != "latest" {
-                    args.push(loader);
+                    args.push(&loader);
                 }
 
                 args.push("--install-dir=.");
                 args.push("--download-server");
 
-                let mut child = std::process::Command::new("java")
-                    .args(args)
-                    .current_dir(output_dir)
-                    .stdout(Stdio::piped())
-                    .spawn()
-                    .context("Running quilt-server-installer")?;
-
-                let spinner = ProgressBar::new_spinner().with_style(ProgressStyle::with_template(
-                    "          {spinner:.dim.bold} {msg}",
-                )?);
-
-                spinner.enable_steady_tick(Duration::from_millis(200));
-
-                let prefix = style("[qsi]").bold();
-
-                for line in BufReader::new(child.stdout.take().unwrap()).lines() {
-                    let line = line.unwrap();
-                    let stripped_line = line.trim();
-                    if !stripped_line.is_empty() {
-                        spinner.set_message(format!("{prefix} {stripped_line}"));
-                    }
-                }
-
-                if !child.wait()?.success() {
-                    bail!("Quilt server installer exited with non-zero code");
-                }
-
-                spinner.finish_and_clear();
+                execute_child(
+                    std::process::Command::new("java")
+                        .args(args)
+                        .current_dir(output_dir),
+                    output_dir,
+                    "Quilt server installer",
+                    "qsi",
+                )
+                .await
+                .context("Running quilt-server-installer")?;
 
                 println!(
                     "          Renaming... ({})",
@@ -260,6 +295,78 @@ async fn download_server_jar(
                     output_dir.join(&serverjar_name),
                 )
                 .context("Renaming quilt-server-launch.jar")?;
+            }
+
+            serverjar_name
+        }
+        Downloadable::BuildTools { args } => {
+            let installerjar_name = server.jar.get_filename(server, http_client).await?;
+            if output_dir.join(installerjar_name.clone()).exists() {
+                println!(
+                    "          BuildTools present ({})",
+                    style(installerjar_name.clone()).dim()
+                );
+            } else {
+                println!(
+                    "          Downloading BuildTools... ({})",
+                    style(installerjar_name.clone()).dim()
+                );
+
+                let filename = &installerjar_name;
+                util::download_with_progress(
+                    File::create(&output_dir.join(filename))
+                        .await
+                        .context(format!("Failed to create output file for {filename}"))?,
+                    filename,
+                    &server.jar,
+                    server,
+                    http_client,
+                )
+                .await?;
+            }
+
+            let serverjar_name = format!("spigot-{}.jar", server.mc_version);
+
+            if output_dir.join(serverjar_name.clone()).exists() {
+                println!(
+                    "          Skipping server jar ({})",
+                    style(serverjar_name.clone()).dim()
+                );
+            } else {
+                println!("          Running BuildTools...",);
+
+                let mut exec_args = vec![
+                    "-jar",
+                    &installerjar_name,
+                    "--rev",
+                    &server.mc_version,
+                ];
+
+                for arg in args {
+                    exec_args.push(arg);
+                }
+
+                execute_child(
+                    std::process::Command::new("java")
+                        .args(exec_args)
+                        .current_dir(output_dir),
+                    output_dir,
+                    "BuildTools",
+                    "bt",
+                )
+                .await
+                .context("Executing BuildTools")?;
+
+                println!(
+                    "          Renaming... ({})",
+                    style("server.jar => ".to_owned() + &serverjar_name).dim()
+                );
+
+                fs::rename(
+                    output_dir.join("server.jar"),
+                    output_dir.join(&serverjar_name),
+                )
+                .context("Renaming server.jar")?;
             }
 
             serverjar_name

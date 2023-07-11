@@ -35,6 +35,25 @@ pub async fn get_installer_filename(client: &reqwest::Client, installer: &str) -
     Ok(format!("quilt-installer-{v}.jar"))
 }
 
+pub async fn map_quilt_loader_version(client: &reqwest::Client, loader: &str) -> Result<String> {
+    Ok(match loader {
+        "latest" => mcapi::quilt::fetch_loaders(client)
+            .await?
+            .iter()
+            .find(|l| !l.version.contains("beta"))
+            .ok_or(anyhow!("cant find latest loader version - None"))?
+            .version
+            .clone(),
+        "latest-beta" => mcapi::quilt::fetch_loaders(client)
+            .await?
+            .first()
+            .ok_or(anyhow!("cant find latest loader version - None"))?
+            .version
+            .clone(),
+        id => id.to_owned(),
+    })
+}
+
 /*
 
 pub async fn fetch_quilt_latest_loader(client: &reqwest::Client) -> Result<String> {
