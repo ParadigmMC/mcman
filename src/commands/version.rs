@@ -8,7 +8,9 @@ use semver::Version;
 use crate::downloadable::sources::github;
 
 pub fn cli() -> Command {
-    Command::new("version").about("Show version information")
+    Command::new("version")
+        .about("Show version information")
+        .visible_alias("v")
 }
 
 pub const APP_USER_AGENT: &str = concat!(

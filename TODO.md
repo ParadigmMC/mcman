@@ -1,16 +1,19 @@
-# i wil get lost so i will put stuff in here
+# secret todo list lol
 
 ## sources
 
 - [ ] Forge
-- [ ] Fabric
-- [ ] Quilt
 - [ ] Hangar
 - [ ] Bukkit/Curseforge
-- [ ] BuildTools
 - [ ] File
 
-## commmmmmmands
+## features
+
+- [ ] datapacks
+- [ ] packwiz integration
+- [ ] export as mrpack
+
+## commands
 
 - [x] mcman init --name
 - [x] mcman build
@@ -18,19 +21,19 @@
   - [x] plugins
   - [x] bootstrap files
   - [x] launcher scripts
+- [ ] mcman edit
 - [ ] mcman plugins add \<source> \<plugin> [output]
 - [ ] mcman plugins remove \<plugin>
 - [ ] ??? mcman plugins search \<source> \<search>
 - [ ] mcman plugins update \<all | plugin | server>
 - [ ] mcman set server \<common_alias | source> [data]
 - [ ] mcman set version \<ver>
-- [ ] mcman setup
 
 ## other stuff
 
 - [x] vars
   - [x] toml
-  - [ ] env
-- [ ] support git-like calls from inner folders (recurse server.toml lookup)
+  - [x] env
+- [x] support git-like calls from inner folders (recurse server.toml lookup)
 - [x] mods support (along with plugins)
-- [ ] server readme lol
+- [x] server readme lol

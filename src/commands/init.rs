@@ -20,7 +20,7 @@ use clap::{arg, ArgMatches, Command};
 
 pub fn cli() -> Command {
     Command::new("init")
-        .about("Initializes a new MCMan-powered Minecraft server")
+        .about("Initialize a new mcman server")
         .arg(arg!(--name <NAME> "The name of the server").required(false))
         .arg(arg!(--mrpack <SRC> "Import from a modrinth modpack").required(false))
 }

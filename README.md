@@ -39,7 +39,13 @@ Powerful Minecraft Server Manager CLI. Easily install jars (server, plugins & mo
 
 ## Getting Started
 
-View the [Documentation](./DOCS.md) here.
+- 🚀 [Installation instructions](./TUTORIAL.md#installation)
+
+- ✨ [Recommended Usage](./TUTORIAL.md#recommended-usage)
+
+- 📜 View the [**Documentation**](./DOCS.md) here.
+
+- 📋 Want an example? Here's [iptfreedom](https://github.com/IPTFreedom/iptfreedom)
 
 ## Changelog
 

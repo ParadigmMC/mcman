@@ -268,7 +268,7 @@ async fn download_server_jar(
                 ];
 
                 if loader != "latest" {
-                    args.push(&loader);
+                    args.push(loader);
                 }
 
                 args.push("--install-dir=.");

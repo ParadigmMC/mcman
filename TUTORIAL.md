@@ -1,43 +1,82 @@
+<!-- markdownlint-disable MD033 -->
+[latest-win]: https://github.com/ParadigmMC/mcman/releases/download/latest/mcman.exe
+[latest-linux]: https://github.com/ParadigmMC/mcman/releases/download/latest/mcman
+
 # Getting Started
 
 ## Installation
 
-todo
+**Stable Releases:**
 
-## Create your first server
+| Windows              | OSX/Linux              |
+| :------------------: | :--------------------: |
+| [latest][latest-win] | [latest][latest-linux] |
 
-For the purposes of this tutorial, we will create a simple survival server.
+For past releases, go to the [releases](https://github.com/ParadigmMC/mcman/releases) tab.
 
-1. Create a folder and name it as your server's name
+**Dev Releases:**
 
-2. **Recommended:** initialize a git repository
-   - this allows you to share and manage your configs between hosts more efficiently 
+We have github [actions](https://github.com/ParadigmMC/mcman/actions/workflows/build.yml) that build mcman.
 
-3. Run **`mcman init`** in the new folder. This will create your `server.toml` config file and some other files as a starting point.
+These require you to be logged in to github.
 
-4. Let's use Purpur for our server. Open `server.toml` and edit it like so:
+Please note that these builds might not work completely.
 
-    ```toml
-    [jar]
-    type = "purpur"
-    version = "1.19.4"
-    ```
+## Recommended Usage
 
-5. Now let's test if it works. Run **`mcman build`** - this will build your server in the *server/* folder. If you see `purpur-blablabla.jar` then it means it works properly.
+First, initialize a github repository for your server and clone it. It can be private too if you want.
 
-6. Let's add some plugins. Add the following to your config file:
+After cloning the repository, go into the folder and run `mcman init`. This command will interactively set your server's basic configuration (name, version, server software etc).
 
-    ```toml
-    [[plugins]]
-    type = "modrinth"
-    id = "authmevelocity"
-    version = "mhfhAMOb"
-    ```
+After initializing your server or when you change things in your server files (like `server.toml`) you can commit your changes into the git repository. mcman will provide a `.gitignore` which will prevent you from accidentally commiting the output folder (`server/`)
 
-7. When you run **`mcman build`** again, the plugin will automatically be installed.
+<details>
+<summary>
+📦 Importing from a mrpack (modrinth modpack)
+</summary>
 
-8. Let's now add some configuration for the plugin: Create a new file in `./config/plugins/authmevelocity/config.conf` and configure the plugin in the file.
+You can use the `--mrpack` flag on `mcman init` to import from an mrpack while initializing a server.
 
-9. When you run **`mcman build`** again, the plugin configuration will automatically be copied to the output folder.
+- If its from modrinth, like [adrenaserver](https://modrinth.com/modpack/adrenaserver): `mcman init --mrpack mr:adrenaserver`
 
-10. Use the generated launcher scripts to launch your server (`start.bat` or `start.sh`).
+Use `mr:` and then the project id/slug of the modpack (should be visible on the url)
+
+- You can also just paste in the modpack page's url: `mcman init --mrpack https://modrinth.com/modpack/adrenaserver`
+
+- If its from another source, you can provide a download link to it: `mcman init --mrpack https://example.com/pack.mrpack`
+
+- If its a file: `mcman init --mrpack ../modpacks/pack.mrpack`
+
+If your server is already initialized, use the `mcman import mrpack <source>` command. The source argument also accepts the sources defined above.
+</details>
+
+<details>
+<summary>
+🧵 Proxies (velocity, waterfall, bungeecord)
+</summary>
+
+Yes, you can use proxies with mcman. Just select "proxy server" while running `mcman init`
+</details>
+
+After initializing the server, you'll see a `server.toml` file - thats the configuration for your server. It contains:
+
+- The minecraft version of your server
+- Which server software you are using (quilt, paper, vanilla, etc...)
+- Plugins, mods, etc
+- and some more configurations
+
+**How do i run my server?**
+
+Its pretty simple. To build your server, run `mcman build`. It will configure everything, download your plugins, mods and sets up your configuration files.
+
+The build command will build the server into the `server/` directory.
+
+If you havent disabled [launch script generation](./DOCS.md#server-launcher) mcman will also generate `server/start.bat` and `server/start.sh` for you. So you can use:
+
+```sh
+mcman build && cd server && start
+```
+
+## Usage with Docker
+
+After initialization mcman also provides a default dockerfile for you, this dockerfile basically runs your server after running `mcman build`.
