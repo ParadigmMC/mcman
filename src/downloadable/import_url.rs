@@ -51,9 +51,9 @@ impl Downloadable {
                     .collect();
 
                 if segments.first().is_none()
-                    || !vec!["mod", "plugin"].contains(segments.first().unwrap())
+                    || !vec!["mod", "plugin", "datapack"].contains(segments.first().unwrap())
                 {
-                    Err(invalid_url("must start with /mod or /plugin"))?;
+                    Err(invalid_url("must start with /mod, /plugin or /datapack"))?;
                 };
 
                 let id = segments
@@ -65,7 +65,8 @@ impl Downloadable {
                 let versions: Vec<ModrinthVersion> = fetch_modrinth_versions(client, &id, None)
                     .await?
                     .into_iter()
-                    .filter(|v| v.game_versions.contains(&server.mc_version))
+                    // TODO: better filtering, commented out because proxy server versioning is complex..?
+                    //.filter(|v| v.game_versions.contains(&server.mc_version))
                     .collect();
 
                 let version = if let Some(&"version") = segments.get(2) {
@@ -93,7 +94,8 @@ impl Downloadable {
                                     let num = &v.version_number;
                                     let name = &v.name;
                                     let compat = v.loaders.join(",");
-                                    format!("[{num}] {name} / {compat}")
+                                    let vers = v.game_versions.join(",");
+                                    format!("[{num}]: {name} ({compat} ; {vers})")
                                 })
                                 .collect::<Vec<String>>(),
                         )
