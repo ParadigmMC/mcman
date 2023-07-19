@@ -23,7 +23,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         None => Input::<String>::new().with_prompt("URL:").interact()?,
     };
 
-    let addon = Downloadable::from_url_interactive(&http_client, &server, &urlstr).await?;
+    let addon = Downloadable::from_url_interactive(&http_client, &server, &urlstr, false).await?;
 
     let is_plugin = match server.jar {
         Downloadable::Fabric { .. } | Downloadable::Quilt { .. } => false,

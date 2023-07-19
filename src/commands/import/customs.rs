@@ -24,7 +24,7 @@ pub async fn run() -> Result<()> {
             Downloadable::Url { url, .. } => {
                 println!(" > {}", style("Re-importing:").cyan().bold());
                 println!("   {}", style(&url).dim());
-                if let Ok(d) = Downloadable::from_url_interactive(&http_client, &server, url).await
+                if let Ok(d) = Downloadable::from_url_interactive(&http_client, &server, url, false).await
                 {
                     d
                 } else {
@@ -41,7 +41,7 @@ pub async fn run() -> Result<()> {
             Downloadable::Url { url, .. } => {
                 println!(" > {}", style("Re-importing:").cyan().bold());
                 println!("   {url}");
-                if let Ok(d) = Downloadable::from_url_interactive(&http_client, &server, url).await
+                if let Ok(d) = Downloadable::from_url_interactive(&http_client, &server, url, false).await
                 {
                     d
                 } else {

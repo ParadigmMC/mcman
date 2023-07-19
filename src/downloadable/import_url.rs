@@ -17,8 +17,9 @@ impl Downloadable {
     #[allow(clippy::too_many_lines)]
     pub async fn from_url_interactive(
         client: &reqwest::Client,
-        server: &Server,
+        _server: &Server,
         urlstr: &str,
+        datapack_mode: bool,
     ) -> Result<Self> {
         let url = Url::parse(urlstr)?;
         match url.domain() {
@@ -67,6 +68,11 @@ impl Downloadable {
                     .into_iter()
                     // TODO: better filtering, commented out because proxy server versioning is complex..?
                     //.filter(|v| v.game_versions.contains(&server.mc_version))
+                    .filter(|v| if datapack_mode {
+                        v.loaders.contains(&"datapack".to_owned())
+                    } else {
+                        !v.loaders.contains(&"datapack".to_owned())
+                    })
                     .collect();
 
                 let version = if let Some(&"version") = segments.get(2) {

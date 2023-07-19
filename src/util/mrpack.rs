@@ -44,7 +44,7 @@ impl MRPackIndex {
         }) {
             let url = f.downloads.first().context("unwrap url from downloads")?;
 
-            let dl = Downloadable::from_url_interactive(http_client, server, url).await?;
+            let dl = Downloadable::from_url_interactive(http_client, server, url, false).await?;
 
             server.mods.push(dl);
         }
