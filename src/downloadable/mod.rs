@@ -295,6 +295,14 @@ impl Downloadable {
             Self::Quilt { installer, .. } => Ok(get_installer_filename(client, installer).await?),
         }
     }
+
+    pub fn is_modded(&self) -> bool {
+        match self {
+            Downloadable::Fabric { .. }
+            | Downloadable::Quilt { .. } => true,
+            _ => false
+        }
+    }
 }
 
 impl std::fmt::Display for Downloadable {

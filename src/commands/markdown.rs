@@ -8,7 +8,6 @@ use std::io::Write;
 use std::vec;
 
 use crate::commands::version::APP_USER_AGENT;
-use crate::downloadable::Downloadable;
 use crate::model::{MarkdownOptions, Server};
 use crate::util::md::MarkdownTable;
 use anyhow::{Context, Result};
@@ -159,10 +158,11 @@ pub fn initialize_readme(server: &Server) -> Result<()> {
         .replace("{SERVER_NAME}", &server.name)
         .replace(
             "{ADDON_HEADER}",
-            match server.jar {
-                Downloadable::Quilt { .. } | Downloadable::Fabric { .. } => "Mods",
-                _ => "Plugins",
-            },
+            if server.jar.is_modded() {
+                "Mods"
+            } else {
+                "Plugins"
+            }
         );
 
     f.write_all(readme_content.as_bytes())?;

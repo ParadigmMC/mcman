@@ -49,6 +49,11 @@ Powerful Minecraft Server Manager CLI. Easily install jars (server, plugins & mo
 
 ## Changelog
 
+### `0.2.2` (unreleased)
+
+- Added **BuildTools** support.
+  - This includes *spigot, bukkit and craftbukkit*
+
 ### `0.2.1`
 
 - Added **Fabric** support.

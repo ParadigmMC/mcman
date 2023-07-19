@@ -26,8 +26,7 @@ pub fn cli() -> Command {
     Command::new("build")
         .about("Build using server.toml configuration")
         .arg(
-            arg!(-o --output <FILE> "The output directory for the server")
-                .default_value("server")
+            arg!(-o --output [FILE] "The output directory for the server")
                 .value_parser(value_parser!(PathBuf)),
         )
         .arg(
@@ -44,7 +43,8 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         .user_agent(APP_USER_AGENT)
         .build()
         .context("Failed to create HTTP client")?;
-    let output_dir = matches.get_one::<PathBuf>("output").unwrap();
+    let default_output = server.path.join("server");
+    let output_dir = matches.get_one::<PathBuf>("output").unwrap_or(&default_output);
     std::fs::create_dir_all(output_dir).context("Failed to create output directory")?;
 
     //let term = Term::stdout();
@@ -100,7 +100,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     // stage 4: bootstrap
     mark_stage("Configurations");
 
-    if !skip_stages.contains(&&"bootstrap".to_owned()) {
+    if !skip_stages.contains(&&"bootstrap".to_owned()) && server.path.join("config").exists() {
         let mut vars = HashMap::new();
 
         for (key, value) in &server.variables {
@@ -124,7 +124,9 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
 
         if server.launcher.eula_args {
             match server.jar {
-                Downloadable::Quilt { .. } | Downloadable::Fabric { .. } => {
+                Downloadable::Quilt { .. }
+                | Downloadable::Fabric { .. }
+                | Downloadable::Vanilla {  } => {
                     println!(
                         "          {}",
                         style("=> eula.txt [eula_args unsupported]").dim()
