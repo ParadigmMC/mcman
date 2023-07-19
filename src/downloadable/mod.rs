@@ -297,7 +297,10 @@ impl Downloadable {
     }
 
     pub fn is_modded(&self) -> bool {
-        matches!(self, Downloadable::Fabric { .. } | Downloadable::Quilt { .. })
+        matches!(
+            self,
+            Downloadable::Fabric { .. } | Downloadable::Quilt { .. }
+        )
     }
 }
 

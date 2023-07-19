@@ -11,6 +11,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::downloadable::Downloadable;
 
+use super::World;
+
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct ServerLauncher {
@@ -143,6 +145,7 @@ pub struct Server {
     pub plugins: Vec<Downloadable>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub mods: Vec<Downloadable>,
+    pub worlds: HashMap<String, World>,
     pub markdown: Option<MarkdownOptions>,
 }
 
@@ -209,6 +212,7 @@ impl Default for Server {
             launcher: ServerLauncher::default(),
             plugins: vec![],
             mods: vec![],
+            worlds: HashMap::new(),
             markdown: Some(MarkdownOptions::default()),
         }
     }

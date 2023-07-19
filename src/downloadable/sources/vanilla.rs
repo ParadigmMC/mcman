@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 pub async fn fetch_vanilla(version: &str, client: &reqwest::Client) -> Result<reqwest::Response> {
     let version_manifest = mcapi::vanilla::fetch_version_manifest(client).await?;
@@ -9,7 +9,10 @@ pub async fn fetch_vanilla(version: &str, client: &reqwest::Client) -> Result<re
         id => version_manifest.fetch(id, client).await?,
     }
     .downloads
-    .server
+    .get(&mcapi::vanilla::DownloadType::Server)
+    .ok_or(anyhow!(
+        "version manifest doesn't include a server download"
+    ))?
     .download(client)
     .await?)
 }

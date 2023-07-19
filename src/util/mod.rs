@@ -8,6 +8,14 @@ use tokio::{fs::File, io::BufWriter};
 
 use crate::{downloadable::Downloadable, model::Server};
 
+pub struct SelectItem<T>(pub T, pub String);
+
+impl<T> ToString for SelectItem<T> {
+    fn to_string(&self) -> String {
+        self.1.clone()
+    }
+}
+
 pub async fn download_with_progress(
     file: File,
     message: &str,

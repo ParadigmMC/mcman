@@ -1,26 +1,24 @@
 <!-- markdownlint-disable MD033 -->
-[latest-win]: https://github.com/ParadigmMC/mcman/releases/download/latest/mcman.exe
-[latest-linux]: https://github.com/ParadigmMC/mcman/releases/download/latest/mcman
+[latest-win]: https://github.com/ParadigmMC/mcman/releases/latest/download/mcman.exe
+[latest-linux]: https://github.com/ParadigmMC/mcman/releases/latest/download/mcman
 
 # Getting Started
+
+**Index:**
+
+- [Installation](#installation)
+- [Recommended Usage](#recommended-usage)
+- [Using configuration files](#using-configuration-files)
 
 ## Installation
 
 **Stable Releases:**
 
-| Windows              | OSX/Linux              |
-| :------------------: | :--------------------: |
-| [latest][latest-win] | [latest][latest-linux] |
+| [Windows][latest-win] | [OSX/Linux][latest-linux] |
+| :-------------------: | :-----------------------: |
 
-For past releases, go to the [releases](https://github.com/ParadigmMC/mcman/releases) tab.
-
-**Dev Releases:**
-
-We have github [actions](https://github.com/ParadigmMC/mcman/actions/workflows/build.yml) that build mcman.
-
-These require you to be logged in to github.
-
-Please note that these builds might not work completely.
+- [Github Releases](https://github.com/ParadigmMC/mcman/releases)
+- [build action](https://github.com/ParadigmMC/mcman/actions/workflows/build.yml) (requires github account)
 
 ## Recommended Usage
 
@@ -80,3 +78,37 @@ mcman build && cd server && start
 ## Usage with Docker
 
 After initialization mcman also provides a default dockerfile for you, this dockerfile basically runs your server after running `mcman build`.
+
+## Using configuration files
+
+While running a minecraft server, 99% of the time you have to edit the configuration files of the server. **mcman** can actually help you with that.
+
+Next to your `server.toml` file, you'll see a `config/` folder. It's actually pretty simple. **mcman** will copy files from `config/` to `server/` while building your server (after installing the server, plugins/mods/datapacks etc.)
+
+Actually, mcman doesn't *just* copy the files. It has **variables** too - you can use variables inside your configuration files. This is very useful if you want to have something (like the server name) in multiple places - if you want to change it, you can just change the variable in `server.toml` (instead of manually going through every file that contains it)
+
+> Note
+> `config/server.properties` should already be present after mcman init, so pretend it doesn't exist for now
+
+For an example, let's create a `server.properties` file in `config/` and fill it like so:
+
+```properties
+motd=${MESSAGE}
+```
+
+And add this to `server.toml`:
+
+```toml
+[variables]
+MESSAGE = "Hello from server.toml!"
+```
+
+After you run `mcman build`, you can see that `server/server.properties` is like this:
+
+```properties
+motd=Hello from server.toml!
+```
+
+You can read more about [variables](./DOCS.md#variables) here.
+
+**Tip:** You can 'pull' a config file from `server/` to `config/` with the [`mcman pull`](./DOCS.md#mcman-pull-file) command.

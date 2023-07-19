@@ -2,6 +2,7 @@
 
 ![mcman](https://media.discordapp.net/attachments/1109215116060266567/1121117662785851522/mcman_large.png)
 
+[![GitHub release](https://img.shields.io/github/release/ParadigmMC/mcman.svg)](https://github.com/ppy/osu/releases/latest)
 [![builds](https://img.shields.io/github/actions/workflow/status/ParadigmMC/mcman/build.yml?logo=github)](https://github.com/ParadigmMC/mcman/actions/workflows/build.yml)
 [![docker publish](https://img.shields.io/github/actions/workflow/status/ParadigmMC/mcman/publish.yml?logo=github&label=docker%20publish)](https://github.com/ParadigmMC/mcman/actions/workflows/publish.yml)
 ![GitHub Repo stars](https://img.shields.io/github/stars/ParadigmMC/mcman?logo=github)
@@ -25,7 +26,8 @@ Powerful Minecraft Server Manager CLI. Easily install jars (server, plugins & mo
       - Velocity
       - Waterfall
       - BungeeCord
-    - Plugins/Mods:
+      - Spigot and CraftBukkit
+    - Plugins/Mods/Datapacks:
       - Modrinth
       - Spigot
     - And even **Github Releases**, **Custom URL**s and **Jenkins!**
@@ -47,12 +49,17 @@ Powerful Minecraft Server Manager CLI. Easily install jars (server, plugins & mo
 
 - 📋 Want an example? Here's [iptfreedom](https://github.com/IPTFreedom/iptfreedom)
 
+Submit a PR or open an issue if you have a mcman-server repository that we can add here!
+
 ## Changelog
 
 ### `0.2.2` (unreleased)
 
+- Added support for **Datapacks**
+  - Added command `mcman import datapack`
 - Added **BuildTools** support.
   - This includes *spigot, bukkit and craftbukkit*
+- Even better docs and tutorial.md
 
 ### `0.2.1`
 

@@ -29,23 +29,26 @@ pub fn cli() -> Command {
             arg!(-o --output [FILE] "The output directory for the server")
                 .value_parser(value_parser!(PathBuf)),
         )
-        .arg(
-            arg!(--skip [stages] "Skip some stages")
-                .value_delimiter(',')
-                .default_value(""),
-        )
+        .arg(arg!(--skip [stages] "Skip some stages").value_delimiter(','))
+        .arg(arg!(--force "Don't skip downloading already downloaded jars"))
 }
 
 #[allow(clippy::if_not_else)]
+#[allow(clippy::too_many_lines)]
 pub async fn run(matches: &ArgMatches) -> Result<()> {
     let server = Server::load().context("Failed to load server.toml")?;
     let http_client = reqwest::Client::builder()
         .user_agent(APP_USER_AGENT)
         .build()
         .context("Failed to create HTTP client")?;
+
     let default_output = server.path.join("server");
-    let output_dir = matches.get_one::<PathBuf>("output").unwrap_or(&default_output);
+    let output_dir = matches
+        .get_one::<PathBuf>("output")
+        .unwrap_or(&default_output);
     std::fs::create_dir_all(output_dir).context("Failed to create output directory")?;
+
+    let force = matches.get_flag("force");
 
     //let term = Term::stdout();
     let title = Style::new().blue().bold();
@@ -56,8 +59,16 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
 
     let skip_stages = matches
         .get_many::<String>("skip")
-        .unwrap()
-        .collect::<Vec<&String>>();
+        .map(|o| o.cloned().collect::<Vec<String>>())
+        .unwrap_or(vec![]);
+
+    if force {
+        println!(" => {}", style("Force flag used").bold());
+    }
+
+    if !skip_stages.is_empty() {
+        println!(" => skipping stages: {}", skip_stages.join(", "));
+    }
 
     let mut stage_index = 1;
 
@@ -73,15 +84,15 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     // stage 1: server jar
     mark_stage("Server Jar");
 
-    let serverjar_name = download_server_jar(&server, &http_client, output_dir)
+    let serverjar_name = download_server_jar(&server, &http_client, output_dir, force)
         .await
         .context("Failed to download server jar")?;
 
     // stage 2: plugins
-    if !skip_stages.contains(&&"addons".to_owned()) {
+    if !skip_stages.contains(&"addons".to_owned()) {
         if !server.plugins.is_empty() {
             mark_stage("Plugins");
-            download_addons("plugins", &server, &http_client, output_dir)
+            download_addons("plugins", &server, &http_client, output_dir, force)
                 .await
                 .context("Failed to download plugins")?;
         }
@@ -89,7 +100,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         // stage 3: mods
         if !server.mods.is_empty() {
             mark_stage("Mods");
-            download_addons("mods", &server, &http_client, output_dir)
+            download_addons("mods", &server, &http_client, output_dir, force)
                 .await
                 .context("Failed to download plugins")?;
         }
@@ -97,10 +108,20 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         mark_stage_skipped("addons");
     }
 
+    if !server.worlds.is_empty() {
+        if !skip_stages.contains(&"dp".to_owned()) {
+            mark_stage("Datapacks");
+
+            download_datapacks(&server, &http_client, output_dir, force).await?;
+        } else {
+            mark_stage_skipped("datapacks");
+        }
+    }
+
     // stage 4: bootstrap
     mark_stage("Configurations");
 
-    if !skip_stages.contains(&&"bootstrap".to_owned()) && server.path.join("config").exists() {
+    if !skip_stages.contains(&"bootstrap".to_owned()) && server.path.join("config").exists() {
         let mut vars = HashMap::new();
 
         for (key, value) in &server.variables {
@@ -126,7 +147,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
             match server.jar {
                 Downloadable::Quilt { .. }
                 | Downloadable::Fabric { .. }
-                | Downloadable::Vanilla {  } => {
+                | Downloadable::Vanilla {} => {
                     println!(
                         "          {}",
                         style("=> eula.txt [eula_args unsupported]").dim()
@@ -143,7 +164,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     }
 
     // stage 5: launcher scripts
-    if !skip_stages.contains(&&"scripts".to_owned()) {
+    if !skip_stages.contains(&"scripts".to_owned()) {
         if !server.launcher.disable {
             mark_stage("Scripts");
             create_scripts(&server, &serverjar_name, output_dir)?;
@@ -157,6 +178,75 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         style(server.name.clone()).green().bold(),
         style(start_time.elapsed().as_millis().to_string() + "ms").blue(),
     );
+
+    Ok(())
+}
+
+async fn download_datapacks(
+    server: &Server,
+    http_client: &reqwest::Client,
+    output_dir: &Path,
+    force: bool,
+) -> Result<()> {
+    let world_count = server.worlds.len();
+    let wc_len = world_count.to_string().len();
+
+    for (idx, (name, world)) in server.worlds.iter().enumerate() {
+        println!("          ({idx:wc_len$}/{world_count}) World: {name}");
+
+        std::fs::create_dir_all(output_dir.join(name).join("datapacks"))
+            .context(format!("Failed to create {name}/datapacks directory"))?;
+
+        let datapack_count = world.datapacks.len();
+        let dp_len = datapack_count.to_string().len();
+        let pad_len = wc_len * 2 + 4;
+
+        for (idx, dp) in world.datapacks.iter().enumerate() {
+            let dp_name = dp.get_filename(server, http_client).await?;
+            if !force
+                && output_dir
+                    .join(name)
+                    .join("datapacks")
+                    .join(&dp_name)
+                    .exists()
+            {
+                println!(
+                    "          {:pad_len$}({:dp_len$}/{}) Skipping    : {}",
+                    "",
+                    idx,
+                    datapack_count,
+                    style(&dp_name).dim()
+                );
+                continue;
+            }
+
+            util::download_with_progress(
+                File::create(
+                    &output_dir
+                        .join(name)
+                        .join("datapacks")
+                        .join(dp_name.clone()),
+                )
+                .await
+                .context(format!("Failed to create output file for {dp_name}"))?,
+                &dp_name,
+                dp,
+                server,
+                http_client,
+            )
+            .await
+            .context(format!("Failed to download plugin {dp_name}"))?;
+
+            println!(
+                "          {:pad_len$}({}/{}) {}  : {}",
+                "",
+                idx,
+                datapack_count,
+                style("Downloaded").green().bold(),
+                style(&dp_name).dim()
+            );
+        }
+    }
 
     Ok(())
 }
@@ -215,11 +305,12 @@ async fn download_server_jar(
     server: &Server,
     http_client: &reqwest::Client,
     output_dir: &Path,
+    force: bool,
 ) -> Result<String> {
     let serverjar_name = match &server.jar {
         Downloadable::Quilt { loader, .. } => {
             let installerjar_name = server.jar.get_filename(server, http_client).await?;
-            if output_dir.join(installerjar_name.clone()).exists() {
+            if !force && output_dir.join(installerjar_name.clone()).exists() {
                 println!(
                     "          Quilt installer present ({})",
                     style(installerjar_name.clone()).dim()
@@ -247,10 +338,12 @@ async fn download_server_jar(
                 .await
                 .context("getting loader version id")?;
 
-            let serverjar_name =
-                format!("quilt-server-launch-{}-{}.jar", server.mc_version, loader_id);
+            let serverjar_name = format!(
+                "quilt-server-launch-{}-{}.jar",
+                server.mc_version, loader_id
+            );
 
-            if output_dir.join(serverjar_name.clone()).exists() {
+            if !force && output_dir.join(serverjar_name.clone()).exists() {
                 println!(
                     "          Skipping server jar ({})",
                     style(serverjar_name.clone()).dim()
@@ -303,7 +396,7 @@ async fn download_server_jar(
         }
         Downloadable::BuildTools { args } => {
             let installerjar_name = server.jar.get_filename(server, http_client).await?;
-            if output_dir.join(installerjar_name.clone()).exists() {
+            if !force && output_dir.join(installerjar_name.clone()).exists() {
                 println!(
                     "          BuildTools present ({})",
                     style(installerjar_name.clone()).dim()
@@ -329,7 +422,7 @@ async fn download_server_jar(
 
             let serverjar_name = format!("spigot-{}.jar", server.mc_version);
 
-            if output_dir.join(serverjar_name.clone()).exists() {
+            if !force && output_dir.join(serverjar_name.clone()).exists() {
                 println!(
                     "          Skipping server jar ({})",
                     style(serverjar_name.clone()).dim()
@@ -337,12 +430,7 @@ async fn download_server_jar(
             } else {
                 println!("          Running BuildTools...",);
 
-                let mut exec_args = vec![
-                    "-jar",
-                    &installerjar_name,
-                    "--rev",
-                    &server.mc_version,
-                ];
+                let mut exec_args = vec!["-jar", &installerjar_name, "--rev", &server.mc_version];
 
                 for arg in args {
                     exec_args.push(arg);
@@ -375,7 +463,7 @@ async fn download_server_jar(
         }
         dl => {
             let serverjar_name = dl.get_filename(server, http_client).await?;
-            if output_dir.join(serverjar_name.clone()).exists() {
+            if !force && output_dir.join(serverjar_name.clone()).exists() {
                 println!(
                     "          Skipping server jar ({})",
                     style(serverjar_name.clone()).dim()
@@ -411,6 +499,7 @@ async fn download_addons(
     server: &Server,
     http_client: &reqwest::Client,
     output_dir: &Path,
+    force: bool,
 ) -> Result<()> {
     let addon_count = match addon_type {
         "plugins" => server.plugins.len(),
@@ -435,7 +524,7 @@ async fn download_addons(
         i += 1;
 
         let addon_name = addon.get_filename(server, http_client).await?;
-        if output_dir.join(addon_type).join(&addon_name).exists() {
+        if !force && output_dir.join(addon_type).join(&addon_name).exists() {
             println!(
                 "          ({}/{}) Skipping    : {}",
                 i,

@@ -1,22 +1,26 @@
 use anyhow::{bail, Result};
 use dialoguer::{theme::ColorfulTheme, Select};
 
+use crate::util::SelectItem;
+
 use super::Downloadable;
 
 impl Downloadable {
     pub fn select_jar_interactive() -> Result<Self> {
         let items = vec![
-            (0, "Vanilla       - No patches"),
-            (1, "PaperMC/Paper - Spigot fork, most popular"),
-            (2, "Purpur        - Paper fork"),
+            SelectItem(0, "Vanilla       - No patches".to_owned()),
+            SelectItem(1, "PaperMC/Paper - Spigot fork, most popular".to_owned()),
+            SelectItem(2, "Purpur        - Paper fork".to_owned()),
+            SelectItem(
+                3,
+                "BuildTools    - Spigot, Bukkit or CraftBukkit".to_owned(),
+            ),
         ];
-
-        let items_str: Vec<String> = items.iter().map(|v| v.1.to_owned()).collect();
 
         let jar_type = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Which server software to use?")
             .default(0)
-            .items(&items_str)
+            .items(&items)
             .interact()?;
 
         Ok(match jar_type {
@@ -25,6 +29,25 @@ impl Downloadable {
             2 => Self::Purpur {
                 build: "latest".to_owned(),
             },
+            3 => {
+                let items = vec![
+                    SelectItem(Self::BuildTools { args: vec![] }, "Spigot".to_owned()),
+                    SelectItem(
+                        Self::BuildTools {
+                            args: vec!["--compile".to_owned(), "craftbukkit".to_owned()],
+                        },
+                        "CraftBukkit".to_owned(),
+                    ),
+                ];
+
+                let idx = Select::with_theme(&ColorfulTheme::default())
+                    .with_prompt("Which one?")
+                    .default(0)
+                    .items(&items)
+                    .interact()?;
+
+                items[idx].0.clone()
+            }
             _ => unreachable!(),
         })
     }

@@ -20,7 +20,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
 
     let urlstr = match matches.get_one::<String>("url") {
         Some(url) => url.clone(),
-        None => Input::<String>::new().with_prompt("URL:").interact()?,
+        None => Input::<String>::new().with_prompt("URL:").interact_text()?,
     };
 
     let addon = Downloadable::from_url_interactive(&http_client, &server, &urlstr, false).await?;

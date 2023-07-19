@@ -162,7 +162,7 @@ pub fn initialize_readme(server: &Server) -> Result<()> {
                 "Mods"
             } else {
                 "Plugins"
-            }
+            },
         );
 
     f.write_all(readme_content.as_bytes())?;

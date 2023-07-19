@@ -1,4 +1,7 @@
+<!-- markdownlint-disable MD033 -->
 # `mcman` Documentation
+
+You might be looking for [tutorial.md](./TUTORIAL.md)
 
 Index:
 
@@ -7,6 +10,8 @@ Index:
 - [Variables](#variables)
 - [server.toml](#servertoml)
   - [Server Launcher](#server-launcher)
+  - [Markdown Options](#markdown-options)
+  - [World](#world) (for datapacks)
   - [Downloadables](#downloadable)
 
 ## CLI
@@ -19,7 +24,7 @@ Initializes a new server in the current directory.
 
 This command is interactive. Just run `mcman init`!
 
-The source is the same as one in [`mcman import mrpack`](#mcman-import-mrpack-src)
+The mrpack source is the same as one in [`mcman import mrpack`](#mcman-import-mrpack-src)
 
 Example using [Adrenaserver](https://modrinth.com/modpack/adrenaserver):
 
@@ -32,21 +37,60 @@ mcman init --mrpack https://cdn.modrinth.com/data/H9OFWiay/versions/2WXUgVhc/Adr
 
 ### `mcman version`
 
-Shows the version of mcman.
+Show the version and also check for new versions.
 
 ### `mcman build`
 
 Builds the server into the [output folder](#folder-structure) using the [`server.toml`](#servertoml) and the `config/` directory.
 
-Alternatively set the output folder manually using `--output "outfolder"` option.
+<details>
+<summary>Extra flags (skip, force)</summary>
 
-### `mcman readme`
+You can alternatively set the output folder manually using `--output <path>` option.
 
-This command refreshes the server's `README.md` file if there is any.
+The `--force` flag can be used to not skip and download everything in the config file.
 
-Only the two templates inside the markdown files are refreshed:
+You can use the `--skip <stages>` flag to skip stages.
 
-**Server Info:** This template renders information about the server.
+- Stages should be comma-seperated, like `--skip bootstrap,scripts`
+- The stages are: `addons` (plugins and mods), `dp` (datapacks), `bootstrap` (config/) and `scripts`
+
+</details>
+
+### `mcman pull <file>`
+
+'Pulls' a file from `server/` to `config/`
+
+Example usage:
+
+```sh
+~/smp $ ls
+ ...
+ server.toml
+ ...
+
+~/smp $ cd server/config/SomeMod
+
+~/smp/server/config/SomeMod $ mcman pull config.txt
+  server/config/SomeMod/config.txt => config/config/SomeMod/config.txt
+```
+
+### `mcman info`
+
+Shows info about the server in the terminal.
+
+### `mcman markdown`
+
+This command refreshes the markdown files defined in the [server.toml](#markdown-options) files with the templates.
+
+**Markdown Templates:**
+
+<details>
+<summary>
+Server Info Table
+</summary>
+
+This template renders a table with server jar info.
 
 ```md
 <!--start:mcman-server-->
@@ -60,9 +104,14 @@ Example render:
 | ------- | ------------------------------------------ | -------- |
 | 1.20.1  | [Paper](https://papermc.io/software/paper) | *Latest* |
 
----
+</details>
 
-**Addons List:** This template renders a list of addons (plugins or mods)
+<details>
+<summary>
+Addons List
+</summary>
+
+This template renders a list of addons (plugins or mods)
 
 ```md
 <!--start:mcman-addons-->
@@ -77,7 +126,7 @@ Example render:
 | [BlueMap](https://modrinth.com/plugin/bluemap) |  A Minecraft mapping tool that creates 3D models of your Minecraft worlds and displays them in a web viewer. |
 | [FastAsyncWorldEdit](https://modrinth.com/plugin/fastasyncworldedit) | Blazingly fast world manipulation for artists, builders and everyone else |
 
----
+</details>
 
 ### `mcman import url <URL>`
 
@@ -96,6 +145,17 @@ Example usage:
 mcman import url https://modrinth.com/plugin/imageframe
 
 mcman import url https://www.spigotmc.org/resources/armorstandeditor-reborn.94503/
+```
+
+### `mcman import datapack <URL>`
+
+Like [import url](#mcman-import-url-url), but imports as a datapack rather than a plugin or a mod.
+
+Example usage:
+
+```sh
+# datapack alias is dp
+mcman import dp https://modrinth.com/plugin/tectonic
 ```
 
 ### `mcman import mrpack <src>`
@@ -179,7 +239,12 @@ Prefix = "[a]"
 # key-value table
 ```
 
-Or, if your variables are sensitive (such as discord bot tokens) you can use environment variables:
+<details>
+<summary>
+Using environment variables
+</summary>
+
+If your variables are sensitive (such as discord bot tokens) you can use environment variables:
 
 ```bash
 # Linux/Mac:
@@ -191,7 +256,16 @@ export TOKEN=asdf
 set TOKEN=asdf
 ```
 
+Environment variables are also put onto config files.
+
+</details>
+
 And then use the variables inside any config file inside `config/`:
+
+<details>
+<summary>
+Example configuration files
+</summary>
 
 📜 `config/server.properties`:
 
@@ -218,7 +292,11 @@ messages:
 token: ${TOKEN}
 ```
 
+</details>
+
 ### Special Variables
+
+These variables are also present:
 
 - `SERVER_NAME`: name property from server.toml
 - `SERVER_VERSION`: mc_version property from server.toml
@@ -250,6 +328,33 @@ type = "vanilla" # example
 [[mods]] # list of Downloadable
 # ...
 ```
+
+**Fields:**
+
+- `name`: string - Name of the server
+- `mc_version`: string | `"latest"` - The minecraft version of the server
+- `jar`: [Downloadable](#downloadable) - Which server software to use
+- `launcher`: [ServerLauncher](#server-launcher) - Options for generating launch scripts
+- `plugins`: [Downloadable[]](#downloadable) - A list of plugins to download
+- `mods`: [Downloadable[]](#downloadable) - A list of mods to download
+- `variables`: table - More info [here](#variables)
+- `worlds`: table - Key is world name in string, value is a [World](#world)
+- `markdown`: [MarkdownOptions](#markdown-options) - Options for markdown files
+
+### World
+
+> Added in v0.2.2
+
+Represents a world in your server. Currently only exists for datapack support.
+
+```toml
+[worlds.skyblock]
+datapacks = []
+```
+
+**Fields:**
+
+- `datapacks`: [Downloadable[]](#downloadable) - The list of datapacks to download for this world
 
 ### Server Launcher
 
@@ -289,6 +394,24 @@ memory = "2048M"
 hello="thing"
 # ^ same as this:
 # jvm_args = "-Dhello=thing"
+```
+
+### Markdown Options
+
+This category contains the options for markdown rendering via [`mcman md`](#mcman-markdown)
+
+**Fields:**
+
+- `files`: string[] - list of files to render
+- `auto_update`: bool - weather to auto-update the files on some commands
+
+```toml
+[markdown]
+files = [
+  "README.md",
+  "PLUGINS.md",
+]
+auto_update = false
 ```
 
 ## Types

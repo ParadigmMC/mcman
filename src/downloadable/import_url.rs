@@ -68,10 +68,12 @@ impl Downloadable {
                     .into_iter()
                     // TODO: better filtering, commented out because proxy server versioning is complex..?
                     //.filter(|v| v.game_versions.contains(&server.mc_version))
-                    .filter(|v| if datapack_mode {
-                        v.loaders.contains(&"datapack".to_owned())
-                    } else {
-                        !v.loaders.contains(&"datapack".to_owned())
+                    .filter(|v| {
+                        if datapack_mode {
+                            v.loaders.contains(&"datapack".to_owned())
+                        } else {
+                            !v.loaders.contains(&"datapack".to_owned())
+                        }
                     })
                     .collect();
 
