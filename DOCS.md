@@ -83,50 +83,7 @@ Shows info about the server in the terminal.
 
 This command refreshes the markdown files defined in the [server.toml](#markdown-options) files with the templates.
 
-**Markdown Templates:**
-
-<details>
-<summary>
-Server Info Table
-</summary>
-
-This template renders a table with server jar info.
-
-```md
-<!--start:mcman-server-->
-... content ...
-<!--end:mcman-server-->
-```
-
-Example render:
-
-| Version | Type                                       | Build    |
-| ------- | ------------------------------------------ | -------- |
-| 1.20.1  | [Paper](https://papermc.io/software/paper) | *Latest* |
-
-</details>
-
-<details>
-<summary>
-Addons List
-</summary>
-
-This template renders a list of addons (plugins or mods)
-
-```md
-<!--start:mcman-addons-->
-... content ...
-<!--end:mcman-addons-->
-```
-
-Example render:
-
-| Name | Description |
-| --- | --- |
-| [BlueMap](https://modrinth.com/plugin/bluemap) |  A Minecraft mapping tool that creates 3D models of your Minecraft worlds and displays them in a web viewer. |
-| [FastAsyncWorldEdit](https://modrinth.com/plugin/fastasyncworldedit) | Blazingly fast world manipulation for artists, builders and everyone else |
-
-</details>
+See [markdown options](#markdown-options) for more information.
 
 ### `mcman import url <URL>`
 
@@ -413,6 +370,53 @@ files = [
 ]
 auto_update = false
 ```
+
+**Markdown Templates:**
+
+These are the templates mcman will render inside your markdown files.
+
+<details>
+<summary>
+Server Info Table
+</summary>
+
+This template renders a table with server jar info.
+
+```md
+<!--start:mcman-server-->
+... content ...
+<!--end:mcman-server-->
+```
+
+Example render:
+
+| Version | Type                                       | Build    |
+| ------- | ------------------------------------------ | -------- |
+| 1.20.1  | [Paper](https://papermc.io/software/paper) | *Latest* |
+
+</details>
+
+<details>
+<summary>
+Addons List
+</summary>
+
+This template renders a list of addons (plugins or mods)
+
+```md
+<!--start:mcman-addons-->
+... content ...
+<!--end:mcman-addons-->
+```
+
+Example render:
+
+| Name | Description |
+| --- | --- |
+| [BlueMap](https://modrinth.com/plugin/bluemap) |  A Minecraft mapping tool that creates 3D models of your Minecraft worlds and displays them in a web viewer. |
+| [FastAsyncWorldEdit](https://modrinth.com/plugin/fastasyncworldedit) | Blazingly fast world manipulation for artists, builders and everyone else |
+
+</details>
 
 ## Types
 

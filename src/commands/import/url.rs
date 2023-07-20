@@ -50,6 +50,8 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
 
     server.save()?;
 
+    server.refresh_markdown(&http_client).await?;
+
     println!(" > Imported!");
 
     Ok(())

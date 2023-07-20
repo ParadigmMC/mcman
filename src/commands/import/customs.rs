@@ -64,5 +64,7 @@ pub async fn run() -> Result<()> {
 
     println!(" > Saved!");
 
+    server.refresh_markdown(&http_client).await?;
+
     Ok(())
 }

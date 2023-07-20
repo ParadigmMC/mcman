@@ -1,5 +1,6 @@
 pub mod md;
 pub mod mrpack;
+pub mod packwiz;
 
 use anyhow::{Context, Result};
 use futures::StreamExt;

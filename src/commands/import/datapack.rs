@@ -75,5 +75,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
 
     println!(" > Datapack added to {world_name}!");
 
+    server.refresh_markdown(&http_client).await?;
+
     Ok(())
 }

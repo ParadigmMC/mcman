@@ -6,10 +6,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, Result, Context};
 use serde::{Deserialize, Serialize};
 
-use crate::downloadable::Downloadable;
+use crate::{downloadable::Downloadable, commands};
 
 use super::World;
 
@@ -146,7 +146,8 @@ pub struct Server {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub mods: Vec<Downloadable>,
     pub worlds: HashMap<String, World>,
-    pub markdown: Option<MarkdownOptions>,
+    #[serde(default)]
+    pub markdown: MarkdownOptions,
 }
 
 impl Server {
@@ -197,6 +198,14 @@ impl Server {
             }
         })
     }
+
+    pub async fn refresh_markdown(&self, http_client: &reqwest::Client) -> Result<()> {
+        if self.markdown.auto_update {
+            commands::markdown::update_files(http_client, self).await.context("updating markdown files")
+        } else {
+            Ok(())
+        }
+    }
 }
 
 impl Default for Server {
@@ -213,7 +222,7 @@ impl Default for Server {
             plugins: vec![],
             mods: vec![],
             worlds: HashMap::new(),
-            markdown: Some(MarkdownOptions::default()),
+            markdown: MarkdownOptions::default(),
         }
     }
 }

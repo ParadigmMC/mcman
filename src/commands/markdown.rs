@@ -5,10 +5,9 @@ use indexmap::IndexMap;
 use regex::Regex;
 use std::fs::{self, File};
 use std::io::Write;
-use std::vec;
 
 use crate::commands::version::APP_USER_AGENT;
-use crate::model::{MarkdownOptions, Server};
+use crate::model::Server;
 use crate::util::md::MarkdownTable;
 use anyhow::{Context, Result};
 use clap::Command;
@@ -36,17 +35,14 @@ pub async fn run() -> Result<()> {
         .build()
         .context("Failed to create HTTP client")?;
 
-    if server.markdown.is_none() || server.markdown.as_ref().unwrap().files.is_empty() {
+    if server.markdown.files.is_empty() {
         println!(" ! {}", style("No markdown files were found").yellow());
 
         if Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt("Add and use README.md?")
             .interact()?
         {
-            server.markdown = Some(MarkdownOptions {
-                files: vec!["README.md".to_owned()],
-                auto_update: false,
-            });
+            server.markdown.files.push("README.md".to_owned());
             server.save()?;
         } else {
             return Ok(());
@@ -59,7 +55,7 @@ pub async fn run() -> Result<()> {
 }
 
 pub async fn update_files(http_client: &reqwest::Client, server: &Server) -> Result<()> {
-    println!(" > {}", style("Creating markdown tables...").cyan());
+    println!(" > {}", style("Updating markdown files...").dim());
 
     let server_info_text = {
         let table = create_table_server(server);
@@ -71,26 +67,31 @@ pub async fn update_files(http_client: &reqwest::Client, server: &Server) -> Res
 
     let addon_list_text =
         { ADDONS_START.to_owned() + NOTICE + "\n" + &addons_table.render() + "\n" + ADDONS_END };
+    
+    let serv_regex = Regex::new(SERVERINFO_REGEX).unwrap();
+    let addon_regex = Regex::new(ADDONS_REGEX).unwrap();
 
-    for filename in &server.markdown.as_ref().unwrap().files {
-        println!(
-            " > {}",
-            style("Updating ".to_owned() + filename + "...").cyan()
-        );
-
+    let len = server.markdown.files.len();
+    for (idx, filename) in server.markdown.files.iter().enumerate() {
         let path = server.path.join(filename);
+
+        if !path.exists() {
+            println!(
+                "   ({idx:w$}/{len}) {}: {filename}",
+                style("File not found: ").red(),
+                w = len.to_string().len()
+            );
+            continue;
+        }
 
         let file_content = fs::read_to_string(&path)?;
 
-        let serv_regex = Regex::new(SERVERINFO_REGEX).unwrap();
 
         let stage1 = serv_regex
             .replace_all(&file_content, |_caps: &regex::Captures| {
                 server_info_text.clone()
             })
             .into_owned();
-
-        let addon_regex = Regex::new(ADDONS_REGEX).unwrap();
 
         let stage2 =
             addon_regex.replace_all(&stage1, |_caps: &regex::Captures| addon_list_text.clone());
@@ -99,8 +100,9 @@ pub async fn update_files(http_client: &reqwest::Client, server: &Server) -> Res
         f.write_all(stage2.as_bytes())?;
 
         println!(
-            " > {}",
-            style(filename.clone() + " updated successfully").green()
+            "   ({idx:w$}/{len}) Updated {}!",
+            style(filename).green(),
+            w = len.to_string().len()
         );
     }
 
