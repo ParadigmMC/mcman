@@ -53,7 +53,7 @@ impl Downloadable {
     }
 
     pub fn select_modded_jar_interactive() -> Result<Self> {
-        let items = vec![
+        let items = [
             (0, "Quilt  - Modern, fabric compatible (Beta)"),
             (1, "Fabric - Lightweight"),
             //(2, "Forge  - Ye' olde modde"),
@@ -82,7 +82,7 @@ impl Downloadable {
     }
 
     pub fn select_proxy_jar_interactive() -> Result<Self> {
-        let items = vec![
+        let items = [
             (0, "Velocity   - Modern, high perf. proxy by PaperMC"),
             (1, "Waterfall  - BungeeCord fork by PaperMC"),
             (2, "Bungeecord - By md5 (Spigot)"),

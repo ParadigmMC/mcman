@@ -52,7 +52,7 @@ impl Downloadable {
                     .collect();
 
                 if segments.first().is_none()
-                    || !vec!["mod", "plugin", "datapack"].contains(segments.first().unwrap())
+                    || !["mod", "plugin", "datapack"].contains(segments.first().unwrap())
                 {
                     Err(invalid_url("must start with /mod, /plugin or /datapack"))?;
                 };

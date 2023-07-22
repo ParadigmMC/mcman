@@ -67,7 +67,7 @@ pub async fn update_files(http_client: &reqwest::Client, server: &Server) -> Res
 
     let addon_list_text =
         { ADDONS_START.to_owned() + NOTICE + "\n" + &addons_table.render() + "\n" + ADDONS_END };
-    
+
     let serv_regex = Regex::new(SERVERINFO_REGEX).unwrap();
     let addon_regex = Regex::new(ADDONS_REGEX).unwrap();
 
@@ -85,7 +85,6 @@ pub async fn update_files(http_client: &reqwest::Client, server: &Server) -> Res
         }
 
         let file_content = fs::read_to_string(&path)?;
-
 
         let stage1 = serv_regex
             .replace_all(&file_content, |_caps: &regex::Captures| {
@@ -116,7 +115,7 @@ pub fn create_table_server(server: &Server) -> MarkdownTable {
     map.insert("Type".to_owned(), server.jar.get_md_link());
 
     if let Some(extra) = server.jar.get_extra_jar_map() {
-        map.extend(extra.into_iter());
+        map.extend(extra);
     }
 
     MarkdownTable::from_map(&map)
@@ -147,7 +146,7 @@ pub fn create_table_server_console(server: &Server) -> MarkdownTable {
     map.insert("Type".to_owned(), server.jar.get_type_name());
 
     if let Some(extra) = server.jar.get_extra_jar_map() {
-        map.extend(extra.into_iter());
+        map.extend(extra);
     }
 
     MarkdownTable::from_map(&map)

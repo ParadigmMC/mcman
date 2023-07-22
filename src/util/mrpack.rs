@@ -73,6 +73,7 @@ pub enum EnvSupport {
     Unsupported,
 }
 
+#[allow(clippy::needless_pass_by_ref_mut)] // Yes it is used mutably, clippy.
 pub async fn import_from_mrpack<R: Read + Seek>(
     server: &mut Server,
     http_client: &reqwest::Client,

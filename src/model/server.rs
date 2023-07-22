@@ -6,10 +6,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{anyhow, bail, Result, Context};
+use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::{downloadable::Downloadable, commands};
+use crate::{commands, downloadable::Downloadable};
 
 use super::World;
 
@@ -201,7 +201,9 @@ impl Server {
 
     pub async fn refresh_markdown(&self, http_client: &reqwest::Client) -> Result<()> {
         if self.markdown.auto_update {
-            commands::markdown::update_files(http_client, self).await.context("updating markdown files")
+            commands::markdown::update_files(http_client, self)
+                .await
+                .context("updating markdown files")
         } else {
             Ok(())
         }

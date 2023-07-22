@@ -32,7 +32,7 @@ pub fn run() -> Result<()> {
         .0
         .len();
 
-    for (k, v) in server_info.iter() {
+    for (k, v) in &server_info {
         let k_styled = style(format!("{k:pad_keys$}")).cyan().bold();
 
         println!(" {k_styled}: {v}");
