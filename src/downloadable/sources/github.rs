@@ -7,7 +7,7 @@ use tokio::time::sleep;
 use crate::util::match_artifact_name;
 
 async fn wait_ratelimit(res: reqwest::Response) -> Result<reqwest::Response> {
-    if let Some(h) = res.headers().get("x-ratelimit-remaining") {
+    let res = if let Some(h) = res.headers().get("x-ratelimit-remaining") {
         if String::from_utf8_lossy(h.as_bytes()) == "1" {
             let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
             let ratelimit_reset =
@@ -17,7 +17,10 @@ async fn wait_ratelimit(res: reqwest::Response) -> Result<reqwest::Response> {
             println!(" (!) Github ratelimit exceeded. sleeping for {amount} seconds...");
             sleep(Duration::from_secs(amount)).await;
         }
-    }
+        res
+    } else {
+        res.error_for_status()?
+    };
 
     Ok(res)
 }
@@ -43,8 +46,7 @@ pub async fn fetch_github_releases(
         client
             .get("https://api.github.com/repos/".to_owned() + repo + "/releases")
             .send()
-            .await?
-            .error_for_status()?,
+            .await?,
     )
     .await?
     .json()
@@ -90,36 +92,26 @@ pub async fn fetch_github_release_filename(
         .name)
 }
 
-// youre delusional, this doesnt exist
-/* pub async fn fetch_github_release_filename_detailed(
-    repo: &str,
-    tag: &str,
-    asset: &str,
-    client: &reqwest::Client,
-) -> Result<String> {
-    let fetched_asset = fetch_github_release_asset(repo, tag, asset, client).await?;
-    let ext = Path::new(&fetched_asset.name)
-        .extension()
-        .and_then(OsStr::to_str);
-    let name = Path::new(&fetched_asset.name)
-        .file_stem()
-        .and_then(OsStr::to_str);
-
-    Ok(name.unwrap() + format!("-{}-{}", fetched_asset))
-} */
-
 pub async fn download_github_release(
     repo: &str,
     tag: &str,
     asset: &str,
     client: &reqwest::Client,
+    filename_hint: Option<&str>,
 ) -> Result<reqwest::Response> {
-    let fetched_asset = fetch_github_release_asset(repo, tag, asset, client).await?;
+    let filename = if let Some(filename) = filename_hint {
+        filename.to_owned()
+    } else {
+        let fetched_asset = fetch_github_release_asset(repo, tag, asset, client).await?;
+        fetched_asset.name
+    };
 
     Ok(wait_ratelimit(
         client
-            .get(fetched_asset.url)
-            .header("Accept", "application/octet-stream")
+            .get(format!(
+                "https://github.com/{repo}/releases/download/{tag}/{}",
+                filename
+            ))
             .send()
             .await?,
     )

@@ -21,11 +21,12 @@ pub async fn download_with_progress(
     file: File,
     message: &str,
     downloadable: &Downloadable,
+    filename_hint: Option<&str>,
     server: &Server,
     client: &reqwest::Client,
 ) -> Result<()> {
     let response = downloadable
-        .download(server, client)
+        .download(server, client, filename_hint)
         .await
         .context("downloadable download")?;
     let progress_bar =

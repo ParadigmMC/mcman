@@ -85,6 +85,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
                 file,
                 &format!("Downloading {src}..."),
                 &downloadable,
+                None,
                 &server,
                 &http_client,
             )

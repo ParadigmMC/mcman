@@ -128,6 +128,7 @@ impl Downloadable {
         &self,
         server: &Server,
         client: &reqwest::Client,
+        filename_hint: Option<&str>,
     ) -> Result<reqwest::Response> {
         let mcver = server.mc_version.clone();
         match self {
@@ -144,7 +145,7 @@ impl Downloadable {
             }
             Self::Spigot { id } => Ok(download_spigot_resource(id, client).await?),
             Self::GithubRelease { repo, tag, asset } => {
-                Ok(download_github_release(repo, tag, asset, client).await?)
+                Ok(download_github_release(repo, tag, asset, client, filename_hint).await?)
             }
 
             Self::Jenkins {

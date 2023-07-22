@@ -231,6 +231,7 @@ async fn download_datapacks(
                 .context(format!("Failed to create output file for {dp_name}"))?,
                 &dp_name,
                 dp,
+                Some(&dp_name),
                 server,
                 http_client,
             )
@@ -328,6 +329,7 @@ async fn download_server_jar(
                         .context(format!("Failed to create output file for {filename}"))?,
                     filename,
                     &server.jar,
+                    Some(&installerjar_name),
                     server,
                     http_client,
                 )
@@ -414,6 +416,7 @@ async fn download_server_jar(
                         .context(format!("Failed to create output file for {filename}"))?,
                     filename,
                     &server.jar,
+                    Some(&installerjar_name),
                     server,
                     http_client,
                 )
@@ -481,6 +484,7 @@ async fn download_server_jar(
                         .context(format!("Failed to create output file for {filename}"))?,
                     filename,
                     dl,
+                    Some(&serverjar_name),
                     server,
                     http_client,
                 )
@@ -540,6 +544,7 @@ async fn download_addons(
                 .context(format!("Failed to create output file for {addon_name}"))?,
             &addon_name,
             addon,
+            Some(&addon_name),
             server,
             http_client,
         )
