@@ -1,25 +1,17 @@
 use std::cmp::Ordering;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Command;
 use console::style;
 use semver::Version;
 
-use crate::downloadable::sources::github;
+use crate::{create_http_client, downloadable::sources::github};
 
 pub fn cli() -> Command {
     Command::new("version")
         .about("Show version information")
         .visible_alias("v")
 }
-
-pub const APP_USER_AGENT: &str = concat!(
-    env!("CARGO_PKG_NAME"),
-    "/",
-    env!("CARGO_PKG_VERSION"),
-    " - ",
-    env!("CARGO_PKG_REPOSITORY"),
-);
 
 pub async fn run() -> Result<()> {
     println!(
@@ -33,10 +25,7 @@ pub async fn run() -> Result<()> {
 
     println!(" {}", style("> checking for updates...").dim());
 
-    let http_client = reqwest::Client::builder()
-        .user_agent(APP_USER_AGENT)
-        .build()
-        .context("Failed to create HTTP client")?;
+    let http_client = create_http_client()?;
 
     let repo_name: String = env!("CARGO_PKG_REPOSITORY").chars().skip(19).collect();
 

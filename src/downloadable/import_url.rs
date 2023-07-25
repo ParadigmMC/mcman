@@ -3,7 +3,7 @@ use console::style;
 use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
 use reqwest::Url;
 
-use crate::model::Server;
+use crate::{downloadable::sources::curserinth::fetch_curserinth_versions, model::Server};
 
 use super::{
     sources::{
@@ -119,6 +119,133 @@ impl Downloadable {
                     id,
                     version: version.id,
                 })
+            }
+            Some("curserinth.kuylar.dev") => {
+                let invalid_url = |r| anyhow!("Invalid curserinth project URL: {r}");
+
+                let segments: Vec<&str> = url
+                    .path_segments()
+                    .ok_or_else(|| invalid_url("couldn't split to segments"))?
+                    .collect();
+
+                if segments.first().is_none() || *segments.first().unwrap() != "mod" {
+                    Err(invalid_url("must start with /mod"))?;
+                };
+
+                let id = segments
+                    .get(1)
+                    .ok_or_else(|| invalid_url("must include project id"))?
+                    .to_owned()
+                    .to_owned()
+                    .strip_prefix("mod__")
+                    .unwrap()
+                    .to_owned();
+
+                let versions: Vec<ModrinthVersion> =
+                    fetch_curserinth_versions(client, &id, None).await?;
+
+                let version = if let Some(&"version") = segments.get(2) {
+                    let ver_num = segments
+                        .get(3)
+                        .ok_or_else(|| invalid_url("no version number in url"))?
+                        .to_owned();
+
+                    versions
+                        .into_iter()
+                        .find(|v| v.version_number == ver_num)
+                        .ok_or(anyhow!("Couldn't find the version '{ver_num}'"))?
+                } else {
+                    if versions.is_empty() {
+                        bail!("No compatible versions in curserinth project");
+                    }
+
+                    let selection = Select::with_theme(&ColorfulTheme::default())
+                        .with_prompt("  Which version?")
+                        .default(0)
+                        .items(
+                            &versions
+                                .iter()
+                                .map(|v| {
+                                    let num = &v.version_number;
+                                    let name = &v.name;
+                                    let compat = v.loaders.join(",");
+                                    let vers = v.game_versions.join(",");
+                                    format!("[{num}]: {name} ({compat} ; {vers})")
+                                })
+                                .collect::<Vec<String>>(),
+                        )
+                        .interact()
+                        .unwrap();
+
+                    versions[selection].clone()
+                };
+
+                println!("  > {} CurseRinth/{id}", style("Imported:").green());
+
+                Ok(Self::Modrinth {
+                    id,
+                    version: version.id,
+                })
+            }
+            Some("www.curseforge.com") => {
+                // https://www.curseforge.com/minecraft/mc-mods/betterwithpatches
+                let segments: Vec<&str> = url
+                    .path_segments()
+                    .ok_or_else(|| anyhow!("Invalid url"))?
+                    .collect();
+
+                if segments.first().is_none()
+                    || *segments.first().unwrap() != "minecraft"
+                    || segments.get(1).is_none()
+                    || *segments.get(1).unwrap() != "mc-mods"
+                {
+                    Err(anyhow!(
+                        "Invalid Curseforge URL - should start with /minecraft/mc-mods"
+                    ))?;
+                }
+
+                let id = segments
+                    .get(2)
+                    .ok_or_else(|| anyhow!("Invalid Curseforge URL - mod id not found in URL"))?
+                    .to_owned()
+                    .to_owned();
+
+                let version = if let Some(v) = segments.get(4) {
+                    v.to_owned().to_owned()
+                } else {
+                    let versions: Vec<ModrinthVersion> = fetch_modrinth_versions(client, &id, None)
+                        .await?
+                        .into_iter()
+                        .collect();
+
+                    if versions.is_empty() {
+                        bail!("No compatible versions in curseforge/rinth project");
+                    }
+
+                    let selection = Select::with_theme(&ColorfulTheme::default())
+                        .with_prompt("  Which version?")
+                        .default(0)
+                        .items(
+                            &versions
+                                .iter()
+                                .map(|v| {
+                                    let num = &v.version_number;
+                                    let name = &v.name;
+                                    let compat = v.loaders.join(",");
+                                    let vers = v.game_versions.join(",");
+                                    format!("[{num}]: {name} ({compat} ; {vers})")
+                                })
+                                .collect::<Vec<String>>(),
+                        )
+                        .interact()
+                        .unwrap();
+
+                    versions[selection].clone().id
+                };
+
+                println!("  > {} CurseRinth/{id}", style("Imported:").green());
+
+                Ok(Downloadable::CurseRinth { id, version })
             }
             Some("www.spigotmc.org") => {
                 // https://www.spigotmc.org/resources/http-requests.101253/

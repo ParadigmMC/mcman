@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use clap::{arg, ArgMatches, Command};
 use dialoguer::{theme::ColorfulTheme, Input, Select};
 
-use crate::{commands::version::APP_USER_AGENT, downloadable::Downloadable, model::Server};
+use crate::{create_http_client, downloadable::Downloadable, model::Server};
 
 pub fn cli() -> Command {
     Command::new("url")
@@ -12,11 +12,7 @@ pub fn cli() -> Command {
 
 pub async fn run(matches: &ArgMatches) -> Result<()> {
     let mut server = Server::load().context("Failed to load server.toml")?;
-
-    let http_client = reqwest::Client::builder()
-        .user_agent(APP_USER_AGENT)
-        .build()
-        .context("Failed to create HTTP client")?;
+    let http_client = create_http_client()?;
 
     let urlstr = match matches.get_one::<String>("url") {
         Some(url) => url.clone(),

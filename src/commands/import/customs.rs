@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use clap::Command;
 use console::style;
 
-use crate::{commands::version::APP_USER_AGENT, downloadable::Downloadable, model::Server};
+use crate::{create_http_client, downloadable::Downloadable, model::Server};
 
 pub fn cli() -> Command {
     Command::new("customs").about("Try to import all custom urls again")
@@ -10,11 +10,7 @@ pub fn cli() -> Command {
 
 pub async fn run() -> Result<()> {
     let mut server = Server::load().context("Failed to load server.toml")?;
-
-    let http_client = reqwest::Client::builder()
-        .user_agent(APP_USER_AGENT)
-        .build()
-        .context("Failed to create HTTP client")?;
+    let http_client = create_http_client()?;
 
     let mut plugins = vec![];
     let mut mods = vec![];

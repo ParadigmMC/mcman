@@ -6,7 +6,7 @@
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::struct_excessive_bools)]
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::Command;
 mod bootstrapper;
 mod commands;
@@ -33,6 +33,8 @@ fn cli() -> Command {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    tracing_subscriber::fmt::init();
+
     let matches = cli().get_matches();
 
     match matches.subcommand() {
@@ -45,4 +47,18 @@ async fn main() -> Result<()> {
         Some(("version" | "v", _)) => commands::version::run().await,
         _ => unreachable!(),
     }
+}
+
+pub const APP_USER_AGENT: &str = concat!(
+    env!("CARGO_PKG_NAME"),
+    "/",
+    env!("CARGO_PKG_VERSION"),
+    " - ",
+    env!("CARGO_PKG_REPOSITORY"),
+);
+
+pub fn create_http_client() -> Result<reqwest::Client> {
+    let b = reqwest::Client::builder().user_agent(APP_USER_AGENT);
+
+    b.build().context("Failed to create HTTP client")
 }

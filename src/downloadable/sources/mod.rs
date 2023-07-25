@@ -1,3 +1,4 @@
+pub mod curserinth;
 pub mod fabric;
 pub mod github;
 pub mod jenkins;

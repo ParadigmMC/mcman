@@ -7,6 +7,7 @@ use crate::{
 };
 
 use self::sources::{
+    curserinth::{download_curserinth, fetch_curserinth_filename},
     fabric::download_fabric,
     github::{download_github_release, fetch_github_release_filename},
     jenkins::{download_jenkins, get_jenkins_filename},
@@ -47,6 +48,12 @@ pub enum Downloadable {
 
     #[serde(alias = "mr")]
     Modrinth {
+        id: String,
+        version: String,
+    },
+
+    #[serde(alias = "cr")]
+    CurseRinth {
         id: String,
         version: String,
     },
@@ -143,6 +150,9 @@ impl Downloadable {
             Self::Modrinth { id, version } => {
                 Ok(download_modrinth(id, version, client, None).await?)
             }
+            Self::CurseRinth { id, version } => {
+                Ok(download_curserinth(id, version, client, None).await?)
+            }
             Self::Spigot { id } => Ok(download_spigot_resource(id, client).await?),
             Self::GithubRelease { repo, tag, asset } => {
                 Ok(download_github_release(repo, tag, asset, client, filename_hint).await?)
@@ -221,6 +231,10 @@ impl Downloadable {
             Self::Modrinth { id, version } => {
                 // nvm
                 let filename = fetch_modrinth_filename(id, version, client, None).await?;
+                Ok(filename)
+            }
+            Self::CurseRinth { id, version } => {
+                let filename = fetch_curserinth_filename(id, version, client, None).await?;
                 Ok(filename)
             }
             Self::Spigot { id } => {
@@ -317,6 +331,15 @@ impl std::fmt::Display for Downloadable {
             Self::Modrinth { id, version } => {
                 format!(
                     "Modrinth Project {{
+                    id: {id}
+                    version: {version}
+                }}"
+                )
+            }
+
+            Self::CurseRinth { id, version } => {
+                format!(
+                    "CurseRinth Project {{
                     id: {id}
                     version: {version}
                 }}"

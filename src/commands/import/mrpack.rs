@@ -6,7 +6,7 @@ use console::style;
 use tempfile::Builder;
 
 use crate::{
-    commands::version::APP_USER_AGENT,
+    create_http_client,
     model::Server,
     util::{
         download_with_progress,
@@ -22,11 +22,7 @@ pub fn cli() -> Command {
 
 pub async fn run(matches: &ArgMatches) -> Result<()> {
     let mut server = Server::load().context("Failed to load server.toml")?;
-
-    let http_client = reqwest::Client::builder()
-        .user_agent(APP_USER_AGENT)
-        .build()
-        .context("Failed to create HTTP client")?;
+    let http_client = create_http_client()?;
 
     let src = matches.get_one::<String>("source").unwrap();
 

@@ -8,10 +8,10 @@ use std::path::{Path, PathBuf};
 use tempfile::Builder;
 
 use crate::commands::markdown;
+use crate::create_http_client;
 use crate::util::download_with_progress;
 use crate::util::mrpack::{import_from_mrpack, resolve_mrpack_source};
 use crate::{
-    commands::version::APP_USER_AGENT,
     downloadable::{sources::vanilla::fetch_latest_mcver, Downloadable},
     model::{Server, ServerLauncher},
 };
@@ -27,10 +27,7 @@ pub fn cli() -> Command {
 
 #[allow(clippy::too_many_lines)]
 pub async fn run(matches: &ArgMatches) -> Result<()> {
-    let http_client = reqwest::Client::builder()
-        .user_agent(APP_USER_AGENT)
-        .build()
-        .context("Failed to create HTTP client")?;
+    let http_client = create_http_client()?;
 
     println!(" > {}", style("Initializing new server...").cyan());
 

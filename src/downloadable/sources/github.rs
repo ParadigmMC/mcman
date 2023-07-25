@@ -109,8 +109,7 @@ pub async fn download_github_release(
     Ok(wait_ratelimit(
         client
             .get(format!(
-                "https://github.com/{repo}/releases/download/{tag}/{}",
-                filename
+                "https://github.com/{repo}/releases/download/{tag}/{filename}"
             ))
             .send()
             .await?,

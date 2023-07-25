@@ -4,6 +4,7 @@ use regex::Regex;
 
 use super::{
     sources::{
+        curserinth::fetch_curserinth_project,
         github::fetch_repo_description,
         jenkins::{fetch_jenkins_description, str_process_job},
         modrinth::fetch_modrinth_project,
@@ -52,6 +53,9 @@ impl Downloadable {
             }
             Self::Modrinth { id, .. } => {
                 format!("[{id}](https://modrinth.com/mod/{id})")
+            }
+            Self::CurseRinth { id, .. } => {
+                format!("`{id}`<sup>[CF](https://www.curseforge.com/minecraft/mc-mods/{id}) [CR](https://curserinth.kuylar.dev/mod/{id})</sup>")
             }
         }
     }
@@ -150,6 +154,17 @@ impl Downloadable {
                 map.insert("Version".to_owned(), version.clone());
             }
 
+            Self::CurseRinth { id, version } => {
+                let proj = fetch_curserinth_project(client, id).await?;
+
+                map.insert(
+                    "Name".to_owned(),
+                    format!("{} <sup>[CF](https://www.curseforge.com/minecraft/mc-mods/{id}) [CR](https://curserinth.kuylar.dev/mod/{id})</sup>", proj.title, id = proj.slug),
+                );
+                map.insert("Description".to_owned(), proj.description);
+                map.insert("Version".to_owned(), version.clone());
+            }
+
             Self::Spigot { id } => {
                 let (name, desc) = fetch_spigot_info(client, id).await?;
 
@@ -225,6 +240,7 @@ impl Downloadable {
             Self::GithubRelease { .. } => "GithubRelease",
             Self::Jenkins { .. } => "Jenkins",
             Self::Modrinth { .. } => "Modrinth",
+            Self::CurseRinth { .. } => "CurseRinth",
             Self::Spigot { .. } => "Spigot",
             Self::BuildTools { .. } => "BuildTools",
         }
@@ -265,7 +281,7 @@ impl Downloadable {
                 map.insert("Asset/File".to_owned(), asset.clone());
             }
 
-            Self::Modrinth { id, version } => {
+            Self::Modrinth { id, version } | Self::CurseRinth { id, version } => {
                 map.insert("Project/URL".to_owned(), id.clone());
                 map.insert("Version/Release".to_owned(), version.clone());
             }

@@ -7,4 +7,5 @@ use crate::downloadable::Downloadable;
 pub struct World {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub datapacks: Vec<Downloadable>,
+    pub download: Option<Downloadable>,
 }

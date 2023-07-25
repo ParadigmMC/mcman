@@ -6,7 +6,7 @@ use regex::Regex;
 use std::fs::{self, File};
 use std::io::Write;
 
-use crate::commands::version::APP_USER_AGENT;
+use crate::create_http_client;
 use crate::model::Server;
 use crate::util::md::MarkdownTable;
 use anyhow::{Context, Result};
@@ -30,10 +30,7 @@ pub static ADDONS_END: &str = "<!--end:mcman-addons-->";
 
 pub async fn run() -> Result<()> {
     let mut server = Server::load().context("Failed to load server.toml")?;
-    let http_client = reqwest::Client::builder()
-        .user_agent(APP_USER_AGENT)
-        .build()
-        .context("Failed to create HTTP client")?;
+    let http_client = create_http_client()?;
 
     if server.markdown.files.is_empty() {
         println!(" ! {}", style("No markdown files were found").yellow());

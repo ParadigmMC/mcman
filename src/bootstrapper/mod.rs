@@ -1,6 +1,7 @@
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use console::style;
 use java_properties::read;
+use pathdiff::diff_paths;
 use regex::Regex;
 use std::collections::HashMap;
 use std::fs;
@@ -108,9 +109,11 @@ fn bootstrap_entry(ctx: &BootstrapContext, entry: &DirEntry) -> Result<()> {
         ))?;
     }
 
+    let path = diff_paths(&output_path, &ctx.output_dir).ok_or(anyhow!("Cannot diff paths"))?;
+
     println!(
         "          {}",
-        style("-> ".to_owned() + &output_path.display().to_string()).dim()
+        style("-> ".to_owned() + &path.to_string_lossy()).dim()
     );
     Ok(())
 }
