@@ -56,6 +56,14 @@ impl MRPackIndex {
             let dl = Downloadable::from_url_interactive(http_client, server, url, false).await?;
 
             if f.env.is_none() || f.env.as_ref().unwrap().server != EnvSupport::Unsupported {
+                server.mods.push(dl.clone());
+
+                println!(
+                    " > ({:idx_w$}/{len}) Imported {}",
+                    idx + 1,
+                    dl.to_short_string()
+                );
+            } else {
                 // clientside only
                 server.clientsidemods.push(ClientSideMod {
                     dl: dl.clone(),
@@ -65,14 +73,6 @@ impl MRPackIndex {
 
                 println!(
                     " > ({:idx_w$}/{len}) Imported {} as client side mod",
-                    idx + 1,
-                    dl.to_short_string()
-                );
-            } else {
-                server.mods.push(dl.clone());
-
-                println!(
-                    " > ({:idx_w$}/{len}) Imported {}",
                     idx + 1,
                     dl.to_short_string()
                 );

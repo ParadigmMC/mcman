@@ -106,7 +106,9 @@ pub async fn fetch_modrinth_filename(
 
     let verdata = match version {
         "latest" => project.first(),
-        id => project.iter().find(|&v| v.id == id),
+        id => project
+            .iter()
+            .find(|&v| v.id == id || v.version_number == id),
     };
 
     let Some(verdata) = verdata else {

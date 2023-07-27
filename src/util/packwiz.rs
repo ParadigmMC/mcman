@@ -73,6 +73,7 @@ pub async fn packwiz_fetch_pack_from_src(http_client: &reqwest::Client, src: &st
     })
 }
 
+#[allow(clippy::too_many_lines)]
 pub async fn packwiz_import_http(
     http_client: &reqwest::Client,
     base_url: reqwest::Url,
@@ -102,12 +103,23 @@ pub async fn packwiz_import_http(
             .join(&file.file)
             .context("Resolving pack file url")?;
         if file.metafile {
-            println!(
-                " > ({:idx_w$}/{idx_len}) {} {}",
-                idx + 1,
-                style("Importing metafile:").green(),
-                file.file
-            );
+            if file.file.starts_with("mods") {
+                println!(
+                    " > ({:idx_w$}/{idx_len}) {} {}",
+                    idx + 1,
+                    style("Importing mod:").green(),
+                    file.file
+                );
+            } else {
+                println!(
+                    " > ({:idx_w$}/{idx_len}) {} {} {}",
+                    idx + 1,
+                    style("Skipping:").yellow().bold(),
+                    file.file,
+                    style("(unsupported)").yellow().bold(),
+                );
+                continue;
+            }
 
             let m: Mod = fetch_toml(http_client, file_url)
                 .await
@@ -248,12 +260,23 @@ pub async fn packwiz_import_local(
     for (idx, file) in pack_index.files.iter().enumerate() {
         let file_path = base.join(&file.file);
         if file.metafile {
-            println!(
-                " > ({:idx_w$}/{idx_len}) {} {}",
-                idx + 1,
-                style("Importing metafile:").green(),
-                file.file
-            );
+            if file.file.starts_with("mods") {
+                println!(
+                    " > ({:idx_w$}/{idx_len}) {} {}",
+                    idx + 1,
+                    style("Importing mod:").green(),
+                    file.file
+                );
+            } else {
+                println!(
+                    " > ({:idx_w$}/{idx_len}) {} {} {}",
+                    idx + 1,
+                    style("Skipping:").yellow().bold(),
+                    file.file,
+                    style("(unsupported)").yellow().bold(),
+                );
+                continue;
+            }
 
             let m: Mod = read_toml(&file_path)
                 .await

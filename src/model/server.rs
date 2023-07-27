@@ -20,6 +20,12 @@ pub struct MarkdownOptions {
     pub auto_update: bool,
 }
 
+impl MarkdownOptions {
+    pub fn is_empty(&self) -> bool {
+        self.files.is_empty()
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Server {
@@ -37,8 +43,10 @@ pub struct Server {
     pub mods: Vec<Downloadable>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub clientsidemods: Vec<ClientSideMod>,
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
     pub worlds: HashMap<String, World>,
     #[serde(default)]
+    #[serde(skip_serializing_if = "MarkdownOptions::is_empty")]
     pub markdown: MarkdownOptions,
 }
 

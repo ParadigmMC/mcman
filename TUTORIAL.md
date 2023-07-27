@@ -20,7 +20,7 @@
 - [Github Releases](https://github.com/ParadigmMC/mcman/releases)
 - [build action](https://github.com/ParadigmMC/mcman/actions/workflows/build.yml) (requires github account)
 
-### Windows: Scoop
+**Windows: Scoop:**
 
 [Scoop](https://scoop.sh/) is a command-line installer for Windows. You can use 2 commands in powershell to install it.
 
@@ -30,6 +30,8 @@ Add the [minecraft](https://github.com/The-Simples/scoop-minecraft) bucket and i
 scoop bucket add minecraft https://github.com/The-Simples/scoop-minecraft
 scoop install mcman
 ```
+
+---
 
 ## Recommended Usage
 
@@ -61,11 +63,35 @@ If your server is already initialized, use the `mcman import mrpack <source>` co
 
 <details>
 <summary>
+📦 Importing from a packwiz pack
+</summary>
+
+You can use the `--packwiz` (alias `--pw`) flag on `mcman init` to import a packwiz pack while initializing.
+
+**If the pack is in your filesystem**:
+
+```sh
+mcman init --pw path/to/pack.toml
+```
+
+**If the pack is online**:
+
+```sh
+mcman init --pw https://raw.githack.com/EXAMPLE/EXAMPLE/main/pack.toml
+```
+
+If your server is already initialized, use the `mcman import packwiz <source>` command. The source argument also accepts the sources defined above.
+</details>
+
+<details>
+<summary>
 🧵 Proxies (velocity, waterfall, bungeecord)
 </summary>
 
 Yes, you can use proxies with mcman. Just select "proxy server" while running `mcman init`
 </details>
+
+---
 
 After initializing the server, you'll see a `server.toml` file - thats the configuration for your server. It contains:
 

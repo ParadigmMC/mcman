@@ -18,13 +18,32 @@ Index:
 
 Here are a list of commands. You can type `mcman` or `mcman --help` for a basic list of it.
 
-### `mcman init [--name <name>] [--mrpack <src>]`
+### `mcman init`
 
 Initializes a new server in the current directory.
 
+> **Full Command:** `mcman init [--name <name>] [--mrpack <source> | --packwiz <source>]`
+
 This command is interactive. Just run `mcman init`!
 
-The mrpack source is the same as one in [`mcman import mrpack`](#mcman-import-mrpack-src)
+<details>
+<summary>
+📦 Importing from a mrpack (modrinth modpack)
+</summary>
+
+You can use the `--mrpack` flag on `mcman init` to import from an mrpack while initializing a server.
+
+- If its from modrinth, like [adrenaserver](https://modrinth.com/modpack/adrenaserver): `mcman init --mrpack mr:adrenaserver`
+
+Use `mr:` and then the project id/slug of the modpack (should be visible on the url)
+
+- You can also just paste in the modpack page's url: `mcman init --mrpack https://modrinth.com/modpack/adrenaserver`
+
+- If its from another source, you can provide a download link to it: `mcman init --mrpack https://example.com/pack.mrpack`
+
+- If its a file: `mcman init --mrpack ../modpacks/pack.mrpack`
+
+If your server is already initialized, use the `mcman import mrpack <source>` command. The source argument also accepts the sources defined above.
 
 Example using [Adrenaserver](https://modrinth.com/modpack/adrenaserver):
 
@@ -35,27 +54,62 @@ mcman init --mrpack https://modrinth.com/modpack/adrenaserver
 mcman init --mrpack https://cdn.modrinth.com/data/H9OFWiay/versions/2WXUgVhc/Adrenaserver-1.4.0%2B1.20.1.quilt.mrpack
 ```
 
+</details>
+
+<details>
+<summary>
+📦 Importing from a packwiz pack
+</summary>
+
+You can use the `--packwiz` (alias `--pw`) flag on `mcman init` to import a packwiz pack while initializing.
+
+**If the pack is in your filesystem**:
+
+```sh
+mcman init --pw path/to/pack.toml
+```
+
+**If the pack is online**:
+
+```sh
+mcman init --pw https://raw.githack.com/EXAMPLE/EXAMPLE/main/pack.toml
+```
+
+If your server is already initialized, use the `mcman import packwiz <source>` command. The source argument also accepts the sources defined above.
+</details>
+
 ### `mcman version`
 
-Show the version and also check for new versions.
+Shows the version of **mcman** and checks if its up to date.
 
 ### `mcman build`
 
 Builds the server into the [output folder](#folder-structure) using the [`server.toml`](#servertoml) and the `config/` directory.
 
 <details>
-<summary>Extra flags (skip, force)</summary>
+<summary>Extra flags (output, skip, force)</summary>
 
 You can alternatively set the output folder manually using `--output <path>` option.
 
-The `--force` flag can be used to not skip and download everything in the config file.
+The `--force` flag can be used to disable checking if files exist, effectively forcefully downloading everything.
 
 You can use the `--skip <stages>` flag to skip stages.
 
-- Stages should be comma-seperated, like `--skip bootstrap,scripts`
-- The stages are: `addons` (plugins and mods), `dp` (datapacks), `bootstrap` (config/) and `scripts`
+- Stages should be comma-seperated, like `--skip bootstrap,scripts,dp`
+- The stages are: `serverjar`, `plugins`, `mods`, `dp` (datapacks), `bootstrap` (config/) and `scripts`
 
 </details>
+
+After building, you can start the server with the launch scripts if theyre not [disabled](#server-launcher):
+
+```sh
+cd server
+
+# windows
+call start.bat
+# linux
+./start.sh
+```
 
 ### `mcman pull <file>`
 
@@ -81,30 +135,40 @@ Shows info about the server in the terminal.
 
 ### `mcman markdown`
 
+> Alias: `mcman md`
+
 This command refreshes the markdown files defined in the [server.toml](#markdown-options) files with the templates.
 
 See [markdown options](#markdown-options) for more information.
 
-### `mcman import url <URL>`
+### `mcman import ...`
+
+> Alias: `mcman i ...`
+
+Commands related to importing
+
+#### `mcman import url <URL>`
 
 Imports a plugin or a mod from a url.
 
 Supports:
 
-- Modrinth
-- Spigot
-- Github (releases)
-- If not those, will prompt with direct url or jenkins
+- `[cdn.]modrinth.com`
+- `curserinth.kuylar.dev`
+- `www.curseforge.com`
+- `www.spigotmc.org`
+- `github.com`
+- If not any of those, will prompt with **direct url** or **jenkins**
 
-Example usage:
+Example usages:
 
 ```sh
 mcman import url https://modrinth.com/plugin/imageframe
-
 mcman import url https://www.spigotmc.org/resources/armorstandeditor-reborn.94503/
+mcman import url https://ci.athion.net/job/FastAsyncWorldEdit/
 ```
 
-### `mcman import datapack <URL>`
+#### `mcman import datapack <URL>`
 
 Like [import url](#mcman-import-url-url), but imports as a datapack rather than a plugin or a mod.
 
@@ -115,11 +179,11 @@ Example usage:
 mcman import dp https://modrinth.com/plugin/tectonic
 ```
 
-### `mcman import mrpack <src>`
+#### `mcman import mrpack <src>`
 
 Imports a [mrpack](https://docs.modrinth.com/docs/modpacks/format_definition/) file (modrinth modpacks)
 
-**Note:** [`mcman init`](#mcman-init---name-name---mrpack-src) supports mrpacks
+**Note:** [`mcman init`](#mcman-init) supports mrpacks
 
 The source can be:
 
@@ -141,9 +205,66 @@ mcman import mrpack mr:simply-skyblock
 mcman import mrpack My-Pack.mrpack
 ```
 
-### `mcman import customs`
+#### `mcman import packwiz <src>`
 
-Utility tool for re-importing all custom url downloadables in a server.
+> Alias: `mcman i pw <src>`
+
+Imports a [packwiz](https://packwiz.infra.link/) pack
+
+**Note:** [`mcman init`](#mcman-init) supports packwiz
+
+The source can be:
+
+- A packwiz pack URL
+- A local file path to `pack.toml`
+
+Example usages:
+
+```sh
+mcman import packwiz https://raw.githack.com/ParadigmMC/mcman-example-quilt/main/pack/pack.toml
+mcman import packwiz ../pack.toml
+```
+
+---
+
+### `mcman export ...`
+
+Exporting commands
+
+#### `mcman export mrpack [filename]`
+
+Export the server as an `mrpack` (modrinth modpack) file
+
+If `[filename]` argument isn't given, it will be exported as `${SERVER_NAME}.mrpack`
+
+See also: [special variables](#special-variables) that contain export-related variables
+
+#### `mcman export packwiz`
+
+> **Alias & Full Command:** `mcman export pw [-o --output <FOLDER>] [--cfcdn]`
+
+Export the server as a packwiz pack, by default to `pack/` folder.
+
+If you are in a git repo, mcman will give you the githack url to the generated `pack.toml` at the end of the export.
+
+<details>
+<summary>
+Extra options (output & cfcdn)
+</summary>
+
+You can use the `--output <folder>` option to set a custom destination to the pack.
+
+Using `mcman export pw --output packwiz/pack` will create `pack.toml` to `./packwiz/pack/pack.toml`
+
+If the `--cfcdn` flag is used, every `curserinth` downloadable will use `download.mode = "url"` with `download.url` being the url from curseforge's cdn.
+
+If its not used, `download.mode = "metadata:curseforge"` is used with `update.curseforge = { .. }` (default packwiz behavior)
+
+</details>
+
+See also: [special variables](#special-variables) that contain export-related variables
+
+---
 
 ## Folder Structure
 
@@ -253,10 +374,19 @@ token: ${TOKEN}
 
 ### Special Variables
 
-These variables are also present:
+These variables are also present when building:
 
 - `SERVER_NAME`: name property from server.toml
 - `SERVER_VERSION`: mc_version property from server.toml
+
+When exporting to [mrpack](#mcman-export-mrpack-filename) or [packwiz](#mcman-export-packwiz), these variables from `server.toml` are used:
+
+| Variable Name     | mrpack - `modrinth.index.json` | packwiz - `pack.toml` |
+| :---------------- | :----------------------------- | :-------------------- |
+| `MODPACK_NAME`    | `name`                         | `name`                |
+| `MODPACK_SUMMARY` | `summary`                      | `description`         |
+| `MODPACK_AUTHORS` | *nothing*                      | `author`              |
+| `MODPACK_VERSION` | *nothing*                      | `version`             |
 
 ---
 
@@ -265,38 +395,29 @@ These variables are also present:
 This toml file defines your server.
 
 ```toml
-# string, the name of your server
 name = "My Server"
-# string, define the minecraft version
 mc_version = "1.20.1"
 
 [jar]
-# Downloadable - the server jar
-type = "vanilla" # example
+type = "vanilla"
 
-[launcher] # table, see more below
-# ...
-
-[variables] # table, see the Variables section
-
-[[plugins]] # list of Downloadable
-# ...
-
-[[mods]] # list of Downloadable
-# ...
+# --- snip ---
 ```
 
 **Fields:**
 
-- `name`: string - Name of the server
-- `mc_version`: string | `"latest"` - The minecraft version of the server
-- `jar`: [Downloadable](#downloadable) - Which server software to use
-- `launcher`: [ServerLauncher](#server-launcher) - Options for generating launch scripts
-- `plugins`: [Downloadable[]](#downloadable) - A list of plugins to download
-- `mods`: [Downloadable[]](#downloadable) - A list of mods to download
-- `variables`: table - More info [here](#variables)
-- `worlds`: table - Key is world name in string, value is a [World](#world)
-- `markdown`: [MarkdownOptions](#markdown-options) - Options for markdown files
+| Name | Type | Description |
+| --- | --- | --- |
+| `name` | string | Name of the server |
+| `mc_version` | string/`"latest"` | The minecraft version of the server |
+| `jar` | [Downloadable](#downloadable) | Which server software to use |
+| `launcher` | [ServerLauncher](#server-launcher) | Options for generating launch scripts |
+| `plugins` | [Downloadable[]](#downloadable) | A list of plugins to download |
+| `mods` | [Downloadable[]](#downloadable) | A list of mods to download |
+| `clientsidemods` | [ClientSideMod[]](#clientsidemod) | A list of client-side only mods, for packwiz/mrpack support |
+| `variables` | table { string: string } | See [variables](#variables) section |
+| `worlds` | table { string: [World](#world) } | A table of worlds which may contain datapacks. The keys are the world names |
+| `markdown` | [MarkdownOptions](#markdown-options) | Options for markdown files, see [here](#markdown-options) for more info |
 
 ### World
 
@@ -318,6 +439,11 @@ datapacks = []
 The `[launcher]` table lets mcman create launch scripts for you.
 
 Default values aren't written back to config - except for `aikars_flags`, `proxy_flags` and `eula_args` which are always written.
+
+<details>
+<summary>
+Example ServerLauncher with comments
+</summary>
 
 ```toml
 [launcher]
@@ -353,6 +479,21 @@ hello="thing"
 # jvm_args = "-Dhello=thing"
 ```
 
+</details>
+
+**Fields:**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `disable` | bool | Disables script generation altogether |
+| `nogui` | bool | Adds `--nogui` at the end |
+| `aikars_flags` | bool | Use aikars flags <sup>[flags.sh](https://flags.sh)</sup> |
+| `proxy_flags` | bool | Use proxy flags <sup>[flags.sh](https://flags.sh)</sup> |
+| `jvm_args` | string | Custom jvm args (before `-jar serv.jar`) |
+| `game_args` | string | Custom game args (after `-jar serv.jar`) |
+| `memory` | string | How much memory to give (`-Xmx`/`-Xms`), example: `"2048M"` |
+| `properties` | table { string: string } | sets `-D`-prefixed system property jvm args |
+
 ### Markdown Options
 
 This category contains the options for markdown rendering via [`mcman md`](#mcman-markdown)
@@ -363,6 +504,7 @@ This category contains the options for markdown rendering via [`mcman md`](#mcma
 - `auto_update`: bool - weather to auto-update the files on some commands
 
 ```toml
+# server.toml
 [markdown]
 files = [
   "README.md",
@@ -390,9 +532,9 @@ This template renders a table with server jar info.
 
 Example render:
 
-| Version | Type                                       | Build    |
-| ------- | ------------------------------------------ | -------- |
-| 1.20.1  | [Paper](https://papermc.io/software/paper) | *Latest* |
+> | Version | Type                                       | Build    |
+> | ------- | ------------------------------------------ | -------- |
+> | 1.20.1  | [Paper](https://papermc.io/software/paper) | *Latest* |
 
 </details>
 
@@ -411,12 +553,23 @@ This template renders a list of addons (plugins or mods)
 
 Example render:
 
-| Name | Description |
-| --- | --- |
-| [BlueMap](https://modrinth.com/plugin/bluemap) |  A Minecraft mapping tool that creates 3D models of your Minecraft worlds and displays them in a web viewer. |
-| [FastAsyncWorldEdit](https://modrinth.com/plugin/fastasyncworldedit) | Blazingly fast world manipulation for artists, builders and everyone else |
+> | Name | Description |
+> | --- | --- |
+> | [BlueMap](https://modrinth.com/plugin/bluemap) |  A Minecraft mapping tool that creates 3D models of your Minecraft worlds and displays them in a web viewer. |
+> | [FastAsyncWorldEdit](https://modrinth.com/plugin/fastasyncworldedit) | Blazingly fast world manipulation for artists, builders and everyone else |
 
 </details>
+
+### ClientSideMod
+
+This is basically a [Downloadable](#downloadable) with some extra fields:
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `optional` | bool | Marks if optional or not |
+| `desc` | string | Provide a description |
+
+These fields are used for exporting to [mrpack](#mcman-export-mrpack-filename)/[packwiz](#mcman-export-packwiz)
 
 ## Types
 
@@ -424,7 +577,7 @@ Below are some types used in `server.toml`
 
 ### Downloadable
 
-A downloadable is some source of a plugin, mod or a server jar.
+A downloadable is some source of a plugin, mod, datapack or a server jar.
 
 Index of sources:
 
@@ -435,6 +588,7 @@ Index of sources:
 - [PurpurMC](#purpurmc)
 - [BungeeCord](#bungeecord)
 - [Modrinth](#modrinth)
+- [CurseRinth](#curserinth)
 - [Spigot](#spigot)
 - [Github Releases](#github-releases)
 - [Jenkins](#jenkins)
@@ -561,6 +715,23 @@ Downloads from [Modrinth](https://modrinth.com/)'s API
 type = "modrinth"
 id = "coreprotect"
 version = "mvLpRWww"
+```
+
+#### CurseRinth
+
+Downloads from [CurseRinth](https://curserinth.kuylar.dev/)'s API, which is basically [curseforge](https://www.curseforge.com/)
+
+**Options:**
+
+- `type` = `"curserinth"`
+- `id`: string - id of the project or the slug
+- `version`: string | `"latest"` - File id
+
+```toml
+[[plugins]]
+type = "curserinth"
+id = "jei"
+version = "4593548"
 ```
 
 #### Spigot

@@ -13,33 +13,28 @@ Powerful Minecraft Server Manager CLI. Easily install jars (server, plugins & mo
 
 ## Features
 
-- Downloads the server jar, plugins and mods according to the `server.toml` config file
-  - Always keep up to date with new serverjar builds!
-  - No more manually downloading jars - mcman auto updates them according to your `server.toml`
-  - Supports a variety of [sources](./DOCS.md#downloadable):
-    - Servers:
-      - Vanilla
-      - Fabric
-      - Quilt
-      - Paper
-      - PurpurMC
-      - Velocity
-      - Waterfall
-      - BungeeCord
-      - Spigot and CraftBukkit
-    - Plugins/Mods/Datapacks:
-      - Modrinth
-      - Spigot
-    - And even **Github Releases**, **Custom URL**s and **Jenkins!**
-  - Supports importing from [mrpack](./DOCS.md#mcman-import-mrpack-src)s!
-- Bootstraps your server configuration files
-  - Allows you to use variables inside your config files
-  - Environment variables for secrets
-  - You can now use git to version-control your server without making a complex `.gitignore`!
-- Docker support out of the box
-- Easy to use
+- 📜 Everything in one simple `server.toml` file!
+- 📥 Downloads the *server jar*, *plugins*, *mods* and *datapacks*!
+- 🔁 Always keep up to date with new builds and releases
+- ✔️ No more manually downloading jars or editing config files on remote
+- 📚 Supports a variety of [sources](./DOCS.md#downloadable):
+  - **Servers**:
+    - 🌳 `Vanilla`, `Paper`, `Purpur`, `BuildTools` (Spigot/CraftBukkit)
+    - 📜 **Modded:** Fabric & Quilt
+    - ⛓️ **Proxies:** Velocity, Waterfall, BungeeCord
+  - **Plugins/Mods/Datapacks**: 🍀 `Modrinth`, 🔥 `CurseRinth` (Curseforge), 🚰  `Spigot` (resources)
+  - **And even** :octocat: `Github Releases`, 🔗 `Custom URL`s and 💁 `Jenkins`!
+- ⚙️ Better configuration files with `config/`!
+  - Allows you to use **variables** inside your config files
+  - Use *environment variables* for secrets
+  - You can now use `git` to version-control your server without making a complex `.gitignore`!
+- 🐳 Supports Docker
+- 📦 Import from or export to [mrpack](./DOCS.md#mcman-import-mrpack-src)s!
+- 📦 Import from or export to [packwiz](./DOCS.md#mcman-import-mrpack-src) packs!
 
 ## Getting Started
+
+![mcman init](https://cdn.discordapp.com/attachments/1109215116060266567/1134187743300296815/render1690481729604.gif)
 
 - 🚀 [Installation instructions](./TUTORIAL.md#installation)
 
@@ -57,10 +52,11 @@ Submit a PR or open an issue if you have a mcman-server repository that we can a
 
 - Added [CurseRinth](https://curserinth.kuylar.dev/) support
 - Added **packwiz importing**
-- Added **packwiz exporting**
-- Added initializing with `--packwiz`
+- Added **packwiz exporting** (client)
+- Added initializing with `--packwiz <source>`
 - Added **mrpack exporting**
 - Added client-side mods field
+- Added `client-config/` folder
 - Fixed github ratelimiting issue
 - A lot of improvements overall
 
