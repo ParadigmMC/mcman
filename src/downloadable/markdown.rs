@@ -314,11 +314,13 @@ impl Downloadable {
             Self::Spigot { id } => format!("Spigot/{id}"),
             Self::GithubRelease { repo, .. } => format!("Github/{repo}"),
             Self::Jenkins { job, .. } => format!("Jenkins/{job}"),
-            Self::Url { filename, .. } => if let Some(f) = filename {
-                format!("URL/{f}")
-            } else {
-                format!("URL")
-            },
+            Self::Url { filename, .. } => {
+                if let Some(f) = filename {
+                    format!("URL/{f}")
+                } else {
+                    "URL".to_string()
+                }
+            }
 
             _ => self.get_type_name(),
         }

@@ -1,26 +1,32 @@
-use anyhow::{Context, Result, anyhow, bail};
+use anyhow::{anyhow, bail, Context, Result};
 use console::style;
 use dialoguer::{theme::ColorfulTheme, Select};
 use indexmap::IndexMap;
 use pathdiff::diff_paths;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
-use tempfile::TempDir;
-use walkdir::WalkDir;
 use std::{
     collections::HashMap,
     fs::{self, File},
     io::{Read, Seek, Write},
-    path::{PathBuf, Path},
+    path::{Path, PathBuf},
 };
-use zip::{ZipArchive, write::FileOptions};
+use tempfile::TempDir;
+use walkdir::WalkDir;
+use zip::{write::FileOptions, ZipArchive};
 
 use crate::{
     downloadable::{
-        sources::{modrinth::{fetch_modrinth_versions, ModrinthVersion, fetch_modrinth_project, DependencyType}, curserinth::{fetch_curserinth_project, fetch_curserinth_versions}},
+        sources::{
+            curserinth::{fetch_curserinth_project, fetch_curserinth_versions},
+            modrinth::{
+                fetch_modrinth_project, fetch_modrinth_versions, DependencyType, ModrinthVersion,
+            },
+        },
         Downloadable,
     },
-    model::{Server, ClientSideMod}, util::download_with_progress,
+    model::{ClientSideMod, Server},
+    util::download_with_progress,
 };
 
 use super::md::MarkdownTable;
@@ -102,13 +108,13 @@ pub async fn mrpack_source_to_file(
     src: &str,
     http_client: &reqwest::Client,
     tmp_dir: &TempDir,
-    server: &Server
+    server: &Server,
 ) -> Result<File> {
     let filename = if src.starts_with("http") || src.starts_with("mr:") {
         let filename = tmp_dir.path().join("pack.mrpack");
         let file = tokio::fs::File::create(&filename).await?;
 
-        let downloadable = resolve_mrpack_source(src, &http_client).await?;
+        let downloadable = resolve_mrpack_source(src, http_client).await?;
 
         println!(" > {}", style("Downloading mrpack...").green());
 
@@ -117,8 +123,8 @@ pub async fn mrpack_source_to_file(
             &format!("Downloading {src}..."),
             &downloadable,
             None,
-            &server,
-            &http_client,
+            server,
+            http_client,
         )
         .await?;
 
@@ -143,7 +149,7 @@ pub async fn import_from_mrpack<R: Read + Seek>(
     println!(" > {}", style("Reading index...").cyan());
 
     let pack = mrpack_read_index(&mut archive)?;
-    
+
     pack.import_all(server, http_client)
         .await
         .context("importing from mrpack index")?;
@@ -164,9 +170,7 @@ pub async fn import_from_mrpack<R: Read + Seek>(
     Ok(pack)
 }
 
-pub fn mrpack_read_index<R: Read + Seek>(
-    archive: &mut ZipArchive<R>
-) -> Result<MRPackIndex> {
+pub fn mrpack_read_index<R: Read + Seek>(archive: &mut ZipArchive<R>) -> Result<MRPackIndex> {
     let mut mr_index = archive.by_name("modrinth.index.json")?;
     let mut zip_content = Vec::new();
     mr_index
@@ -180,7 +184,7 @@ pub fn mrpack_read_index<R: Read + Seek>(
 
 pub fn mrpack_import_configs<R: Read + Seek>(
     server: &Server,
-    archive: &mut ZipArchive<R>
+    archive: &mut ZipArchive<R>,
 ) -> Result<usize> {
     let mut server_overrided = vec![];
     let mut queue = vec![];
@@ -228,9 +232,13 @@ pub fn mrpack_import_configs<R: Read + Seek>(
             real_path.display()
         ))?;
 
-        fs::write(&real_path, zip_content).context(format!("Writing {}", real_path.display()))?;
+        fs::write(real_path, zip_content).context(format!("Writing {}", real_path.display()))?;
 
-        println!(" > ({:idx_w$}/{len}) Config file: {}", idx + 1, style(path.to_string_lossy()).dim());
+        println!(
+            " > ({:idx_w$}/{len}) Config file: {}",
+            idx + 1,
+            style(path.to_string_lossy()).dim()
+        );
     }
 
     Ok(len)
@@ -313,6 +321,7 @@ pub async fn resolve_mrpack_source(
     Ok(downloadable)
 }
 
+#[allow(clippy::too_many_lines)]
 pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
     http_client: &reqwest::Client,
     server: &Server,
@@ -327,19 +336,19 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
     dependencies.insert("minecraft".to_owned(), server.mc_version.clone());
 
     match &server.jar {
-        Downloadable::Quilt { loader, .. }
-            => dependencies.insert("quilt-loader".to_owned(), loader.clone()),
-        Downloadable::Fabric { loader, .. }
-            => dependencies.insert("fabric-loader".to_owned(), loader.clone()),
+        Downloadable::Quilt { loader, .. } => {
+            dependencies.insert("quilt-loader".to_owned(), loader.clone())
+        }
+        Downloadable::Fabric { loader, .. } => {
+            dependencies.insert("fabric-loader".to_owned(), loader.clone())
+        }
         _ => None,
     };
 
-    let to_env = |dt: &DependencyType| {
-        match dt {
-            DependencyType::Optional => EnvSupport::Optional,
-            DependencyType::Unsupported | DependencyType::Incompatible => EnvSupport::Unsupported,
-            _ => EnvSupport::Required
-        }
+    let to_env = |dt: &DependencyType| match dt {
+        DependencyType::Optional => EnvSupport::Optional,
+        DependencyType::Unsupported | DependencyType::Incompatible => EnvSupport::Unsupported,
+        _ => EnvSupport::Required,
     };
 
     let mut files = vec![];
@@ -358,7 +367,10 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
                 let verdata = match version.as_str() {
                     "latest" => project.first(),
                     id => project.iter().find(|&v| v.id == id),
-                }.ok_or(anyhow!(format!("Cant find modrinth version of {id}, ver={version}")))?;
+                }
+                .ok_or(anyhow!(format!(
+                    "Cant find modrinth version of {id}, ver={version}"
+                )))?;
 
                 // bad unwrap?
                 let file = verdata.files.first().unwrap();
@@ -370,9 +382,7 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
                         server: to_env(&proj.server_side),
                     }),
                     path: format!("mods/{}", file.filename),
-                    downloads: vec![
-                        file.url.clone()
-                    ],
+                    downloads: vec![file.url.clone()],
                 });
 
                 println!(
@@ -381,7 +391,7 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
                     style("Converted").green(),
                     serv_mod.to_short_string()
                 );
-            },
+            }
             Downloadable::CurseRinth { id, version } => {
                 let proj = fetch_curserinth_project(http_client, id).await?;
 
@@ -390,7 +400,10 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
                 let verdata = match version.as_str() {
                     "latest" => project.first(),
                     id => project.iter().find(|&v| v.id == id),
-                }.ok_or(anyhow!(format!("Cant find curserinth version of {id}, ver={version}")))?;
+                }
+                .ok_or(anyhow!(format!(
+                    "Cant find curserinth version of {id}, ver={version}"
+                )))?;
 
                 // bad unwrap #2?
                 let file = verdata.files.first().unwrap();
@@ -402,9 +415,7 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
                         server: to_env(&proj.server_side),
                     }),
                     path: format!("mods/{}", file.filename),
-                    downloads: vec![
-                        file.url.clone()
-                    ],
+                    downloads: vec![file.url.clone()],
                 });
 
                 println!(
@@ -413,17 +424,15 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
                     style("Converted").green(),
                     serv_mod.to_short_string()
                 );
-            },
+            }
             dl => {
                 let filename = dl.get_filename(server, http_client).await?;
                 if let Ok(url) = dl.get_url(http_client, Some(&filename)).await {
                     files.push(MRPackFile {
                         hashes: HashMap::new(), // ! todo...???
                         env: None,
-                        path: format!("mods/{}", filename),
-                        downloads: vec![
-                            url
-                        ],
+                        path: format!("mods/{filename}"),
+                        downloads: vec![url],
                     });
 
                     println!(
@@ -444,7 +453,10 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
         }
     }
 
-    println!(" > {}", style("Converting client-side mods...").cyan().bold());
+    println!(
+        " > {}",
+        style("Converting client-side mods...").cyan().bold()
+    );
 
     let len = server.clientsidemods.len();
     let idx_w = len.to_string().len();
@@ -458,7 +470,10 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
                 let verdata = match version.as_str() {
                     "latest" => project.first(),
                     id => project.iter().find(|&v| v.id == id),
-                }.ok_or(anyhow!(format!("Cant find modrinth version of {id}, ver={version}")))?;
+                }
+                .ok_or(anyhow!(format!(
+                    "Cant find modrinth version of {id}, ver={version}"
+                )))?;
 
                 // bad unwrap?
                 let file = verdata.files.first().unwrap();
@@ -474,9 +489,7 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
                         server: to_env(&proj.server_side),
                     }),
                     path: format!("mods/{}", file.filename),
-                    downloads: vec![
-                        file.url.clone()
-                    ],
+                    downloads: vec![file.url.clone()],
                 });
 
                 println!(
@@ -485,7 +498,7 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
                     style("Converted").green(),
                     client_mod.dl.to_short_string()
                 );
-            },
+            }
             Downloadable::CurseRinth { id, version } => {
                 let proj = fetch_curserinth_project(http_client, id).await?;
 
@@ -494,7 +507,10 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
                 let verdata = match version.as_str() {
                     "latest" => project.first(),
                     id => project.iter().find(|&v| v.id == id),
-                }.ok_or(anyhow!(format!("Cant find curserinth version of {id}, ver={version}")))?;
+                }
+                .ok_or(anyhow!(format!(
+                    "Cant find curserinth version of {id}, ver={version}"
+                )))?;
 
                 // bad unwrap #2?
                 let file = verdata.files.first().unwrap();
@@ -510,9 +526,7 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
                         server: to_env(&proj.server_side),
                     }),
                     path: format!("mods/{}", file.filename),
-                    downloads: vec![
-                        file.url.clone()
-                    ],
+                    downloads: vec![file.url.clone()],
                 });
 
                 println!(
@@ -521,17 +535,15 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
                     style("Converted").green(),
                     client_mod.dl.to_short_string()
                 );
-            },
+            }
             dl => {
                 let filename = dl.get_filename(server, http_client).await?;
                 if let Ok(url) = dl.get_url(http_client, Some(&filename)).await {
                     files.push(MRPackFile {
                         hashes: HashMap::new(), // ! todo...???
                         env: None,
-                        path: format!("mods/{}", filename),
-                        downloads: vec![
-                            url
-                        ],
+                        path: format!("mods/{filename}"),
+                        downloads: vec![url],
                     });
 
                     println!(
@@ -566,15 +578,15 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
         dependencies,
         game: "minecraft".to_owned(),
         files,
-        version_id: version_id.to_owned()
+        version_id: version_id.to_owned(),
     };
 
     println!(" > {}", style("Writing index...").cyan().bold());
-    
+
     archive.start_file("modrinth.index.json", FileOptions::default())?;
-    
+
     archive.write_all(serde_json::to_string_pretty(&index)?.as_bytes())?;
-    
+
     if server.path.join("config").exists() {
         println!(" > {}", style("Writing config/...").cyan().bold());
 
@@ -588,24 +600,27 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
                     );
                 }
             };
-    
-            let rel_path = diff_paths(entry.path(), &server.path.join("config")).ok_or(anyhow!("Cannot diff paths"))?;
-    
+
+            let rel_path = diff_paths(entry.path(), &server.path.join("config"))
+                .ok_or(anyhow!("Cannot diff paths"))?;
+
             let dest_path = "overrides/".to_owned() + &rel_path.to_string_lossy();
-    
+
             if entry.file_type().is_dir() {
-                archive.add_directory(dest_path.clone(), FileOptions::default())
+                archive
+                    .add_directory(dest_path.clone(), FileOptions::default())
                     .context(format!("Creating dir in zip: {dest_path}"))?;
             } else {
-                archive.start_file(dest_path.clone(), FileOptions::default())
+                archive
+                    .start_file(dest_path.clone(), FileOptions::default())
                     .context(format!("Starting zip file for {dest_path}"))?;
-    
-                let mut real_file = fs::File::open(entry.path())
-                    .context(format!("Opening file {dest_path}"))?;
-    
+
+                let mut real_file =
+                    fs::File::open(entry.path()).context(format!("Opening file {dest_path}"))?;
+
                 std::io::copy(&mut real_file, &mut archive)
                     .context(format!("Copying {dest_path} to in-memory zip archive"))?;
-    
+
                 println!("    -> {}", style(dest_path).dim());
             }
         }
@@ -624,29 +639,32 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
                     );
                 }
             };
-    
-            let rel_path = diff_paths(entry.path(), &server.path.join("client-config")).ok_or(anyhow!("Cannot diff paths"))?;
-    
+
+            let rel_path = diff_paths(entry.path(), &server.path.join("client-config"))
+                .ok_or(anyhow!("Cannot diff paths"))?;
+
             let dest_path = "client-overrides/".to_owned() + &rel_path.to_string_lossy();
-    
+
             if entry.file_type().is_dir() {
-                archive.add_directory(dest_path.clone(), FileOptions::default())
+                archive
+                    .add_directory(dest_path.clone(), FileOptions::default())
                     .context(format!("Creating dir in zip: {dest_path}"))?;
             } else {
-                archive.start_file(dest_path.clone(), FileOptions::default())
+                archive
+                    .start_file(dest_path.clone(), FileOptions::default())
                     .context(format!("Starting zip file for {dest_path}"))?;
-    
-                let mut real_file = fs::File::open(entry.path())
-                    .context(format!("Opening file {dest_path}"))?;
-    
+
+                let mut real_file =
+                    fs::File::open(entry.path()).context(format!("Opening file {dest_path}"))?;
+
                 std::io::copy(&mut real_file, &mut archive)
                     .context(format!("Copying {dest_path} to in-memory zip archive"))?;
-    
+
                 println!("    -> {}", style(dest_path).dim());
             }
         }
     }
-    
+
     archive.finish().context("Finishing zip archive")?;
 
     println!(" > {}", style("Export complete!").green().bold());

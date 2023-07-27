@@ -6,8 +6,9 @@ use crate::{downloadable::sources::curserinth::fetch_curserinth_versions, model:
 
 use super::{
     sources::{
+        curserinth::CurseRinthVersion,
         github::fetch_github_releases,
-        modrinth::{fetch_modrinth_versions, ModrinthVersion}, curserinth::CurseRinthVersion,
+        modrinth::{fetch_modrinth_versions, ModrinthVersion},
     },
     Downloadable,
 };
@@ -194,10 +195,11 @@ impl Downloadable {
                     ))?;
                 }
 
-                let id = "mod__".to_owned() + segments
-                    .get(2)
-                    .ok_or_else(|| anyhow!("Invalid Curseforge URL - mod id not found in URL"))?
-                    .to_owned();
+                let id = "mod__".to_owned()
+                    + segments
+                        .get(2)
+                        .ok_or_else(|| anyhow!("Invalid Curseforge URL - mod id not found in URL"))?
+                        .to_owned();
 
                 let version = if let Some(v) = segments.get(4) {
                     v.to_owned().to_owned()

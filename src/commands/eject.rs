@@ -1,9 +1,9 @@
 use std::fs;
 
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use clap::Command;
 use console::style;
-use dialoguer::{Input, theme::ColorfulTheme};
+use dialoguer::{theme::ColorfulTheme, Input};
 
 use crate::model::Server;
 
@@ -13,7 +13,8 @@ pub fn cli() -> Command {
         .about("Eject - remove everything related to mcman")
 }
 
-pub async fn run() -> Result<()> {
+#[allow(unused_must_use)]
+pub fn run() -> Result<()> {
     let server = Server::load().context("Failed to load server.toml")?;
 
     if Input::with_theme(&ColorfulTheme::default())
@@ -21,11 +22,11 @@ pub async fn run() -> Result<()> {
         .default(String::new())
         .interact_text()? == server.name {
         println!(" > {}", style("Deleting server.toml...").yellow());
-        _ = fs::remove_file(server.path.join("server.toml"))?;
+        fs::remove_file(server.path.join("server.toml"))?;
         println!(" > {}", style("Deleting config/...").yellow());
-        _ = fs::remove_dir_all(server.path.join("config"));
+        fs::remove_dir_all(server.path.join("config"));
         println!(" > {}", style("Deleting server/...").yellow());
-        _ = fs::remove_dir_all(server.path.join("server"))?;
+        fs::remove_dir_all(server.path.join("server"))?;
         println!(" > Ejected successfully.");
     } else {
         println!(" > {}", style("Cancelled").green().bold());

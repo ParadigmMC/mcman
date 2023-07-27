@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use super::modrinth::{ModrinthProject, VersionType, ModrinthFile};
+use super::modrinth::{ModrinthFile, ModrinthProject, VersionType};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "snake_case")]

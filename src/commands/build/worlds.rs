@@ -24,31 +24,27 @@ impl BuildContext {
 
             for (idx, dp) in world.datapacks.iter().enumerate() {
                 let path = format!("{name}/datapacks");
-                self.downloadable(
-                    dp,
-                    Some(&path),
-                    |state, file_name| {
-                    match state {
-                        ReportBackState::Skipped => {
-                            println!(
-                                "          {:pad_len$}({:dp_len$}/{datapack_count}) Skipping    : {}",
-                                idx + 1,
-                                "",
-                                style(file_name).dim()
-                            );
-                        }
-                        ReportBackState::Downloaded => {
-                            println!(
-                                "          {:pad_len$}({:dp_len$}/{datapack_count}) {}  : {}",
-                                idx + 1,
-                                "",
-                                style("Downloaded").green().bold(),
-                                style(file_name).dim()
-                            );
-                        }
-                        ReportBackState::Downloading => {}
+                self.downloadable(dp, Some(&path), |state, file_name| match state {
+                    ReportBackState::Skipped => {
+                        println!(
+                            "          {:pad_len$}({:dp_len$}/{datapack_count}) Skipping    : {}",
+                            idx + 1,
+                            "",
+                            style(file_name).dim()
+                        );
                     }
-                }).await?;
+                    ReportBackState::Downloaded => {
+                        println!(
+                            "          {:pad_len$}({:dp_len$}/{datapack_count}) {}  : {}",
+                            idx + 1,
+                            "",
+                            style("Downloaded").green().bold(),
+                            style(file_name).dim()
+                        );
+                    }
+                    ReportBackState::Downloading => {}
+                })
+                .await?;
             }
         }
 

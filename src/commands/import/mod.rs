@@ -1,11 +1,11 @@
 use anyhow::Result;
 use clap::{ArgMatches, Command};
 
-mod url;
+mod customs;
 mod datapack;
 mod mrpack;
 mod packwiz;
-mod customs;
+mod url;
 
 pub fn cli() -> Command {
     Command::new("import")

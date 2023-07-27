@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -10,7 +10,7 @@ use self::sources::{
     curserinth::{download_curserinth, fetch_curserinth_filename, get_curserinth_url},
     fabric::download_fabric,
     github::{download_github_release, fetch_github_release_filename, get_github_release_url},
-    jenkins::{download_jenkins, get_jenkins_filename, get_jenkins_download_url},
+    jenkins::{download_jenkins, get_jenkins_download_url, get_jenkins_filename},
     modrinth::{download_modrinth, fetch_modrinth_filename, get_modrinth_url},
     papermc::{download_papermc_build, fetch_papermc_build},
     purpur::{download_purpurmc_build, fetch_purpurmc_builds},

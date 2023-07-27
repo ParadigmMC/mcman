@@ -5,6 +5,7 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::struct_excessive_bools)]
+#![allow(unknown_lints)]
 
 use anyhow::{Context, Result};
 use clap::Command;
@@ -46,7 +47,7 @@ async fn main() -> Result<()> {
         Some(("info", _)) => commands::info::run(),
         Some(("version" | "v", _)) => commands::version::run().await,
         Some(("export", sub_matches)) => commands::export::run(sub_matches).await,
-        Some(("eject", _)) => commands::eject::run().await,
+        Some(("eject", _)) => commands::eject::run(),
         _ => unreachable!(),
     }
 }

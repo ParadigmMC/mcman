@@ -3,15 +3,15 @@ use std::{path::PathBuf, time::Instant};
 use anyhow::{anyhow, Context, Result};
 use clap::{arg, value_parser, ArgMatches, Command};
 use console::style;
-use tokio::fs::{File, self};
+use tokio::fs::{self, File};
 
 use crate::{create_http_client, downloadable::Downloadable, model::Server, util};
 
-pub mod serverjar;
 pub mod addons;
-pub mod worlds;
 pub mod bootstrap;
 pub mod scripts;
+pub mod serverjar;
+pub mod worlds;
 
 pub fn cli() -> Command {
     Command::new("build")
@@ -139,8 +139,10 @@ impl BuildContext {
         folder_path: Option<&str>,
         report_back: F,
     ) -> Result<String> {
-        let file_name = dl.get_filename(&self.server, &self.http_client)
-            .await.with_context(|| format!("Getting filename of Downloadable: {dl:#?}"))?;
+        let file_name = dl
+            .get_filename(&self.server, &self.http_client)
+            .await
+            .with_context(|| format!("Getting filename of Downloadable: {dl:#?}"))?;
 
         let file_path = if let Some(path) = folder_path {
             self.output_dir.join(path)
@@ -154,21 +156,23 @@ impl BuildContext {
         } else {
             report_back(ReportBackState::Downloading, &file_name);
 
-            let file = File::create(&file_path).await.with_context(|| format!(
-                "Failed to create output file: {}",
-                file_path.to_string_lossy()
-            ))?;
+            let file = File::create(&file_path).await.with_context(|| {
+                format!(
+                    "Failed to create output file: {}",
+                    file_path.to_string_lossy()
+                )
+            })?;
 
             let result = util::download_with_progress(
-                    file,
-                    &file_name,
-                    dl,
-                    Some(&file_name),
-                    &self.server,
-                    &self.http_client,
-                )
-                .await
-                .with_context(|| format!("Downloading Downloadable: {dl:#?}"));
+                file,
+                &file_name,
+                dl,
+                Some(&file_name),
+                &self.server,
+                &self.http_client,
+            )
+            .await
+            .with_context(|| format!("Downloading Downloadable: {dl:#?}"));
 
             if result.is_err() {
                 // try to remove file if errored

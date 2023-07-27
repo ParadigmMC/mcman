@@ -1,9 +1,13 @@
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
-use clap::{arg, ArgMatches, Command, value_parser};
+use clap::{arg, value_parser, ArgMatches, Command};
 
-use crate::{create_http_client, model::Server, util::packwiz::{export_packwiz, PackwizExportOptions}};
+use crate::{
+    create_http_client,
+    model::Server,
+    util::packwiz::{export_packwiz, PackwizExportOptions},
+};
 
 pub fn cli() -> Command {
     Command::new("packwiz")
@@ -13,9 +17,7 @@ pub fn cli() -> Command {
             arg!(-o --output [FILE] "The output directory for the packwiz files")
                 .value_parser(value_parser!(PathBuf)),
         )
-        .arg(
-            arg!(--cfcdn "Use edge.forgecdn.net instead of metadata:curseforge"),
-        )
+        .arg(arg!(--cfcdn "Use edge.forgecdn.net instead of metadata:curseforge"))
 }
 
 pub async fn run(matches: &ArgMatches) -> Result<()> {
@@ -30,9 +32,13 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
 
     let cf_usecdn = matches.get_flag("cfcdn");
 
-    export_packwiz(&output_dir, &http_client, &server, &PackwizExportOptions {
-        cf_usecdn
-    }).await?;
+    export_packwiz(
+        &output_dir,
+        &http_client,
+        &server,
+        &PackwizExportOptions { cf_usecdn },
+    )
+    .await?;
 
     Ok(())
 }

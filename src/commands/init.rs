@@ -1,16 +1,16 @@
 use console::style;
 use dialoguer::Confirm;
 use dialoguer::{theme::ColorfulTheme, Input, Select};
-use zip::ZipArchive;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use tempfile::Builder;
+use zip::ZipArchive;
 
 use crate::commands::markdown;
 use crate::create_http_client;
-use crate::util::mrpack::{mrpack_source_to_file, mrpack_read_index, mrpack_import_configs};
+use crate::util::mrpack::{mrpack_import_configs, mrpack_read_index, mrpack_source_to_file};
 use crate::util::packwiz::{packwiz_fetch_pack_from_src, packwiz_import_from_source};
 use crate::{
     downloadable::{sources::vanilla::fetch_latest_mcver, Downloadable},
@@ -24,10 +24,7 @@ pub fn cli() -> Command {
         .about("Initialize a new mcman server")
         .arg(arg!(--name [NAME] "The name of the server"))
         .arg(arg!(--mrpack [SRC] "Import from a modrinth modpack"))
-        .arg(
-            arg!(--packwiz [SRC] "Import from a packwiz pack")
-            .visible_alias("pw")
-        )
+        .arg(arg!(--packwiz [SRC] "Import from a packwiz pack").visible_alias("pw"))
 }
 
 #[allow(clippy::too_many_lines)]
@@ -76,10 +73,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
-pub async fn init_normal(
-    http_client: &reqwest::Client,
-    name: &str,
-) -> Result<()> {
+pub async fn init_normal(http_client: &reqwest::Client, name: &str) -> Result<()> {
     let serv_type = Select::with_theme(&ColorfulTheme::default())
         .with_prompt("Type of server?")
         .default(0)
@@ -95,7 +89,7 @@ pub async fn init_normal(
     let mc_version = if is_proxy {
         "latest".to_owned()
     } else {
-        let latest_ver = fetch_latest_mcver(&http_client)
+        let latest_ver = fetch_latest_mcver(http_client)
             .await
             .context("Fetching latest version")?;
 
@@ -136,11 +130,7 @@ pub async fn init_normal(
     Ok(())
 }
 
-pub async fn init_mrpack(
-    src: &str,
-    name: &str,
-    http_client: &reqwest::Client,
-) -> Result<()> {
+pub async fn init_mrpack(src: &str, name: &str, http_client: &reqwest::Client) -> Result<()> {
     println!(" > {}", style("Importing from mrpack...").cyan());
 
     let tmp_dir = Builder::new().prefix("mcman-mrpack-import").tempdir()?;
@@ -150,12 +140,7 @@ pub async fn init_mrpack(
         ..Default::default()
     };
 
-    let f = mrpack_source_to_file(
-        src,
-        http_client,
-        &tmp_dir,
-        &server
-    ).await?;
+    let f = mrpack_source_to_file(src, http_client, &tmp_dir, &server).await?;
 
     let mut archive = ZipArchive::new(f).context("reading mrpack zip archive")?;
 
@@ -164,7 +149,7 @@ pub async fn init_mrpack(
     server.mc_version = if let Some(v) = pack.dependencies.get("minecraft") {
         v.clone()
     } else {
-        let latest_ver = fetch_latest_mcver(&http_client)
+        let latest_ver = fetch_latest_mcver(http_client)
             .await
             .context("Fetching latest version")?;
 
@@ -201,11 +186,14 @@ pub async fn init_mrpack(
     };
 
     println!(" > {}", style("Importing mods...").green().bold());
-    
+
     pack.import_all(&mut server, http_client).await?;
-    
-    println!(" > {}", style("Importing configuration files...").green().bold());
-    
+
+    println!(
+        " > {}",
+        style("Importing configuration files...").green().bold()
+    );
+
     let config_count = mrpack_import_configs(&server, &mut archive)?;
 
     println!(
@@ -222,11 +210,7 @@ pub async fn init_mrpack(
     Ok(())
 }
 
-pub async fn init_packwiz(
-    src: &str,
-    name: &str,
-    http_client: &reqwest::Client,
-) -> Result<()> {
+pub async fn init_packwiz(src: &str, name: &str, http_client: &reqwest::Client) -> Result<()> {
     println!(" > {}", style("Importing from packwiz...").cyan());
 
     let mut server = Server {
@@ -241,7 +225,7 @@ pub async fn init_packwiz(
     } else {
         // TODO: [acceptable-versions] or something idk
 
-        let latest_ver = fetch_latest_mcver(&http_client)
+        let latest_ver = fetch_latest_mcver(http_client)
             .await
             .context("Fetching latest version")?;
 
@@ -277,7 +261,8 @@ pub async fn init_packwiz(
         }
     };
 
-    let (_pack, mod_count, config_count) = packwiz_import_from_source(http_client, src, &mut server).await?;
+    let (_pack, mod_count, config_count) =
+        packwiz_import_from_source(http_client, src, &mut server).await?;
 
     println!(
         " > {} {} {} {} {}",
@@ -293,10 +278,7 @@ pub async fn init_packwiz(
     Ok(())
 }
 
-pub fn init_final(
-    server: &Server,
-    is_proxy: bool
-) -> Result<()> {
+pub fn init_final(server: &Server, is_proxy: bool) -> Result<()> {
     server.save()?;
 
     initialize_environment(is_proxy).context("Initializing environment")?;
@@ -311,7 +293,7 @@ pub fn init_final(
     };
 
     if write_readme {
-        markdown::initialize_readme(&server).context("Initializing readme")?;
+        markdown::initialize_readme(server).context("Initializing readme")?;
     }
 
     println!(

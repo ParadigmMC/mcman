@@ -51,13 +51,9 @@ pub async fn fetch_spigot_resource_latest_ver(
     Ok(project.id.to_string())
 }
 
-pub fn get_spigot_url(
-    id: &str,
-) -> String {
+pub fn get_spigot_url(id: &str) -> String {
     let id_parsed = get_resource_id(id);
-    format!(
-        "https://api.spiget.org/v2/resources/{id_parsed}/download"
-    )
+    format!("https://api.spiget.org/v2/resources/{id_parsed}/download")
 }
 
 pub async fn download_spigot_resource(
