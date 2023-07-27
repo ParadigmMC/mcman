@@ -482,25 +482,14 @@ pub async fn export_packwiz(
         style("Exported to packwiz successfully!").green().bold()
     );
 
-    if let Some(u) = try_get_url(folder) {
+    if let Ok(u) = try_get_url(folder) {
         println!();
-        println!(" > {}", style("URL (raw.github):").dim());
-        println!(
-            "     {}",
-            "https://raw.githubusercontent.com/".to_owned() + &u
-        );
-        println!(
-            "     {}",
-            "$INST_JAVA-jar packwiz-installer-bootstrap.jar https://raw.githubusercontent.com/"
-                .to_owned()
-                + &u
-        );
-        println!();
-        println!(" > {}", style("URL (githack):").dim());
+        println!(" > {}", style("Exported pack URL:").cyan());
         println!("     {}", "https://raw.githack.com/".to_owned() + &u);
+        println!(" > {}", style("MultiMC prelaunch command:").cyan());
         println!(
             "     {}",
-            "$INST_JAVA-jar packwiz-installer-bootstrap.jar https://raw.githack.com/".to_owned()
+            "$INST_JAVA -jar packwiz-installer-bootstrap.jar https://raw.githack.com/".to_owned()
                 + &u
         );
         println!();
@@ -509,43 +498,52 @@ pub async fn export_packwiz(
     Ok(())
 }
 
-pub fn try_get_url(folder: &PathBuf) -> Option<String> {
-    let repo_url = get_git_remote()?;
-    let root = get_git_root()?;
-    let branch = get_git_branch()?;
+pub fn try_get_url(folder: &PathBuf) -> Result<String> {
+    let repo_url = get_git_remote()?.ok_or(anyhow!("cant get repo url"))?;
+    let root = get_git_root()?.ok_or(anyhow!("cant get repo root"))?;
+    let branch = get_git_branch()?.ok_or(anyhow!("cant get repo branch"))?;
 
-    let diff = diff_paths(folder, root)?;
+    let diff = diff_paths(folder, root).ok_or(anyhow!("cant diff paths"))?;
 
     let repo = if repo_url.starts_with("https") {
         repo_url.strip_prefix("https://github.com/")
     } else {
         repo_url.strip_prefix("http://github.com/")
-    }?;
+    }
+    .ok_or(anyhow!("repo not on github?"))?;
 
-    Some(repo.to_owned() + "/" + &branch + "/" + &diff.to_string_lossy() + "/pack.toml")
+    let parent_paths = diff.to_string_lossy().replace('\\', "/");
+    let parent_paths = if parent_paths.is_empty() {
+        parent_paths
+    } else {
+        "/".to_owned() + &parent_paths
+    };
+
+    Ok(repo.to_owned() + "/" + &branch + &parent_paths + "/pack.toml")
 }
 
-pub fn get_git_remote() -> Option<String> {
-    let path = git_command(vec!["remove", "get-url", "origin"])?;
+pub fn get_git_remote() -> Result<Option<String>> {
+    let path = git_command(vec!["remote", "get-url", "origin"])?
+        .ok_or(anyhow!("cant get git repo origin"))?;
 
-    Some(
+    Ok(Some(
         path.strip_suffix(".git")
             .map_or(path.clone(), ToOwned::to_owned),
-    )
+    ))
 }
 
-pub fn get_git_root() -> Option<String> {
+pub fn get_git_root() -> Result<Option<String>> {
     git_command(vec!["rev-parse", "--show-toplevel"])
 }
 
-pub fn get_git_branch() -> Option<String> {
+pub fn get_git_branch() -> Result<Option<String>> {
     git_command(vec!["rev-parse", "--abbrev-ref", "HEAD"])
 }
 
-pub fn git_command(args: Vec<&str>) -> Option<String> {
-    let output = std::process::Command::new("git").args(args).output().ok()?;
+pub fn git_command(args: Vec<&str>) -> Result<Option<String>> {
+    let output = std::process::Command::new("git").args(args).output()?;
 
-    if output.status.success() {
+    Ok(if output.status.success() {
         let path = String::from_utf8_lossy(output.stdout.as_slice())
             .into_owned()
             .trim()
@@ -553,7 +551,7 @@ pub fn git_command(args: Vec<&str>) -> Option<String> {
         Some(path)
     } else {
         None
-    }
+    })
 }
 
 pub async fn create_packwiz_modlist(
