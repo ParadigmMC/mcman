@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -7,15 +7,15 @@ use crate::{
 };
 
 use self::sources::{
-    curserinth::{download_curserinth, fetch_curserinth_filename},
+    curserinth::{download_curserinth, fetch_curserinth_filename, get_curserinth_url},
     fabric::download_fabric,
-    github::{download_github_release, fetch_github_release_filename},
-    jenkins::{download_jenkins, get_jenkins_filename},
-    modrinth::{download_modrinth, fetch_modrinth_filename},
+    github::{download_github_release, fetch_github_release_filename, get_github_release_url},
+    jenkins::{download_jenkins, get_jenkins_filename, get_jenkins_download_url},
+    modrinth::{download_modrinth, fetch_modrinth_filename, get_modrinth_url},
     papermc::{download_papermc_build, fetch_papermc_build},
     purpur::{download_purpurmc_build, fetch_purpurmc_builds},
     quilt::{download_quilt_installer, get_installer_filename},
-    spigot::{download_spigot_resource, fetch_spigot_resource_latest_ver},
+    spigot::{download_spigot_resource, fetch_spigot_resource_latest_ver, get_spigot_url},
     vanilla::fetch_vanilla,
 };
 mod import_url;
@@ -308,6 +308,37 @@ impl Downloadable {
             }
 
             Self::Quilt { installer, .. } => Ok(get_installer_filename(client, installer).await?),
+        }
+    }
+
+    /// only for exporting uses, not every downloadable is supported
+    pub async fn get_url(
+        &self,
+        client: &reqwest::Client,
+        filename_hint: Option<&str>,
+    ) -> Result<String> {
+        match self {
+            Self::Url { url, .. } => Ok(url.clone()),
+
+            Self::Modrinth { id, version } => {
+                Ok(get_modrinth_url(id, version, client, None).await?)
+            }
+            Self::CurseRinth { id, version } => {
+                Ok(get_curserinth_url(id, version, client, None).await?)
+            }
+            Self::Spigot { id } => Ok(get_spigot_url(id)),
+            Self::GithubRelease { repo, tag, asset } => {
+                Ok(get_github_release_url(repo, tag, asset, client, filename_hint).await?)
+            }
+
+            Self::Jenkins {
+                url,
+                job,
+                build,
+                artifact,
+            } => Ok(get_jenkins_download_url(client, url, job, build, artifact).await?),
+
+            _ => Err(anyhow!("Unimplemented")),
         }
     }
 

@@ -1,16 +1,17 @@
 use console::style;
 use dialoguer::Confirm;
 use dialoguer::{theme::ColorfulTheme, Input, Select};
+use zip::ZipArchive;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use tempfile::Builder;
 
 use crate::commands::markdown;
 use crate::create_http_client;
-use crate::util::download_with_progress;
-use crate::util::mrpack::{import_from_mrpack, resolve_mrpack_source};
+use crate::util::mrpack::{mrpack_source_to_file, mrpack_read_index, mrpack_import_configs};
+use crate::util::packwiz::{packwiz_fetch_pack_from_src, packwiz_import_from_source};
 use crate::{
     downloadable::{sources::vanilla::fetch_latest_mcver, Downloadable},
     model::{Server, ServerLauncher},
@@ -21,8 +22,12 @@ use clap::{arg, ArgMatches, Command};
 pub fn cli() -> Command {
     Command::new("init")
         .about("Initialize a new mcman server")
-        .arg(arg!(--name <NAME> "The name of the server").required(false))
-        .arg(arg!(--mrpack <SRC> "Import from a modrinth modpack").required(false))
+        .arg(arg!(--name [NAME] "The name of the server"))
+        .arg(arg!(--mrpack [SRC] "Import from a modrinth modpack"))
+        .arg(
+            arg!(--packwiz [SRC] "Import from a packwiz pack")
+            .visible_alias("pw")
+        )
 }
 
 #[allow(clippy::too_many_lines)]
@@ -61,110 +66,21 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         .interact_text()?;
 
     if let Some(src) = matches.get_one::<String>("mrpack") {
-        println!(" > {}", style("Importing from mrpack...").cyan());
-
-        let tmp_dir = Builder::new().prefix("mcman-mrpack-import").tempdir()?;
-
-        let mut server = Server {
-            name,
-            ..Default::default()
-        };
-
-        let filename = if src.starts_with("http") || src.starts_with("mr:") {
-            let filename = tmp_dir.path().join("pack.mrpack");
-            let file = tokio::fs::File::create(&filename).await?;
-
-            let downloadable = resolve_mrpack_source(src, &http_client).await?;
-
-            println!(" > {}", style("Downloading mrpack...").green());
-
-            download_with_progress(
-                file,
-                &format!("Downloading {src}..."),
-                &downloadable,
-                None,
-                &server,
-                &http_client,
-            )
-            .await?;
-
-            filename
-        } else {
-            PathBuf::from(src)
-        };
-
-        let f = File::open(filename).context("opening file")?;
-
-        let pack = import_from_mrpack(&mut server, &http_client, f).await?;
-
-        server.mc_version = if let Some(v) = pack.dependencies.get("minecraft") {
-            v.clone()
-        } else {
-            let latest_ver = fetch_latest_mcver(&http_client)
-                .await
-                .context("Fetching latest version")?;
-
-            Input::with_theme(&theme)
-                .with_prompt("Server version?")
-                .default(latest_ver)
-                .interact_text()?
-        };
-
-        server.jar = {
-            if let Some(ver) = pack.dependencies.get("quilt-loader") {
-                println!(
-                    " > {} {}",
-                    style("Using quilt loader").cyan(),
-                    style(ver).bold()
-                );
-                Downloadable::Quilt {
-                    loader: ver.clone(),
-                    installer: "latest".to_owned(),
-                }
-            } else if let Some(ver) = pack.dependencies.get("fabric-loader") {
-                println!(
-                    " > {} {}",
-                    style("Using fabric loader").cyan(),
-                    style(ver).bold()
-                );
-                Downloadable::Fabric {
-                    loader: ver.clone(),
-                    installer: "latest".to_owned(),
-                }
-            } else {
-                Downloadable::select_modded_jar_interactive()?
-            }
-        };
-
-        println!(" > {}", style("Imported .mrpack!").green());
-
-        initialize_environment(false).context("Initializing environment")?;
-        server.save()?;
-
-        let write_readme = if Path::new("./README.md").exists() {
-            Confirm::with_theme(&theme)
-                .default(true)
-                .with_prompt("Overwrite README.md?")
-                .interact()?
-        } else {
-            true
-        };
-
-        if write_readme {
-            markdown::initialize_readme(&server).context("Initializing readme")?;
-        }
-
-        println!(" > {}", style("Server has been initialized!").cyan());
-        println!(
-            " > {} {}",
-            style("Build using").cyan(),
-            style("mcman build").bold()
-        );
-
-        return Ok(());
+        init_mrpack(src, &name, &http_client).await?;
+    } else if let Some(src) = matches.get_one::<String>("packwiz") {
+        init_packwiz(src, &name, &http_client).await?;
+    } else {
+        init_normal(&http_client, &name).await?;
     }
 
-    let serv_type = Select::with_theme(&theme)
+    Ok(())
+}
+
+pub async fn init_normal(
+    http_client: &reqwest::Client,
+    name: &str,
+) -> Result<()> {
+    let serv_type = Select::with_theme(&ColorfulTheme::default())
         .with_prompt("Type of server?")
         .default(0)
         .items(&[
@@ -183,7 +99,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
             .await
             .context("Fetching latest version")?;
 
-        Input::with_theme(&theme)
+        Input::with_theme(&ColorfulTheme::default())
             .with_prompt("Server version?")
             .default(latest_ver)
             .interact_text()?
@@ -208,18 +124,185 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     }?;
 
     let server = Server {
-        name,
+        name: name.to_owned(),
         mc_version,
         jar,
         launcher,
         ..Default::default()
     };
 
-    initialize_environment(is_proxy).context("Initializing environment")?;
+    init_final(&server, is_proxy)?;
+
+    Ok(())
+}
+
+pub async fn init_mrpack(
+    src: &str,
+    name: &str,
+    http_client: &reqwest::Client,
+) -> Result<()> {
+    println!(" > {}", style("Importing from mrpack...").cyan());
+
+    let tmp_dir = Builder::new().prefix("mcman-mrpack-import").tempdir()?;
+
+    let mut server = Server {
+        name: name.to_owned(),
+        ..Default::default()
+    };
+
+    let f = mrpack_source_to_file(
+        src,
+        http_client,
+        &tmp_dir,
+        &server
+    ).await?;
+
+    let mut archive = ZipArchive::new(f).context("reading mrpack zip archive")?;
+
+    let pack = mrpack_read_index(&mut archive)?;
+
+    server.mc_version = if let Some(v) = pack.dependencies.get("minecraft") {
+        v.clone()
+    } else {
+        let latest_ver = fetch_latest_mcver(&http_client)
+            .await
+            .context("Fetching latest version")?;
+
+        Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Server version?")
+            .default(latest_ver)
+            .interact_text()?
+    };
+
+    server.jar = {
+        if let Some(ver) = pack.dependencies.get("quilt-loader") {
+            println!(
+                " > {} {}",
+                style("Using quilt loader").cyan(),
+                style(ver).bold()
+            );
+            Downloadable::Quilt {
+                loader: ver.clone(),
+                installer: "latest".to_owned(),
+            }
+        } else if let Some(ver) = pack.dependencies.get("fabric-loader") {
+            println!(
+                " > {} {}",
+                style("Using fabric loader").cyan(),
+                style(ver).bold()
+            );
+            Downloadable::Fabric {
+                loader: ver.clone(),
+                installer: "latest".to_owned(),
+            }
+        } else {
+            Downloadable::select_modded_jar_interactive()?
+        }
+    };
+
+    println!(" > {}", style("Importing mods...").green().bold());
+    
+    pack.import_all(&mut server, http_client).await?;
+    
+    println!(" > {}", style("Importing configuration files...").green().bold());
+    
+    let config_count = mrpack_import_configs(&server, &mut archive)?;
+
+    println!(
+        " > {} {} {} {} {}",
+        style("Imported").green().bold(),
+        style(pack.files.len()).cyan(),
+        style("mods and").green(),
+        style(config_count).cyan(),
+        style("config files from .mrpack").green(),
+    );
+
+    init_final(&server, false)?;
+
+    Ok(())
+}
+
+pub async fn init_packwiz(
+    src: &str,
+    name: &str,
+    http_client: &reqwest::Client,
+) -> Result<()> {
+    println!(" > {}", style("Importing from packwiz...").cyan());
+
+    let mut server = Server {
+        name: name.to_owned(),
+        ..Default::default()
+    };
+
+    let pack = packwiz_fetch_pack_from_src(http_client, src).await?;
+
+    server.mc_version = if let Some(v) = pack.versions.get("minecraft") {
+        v.clone()
+    } else {
+        // TODO: [acceptable-versions] or something idk
+
+        let latest_ver = fetch_latest_mcver(&http_client)
+            .await
+            .context("Fetching latest version")?;
+
+        Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Server version?")
+            .default(latest_ver)
+            .interact_text()?
+    };
+
+    server.jar = {
+        if let Some(ver) = pack.versions.get("quilt") {
+            println!(
+                " > {} {}",
+                style("Using quilt loader").cyan(),
+                style(ver).bold()
+            );
+            Downloadable::Quilt {
+                loader: ver.clone(),
+                installer: "latest".to_owned(),
+            }
+        } else if let Some(ver) = pack.versions.get("fabric") {
+            println!(
+                " > {} {}",
+                style("Using fabric loader").cyan(),
+                style(ver).bold()
+            );
+            Downloadable::Fabric {
+                loader: ver.clone(),
+                installer: "latest".to_owned(),
+            }
+        } else {
+            Downloadable::select_modded_jar_interactive()?
+        }
+    };
+
+    let (_pack, mod_count, config_count) = packwiz_import_from_source(http_client, src, &mut server).await?;
+
+    println!(
+        " > {} {} {} {} {}",
+        style("Imported").green().bold(),
+        style(mod_count).cyan(),
+        style("mods and").green(),
+        style(config_count).cyan(),
+        style("config files from packwiz").green(),
+    );
+
+    init_final(&server, false)?;
+
+    Ok(())
+}
+
+pub fn init_final(
+    server: &Server,
+    is_proxy: bool
+) -> Result<()> {
     server.save()?;
 
+    initialize_environment(is_proxy).context("Initializing environment")?;
+
     let write_readme = if Path::new("./README.md").exists() {
-        Confirm::with_theme(&theme)
+        Confirm::with_theme(&ColorfulTheme::default())
             .default(true)
             .with_prompt("Overwrite README.md?")
             .interact()?
@@ -231,7 +314,12 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         markdown::initialize_readme(&server).context("Initializing readme")?;
     }
 
-    println!(" > {}", style("Server has been initialized!").cyan());
+    println!(
+        " > {} {}",
+        style(&server.name).bold(),
+        style("has been initialized!").green()
+    );
+
     println!(
         " > {} {}",
         style("Build using").cyan(),

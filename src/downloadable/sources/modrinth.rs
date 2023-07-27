@@ -47,7 +47,7 @@ pub struct ModrinthDependency {
     pub dependency_type: Option<DependencyType>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum DependencyType {
     Required,
@@ -146,14 +146,12 @@ pub async fn fetch_modrinth_versions(
     Ok(versions)
 }
 
-// TODO: more complex version matching ie. mc version and server software
-// TODO: also impl modrinth in mcapi and use that instead
-pub async fn download_modrinth(
+pub async fn get_modrinth_url(
     id: &str,
     version: &str,
     client: &reqwest::Client,
     query: Option<(&str, &str)>,
-) -> Result<reqwest::Response> {
+) -> Result<String> {
     let project = fetch_modrinth_versions(client, id, query).await?;
 
     let verdata = match version {
@@ -169,7 +167,20 @@ pub async fn download_modrinth(
         bail!("No files for project '{id}' version '{version}'");
     };
 
-    let res = client.get(&file.url).send().await?.error_for_status()?;
+    Ok(file.url.clone())
+}
+
+// TODO: more complex version matching ie. mc version and server software
+// TODO: also impl modrinth in mcapi and use that instead
+pub async fn download_modrinth(
+    id: &str,
+    version: &str,
+    client: &reqwest::Client,
+    query: Option<(&str, &str)>,
+) -> Result<reqwest::Response> {
+    let url = get_modrinth_url(id, version, client, query).await?;
+
+    let res = client.get(&url).send().await?.error_for_status()?;
 
     Ok(res)
 }

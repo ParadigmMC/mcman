@@ -150,7 +150,7 @@ impl Downloadable {
                     "Name".to_owned(),
                     format!("[{}](https://modrinth.com/mod/{})", proj.title, proj.slug),
                 );
-                map.insert("Description".to_owned(), proj.description);
+                map.insert("Description".to_owned(), sanitize(&proj.description)?);
                 map.insert("Version".to_owned(), version.clone());
             }
 
@@ -161,7 +161,7 @@ impl Downloadable {
                     "Name".to_owned(),
                     format!("{} <sup>[CF](https://www.curseforge.com/minecraft/mc-mods/{id}) [CR](https://curserinth.kuylar.dev/mod/{id})</sup>", proj.title, id = proj.slug),
                 );
-                map.insert("Description".to_owned(), proj.description);
+                map.insert("Description".to_owned(), sanitize(&proj.description)?);
                 map.insert("Version".to_owned(), version.clone());
             }
 
@@ -305,6 +305,23 @@ impl Downloadable {
         }
 
         map
+    }
+
+    pub fn to_short_string(&self) -> String {
+        match self {
+            Self::Modrinth { id, .. } => format!("Modrinth/{id}"),
+            Self::CurseRinth { id, .. } => format!("CurseRinth/{id}"),
+            Self::Spigot { id } => format!("Spigot/{id}"),
+            Self::GithubRelease { repo, .. } => format!("Github/{repo}"),
+            Self::Jenkins { job, .. } => format!("Jenkins/{job}"),
+            Self::Url { filename, .. } => if let Some(f) = filename {
+                format!("URL/{f}")
+            } else {
+                format!("URL")
+            },
+
+            _ => self.get_type_name(),
+        }
     }
 }
 

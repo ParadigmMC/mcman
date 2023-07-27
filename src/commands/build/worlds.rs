@@ -10,7 +10,8 @@ impl BuildContext {
 
         for (idx, (name, world)) in self.server.worlds.iter().enumerate() {
             println!(
-                "          ({idx:wc_len$}/{world_count}) {} {name}",
+                "          ({:wc_len$}/{world_count}) {} {name}",
+                idx + 1,
                 style("World:").bold()
             );
 
@@ -30,14 +31,16 @@ impl BuildContext {
                     match state {
                         ReportBackState::Skipped => {
                             println!(
-                                "          {:pad_len$}({idx:dp_len$}/{datapack_count}) Skipping    : {}",
+                                "          {:pad_len$}({:dp_len$}/{datapack_count}) Skipping    : {}",
+                                idx + 1,
                                 "",
                                 style(file_name).dim()
                             );
                         }
                         ReportBackState::Downloaded => {
                             println!(
-                                "          {:pad_len$}({idx:dp_len$}/{datapack_count}) {}  : {}",
+                                "          {:pad_len$}({:dp_len$}/{datapack_count}) {}  : {}",
+                                idx + 1,
                                 "",
                                 style("Downloaded").green().bold(),
                                 style(file_name).dim()

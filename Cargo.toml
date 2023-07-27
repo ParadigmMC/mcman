@@ -1,6 +1,6 @@
 [package]
 name = "mcman"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 authors = ["ParadigmMC"]
 repository = "https://github.com/ParadigmMC/mcman"
@@ -31,7 +31,6 @@ serde_json = "1.0"
 tempfile = "3.7"
 tokio = { version = "1.29", features = ["macros", "rt", "rt-multi-thread"] }
 toml = "0.7"
-tracing = "0.1"
-tracing-subscriber = "0.3"
 walkdir = "2.3"
 zip = "0.6"
+sha2 = "0.10"

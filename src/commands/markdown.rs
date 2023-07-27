@@ -74,7 +74,8 @@ pub async fn update_files(http_client: &reqwest::Client, server: &Server) -> Res
 
         if !path.exists() {
             println!(
-                "   ({idx:w$}/{len}) {}: {filename}",
+                "   ({:w$}/{len}) {}: {filename}",
+                idx + 1,
                 style("File not found: ").red(),
                 w = len.to_string().len()
             );
@@ -96,7 +97,8 @@ pub async fn update_files(http_client: &reqwest::Client, server: &Server) -> Res
         f.write_all(stage2.as_bytes())?;
 
         println!(
-            "   ({idx:w$}/{len}) Updated {}!",
+            "   ({:w$}/{len}) Updated {}!",
+            idx + 1,
             style(filename).green(),
             w = len.to_string().len()
         );

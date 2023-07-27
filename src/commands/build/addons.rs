@@ -34,13 +34,15 @@ impl BuildContext {
             self.downloadable(addon, Some(addon_type), |state, file_name| match state {
                 ReportBackState::Skipped => {
                     println!(
-                        "          ({idx:idx_w$}/{addon_count}) Skipping    : {}",
+                        "          ({:idx_w$}/{addon_count}) Skipping    : {}",
+                        idx + 1,
                         style(&file_name).dim()
                     );
                 }
                 ReportBackState::Downloaded => {
                     println!(
-                        "          ({idx:idx_w$}/{addon_count}) {}  : {}",
+                        "          ({:idx_w$}/{addon_count}) {}  : {}",
+                        idx + 1,
                         style("Downloaded").green().bold(),
                         style(&file_name).dim()
                     );

@@ -29,12 +29,12 @@ fn cli() -> Command {
         .subcommand(commands::pull::cli())
         .subcommand(commands::info::cli())
         .subcommand(commands::version::cli())
+        .subcommand(commands::export::cli())
+        .subcommand(commands::eject::cli())
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt::init();
-
     let matches = cli().get_matches();
 
     match matches.subcommand() {
@@ -45,6 +45,8 @@ async fn main() -> Result<()> {
         Some(("pull", sub_matches)) => commands::pull::run(sub_matches),
         Some(("info", _)) => commands::info::run(),
         Some(("version" | "v", _)) => commands::version::run().await,
+        Some(("export", sub_matches)) => commands::export::run(sub_matches).await,
+        Some(("eject", _)) => commands::eject::run().await,
         _ => unreachable!(),
     }
 }

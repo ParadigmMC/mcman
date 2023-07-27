@@ -53,7 +53,18 @@ Submit a PR or open an issue if you have a mcman-server repository that we can a
 
 ## Changelog
 
-### `0.2.2` (unreleased)
+### `0.3.0` (unreleased)
+
+- Added [CurseRinth](https://curserinth.kuylar.dev/) support
+- Added **packwiz importing**
+- Added **packwiz exporting**
+- Added initializing with `--packwiz`
+- Added **mrpack exporting**
+- Added client-side mods field
+- Fixed github ratelimiting issue
+- A lot of improvements overall
+
+### `0.2.2`
 
 - Added support for **Datapacks**
   - Added command `mcman import datapack`

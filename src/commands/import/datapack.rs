@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use clap::{arg, ArgMatches, Command};
+use console::style;
 use dialoguer::{theme::ColorfulTheme, Input, Select};
 
 use crate::{
@@ -65,11 +66,17 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         .get_mut(&world_name)
         .expect("world shouldve already been inserted")
         .datapacks
-        .push(dl);
+        .push(dl.clone());
 
     server.save()?;
 
-    println!(" > Datapack added to {world_name}!");
+    println!(
+        " > {} {} {} {world_name}{}",
+        style("Datapack from").green(),
+        dl.to_short_string(),
+        style("added to").green(),
+        style("!").green()
+    );
 
     server.refresh_markdown(&http_client).await?;
 

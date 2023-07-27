@@ -1,5 +1,4 @@
 use anyhow::{anyhow, bail, Result};
-use console::style;
 use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
 use reqwest::Url;
 
@@ -8,7 +7,7 @@ use crate::{downloadable::sources::curserinth::fetch_curserinth_versions, model:
 use super::{
     sources::{
         github::fetch_github_releases,
-        modrinth::{fetch_modrinth_versions, ModrinthVersion},
+        modrinth::{fetch_modrinth_versions, ModrinthVersion}, curserinth::CurseRinthVersion,
     },
     Downloadable,
 };
@@ -35,8 +34,6 @@ impl Downloadable {
                 if segments.first() != Some(&"data") || segments.get(2) != Some(&"versions") {
                     Err(invalid_url())?;
                 }
-
-                println!("  > {} Modrinth/{id}", style("Imported:").green());
 
                 Ok(Self::Modrinth {
                     id: id.to_owned().to_owned(),
@@ -113,8 +110,6 @@ impl Downloadable {
                     versions[selection].clone()
                 };
 
-                println!("  > {} Modrinth/{id}", style("Imported:").green());
-
                 Ok(Self::Modrinth {
                     id,
                     version: version.id,
@@ -136,12 +131,9 @@ impl Downloadable {
                     .get(1)
                     .ok_or_else(|| invalid_url("must include project id"))?
                     .to_owned()
-                    .to_owned()
-                    .strip_prefix("mod__")
-                    .unwrap()
                     .to_owned();
 
-                let versions: Vec<ModrinthVersion> =
+                let versions: Vec<CurseRinthVersion> =
                     fetch_curserinth_versions(client, &id, None).await?;
 
                 let version = if let Some(&"version") = segments.get(2) {
@@ -180,9 +172,7 @@ impl Downloadable {
                     versions[selection].clone()
                 };
 
-                println!("  > {} CurseRinth/{id}", style("Imported:").green());
-
-                Ok(Self::Modrinth {
+                Ok(Self::CurseRinth {
                     id,
                     version: version.id,
                 })
@@ -204,10 +194,9 @@ impl Downloadable {
                     ))?;
                 }
 
-                let id = segments
+                let id = "mod__".to_owned() + segments
                     .get(2)
                     .ok_or_else(|| anyhow!("Invalid Curseforge URL - mod id not found in URL"))?
-                    .to_owned()
                     .to_owned();
 
                 let version = if let Some(v) = segments.get(4) {
@@ -243,8 +232,6 @@ impl Downloadable {
                     versions[selection].clone().id
                 };
 
-                println!("  > {} CurseRinth/{id}", style("Imported:").green());
-
                 Ok(Downloadable::CurseRinth { id, version })
             }
             Some("www.spigotmc.org") => {
@@ -262,8 +249,6 @@ impl Downloadable {
                 let id = segments
                     .get(1)
                     .ok_or_else(|| anyhow!("Invalid Spigot Resource URL"))?;
-
-                println!("  > {} Spigot/{id}", style("Imported:").green());
 
                 Ok(Downloadable::Spigot {
                     id: id.to_owned().to_owned(),
@@ -396,11 +381,6 @@ impl Downloadable {
                     a => a.to_owned(),
                 };
 
-                println!(
-                    "  > {} Github/{repo}/{tag}/{asset}",
-                    style("Imported:").green()
-                );
-
                 Ok(Self::GithubRelease { repo, tag, asset })
             }
 
@@ -431,8 +411,6 @@ impl Downloadable {
                         let desc: String = Input::with_theme(&ColorfulTheme::default())
                             .with_prompt("  Optional description/comment?")
                             .interact_text()?;
-
-                        println!("  > {} as URL", style("Imported:").green());
 
                         Ok(Self::Url {
                             url: urlstr.to_owned(),
@@ -500,8 +478,6 @@ impl Downloadable {
                             .with_initial_text("first")
                             .default("first".into())
                             .interact_text()?;
-
-                        println!("  > {} Jenkins/{job}", style("Imported:").green());
 
                         Ok(Self::Jenkins {
                             url: j_url,

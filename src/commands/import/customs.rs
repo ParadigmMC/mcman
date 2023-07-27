@@ -23,6 +23,11 @@ pub async fn run() -> Result<()> {
                 if let Ok(d) =
                     Downloadable::from_url_interactive(&http_client, &server, url, false).await
                 {
+                    println!(
+                        "   {} {}",
+                        style("-> Imported as").green(),
+                        d.to_short_string()
+                    );
                     d
                 } else {
                     println!(" > Error occurred.");
@@ -41,6 +46,11 @@ pub async fn run() -> Result<()> {
                 if let Ok(d) =
                     Downloadable::from_url_interactive(&http_client, &server, url, false).await
                 {
+                    println!(
+                        "   {} {}",
+                        style("-> Imported as").green(),
+                        d.to_short_string()
+                    );
                     d
                 } else {
                     println!(" > Error occurred.");

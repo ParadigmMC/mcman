@@ -92,6 +92,25 @@ pub async fn fetch_github_release_filename(
         .name)
 }
 
+pub async fn get_github_release_url(
+    repo: &str,
+    tag: &str,
+    asset: &str,
+    client: &reqwest::Client,
+    filename_hint: Option<&str>,
+) -> Result<String> {
+    let filename = if let Some(filename) = filename_hint {
+        filename.to_owned()
+    } else {
+        let fetched_asset = fetch_github_release_asset(repo, tag, asset, client).await?;
+        fetched_asset.name
+    };
+
+    Ok(format!(
+        "https://github.com/{repo}/releases/download/{tag}/{filename}"
+    ))
+}
+
 pub async fn download_github_release(
     repo: &str,
     tag: &str,
