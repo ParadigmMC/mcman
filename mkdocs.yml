@@ -1,0 +1,29 @@
+site_name: mcman
+repo_url: https://github.com/ParadigmMC/mcman
+repo_name: ParadigmMC/mcman
+theme:
+  name: material
+  icon:
+    repo: fontawesome/brands/github
+  palette: 
+    scheme: slate
+    primary: deep purple
+    accent: purple
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.path
+    - navigation.indexes
+    - content.code.copy
+    - content.code.annotate
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - attr_list
+  - md_in_html
