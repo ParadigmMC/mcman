@@ -10,6 +10,7 @@ use zip::ZipArchive;
 
 use crate::commands::markdown;
 use crate::create_http_client;
+use crate::util::env::{write_gitignore, get_docker_version, write_dockerfile, write_dockerignore};
 use crate::util::mrpack::{mrpack_import_configs, mrpack_read_index, mrpack_source_to_file};
 use crate::util::packwiz::{packwiz_fetch_pack_from_src, packwiz_import_from_source};
 use crate::{
@@ -117,7 +118,7 @@ pub async fn init_normal(http_client: &reqwest::Client, name: &str) -> Result<()
         _ => unreachable!(),
     }?;
 
-    let server = Server {
+    let mut server = Server {
         name: name.to_owned(),
         mc_version,
         jar,
@@ -125,7 +126,7 @@ pub async fn init_normal(http_client: &reqwest::Client, name: &str) -> Result<()
         ..Default::default()
     };
 
-    init_final(&server, is_proxy)?;
+    init_final(http_client, &mut server, false).await?;
 
     Ok(())
 }
@@ -205,7 +206,7 @@ pub async fn init_mrpack(src: &str, name: &str, http_client: &reqwest::Client) -
         style("config files from .mrpack").green(),
     );
 
-    init_final(&server, false)?;
+    init_final(http_client, &mut server, false).await?;
 
     Ok(())
 }
@@ -273,12 +274,12 @@ pub async fn init_packwiz(src: &str, name: &str, http_client: &reqwest::Client) 
         style("config files from packwiz").green(),
     );
 
-    init_final(&server, false)?;
+    init_final(http_client, &mut server, false).await?;
 
     Ok(())
 }
 
-pub fn init_final(server: &Server, is_proxy: bool) -> Result<()> {
+pub async fn init_final(http_client: &reqwest::Client, server: &mut Server, is_proxy: bool) -> Result<()> {
     server.save()?;
 
     initialize_environment(is_proxy).context("Initializing environment")?;
@@ -294,6 +295,13 @@ pub fn init_final(server: &Server, is_proxy: bool) -> Result<()> {
 
     if write_readme {
         markdown::initialize_readme(server).context("Initializing readme")?;
+
+        server.markdown.files = vec!["README.md".to_owned()];
+        server.save()?;
+
+        super::markdown::update_files(http_client, server)
+            .await
+            .context("updating markdown files")?;
     }
 
     println!(
@@ -314,14 +322,26 @@ pub fn init_final(server: &Server, is_proxy: bool) -> Result<()> {
 pub fn initialize_environment(is_proxy: bool) -> Result<()> {
     std::fs::create_dir_all("./config")?;
 
-    let mut f = File::create(".dockerignore")?;
-    f.write_all(include_bytes!("../../res/default_dockerignore"))?;
+    if write_gitignore().is_err() {
+        println!(
+            " > {}{}{}",
+            style("Didn't find a git repo, use '").dim(),
+            style("mcman env gitignore").bold(),
+            style("' to generate .gitignore").dim(),
+        );
+    }
 
-    let mut f = File::create(".gitignore")?;
-    f.write_all(include_bytes!("../../res/default_gitignore"))?;
-
-    let mut f = File::create("Dockerfile")?;
-    f.write_all(include_bytes!("../../res/default_dockerfile"))?;
+    if let Ok(Some(_)) = get_docker_version() {
+        write_dockerfile(Path::new("."))?;
+        write_dockerignore(Path::new("."))?;
+    } else {
+        println!(
+            " > {}{}{}",
+            style("Couldn't find docker, use'").dim(),
+            style("mcman env docker").bold(),
+            style("' to generate docker files").dim(),
+        );
+    }
 
     if !is_proxy {
         let mut f = File::create("./config/server.properties")?;

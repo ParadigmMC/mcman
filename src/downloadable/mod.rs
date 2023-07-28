@@ -21,6 +21,7 @@ use self::sources::{
 mod import_url;
 mod interactive;
 mod markdown;
+mod packwiz;
 pub mod sources;
 
 static BUNGEECORD_JENKINS: &str = "https://ci.md-5.net";

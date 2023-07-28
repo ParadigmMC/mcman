@@ -33,5 +33,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         style("config files").green(),
     );
 
+    server.refresh_markdown(&http_client).await?;
+
     Ok(())
 }

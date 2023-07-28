@@ -5,14 +5,11 @@ use std::{
 
 use anyhow::{anyhow, bail, Context, Result};
 use console::style;
-use futures::StreamExt;
 use pathdiff::diff_paths;
 use reqwest::{IntoUrl, Url};
 use rpackwiz::model::{
-    CurseforgeModUpdate, DownloadMode, HashFormat, Mod, ModDownload, ModOption, ModUpdate,
-    ModrinthModUpdate, Pack, PackFile, PackIndex, Side,
+    HashFormat, Mod, Pack, PackFile, PackIndex, Side,
 };
-use sha2::{Digest, Sha256};
 use tokio::{
     fs::{self, File},
     io::AsyncWriteExt,
@@ -20,15 +17,10 @@ use tokio::{
 use walkdir::WalkDir;
 
 use crate::{
-    downloadable::{
-        sources::{
-            curserinth::{fetch_curserinth_project, fetch_curserinth_versions},
-            modrinth::{fetch_modrinth_project, fetch_modrinth_versions, DependencyType},
-        },
-        Downloadable,
-    },
+    downloadable::Downloadable,
     model::{ClientSideMod, Server},
-    util::download_with_progress,
+    util::{download_with_progress, hash::{hash_contents, hash_file}},
+    util::env::try_get_url,
 };
 
 pub struct PackwizExportOptions {
@@ -41,7 +33,7 @@ pub async fn packwiz_import_from_source(
     src: &str,
     server: &mut Server,
 ) -> Result<(Pack, usize, usize)> {
-    Ok(if src.starts_with("http") {
+    Ok(if src.starts_with("http://") || src.starts_with("https://") {
         let base_url = Url::parse(src).context("Parsing source url")?;
 
         packwiz_import_http(http_client, base_url, server).await?
@@ -54,7 +46,7 @@ pub async fn packwiz_import_from_source(
 
 // bad code #99999
 pub async fn packwiz_fetch_pack_from_src(http_client: &reqwest::Client, src: &str) -> Result<Pack> {
-    Ok(if src.starts_with("http") {
+    Ok(if src.starts_with("http://") || src.starts_with("https://") {
         let base_url = Url::parse(src).context("Parsing source url")?;
 
         fetch_toml(http_client, base_url.clone())
@@ -125,7 +117,7 @@ pub async fn packwiz_import_http(
                 .await
                 .context("Fetching metafile toml")?;
 
-            let Some(dl) = pw_mod_to_dl(&m, http_client, server).await? else {
+            let Some(dl) = Downloadable::from_pw_mod(&m, http_client, server).await? else {
                 continue;
             };
 
@@ -198,59 +190,26 @@ pub async fn packwiz_import_http(
     Ok((pack, mod_count, config_count))
 }
 
-pub async fn pw_mod_to_dl(
-    m: &Mod,
-    http_client: &reqwest::Client,
-    server: &Server,
-) -> Result<Option<Downloadable>> {
-    Ok(Some(if let Some(upd) = &m.update {
-        if let Some(mr) = &upd.modrinth {
-            Downloadable::Modrinth {
-                id: mr.mod_id.clone(),
-                version: mr.version.clone(),
-            }
-        } else if let Some(cf) = &upd.curseforge {
-            Downloadable::CurseRinth {
-                id: cf.project_id.to_string(),
-                version: cf.file_id.to_string(),
-            }
-        } else {
-            println!("ERROR: UNKNOWN MOD UPDATE");
-            return Ok(None); // Hell
-        }
-    } else {
-        Downloadable::from_url_interactive(
-            http_client,
-            server,
-            &m.download
-                .url
-                .clone()
-                .ok_or(anyhow!("download url not present"))?,
-            false,
-        )
-        .await
-        .context("Resolving Downloadable from URL")?
-    }))
-}
-
 pub async fn packwiz_import_local(
     http_client: &reqwest::Client,
     base: PathBuf,
     server: &mut Server,
 ) -> Result<(Pack, usize, usize)> {
     let base = if base.ends_with("pack.toml") {
-        base
+        base.parent().ok_or(anyhow!("no parent of directory"))?.to_path_buf()
     } else {
-        base.join("pack.toml")
+        base
     };
 
-    let pack: Pack = read_toml(&base).await.context("Reading pack.toml")?;
+    let pack: Pack = read_toml(&base.join("pack.toml")).await.context("Reading pack.toml")?;
 
     println!(" > {}", style("Reading index...").dim());
 
-    let pack_index: PackIndex = read_toml(&base.join(&pack.index.file))
+    let pack_index_path = base.join(&pack.index.file);
+
+    let pack_index: PackIndex = read_toml(&pack_index_path)
         .await
-        .context("Reading pack index file")?;
+        .context(format!("Reading pack index file {}", pack_index_path.to_string_lossy()))?;
 
     let mut mod_count = 0;
     let mut config_count = 0;
@@ -282,7 +241,7 @@ pub async fn packwiz_import_local(
                 .await
                 .context(format!("Reading toml from {}", file_path.to_string_lossy()))?;
 
-            let Some(dl) = pw_mod_to_dl(&m, http_client, server).await? else {
+            let Some(dl) = Downloadable::from_pw_mod(&m, http_client, server).await? else {
                 continue;
             };
 
@@ -505,7 +464,7 @@ pub async fn export_packwiz(
         style("Exported to packwiz successfully!").green().bold()
     );
 
-    if let Ok(u) = try_get_url(folder) {
+    if let Ok(u) = try_get_url(&folder.join("pack.toml")) {
         println!();
         println!(" > {}", style("Exported pack URL:").cyan());
         println!("     {}", "https://raw.githack.com/".to_owned() + &u);
@@ -521,62 +480,6 @@ pub async fn export_packwiz(
     Ok(())
 }
 
-pub fn try_get_url(folder: &PathBuf) -> Result<String> {
-    let repo_url = get_git_remote()?.ok_or(anyhow!("cant get repo url"))?;
-    let root = get_git_root()?.ok_or(anyhow!("cant get repo root"))?;
-    let branch = get_git_branch()?.ok_or(anyhow!("cant get repo branch"))?;
-
-    let diff = diff_paths(folder, root).ok_or(anyhow!("cant diff paths"))?;
-
-    let repo = if repo_url.starts_with("https") {
-        repo_url.strip_prefix("https://github.com/")
-    } else {
-        repo_url.strip_prefix("http://github.com/")
-    }
-    .ok_or(anyhow!("repo not on github?"))?;
-
-    let parent_paths = diff.to_string_lossy().replace('\\', "/");
-    let parent_paths = if parent_paths.is_empty() {
-        parent_paths
-    } else {
-        "/".to_owned() + &parent_paths
-    };
-
-    Ok(repo.to_owned() + "/" + &branch + &parent_paths + "/pack.toml")
-}
-
-pub fn get_git_remote() -> Result<Option<String>> {
-    let path = git_command(vec!["remote", "get-url", "origin"])?
-        .ok_or(anyhow!("cant get git repo origin"))?;
-
-    Ok(Some(
-        path.strip_suffix(".git")
-            .map_or(path.clone(), ToOwned::to_owned),
-    ))
-}
-
-pub fn get_git_root() -> Result<Option<String>> {
-    git_command(vec!["rev-parse", "--show-toplevel"])
-}
-
-pub fn get_git_branch() -> Result<Option<String>> {
-    git_command(vec!["rev-parse", "--abbrev-ref", "HEAD"])
-}
-
-pub fn git_command(args: Vec<&str>) -> Result<Option<String>> {
-    let output = std::process::Command::new("git").args(args).output()?;
-
-    Ok(if output.status.success() {
-        let path = String::from_utf8_lossy(output.stdout.as_slice())
-            .into_owned()
-            .trim()
-            .to_owned();
-        Some(path)
-    } else {
-        None
-    })
-}
-
 pub async fn create_packwiz_modlist(
     http_client: &reqwest::Client,
     server: &Server,
@@ -585,14 +488,13 @@ pub async fn create_packwiz_modlist(
     let mut list = vec![];
 
     for dl in &server.mods {
-        if let Some(t) = dl_to_pw_mod(dl, http_client, server, opts, None, "").await? {
+        if let Some(t) = dl.to_pw_mod(http_client, server, opts, None, "").await? {
             list.push(t);
         }
     }
 
     for client_mod in &server.clientsidemods {
-        if let Some(t) = dl_to_pw_mod(
-            &client_mod.dl,
+        if let Some(t) = client_mod.dl.to_pw_mod(
             http_client,
             server,
             opts,
@@ -606,243 +508,4 @@ pub async fn create_packwiz_modlist(
     }
 
     Ok(list)
-}
-
-#[allow(clippy::too_many_lines)] // xd
-pub async fn dl_to_pw_mod(
-    dl: &Downloadable,
-    http_client: &reqwest::Client,
-    server: &Server,
-    opts: &PackwizExportOptions,
-    is_opt: Option<bool>,
-    desc_override: &str,
-) -> Result<Option<(String, Mod)>> {
-    Ok(match dl {
-        Downloadable::Modrinth { id, version } => {
-            let proj = fetch_modrinth_project(http_client, id).await?;
-
-            let side = match (proj.server_side.clone(), proj.client_side.clone()) {
-                (DependencyType::Incompatible | DependencyType::Unsupported, _) => Side::Client,
-                (_, DependencyType::Incompatible | DependencyType::Unsupported) => Side::Server,
-                _ => Side::Both,
-            };
-
-            let versions = fetch_modrinth_versions(http_client, id, None).await?;
-
-            let verdata = if version == "latest" {
-                versions.first()
-            } else {
-                versions.iter().find(|&v| v.id == version.clone())
-            };
-
-            let Some(verdata) = verdata else {
-                bail!("Release '{version}' for project '{id}' not found");
-            };
-
-            let Some(file) = verdata.files.first() else {
-                bail!("No files for project '{id}' version '{version}'");
-            };
-
-            let hash = file
-                .hashes
-                .get("sha512")
-                .expect("modrinth to provide sha512 hashes")
-                .clone();
-
-            let m = Mod {
-                name: proj.title,
-                side,
-                filename: file.filename.clone(),
-                download: ModDownload {
-                    mode: DownloadMode::Url,
-                    url: Some(file.url.clone()),
-                    hash,
-                    hash_format: HashFormat::Sha512,
-                },
-                option: ModOption {
-                    optional: is_opt.unwrap_or(proj.client_side == DependencyType::Optional),
-                    default: false,
-                    description: Some(if desc_override.is_empty() {
-                        proj.description
-                    } else {
-                        desc_override.to_owned()
-                    }),
-                },
-                update: Some(ModUpdate {
-                    modrinth: Some(ModrinthModUpdate {
-                        mod_id: proj.id,
-                        version: version.clone(),
-                    }),
-                    curseforge: None,
-                }),
-            };
-
-            Some((proj.slug + ".pw.toml", m))
-        }
-
-        Downloadable::CurseRinth { id, version } => {
-            let proj = fetch_curserinth_project(http_client, id).await?;
-
-            let side = match (proj.server_side.clone(), proj.client_side.clone()) {
-                (DependencyType::Incompatible | DependencyType::Unsupported, _) => Side::Client,
-                (_, DependencyType::Incompatible | DependencyType::Unsupported) => Side::Server,
-                _ => Side::Both,
-            };
-
-            let versions = fetch_curserinth_versions(http_client, id, None).await?;
-
-            let verdata = if version == "latest" {
-                versions.first()
-            } else {
-                versions.iter().find(|&v| v.id == version.clone())
-            };
-
-            let Some(verdata) = verdata else {
-                bail!("Release '{version}' for project '{id}' not found");
-            };
-
-            let Some(file) = verdata.files.first() else {
-                bail!("No files for project '{id}' version '{version}'");
-            };
-
-            let hash = file
-                .hashes
-                .get("sha1")
-                .expect("curserinth to provide sha1 hashes from cf")
-                .clone();
-
-            let m = Mod {
-                name: proj.title,
-                side,
-                filename: file.filename.clone(),
-                download: if opts.cf_usecdn {
-                    ModDownload {
-                        mode: DownloadMode::Url,
-                        url: Some(file.url.clone()),
-                        hash,
-                        hash_format: HashFormat::Sha1,
-                    }
-                } else {
-                    ModDownload {
-                        mode: DownloadMode::Curseforge,
-                        url: None,
-                        hash,
-                        hash_format: HashFormat::Sha1,
-                    }
-                },
-                option: ModOption {
-                    optional: is_opt.unwrap_or(proj.client_side == DependencyType::Optional),
-                    default: false,
-                    description: Some(if desc_override.is_empty() {
-                        proj.description
-                    } else {
-                        desc_override.to_owned()
-                    }),
-                },
-                update: if opts.cf_usecdn {
-                    None
-                } else {
-                    Some(ModUpdate {
-                        modrinth: None,
-                        curseforge: Some(CurseforgeModUpdate {
-                            file_id: verdata.id.parse()?,
-                            project_id: verdata.project_id.parse()?,
-                        }),
-                    })
-                },
-            };
-
-            Some((proj.slug + ".pw.toml", m))
-        }
-
-        Downloadable::Url { url, desc, .. } => {
-            let filename = dl.get_filename(server, http_client).await?;
-
-            let hash = get_hash_url(http_client, url).await?;
-
-            let m = Mod {
-                name: filename.clone(),
-                side: Side::Both,
-                filename: filename.clone(),
-                download: ModDownload {
-                    mode: DownloadMode::Url,
-                    url: Some(url.clone()),
-                    hash,
-                    hash_format: HashFormat::Sha256,
-                },
-                option: ModOption {
-                    optional: is_opt.unwrap_or(false),
-                    default: false,
-                    description: if desc_override.is_empty() {
-                        desc.clone()
-                    } else {
-                        Some(desc_override.to_owned())
-                    },
-                },
-                update: None,
-            };
-
-            Some((filename + ".pw.toml", m))
-        }
-
-        dl => {
-            println!("WARNING: Cant make this a mod: {dl:#?}");
-            None
-        }
-    })
-}
-
-pub fn hash_contents(contents: &str) -> String {
-    let mut hasher = Sha256::new();
-
-    hasher.update(contents);
-
-    // unholy hell
-    let hash = (hasher.finalize().as_slice() as &[u8])
-        .iter()
-        .map(|b| format!("{b:x?}"))
-        .collect::<String>();
-
-    hash
-}
-
-pub fn hash_file(path: &PathBuf) -> Result<String> {
-    let mut hasher = Sha256::new();
-
-    let mut file = std::fs::File::open(path)?;
-
-    std::io::copy(&mut file, &mut hasher)?;
-
-    // unholy hell
-    let hash = (hasher.finalize().as_slice() as &[u8])
-        .iter()
-        .map(|b| format!("{b:x?}"))
-        .collect::<String>();
-
-    Ok(hash)
-}
-
-pub async fn get_hash_url(client: &reqwest::Client, url: &str) -> Result<String> {
-    // rust-analyzer broke
-    let mut hasher = Sha256::new();
-
-    let mut stream = client
-        .get(url)
-        .send()
-        .await?
-        .error_for_status()?
-        .bytes_stream();
-
-    while let Some(item) = stream.next().await {
-        let item = item?;
-        hasher.update(item);
-    }
-
-    // unholy hell
-    let hash = (hasher.finalize().as_slice() as &[u8])
-        .iter()
-        .map(|b| format!("{b:x?}"))
-        .collect::<String>();
-
-    Ok(hash)
 }

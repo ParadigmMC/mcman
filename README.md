@@ -1,6 +1,6 @@
 # mcman
 
-![mcman](https://media.discordapp.net/attachments/1109215116060266567/1121117662785851522/mcman_large.png)
+![mcman](https://media.discordapp.net/attachments/1109215116060266567/1134554971937972374/mcman-2.png)
 
 [![GitHub release](https://img.shields.io/github/release/ParadigmMC/mcman.svg)](https://github.com/ppy/osu/releases/latest)
 [![builds](https://img.shields.io/github/actions/workflow/status/ParadigmMC/mcman/build.yml?logo=github)](https://github.com/ParadigmMC/mcman/actions/workflows/build.yml)
@@ -58,6 +58,7 @@ Submit a PR or open an issue if you have a mcman-server repository that we can a
 - Added client-side mods field
 - Added `client-config/` folder
 - Fixed github ratelimiting issue
+- Some init improvements
 - A lot of improvements overall
 
 ### `0.2.2`

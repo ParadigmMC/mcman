@@ -28,6 +28,7 @@ fn cli() -> Command {
         .subcommand(commands::import::cli())
         .subcommand(commands::markdown::cli())
         .subcommand(commands::pull::cli())
+        .subcommand(commands::env::cli())
         .subcommand(commands::info::cli())
         .subcommand(commands::version::cli())
         .subcommand(commands::export::cli())
@@ -44,6 +45,7 @@ async fn main() -> Result<()> {
         Some(("import" | "i", sub_matches)) => commands::import::run(sub_matches).await,
         Some(("markdown" | "md", _)) => commands::markdown::run().await,
         Some(("pull", sub_matches)) => commands::pull::run(sub_matches),
+        Some(("env", sub_matches)) => commands::env::run(sub_matches),
         Some(("info", _)) => commands::info::run(),
         Some(("version" | "v", _)) => commands::version::run().await,
         Some(("export", sub_matches)) => commands::export::run(sub_matches).await,

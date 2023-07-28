@@ -22,11 +22,13 @@ pub fn run() -> Result<()> {
         .default(String::new())
         .interact_text()? == server.name {
         println!(" > {}", style("Deleting server.toml...").yellow());
-        fs::remove_file(server.path.join("server.toml"))?;
+        let _ = fs::remove_file(server.path.join("server.toml"));
+        
         println!(" > {}", style("Deleting config/...").yellow());
-        fs::remove_dir_all(server.path.join("config"));
+        let _ = fs::remove_dir_all(server.path.join("config"));
+
         println!(" > {}", style("Deleting server/...").yellow());
-        fs::remove_dir_all(server.path.join("server"))?;
+        let _ = fs::remove_dir_all(server.path.join("server"));
         println!(" > Ejected successfully.");
     } else {
         println!(" > {}", style("Cancelled").green().bold());
