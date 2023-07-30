@@ -1,6 +1,6 @@
 # ClientSideMod
 
-This is basically a [Downloadable](./downloadable) of any type with some extra fields:
+This is basically a [Downloadable](../downloadable) of any type with some extra fields:
 
 | Name | Type | Description |
 | --- | --- | --- |

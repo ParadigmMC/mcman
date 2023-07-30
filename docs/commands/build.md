@@ -1,6 +1,6 @@
 # `mcman build`
 
-Builds the server into the [output folder](#folder-structure) using the [`server.toml`](../../server.toml) and the `config/` directory.
+See [here](../tutorials/building.md) for more info
 
 ??? "Extra flags (output, skip, force)"
     You can alternatively set the output folder manually using `--output <path>` option.
@@ -12,13 +12,17 @@ Builds the server into the [output folder](#folder-structure) using the [`server
     - Stages should be comma-seperated, like `--skip bootstrap,scripts,dp`
     - The stages are: `serverjar`, `plugins`, `mods`, `dp` (datapacks), `bootstrap` (config/) and `scripts`
 
-After building, you can start the server with the launch scripts if theyre not [disabled](../reference/server-launcher.md):
+After building, you can start the server with the launch scripts if theyre not [disabled](../reference/types/server-launcher.md):
 
-```sh
-cd server
+=== "Windows"
+    ```bat
+    cd server
+    call start.bat
+    ```
 
-# windows
-call start.bat
-# linux
-./start.sh
-```
+
+=== "Linux"
+    ```sh
+    cd server
+    ./start.sh
+    ```

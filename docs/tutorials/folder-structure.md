@@ -1,25 +1,40 @@
-# Folder Structure
+# Understanding the Folder Structure
 
 In a normal server environment, everything is in one folder and a big giant mess to navigate.
 And database files are next to config files!
 
 When using `mcman`, your folder structure will look something like this:
 
-- 📂 **cool_server/**
-  - 📋 **`server.toml`**
-  - 🚢 `Dockerfile`
-  - 📜 `.dockerignore` and `.gitignore`
-  - 📁 **config/**
-    - 📜 `server.properties`
-  - 📁 **server/** (git-ignored - only on your host)
-    - ... server env files ...
-    - ☕ `server.jar`
-    - 📜 `server.properties`
-    - 📜 `bukkit`/`spigot`/`paper`/`commands`/`help`/`permissions`/`pufferfish`/`purpur`/`wepif.yml`
+```yaml
+cool_server
+├─ server.toml
+├─ config/
+│  └─ ...
+└─ server/ #(1)!
+   └─ ...
+```
 
-Inside the folder for your server, you'll see a few files and folders:
+1. This folder should be inside `.gitignore`, so you shouldn't see it in most Github repositories.
 
-- **`server.toml`**: This is the configuration file for your server, more info [in its own section](#servertoml)
+Inside the folder for your server ('cool_server' in this case), you'll see a few files and folders:
+
+## `server.toml`
+
+This is the configuration file for your server. It contains useful metadata such as:
+
+- What software the server runs on
+- What mods or plugins it has
+- Additional worlds with datapacks or client-side mods
+- Launcher and markdown configurations
+
+These are all can be found under [this section](../reference/server.toml.md) in the reference.
+
+## config/ Directory
+
+Your server's configuration files which you have overridden (edited) should all be here.
+
+When building, mcman uses this folder to 
+
 - **config/** folder: This is the folder your server config files should go. `mcman` will process everything into the output.
   - The path is converted as follows:
     `config/server.properties` => `server/server.properties`

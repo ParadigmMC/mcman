@@ -1,6 +1,6 @@
 # Server Launcher
 
-The `[launcher]` table lets mcman create launch scripts for you while running the [build](../commands/build.md) command.
+The `[launcher]` table lets mcman create launch scripts for you while running the [build](../../commands/build.md) command.
 
 Default values aren't written back to config - except for `aikars_flags`, `proxy_flags` and `eula_args` which are always written.
 

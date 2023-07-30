@@ -2,6 +2,9 @@
 
 This section shows the commands of mcman. You can type `mcman` or `mcman --help` for a basic list of it.
 
+!!! warning
+    These docs are incomplete.
+
 ## Cheatsheet
 
 - `mcman init`

@@ -4,7 +4,7 @@
 
 Represents a world in your server. Currently only exists for datapack support.
 
-This is a simple type - it only contains a list of [Downloadable](./downloadable)s.
+This is a simple type - it only contains a list of [Downloadable](../downloadable)s.
 
 Worlds are indexed by their name in `server.toml`'s `worlds` table.
 
@@ -17,4 +17,4 @@ datapacks = []
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `datapacks` | [Downloadable[]](./downloadable) | A list of datapacks to download for this world |
+| `datapacks` | [Downloadable[]](../downloadable/index.md) | A list of datapacks to download for this world |
