@@ -7,34 +7,140 @@
             "anyOf": [
                 {
                     "properties": {
-                        "type": { "const": "vanilla" }
-                    }
-                },
-                {
-                    "properties": {
-                        "type": { "const": "url" },
-                        "url": { "type": "string" },
-                        "filename": { "type": "string" },
-                        "desc": { "type": "string" }
+                        "type": {
+                            "const": "url"
+                        },
+                        "url": {
+                            "type": "string"
+                        },
+                        "filename": {
+                            "type": "string"
+                        },
+                        "desc": {
+                            "type": "string"
+                        }
                     },
-                    "required": ["type", "url"]
+                    "required": [
+                        "type",
+                        "url"
+                    ]
                 },
                 {
                     "properties": {
                         "type": {
                             "anyOf": [
-                                { "const": "modrinth" },
-                                { "const": "mr" }
+                                {
+                                    "const": "modrinth"
+                                },
+                                {
+                                    "const": "mr"
+                                }
                             ]
                         },
-                        "id": { "type": "string" },
-                        "version": { "type": "string" }
+                        "id": {
+                            "type": "string"
+                        },
+                        "version": {
+                            "type": "string"
+                        }
                     }
                 },
                 {
                     "properties": {
-                        "type": { "const": "papermc" },
-                        "project": { "type": "string" },
+                        "type": {
+                            "anyOf": [
+                                {
+                                    "const": "curserinth"
+                                },
+                                {
+                                    "const": "cr"
+                                }
+                            ]
+                        },
+                        "id": {
+                            "type": "string"
+                        },
+                        "version": {
+                            "type": "string"
+                        }
+                    }
+                },
+                {
+                    "properties": {
+                        "type": {
+                            "const": "papermc"
+                        },
+                        "project": {
+                            "type": "string",
+                            "enum": [
+                                "paper",
+                                "velocity",
+                                "waterfall"
+                            ]
+                        },
+                        "build": {
+                            "type": "string",
+                            "default": "latest"
+                        }
+                    }
+                },
+                {
+                    "description": "Download from Spigot Resources",
+                    "properties": {
+                        "type": {
+                            "const": "spigot"
+                        },
+                        "id": {
+                            "type": "string"
+                        }
+                    }
+                },
+                {
+                    "description": "Download from Github Releases",
+                    "properties": {
+                        "type": {
+                            "const": "ghrel"
+                        },
+                        "repo": {
+                            "type": "string"
+                        },
+                        "tag": {
+                            "type": "string",
+                            "default": "latest"
+                        },
+                        "asset": {
+                            "type": "string",
+                            "default": "first"
+                        }
+                    }
+                },
+                {
+                    "description": "Download from jenkins",
+                    "properties": {
+                        "type": {
+                            "const": "jenkins"
+                        },
+                        "url": {
+                            "type": "string"
+                        },
+                        "job": {
+                            "type": "string"
+                        },
+                        "build": {
+                            "type": "string",
+                            "default": "latest"
+                        },
+                        "artifact": {
+                            "type": "string",
+                            "default": "first"
+                        }
+                    }
+                },
+                {
+                    "properties": {
+                        "type": {
+                            "const": "purpur"
+                        },
                         "build": {
                             "type": "string",
                             "default": "latest"
@@ -43,41 +149,56 @@
                 },
                 {
                     "properties": {
-                        "type": { "const": "spigot" },
-                        "id": { "type": "string" }
+                        "type": {
+                            "anyOf": [
+                                { "const": "quilt" },
+                                { "const": "fabric" }
+                            ]
+                        },
+                        "loader": {
+                            "description": "The loader version",
+                            "type": "string",
+                            "default": "latest"
+                        },
+                        "installer": {
+                            "description": "The installer version",
+                            "type": "string",
+                            "default": "latest"
+                        }
                     }
                 },
                 {
                     "properties": {
-                        "type": { "const": "ghrel" },
-                        "repo": { "type": "string" },
-                        "tag": { "type": "string", "default": "latest" },
-                        "asset": { "type": "string", "default": "first" }
-                    }
-                },
-                {
-                    "properties": {
-                        "type": { "const": "jenkins" },
-                        "url": { "type": "string" },
-                        "job": { "type": "string" },
-                        "build": { "type": "string", "default": "latest" },
-                        "artifact": { "type": "string", "default": "first" }
-                    }
-                },
-                {
-                    "properties": {
-                        "type": { "const": "purpur" },
-                        "build": { "type": "string", "default": "latest" }
+                        "type": {
+                            "const": "buildtools"
+                        },
+                        "args": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
                     }
                 },
                 {
                     "properties": {
                         "type": {
                             "anyOf": [
-                                { "const": "paper" },
-                                { "const": "velocity" },
-                                { "const": "waterfall" },
-                                { "const": "bungeecord" }
+                                {
+                                    "const": "paper"
+                                },
+                                {
+                                    "const": "velocity"
+                                },
+                                {
+                                    "const": "waterfall"
+                                },
+                                {
+                                    "const": "bungeecord"
+                                },
+                                {
+                                    "const": "vanilla"
+                                }
                             ]
                         }
                     }
@@ -91,11 +212,11 @@
     "properties": {
         "name": {
             "type": "string",
-            "description": "Name of the server. Exported as 'SERVER_NAME' in bootstrapping"
+            "description": "Name of the server. Exported as `SERVER_NAME` in bootstrapping"
         },
         "mc_version": {
             "type": "string",
-            "description": "Minecraft version of the server. Used for a lot of Downloadables. Exported as 'SERVER_VERSION' in bootstrapping"
+            "description": "Minecraft version of the server. Used for a lot of Downloadables. Exported as `SERVER_VERSION` in bootstrapping"
         },
         "jar": {
             "description": "The server jar to use",
@@ -144,17 +265,54 @@
             }
         },
         "plugins": {
+            "description": "A list of plugins",
             "type": "array",
             "items": {
-                "description": "A list of plugins",
                 "$ref": "#/definitions/Downloadable"
             }
         },
         "mods": {
+            "description": "A list of mods",
             "type": "array",
             "items": {
-                "description": "A list of mods",
                 "$ref": "#/definitions/Downloadable"
+            }
+        },
+        "clientsidemods": {
+            "description": "A list of client-side mods used in exporting modpacks",
+            "type": "array",
+            "items": {
+                "type": "array",
+                "items": {
+                    "allOf": [{ "$ref": "#/definitions/Downloadable" }],
+                    "properties": {
+                        "optional": {
+                            "type": "boolean",
+                            "description": "Marks if optional or not"
+                        },
+                        "desc": {
+                            "type": "string",
+                            "description": "Provide a description"
+                        }
+                    }
+                }
+            }
+        },
+        "worlds": {
+            "type": "object",
+            "description": "Worlds, indexed by their names",
+            "additionalProperties": {
+                "type": "object",
+                "description": "A world",
+                "properties": {
+                    "datapacks": {
+                        "type": "array",
+                        "items": {
+                            "description": "A list of datapacks to download for this world",
+                            "$ref": "#/definitions/Downloadable"
+                        }
+                    }
+                }
             }
         },
         "variables": {
@@ -171,11 +329,13 @@
                     "items": {
                         "type": "string",
                         "description": "Path to a markdown file"
-                    }
+                    },
+                    "default": ["README.md"]
                 },
                 "auto_update": {
                     "type": "boolean",
-                    "description": "If enabled, will automatically render on some events"
+                    "description": "If enabled, will automatically render on some events",
+                    "default": false
                 }
             }
         }
