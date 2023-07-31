@@ -31,6 +31,20 @@ scoop bucket add minecraft https://github.com/The-Simples/scoop-minecraft
 scoop install mcman
 ```
 
+**Linux: wget**
+
+```sh
+wget https://github.com/ParadigmMC/mcman/releases/latest/download/mcman
+sudo mv ./mcman /usr/bin/
+sudo chmod +x /usr/bin/mcman
+```
+
+**Rust/Cargo:**
+
+```sh
+cargo install --git https://github.com/ParadigmMC/mcman.git
+```
+
 ---
 
 ## Recommended Usage
