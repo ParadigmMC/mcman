@@ -168,7 +168,7 @@ impl ServerType {
                     rename_from: Some("quilt-server-launch.jar".to_owned()),
                     jar_name: format!(
                         "quilt-server-launch-${{mcver}}-{}.jar",
-                        map_quilt_loader_version(&http_client, &loader)
+                        map_quilt_loader_version(http_client, &loader)
                             .await
                             .context("resolving quilt loader version id (latest/latest-beta)")?
                     ),
@@ -207,6 +207,7 @@ impl ServerType {
     }
 
     pub fn get_startup_method(&self, serverjar_name: &str) -> StartupMethod {
+        #[allow(clippy::match_single_binding)]
         match self {
             //Self::Forge { .. } => StartupMethod::Custom(vec![""]),
             //Self::NeoForge { .. } => StartupMethod::Custom(vec!["@libraries/net/neoforged/forge/1.20.1-47.1.57/win_args.txt"]),

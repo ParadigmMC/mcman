@@ -52,7 +52,7 @@ impl BuildContext {
             .take()
             .expect("Child process to be Some()");
 
-        let prefix = style(format!("[MC]")).bold();
+        let prefix = style("[MC]".to_string()).bold();
 
         let stdout = child.stdout.take().unwrap();
         let mut stdin = child.stdin.take();
@@ -115,12 +115,13 @@ impl BuildContext {
             println!(
                 "{} {}",
                 style("mcman:").cyan().bold(),
-                match exit_status.code() {
-                    Some(i) => format!("java exited with code {}", style(i).red()),
-                    None => format!(
+                if let Some(i) = exit_status.code() {
+                    format!("java exited with code {}", style(i).red())
+                } else {
+                    format!(
                         "java process {} with a signal",
                         style("terminated").yellow()
-                    ),
+                    )
                 }
             );
         }

@@ -30,15 +30,12 @@ impl BuildContext {
             "config",
         )?;
 
-        if self.server.launcher.eula_args {
-            if !self.server.jar.supports_eula_args() {
-                println!(
-                    "          {}",
-                    style("=> eula.txt [eula_args unsupported]").dim()
-                );
-                std::fs::File::create(self.output_dir.join("eula.txt"))?
-                    .write_all(b"eula=true\n")?;
-            }
+        if self.server.launcher.eula_args && !self.server.jar.supports_eula_args() {
+            println!(
+                "          {}",
+                style("=> eula.txt [eula_args unsupported]").dim()
+            );
+            std::fs::File::create(self.output_dir.join("eula.txt"))?.write_all(b"eula=true\n")?;
         }
 
         println!("          {}", style("Bootstrapping complete").dim());

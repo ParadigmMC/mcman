@@ -63,7 +63,7 @@ impl ServerLauncher {
             args.append(
                 &mut include_str!("../../res/aikars_flags")
                     .split(char::is_whitespace)
-                    .map(|c| c.to_owned())
+                    .map(ToOwned::to_owned)
                     .collect(),
             );
         }
@@ -72,7 +72,7 @@ impl ServerLauncher {
             args.append(
                 &mut include_str!("../../res/proxy_flags")
                     .split(char::is_whitespace)
-                    .map(|c| c.to_owned())
+                    .map(ToOwned::to_owned)
                     .collect(),
             );
         }
