@@ -1,9 +1,7 @@
 use anyhow::{Context, Result};
 use console::style;
 
-use crate::commands::build::ReportBackState;
-
-use super::BuildContext;
+use super::{BuildContext, ReportBackState};
 
 impl BuildContext {
     pub async fn download_addons(&self, addon_type: &str) -> Result<()> {

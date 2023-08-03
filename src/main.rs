@@ -8,12 +8,16 @@
 #![allow(unknown_lints)]
 
 use anyhow::{Context, Result};
+use async_trait::async_trait;
 use clap::Command;
+
 mod bootstrapper;
 mod commands;
-mod downloadable;
+mod core;
 mod model;
+mod sources;
 mod util;
+//mod hot_reload;
 
 fn cli() -> Command {
     Command::new("mcman")
@@ -25,6 +29,7 @@ fn cli() -> Command {
         .arg_required_else_help(true)
         .subcommand(commands::init::cli())
         .subcommand(commands::build::cli())
+        .subcommand(commands::run::cli())
         .subcommand(commands::import::cli())
         .subcommand(commands::markdown::cli())
         .subcommand(commands::pull::cli())
@@ -41,7 +46,8 @@ async fn main() -> Result<()> {
 
     match matches.subcommand() {
         Some(("init", sub_matches)) => commands::init::run(sub_matches).await,
-        Some(("build", sub_matches)) => commands::build::run(sub_matches).await,
+        Some(("build", sub_matches)) => commands::build::run(sub_matches).await.map(|_| ()),
+        Some(("run", sub_matches)) => commands::run::run(sub_matches).await,
         Some(("import" | "i", sub_matches)) => commands::import::run(sub_matches).await,
         Some(("markdown" | "md", _)) => commands::markdown::run().await,
         Some(("pull", sub_matches)) => commands::pull::run(sub_matches),
@@ -66,4 +72,19 @@ pub fn create_http_client() -> Result<reqwest::Client> {
     let b = reqwest::Client::builder().user_agent(APP_USER_AGENT);
 
     b.build().context("Failed to create HTTP client")
+}
+
+#[async_trait]
+pub trait Source {
+    async fn get_filename(
+        &self,
+        server: &model::Server,
+        client: &reqwest::Client,
+    ) -> Result<String>;
+    async fn download(
+        &self,
+        server: &model::Server,
+        client: &reqwest::Client,
+        filename_hint: Option<&str>,
+    ) -> Result<reqwest::Response>;
 }

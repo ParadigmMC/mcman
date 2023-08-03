@@ -2,7 +2,10 @@ use anyhow::{Context, Result};
 use clap::{arg, ArgMatches, Command};
 use dialoguer::{theme::ColorfulTheme, Input, Select};
 
-use crate::{create_http_client, downloadable::Downloadable, model::Server};
+use crate::{
+    create_http_client,
+    model::{Downloadable, Server, SoftwareType},
+};
 
 pub fn cli() -> Command {
     Command::new("url")
@@ -21,12 +24,10 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
 
     let addon = Downloadable::from_url_interactive(&http_client, &server, &urlstr, false).await?;
 
-    let is_plugin = match server.jar {
-        Downloadable::Fabric { .. } | Downloadable::Quilt { .. } => false,
-
-        Downloadable::GithubRelease { .. }
-        | Downloadable::Jenkins { .. }
-        | Downloadable::Url { .. } => {
+    let is_plugin = match server.jar.get_software_type() {
+        SoftwareType::Modded => false,
+        SoftwareType::Normal | SoftwareType::Proxy => true,
+        SoftwareType::Unknown => {
             Select::with_theme(&ColorfulTheme::default())
                 .with_prompt("Import as...")
                 .default(0)
@@ -34,8 +35,6 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
                 .interact()?
                 == 0
         }
-
-        _ => true,
     };
 
     if is_plugin {

@@ -3,10 +3,7 @@ use std::{collections::HashMap, env, io::Write};
 use anyhow::Result;
 use console::style;
 
-use crate::{
-    bootstrapper::{bootstrap, BootstrapContext},
-    downloadable::Downloadable,
-};
+use crate::bootstrapper::{bootstrap, BootstrapContext};
 
 use super::BuildContext;
 
@@ -34,18 +31,13 @@ impl BuildContext {
         )?;
 
         if self.server.launcher.eula_args {
-            match self.server.jar {
-                Downloadable::Quilt { .. }
-                | Downloadable::Fabric { .. }
-                | Downloadable::Vanilla {} => {
-                    println!(
-                        "          {}",
-                        style("=> eula.txt [eula_args unsupported]").dim()
-                    );
-                    std::fs::File::create(self.output_dir.join("eula.txt"))?
-                        .write_all(b"eula=true\n")?;
-                }
-                _ => (),
+            if !self.server.jar.supports_eula_args() {
+                println!(
+                    "          {}",
+                    style("=> eula.txt [eula_args unsupported]").dim()
+                );
+                std::fs::File::create(self.output_dir.join("eula.txt"))?
+                    .write_all(b"eula=true\n")?;
             }
         }
 

@@ -5,7 +5,7 @@ use clap::Command;
 use console::style;
 use semver::Version;
 
-use crate::{create_http_client, downloadable::sources::github};
+use crate::{create_http_client, sources::github};
 
 pub fn cli() -> Command {
     Command::new("version")

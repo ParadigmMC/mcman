@@ -4,3 +4,5 @@
 Dockerfile
 target/
 test/
+docs/
+examples/

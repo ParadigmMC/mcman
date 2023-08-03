@@ -1,0 +1,20 @@
+name = "quilt"
+mc_version = "1.19.2"
+
+[jar]
+type = "quilt"
+loader = "latest"
+installer = "latest"
+
+[variables]
+PORT = "25565"
+
+[launcher]
+aikars_flags = true
+proxy_flags = false
+nogui = true
+eula_args = true
+
+[markdown]
+files = ["README.md"]
+auto_update = false

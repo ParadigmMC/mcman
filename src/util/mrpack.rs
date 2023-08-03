@@ -16,17 +16,15 @@ use walkdir::WalkDir;
 use zip::{write::FileOptions, ZipArchive};
 
 use crate::{
-    downloadable::{
-        sources::{
-            curserinth::{fetch_curserinth_project, fetch_curserinth_versions},
-            modrinth::{
-                fetch_modrinth_project, fetch_modrinth_versions, DependencyType, ModrinthVersion,
-            },
+    model::{ClientSideMod, Downloadable, Server, ServerType},
+    sources::{
+        curserinth::{fetch_curserinth_project, fetch_curserinth_versions},
+        modrinth::{
+            fetch_modrinth_project, fetch_modrinth_versions, DependencyType, ModrinthVersion,
         },
-        Downloadable,
     },
-    model::{ClientSideMod, Server},
     util::download_with_progress,
+    Source,
 };
 
 use super::md::MarkdownTable;
@@ -336,10 +334,10 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
     dependencies.insert("minecraft".to_owned(), server.mc_version.clone());
 
     match &server.jar {
-        Downloadable::Quilt { loader, .. } => {
+        ServerType::Quilt { loader, .. } => {
             dependencies.insert("quilt-loader".to_owned(), loader.clone())
         }
-        Downloadable::Fabric { loader, .. } => {
+        ServerType::Fabric { loader, .. } => {
             dependencies.insert("fabric-loader".to_owned(), loader.clone())
         }
         _ => None,

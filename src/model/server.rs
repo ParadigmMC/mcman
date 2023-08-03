@@ -9,9 +9,9 @@ use std::{
 use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::{commands, downloadable::Downloadable};
+use crate::commands;
 
-use super::{ClientSideMod, ServerLauncher, World};
+use super::{ClientSideMod, Downloadable, ServerLauncher, ServerType, World};
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
@@ -34,7 +34,8 @@ pub struct Server {
 
     pub name: String,
     pub mc_version: String, // TODO: version type for comparing
-    pub jar: Downloadable,
+    #[serde(with = "super::servertype")]
+    pub jar: ServerType,
     pub variables: HashMap<String, String>,
     pub launcher: ServerLauncher,
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -118,7 +119,7 @@ impl Default for Server {
             path: PathBuf::from("."),
             name: String::new(),
             mc_version: "latest".to_owned(),
-            jar: Downloadable::Vanilla {},
+            jar: ServerType::Vanilla {},
             variables: vars,
             launcher: ServerLauncher::default(),
             plugins: vec![],

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::downloadable::Downloadable;
+use super::Downloadable;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClientSideMod {

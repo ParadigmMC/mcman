@@ -5,8 +5,7 @@ use dialoguer::{theme::ColorfulTheme, Input, Select};
 
 use crate::{
     create_http_client,
-    downloadable::Downloadable,
-    model::{Server, World},
+    model::{Downloadable, Server, World},
     util::SelectItem,
 };
 

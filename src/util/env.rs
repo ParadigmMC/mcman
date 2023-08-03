@@ -1,6 +1,10 @@
-use std::{path::{PathBuf, Path}, fs::{File, self}, io::Write};
+use std::{
+    fs::{self, File},
+    io::Write,
+    path::{Path, PathBuf},
+};
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use pathdiff::diff_paths;
 
 pub fn try_get_url(folder: &PathBuf) -> Result<String> {
@@ -42,16 +46,13 @@ pub fn write_gitignore() -> Result<PathBuf> {
 
     let gitignore_path = Path::new(&root).join(".gitignore");
 
-    let contents = fs::read_to_string(&gitignore_path)
-        .unwrap_or(String::new());
+    let contents = fs::read_to_string(&gitignore_path).unwrap_or(String::new());
 
     let has_r = contents.contains('\r');
 
     let contents = contents.replace('\r', "");
 
-    let mut list = contents
-        .split('\n')
-        .collect::<Vec<_>>();
+    let mut list = contents.split('\n').collect::<Vec<_>>();
 
     for (ignore, comment) in [
         ("**/server", "# mcman: Exclude mcman build outputs"),

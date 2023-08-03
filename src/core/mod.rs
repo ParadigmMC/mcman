@@ -1,28 +1,21 @@
-use std::{path::PathBuf, time::Instant};
+use std::{path::PathBuf, process::Child, time::Instant};
 
 use anyhow::{anyhow, Context, Result};
-use clap::{arg, value_parser, ArgMatches, Command};
 use console::style;
+use dialoguer::theme::ColorfulTheme;
 use tokio::fs::{self, File};
 
-use crate::{create_http_client, downloadable::Downloadable, model::Server, util};
+use crate::{
+    model::{Server, StartupMethod},
+    util, Source,
+};
 
 pub mod addons;
 pub mod bootstrap;
+pub mod runner;
 pub mod scripts;
 pub mod serverjar;
 pub mod worlds;
-
-pub fn cli() -> Command {
-    Command::new("build")
-        .about("Build using server.toml configuration")
-        .arg(
-            arg!(-o --output [FILE] "The output directory for the server")
-                .value_parser(value_parser!(PathBuf)),
-        )
-        .arg(arg!(--skip [stages] "Skip some stages").value_delimiter(','))
-        .arg(arg!(--force "Don't skip downloading already downloaded jars"))
-}
 
 #[derive(Debug)]
 pub struct BuildContext {
@@ -33,7 +26,8 @@ pub struct BuildContext {
     pub skip_stages: Vec<String>,
     pub start_time: Instant,
     pub stage_index: u8,
-    pub server_jar_name: String,
+    pub startup_method: StartupMethod,
+    pub server_process: Option<Child>,
 }
 
 impl Default for BuildContext {
@@ -43,10 +37,11 @@ impl Default for BuildContext {
             force: false,
             http_client: reqwest::Client::default(),
             output_dir: PathBuf::new(),
-            server_jar_name: String::new(),
+            startup_method: StartupMethod::Jar(String::from("server.jar")),
             skip_stages: vec![],
             stage_index: 1,
             start_time: Instant::now(),
+            server_process: None,
         }
     }
 }
@@ -56,7 +51,11 @@ impl BuildContext {
         self.stage_index = 1;
         self.start_time = Instant::now();
 
-        println!(" Building {}...", style(&self.server.name).green().bold());
+        println!(
+            " {} {}...",
+            style("Building").bold(),
+            style(&self.server.name).green().bold()
+        );
 
         if self.force {
             println!(" => {}", style("using force flag").bold());
@@ -89,7 +88,8 @@ impl BuildContext {
         }
 
         println!(
-            " Successfully built {} in {}",
+            " {} Successfully built {} in {}",
+            ColorfulTheme::default().success_prefix,
             style(&self.server.name).green().bold(),
             style(self.start_time.elapsed().as_millis().to_string() + "ms").blue(),
         );
@@ -135,7 +135,7 @@ impl BuildContext {
 
     pub async fn downloadable<F: Fn(ReportBackState, &str)>(
         &self,
-        dl: &Downloadable,
+        dl: &(impl Source + std::fmt::Debug),
         folder_path: Option<&str>,
         report_back: F,
     ) -> Result<String> {
@@ -193,37 +193,4 @@ pub enum ReportBackState {
     Skipped,
     Downloading,
     Downloaded,
-}
-
-pub async fn run(matches: &ArgMatches) -> Result<()> {
-    let server = Server::load().context("Failed to load server.toml")?;
-    let http_client = create_http_client()?;
-
-    let default_output = server.path.join("server");
-    let output_dir = matches
-        .get_one::<PathBuf>("output")
-        .unwrap_or(&default_output)
-        .clone();
-
-    let force = matches.get_flag("force");
-
-    let skip_stages = matches
-        .get_many::<String>("skip")
-        .map(|o| o.cloned().collect::<Vec<String>>())
-        .unwrap_or(vec![]);
-
-    std::fs::create_dir_all(&output_dir).context("Failed to create output directory")?;
-
-    let mut ctx = BuildContext {
-        server,
-        http_client,
-        output_dir,
-        force,
-        skip_stages,
-        ..Default::default()
-    };
-
-    ctx.build_all().await?;
-
-    Ok(())
 }

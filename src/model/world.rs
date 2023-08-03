@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::downloadable::Downloadable;
+use super::Downloadable;
 
 #[derive(Debug, Deserialize, Serialize, Default)]
 #[serde(default)]

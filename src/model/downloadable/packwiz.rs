@@ -1,9 +1,20 @@
-use anyhow::{Result, anyhow, Context, bail};
-use rpackwiz::model::{Mod, ModOption, Side, ModDownload, DownloadMode, ModUpdate, CurseforgeModUpdate, HashFormat, ModrinthModUpdate};
+use anyhow::{anyhow, bail, Context, Result};
+use rpackwiz::model::{
+    CurseforgeModUpdate, DownloadMode, HashFormat, Mod, ModDownload, ModOption, ModUpdate,
+    ModrinthModUpdate, Side,
+};
 
-use crate::{model::Server, util::{packwiz::PackwizExportOptions, hash::get_hash_url}};
+use crate::{
+    model::Server,
+    sources::{
+        curserinth::{fetch_curserinth_project, fetch_curserinth_versions},
+        modrinth::{fetch_modrinth_project, fetch_modrinth_versions, DependencyType},
+    },
+    util::{hash::get_hash_url, packwiz::PackwizExportOptions},
+    Source,
+};
 
-use super::{Downloadable, sources::{modrinth::{fetch_modrinth_project, fetch_modrinth_versions, DependencyType}, curserinth::{fetch_curserinth_project, fetch_curserinth_versions}}};
+use super::Downloadable;
 
 impl Downloadable {
     pub async fn from_pw_mod(

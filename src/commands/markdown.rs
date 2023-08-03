@@ -113,9 +113,7 @@ pub fn create_table_server(server: &Server) -> MarkdownTable {
     map.insert("Version".to_owned(), server.mc_version.clone());
     map.insert("Type".to_owned(), server.jar.get_md_link());
 
-    if let Some(extra) = server.jar.get_extra_jar_map() {
-        map.extend(extra);
-    }
+    map.extend(server.jar.get_metadata());
 
     MarkdownTable::from_map(&map)
 }
@@ -144,9 +142,7 @@ pub fn create_table_server_console(server: &Server) -> MarkdownTable {
     map.insert("Version".to_owned(), server.mc_version.clone());
     map.insert("Type".to_owned(), server.jar.get_type_name());
 
-    if let Some(extra) = server.jar.get_extra_jar_map() {
-        map.extend(extra);
-    }
+    map.extend(server.jar.get_metadata());
 
     MarkdownTable::from_map(&map)
 }

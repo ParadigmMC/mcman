@@ -2,7 +2,10 @@ use anyhow::{Context, Result};
 use clap::Command;
 use console::style;
 
-use crate::{create_http_client, downloadable::Downloadable, model::Server};
+use crate::{
+    create_http_client,
+    model::{Downloadable, Server},
+};
 
 pub fn cli() -> Command {
     Command::new("customs").about("Try to import all custom urls again")

@@ -10,12 +10,13 @@ use zip::ZipArchive;
 
 use crate::commands::markdown;
 use crate::create_http_client;
-use crate::util::env::{write_gitignore, get_docker_version, write_dockerfile, write_dockerignore};
+use crate::model::ServerType;
+use crate::util::env::{get_docker_version, write_dockerfile, write_dockerignore, write_gitignore};
 use crate::util::mrpack::{mrpack_import_configs, mrpack_read_index, mrpack_source_to_file};
 use crate::util::packwiz::{packwiz_fetch_pack_from_src, packwiz_import_from_source};
 use crate::{
-    downloadable::{sources::vanilla::fetch_latest_mcver, Downloadable},
     model::{Server, ServerLauncher},
+    sources::vanilla::fetch_latest_mcver,
 };
 use anyhow::{bail, Context, Result};
 use clap::{arg, ArgMatches, Command};
@@ -23,9 +24,9 @@ use clap::{arg, ArgMatches, Command};
 pub fn cli() -> Command {
     Command::new("init")
         .about("Initialize a new mcman server")
-        .arg(arg!(--name [NAME] "The name of the server"))
-        .arg(arg!(--mrpack [SRC] "Import from a modrinth modpack"))
-        .arg(arg!(--packwiz [SRC] "Import from a packwiz pack").visible_alias("pw"))
+        .arg(arg!(--name [name] "The name of the server"))
+        .arg(arg!(--mrpack [src] "Import from a modrinth modpack"))
+        .arg(arg!(--packwiz [src] "Import from a packwiz pack").visible_alias("pw"))
 }
 
 #[allow(clippy::too_many_lines)]
@@ -112,9 +113,9 @@ pub async fn init_normal(http_client: &reqwest::Client, name: &str) -> Result<()
     };
 
     let jar = match serv_type {
-        0 => Downloadable::select_jar_interactive(),
-        1 => Downloadable::select_modded_jar_interactive(),
-        2 => Downloadable::select_proxy_jar_interactive(),
+        0 => ServerType::select_jar_interactive(),
+        1 => ServerType::select_modded_jar_interactive(),
+        2 => ServerType::select_proxy_jar_interactive(),
         _ => unreachable!(),
     }?;
 
@@ -167,7 +168,7 @@ pub async fn init_mrpack(src: &str, name: &str, http_client: &reqwest::Client) -
                 style("Using quilt loader").cyan(),
                 style(ver).bold()
             );
-            Downloadable::Quilt {
+            ServerType::Quilt {
                 loader: ver.clone(),
                 installer: "latest".to_owned(),
             }
@@ -177,12 +178,12 @@ pub async fn init_mrpack(src: &str, name: &str, http_client: &reqwest::Client) -
                 style("Using fabric loader").cyan(),
                 style(ver).bold()
             );
-            Downloadable::Fabric {
+            ServerType::Fabric {
                 loader: ver.clone(),
                 installer: "latest".to_owned(),
             }
         } else {
-            Downloadable::select_modded_jar_interactive()?
+            ServerType::select_modded_jar_interactive()?
         }
     };
 
@@ -243,7 +244,7 @@ pub async fn init_packwiz(src: &str, name: &str, http_client: &reqwest::Client) 
                 style("Using quilt loader").cyan(),
                 style(ver).bold()
             );
-            Downloadable::Quilt {
+            ServerType::Quilt {
                 loader: ver.clone(),
                 installer: "latest".to_owned(),
             }
@@ -253,12 +254,12 @@ pub async fn init_packwiz(src: &str, name: &str, http_client: &reqwest::Client) 
                 style("Using fabric loader").cyan(),
                 style(ver).bold()
             );
-            Downloadable::Fabric {
+            ServerType::Fabric {
                 loader: ver.clone(),
                 installer: "latest".to_owned(),
             }
         } else {
-            Downloadable::select_modded_jar_interactive()?
+            ServerType::select_modded_jar_interactive()?
         }
     };
 
@@ -279,7 +280,11 @@ pub async fn init_packwiz(src: &str, name: &str, http_client: &reqwest::Client) 
     Ok(())
 }
 
-pub async fn init_final(http_client: &reqwest::Client, server: &mut Server, is_proxy: bool) -> Result<()> {
+pub async fn init_final(
+    http_client: &reqwest::Client,
+    server: &mut Server,
+    is_proxy: bool,
+) -> Result<()> {
     server.save()?;
 
     initialize_environment(is_proxy).context("Initializing environment")?;
@@ -322,22 +327,37 @@ pub async fn init_final(http_client: &reqwest::Client, server: &mut Server, is_p
 pub fn initialize_environment(is_proxy: bool) -> Result<()> {
     std::fs::create_dir_all("./config")?;
 
+    let theme = ColorfulTheme::default();
+
     if write_gitignore().is_err() {
         println!(
-            " > {}{}{}",
+            "{} {}{}{}",
+            theme.prompt_prefix,
             style("Didn't find a git repo, use '").dim(),
             style("mcman env gitignore").bold(),
             style("' to generate .gitignore").dim(),
+        );
+    } else {
+        println!(
+            "{} {}",
+            theme.success_prefix,
+            style("Touched up .gitignore").dim(),
         );
     }
 
     if let Ok(Some(_)) = get_docker_version() {
         write_dockerfile(Path::new("."))?;
         write_dockerignore(Path::new("."))?;
+        println!(
+            "{} {}",
+            theme.success_prefix,
+            style("Docker files were written").dim(),
+        );
     } else {
         println!(
-            " > {}{}{}",
-            style("Couldn't find docker, use'").dim(),
+            "{} {}{}{}",
+            theme.prompt_prefix,
+            style("Docker wasn't found, you can use '").dim(),
             style("mcman env docker").bold(),
             style("' to generate docker files").dim(),
         );

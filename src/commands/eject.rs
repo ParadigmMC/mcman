@@ -23,7 +23,7 @@ pub fn run() -> Result<()> {
         .interact_text()? == server.name {
         println!(" > {}", style("Deleting server.toml...").yellow());
         let _ = fs::remove_file(server.path.join("server.toml"));
-        
+
         println!(" > {}", style("Deleting config/...").yellow());
         let _ = fs::remove_dir_all(server.path.join("config"));
 

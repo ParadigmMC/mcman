@@ -1,8 +1,8 @@
 use anyhow::Result;
 use clap::{ArgMatches, Command};
 
-mod gitignore;
 mod docker;
+mod gitignore;
 
 pub fn cli() -> Command {
     Command::new("env")

@@ -1,15 +1,15 @@
+pub mod env;
+pub mod hash;
 pub mod md;
 pub mod mrpack;
 pub mod packwiz;
-pub mod env;
-pub mod hash;
 
 use anyhow::{Context, Result};
 use futures::StreamExt;
 use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
 use tokio::{fs::File, io::BufWriter};
 
-use crate::{downloadable::Downloadable, model::Server};
+use crate::{model::Server, Source};
 
 pub struct SelectItem<T>(pub T, pub String);
 
@@ -22,7 +22,7 @@ impl<T> ToString for SelectItem<T> {
 pub async fn download_with_progress(
     file: File,
     message: &str,
-    downloadable: &Downloadable,
+    downloadable: &impl Source,
     filename_hint: Option<&str>,
     server: &Server,
     client: &reqwest::Client,

@@ -2,16 +2,16 @@ use anyhow::{anyhow, bail, Result};
 use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
 use reqwest::Url;
 
-use crate::{downloadable::sources::curserinth::fetch_curserinth_versions, model::Server};
-
-use super::{
+use crate::{
+    model::Server,
     sources::{
-        curserinth::CurseRinthVersion,
+        curserinth::{fetch_curserinth_versions, CurseRinthVersion},
         github::fetch_github_releases,
         modrinth::{fetch_modrinth_versions, ModrinthVersion},
     },
-    Downloadable,
 };
+
+use super::Downloadable;
 
 impl Downloadable {
     #[allow(clippy::too_many_lines)]

@@ -12,7 +12,7 @@ impl BuildContext {
             self.output_dir.join("start.bat"),
             self.server
                 .launcher
-                .generate_script_win(&self.server_jar_name, &self.server.name),
+                .generate_script_win(&self.server.name, &self.startup_method),
         )
         .await?;
 
@@ -37,7 +37,7 @@ impl BuildContext {
         file.write_all(
             self.server
                 .launcher
-                .generate_script_linux(&self.server_jar_name, &self.server.name)
+                .generate_script_linux(&self.server.name, &self.startup_method)
                 .as_bytes(),
         )?;
 

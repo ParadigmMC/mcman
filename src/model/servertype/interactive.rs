@@ -1,20 +1,17 @@
-use anyhow::{bail, Result};
+use anyhow::Result;
 use dialoguer::{theme::ColorfulTheme, Select};
 
 use crate::util::SelectItem;
 
-use super::Downloadable;
+use super::ServerType;
 
-impl Downloadable {
+impl ServerType {
     pub fn select_jar_interactive() -> Result<Self> {
         let items = vec![
             SelectItem(0, "Vanilla       - No patches".to_owned()),
             SelectItem(1, "PaperMC/Paper - Spigot fork, most popular".to_owned()),
             SelectItem(2, "Purpur        - Paper fork".to_owned()),
-            SelectItem(
-                3,
-                "BuildTools    - Spigot, Bukkit or CraftBukkit".to_owned(),
-            ),
+            SelectItem(3, "BuildTools    - Spigot or CraftBukkit".to_owned()),
         ];
 
         let jar_type = Select::with_theme(&ColorfulTheme::default())
@@ -31,10 +28,17 @@ impl Downloadable {
             },
             3 => {
                 let items = vec![
-                    SelectItem(Self::BuildTools { args: vec![] }, "Spigot".to_owned()),
                     SelectItem(
                         Self::BuildTools {
-                            args: vec!["--compile".to_owned(), "craftbukkit".to_owned()],
+                            args: vec![],
+                            software: "spigot".to_owned(),
+                        },
+                        "Spigot".to_owned(),
+                    ),
+                    SelectItem(
+                        Self::BuildTools {
+                            args: vec![],
+                            software: "craftbukkit".to_owned(),
                         },
                         "CraftBukkit".to_owned(),
                     ),
@@ -100,9 +104,6 @@ impl Downloadable {
             0 => Self::Velocity {},
             1 => Self::Waterfall {},
             2 => Self::BungeeCord {},
-            3 => {
-                bail!("Please add the custom proxy jar via manually editing the server.toml file.");
-            }
             _ => unreachable!(),
         })
     }

@@ -7,9 +7,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use console::style;
 use pathdiff::diff_paths;
 use reqwest::{IntoUrl, Url};
-use rpackwiz::model::{
-    HashFormat, Mod, Pack, PackFile, PackIndex, Side,
-};
+use rpackwiz::model::{HashFormat, Mod, Pack, PackFile, PackIndex, Side};
 use tokio::{
     fs::{self, File},
     io::AsyncWriteExt,
@@ -17,10 +15,13 @@ use tokio::{
 use walkdir::WalkDir;
 
 use crate::{
-    downloadable::Downloadable,
-    model::{ClientSideMod, Server},
-    util::{download_with_progress, hash::{hash_contents, hash_file}},
+    model::Downloadable,
+    model::{ClientSideMod, Server, ServerType},
     util::env::try_get_url,
+    util::{
+        download_with_progress,
+        hash::{hash_contents, hash_file},
+    },
 };
 
 pub struct PackwizExportOptions {
@@ -33,36 +34,40 @@ pub async fn packwiz_import_from_source(
     src: &str,
     server: &mut Server,
 ) -> Result<(Pack, usize, usize)> {
-    Ok(if src.starts_with("http://") || src.starts_with("https://") {
-        let base_url = Url::parse(src).context("Parsing source url")?;
+    Ok(
+        if src.starts_with("http://") || src.starts_with("https://") {
+            let base_url = Url::parse(src).context("Parsing source url")?;
 
-        packwiz_import_http(http_client, base_url, server).await?
-    } else {
-        let base = PathBuf::from(src);
+            packwiz_import_http(http_client, base_url, server).await?
+        } else {
+            let base = PathBuf::from(src);
 
-        packwiz_import_local(http_client, base, server).await?
-    })
+            packwiz_import_local(http_client, base, server).await?
+        },
+    )
 }
 
 // bad code #99999
 pub async fn packwiz_fetch_pack_from_src(http_client: &reqwest::Client, src: &str) -> Result<Pack> {
-    Ok(if src.starts_with("http://") || src.starts_with("https://") {
-        let base_url = Url::parse(src).context("Parsing source url")?;
+    Ok(
+        if src.starts_with("http://") || src.starts_with("https://") {
+            let base_url = Url::parse(src).context("Parsing source url")?;
 
-        fetch_toml(http_client, base_url.clone())
-            .await
-            .context("Fetching pack.toml")?
-    } else {
-        let base = PathBuf::from(src);
-
-        let base = if base.ends_with("pack.toml") {
-            base
+            fetch_toml(http_client, base_url.clone())
+                .await
+                .context("Fetching pack.toml")?
         } else {
-            base.join("pack.toml")
-        };
+            let base = PathBuf::from(src);
 
-        read_toml(&base).await.context("Reading pack.toml")?
-    })
+            let base = if base.ends_with("pack.toml") {
+                base
+            } else {
+                base.join("pack.toml")
+            };
+
+            read_toml(&base).await.context("Reading pack.toml")?
+        },
+    )
 }
 
 #[allow(clippy::too_many_lines)]
@@ -196,20 +201,25 @@ pub async fn packwiz_import_local(
     server: &mut Server,
 ) -> Result<(Pack, usize, usize)> {
     let base = if base.ends_with("pack.toml") {
-        base.parent().ok_or(anyhow!("no parent of directory"))?.to_path_buf()
+        base.parent()
+            .ok_or(anyhow!("no parent of directory"))?
+            .to_path_buf()
     } else {
         base
     };
 
-    let pack: Pack = read_toml(&base.join("pack.toml")).await.context("Reading pack.toml")?;
+    let pack: Pack = read_toml(&base.join("pack.toml"))
+        .await
+        .context("Reading pack.toml")?;
 
     println!(" > {}", style("Reading index...").dim());
 
     let pack_index_path = base.join(&pack.index.file);
 
-    let pack_index: PackIndex = read_toml(&pack_index_path)
-        .await
-        .context(format!("Reading pack index file {}", pack_index_path.to_string_lossy()))?;
+    let pack_index: PackIndex = read_toml(&pack_index_path).await.context(format!(
+        "Reading pack index file {}",
+        pack_index_path.to_string_lossy()
+    ))?;
 
     let mut mod_count = 0;
     let mut config_count = 0;
@@ -429,8 +439,8 @@ pub async fn export_packwiz(
     versions.insert("minecraft".to_owned(), server.mc_version.clone());
 
     match &server.jar {
-        Downloadable::Quilt { loader, .. } => versions.insert("quilt".to_owned(), loader.clone()),
-        Downloadable::Fabric { loader, .. } => versions.insert("fabric".to_owned(), loader.clone()),
+        ServerType::Quilt { loader, .. } => versions.insert("quilt".to_owned(), loader.clone()),
+        ServerType::Fabric { loader, .. } => versions.insert("fabric".to_owned(), loader.clone()),
         _ => None,
     };
 
@@ -494,14 +504,16 @@ pub async fn create_packwiz_modlist(
     }
 
     for client_mod in &server.clientsidemods {
-        if let Some(t) = client_mod.dl.to_pw_mod(
-            http_client,
-            server,
-            opts,
-            Some(client_mod.optional),
-            &client_mod.desc,
-        )
-        .await?
+        if let Some(t) = client_mod
+            .dl
+            .to_pw_mod(
+                http_client,
+                server,
+                opts,
+                Some(client_mod.optional),
+                &client_mod.desc,
+            )
+            .await?
         {
             list.push(t);
         }
