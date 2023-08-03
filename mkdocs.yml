@@ -1,6 +1,42 @@
 site_name: mcman
 repo_url: https://github.com/ParadigmMC/mcman
 repo_name: ParadigmMC/mcman
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Tutorials:
+    - tutorials/getting-started.md
+    - tutorials/importing-modpacks.md
+    - tutorials/building.md
+    - tutorials/variables.md
+  - Commands:
+    - commands/index.md
+    - init: commands/init.md
+    - build: commands/build.md
+    - run: commands/run.md
+    - import <url/mrpack/packwiz>: commands/import.md
+    - export <mrpack/packwiz>: commands/export.md
+    - info: commands/info.md
+    - pull: commands/pull.md
+    - markdown: commands/markdown.md
+    - env: commands/env.md
+    - version: commands/version.md
+  - Reference:
+    - server.toml:
+      - reference/server.toml.md
+      - reference/world.md
+      - reference/markdown-options.md
+      - reference/server-launcher.md
+      - reference/clientsidemod.md
+    - Server Type:
+      - reference/servertype/index.md
+      - reference/servertype/vanilla.md
+      - reference/servertype/fabric.md
+      - reference/servertype/quilt.md
+      - reference/servertype/papermc.md
+      - reference/servertype/purpurmc.md
+      - reference/servertype/bungeecord.md
+      - reference/servertype/buildtools.md
 theme:
   name: material
   icon:
@@ -31,4 +67,4 @@ markdown_extensions:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg
   - pymdownx.tabbed:
-      alternate_style: true 
+      alternate_style: true

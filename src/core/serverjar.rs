@@ -117,7 +117,7 @@ impl BuildContext {
         tag: &str,
     ) -> Result<()> {
         let mut child = std::process::Command::new(cmd.0)
-            .args(cmd.1)
+            .args(cmd.1.iter().map(|a| self.server.format(a)))
             .current_dir(&self.output_dir)
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
@@ -136,7 +136,7 @@ impl BuildContext {
             File::create(self.output_dir.join(".".to_owned() + tag + ".mcman.log")).await?;
 
         log_file
-            .write_all(format!("=== mcman {tag} / {label} output ===").as_bytes())
+            .write_all(format!("=== mcman {tag} / {label} output ===\n\n").as_bytes())
             .await?;
 
         for buf in BufReader::new(child.stdout.take().unwrap()).lines() {

@@ -18,4 +18,4 @@ Download from a direct download link.
 | `type`     | `"url"` |                                                                          |
 | `url`      | string  | URL to the file                                                          |
 | `filename` | string? | Optional filename if you dont like the name from the url                 |
-| `desc`     | string? | Optional description (shown in [markdown](../types/markdown-options.md)) |
+| `desc`     | string? | Optional description (shown in [markdown](../markdown-options.md)) |

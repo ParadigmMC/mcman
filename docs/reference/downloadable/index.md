@@ -4,10 +4,10 @@ A `Downloadable` is some project, entity etc. from a source.
 
 ## Server Software
 
-- [Vanilla](./vanilla.md)
-- [Fabric](./fabric.md) - `modded`
-- [Quilt](./quilt.md) - `modded`
-- [PaperMC](./papermc.md) (paper, velocity and waterfall) - `bukkit`/`proxy`
+- [Vanilla](../servertype/vanilla.md)
+- [Fabric](../servertype/fabric.md) - `modded`
+- [Quilt](../servertype/quilt.md) - `modded`
+- [PaperMC](../servertype/papermc.md) (paper, velocity and waterfall) - `bukkit`/`proxy`
 - [Purpur](./purpurmc.md) - `bukkit`
 - [BungeeCord](./bungeecord.md) - `proxy`
 - [BuildTools](./buildtools.md) (spigot and craftbukkit) - `bukkit`

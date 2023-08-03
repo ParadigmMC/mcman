@@ -10,6 +10,7 @@ Downloads a [PaperMC](https://papermc.io/) project.
     ```
 
 ??? tip "Shortcuts"
+    <a id="shortcuts"></a>
     There are also 3 shortcut Downloadable types:
 
     - `paper`

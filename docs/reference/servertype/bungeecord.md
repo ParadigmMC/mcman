@@ -1,6 +1,6 @@
 # BungeeCord
 
-BungeeCord is just a shortcut to a [jenkins](./jenkins.md) downloadable:
+BungeeCord is just a shortcut to a [jenkins](../downloadable/jenkins.md) downloadable:
 
 ```toml
 type = "bungeecord"

@@ -46,3 +46,10 @@ This command is interactive. Just run `mcman init`!
     ```
 
     If your server is already initialized, use the `mcman import packwiz <source>` command. The source argument also accepts the sources defined above.
+
+??? question "I dont see a Dockerfile/.gitignore"
+    If mcman can't detect a git repository, it wont write a `.gitignore`
+
+    The same applies for `Dockerfile` when `docker --version` fails.
+
+    You can use [`mcman env`](./env.md) to get those files.
