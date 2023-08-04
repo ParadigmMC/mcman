@@ -2,6 +2,14 @@
 
 mcman is a command line tool that makes it easier to create and manage minecraft servers. Instead of manually downloading jars from the internet and doing intricate replace operations and whatnot on your plugin configuration files, mcman downloads everything you need from one configuration file (`server.toml`) and handles your config files with one very useful feature - variables.
 
+## Quick Start
+
+- [Installation](./installation.md)
+- [Getting Started](./tutorials/getting-started.md)
+- [Explaining how building works](./tutorials/building.md)
+- [Commands](./commands)
+- [Reference](./reference/server.toml.md)
+
 ## Features
 
 - Downloads or sets up server software (server.jar)

@@ -7,6 +7,7 @@ nav:
   - Tutorials:
     - tutorials/getting-started.md
     - tutorials/importing-modpacks.md
+    - tutorials/folder-structure.md
     - tutorials/building.md
     - tutorials/variables.md
   - Commands:
@@ -37,10 +38,19 @@ nav:
       - reference/servertype/purpurmc.md
       - reference/servertype/bungeecord.md
       - reference/servertype/buildtools.md
+    - Downloadable:
+      - reference\downloadable\index.md
+      - reference\downloadable\modrinth.md
+      - reference\downloadable\curserinth.md
+      - reference\downloadable\spigot.md
+      - reference\downloadable\github-releases.md
+      - reference\downloadable\jenkins.md
+      - reference\downloadable\custom-url.md
 theme:
   name: material
   icon:
     repo: fontawesome/brands/github
+    logo: material/server
   palette: 
     scheme: slate
     primary: deep purple
@@ -68,3 +78,7 @@ markdown_extensions:
       emoji_generator: !!python/name:materialx.emoji.to_svg
   - pymdownx.tabbed:
       alternate_style: true
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/ParadigmMC/mcman

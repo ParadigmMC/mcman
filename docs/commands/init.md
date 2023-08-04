@@ -2,9 +2,11 @@
 
 Initializes a new server in the current directory.
 
-> **Full Command:** `mcman init [--name <name>] [--mrpack <source> | --packwiz <source>]`
-
 This command is interactive. Just run `mcman init`!
+
+See the [getting started](../tutorials/getting-started.md) tutorial for what to do next
+
+> **Full Command:** `mcman init [--name <name>] [--mrpack <source> | --packwiz <source>]`
 
 ??? "📦 Importing from a mrpack (modrinth modpack)"
     You can use the `--mrpack` flag on `mcman init` to import from an mrpack while initializing a server.

@@ -1,9 +1,6 @@
 # CLI Commands
 
-This section shows the commands of mcman. You can type `mcman` or `mcman --help` for a basic list of it.
-
-!!! warning
-    These docs are incomplete.
+This section shows the commands of mcman. You can type `mcman`, `mcman help` or `mcman --help` for a basic list of it.
 
 ## Cheatsheet
 

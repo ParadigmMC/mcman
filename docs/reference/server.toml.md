@@ -4,9 +4,9 @@ This section is for the `server.toml` configuration file.
 
 Each `server.toml` defines a differient server.
 
+To generate one, you can use the [`mcman init`](../commands/init.md) command ([Tutorial](../tutorials/getting-started.md))
+
 !!! note
-    You shouldn't nest `server.toml` files in sub-folders.
-    
     If you are in your server's sub-directories, mcman will be able to find the `server.toml` file recursively.
 
 ??? example

@@ -1,11 +1,29 @@
-# Building (How it works)
+# Understanding Building
 
-`mcman build` is basically the most important command it has. It, of couse, builds your server.
+Building is the process of... basically building the entire server.
 
-Here are the steps/stages of how it does it:
+Before everything else, building requires a [server.toml](../reference/server.toml.md). Check out the [getting started](./getting-started.md) tutorial if you dont have one.
+
+Before everything, mcman will create a `server/` directory to download everything into if it doesnt exist.
 
 ## 1. Server Jar
 
-To run a minecraft server, you need the server itself! In this stage, mcman basically downloads the `jar` property on the [`server.toml`](../reference/server.toml.md)
+First, mcman will download the server jar. And if neccesary (quilt and buildtools) will run the installer.
 
+## 2. Plugins/Mods
 
+In this stage, mcman downloads every mod and plugin defined in the `server.toml`.
+
+## 3. Datapacks
+
+Like plugins and mods, if there are any, mcman will download every datapack for every world that exists
+
+## 4. Configurations (Bootstrapping)
+
+In this stage, mcman will 'bootstrap' your configuration files - which is a fancy synonim for "copy, paste, find and replace"
+
+You can check the [variables](./variables.md) section for more info
+
+## 5. Scripts
+
+Finally, mcman generates `start.bat` and `start.sh` scripts. These can be disabled and configured further under `server.toml` [(docs here)](../reference/server-launcher.md)

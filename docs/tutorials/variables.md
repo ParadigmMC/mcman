@@ -17,53 +17,55 @@ Prefix = "[funnies]"
 ??? "Using environment variables"
     If your variables are sensitive (such as discord bot tokens) you can use environment variables:
 
-    ```bash title="Linux/Mac"
-    export TOKEN=asdf
-    ```
+    === "Linux"
+        ```bash
+        export TOKEN=asdf
+        ```
 
-    ```bat title="Windows"
-    set TOKEN=asdf
-    ```
+    === "Windows"
+        ```bat
+        set TOKEN=asdf
+        ```
 
-    Environment variables are also put onto config files.
+    Environment variables are combined with the `#!toml [variables]` field while building.
 
 And then use the variables inside any config file inside `config/`:
 
-??? "Example configuration files"
-    ```properties title="📜 config/server.properties"
-    # use a colon (:) to provide defaults inside configs
-    server-port=${PORT:25565}
-    gamemode=creative
-    motd=${MOTD}
-    online-mode=false
-    ```
+```properties title="📜 config/server.properties"
+# use a colon (:) to provide defaults inside configs
+server-port=${PORT:25565}
+gamemode=creative
+motd=${MOTD}
+online-mode=false
+```
 
-    ```yaml title="📜 config/plugins/someplugin/config.yml"
-    bossbar: "${SERVER_NAME} - ${WEBSITE}"
-    messages:
-        no_permissions: ${Prefix} You do not have the permissions.
+```yaml title="📜 config/plugins/someplugin/config.yml"
+bossbar: "${SERVER_NAME} - ${WEBSITE}"
+messages:
+    no_permissions: ${Prefix} You do not have the permissions.
 
-    token: ${TOKEN}
-    ```
+token: ${TOKEN}
+```
 
-Variables are then mapped into every configuration file in `config/` to `server/` while [building](../commands/build.md) the server.
+Variables are then mapped into every configuration file in `config/` to `server/` while [building](./building.md) the server.
 
-??? "Results after `mcman build` with the config files above"
-    ```properties title="📜 server/server.properties"
-    # use a colon (:) to provide defaults inside configs
-    server-port=25500
-    gamemode=creative
-    motd=welcome to funnies
-    online-mode=false
-    ```
+## Results in server/
 
-    ```yaml title="📜 server/plugins/someplugin/config.yml"
-    bossbar: "funnies - https://example.com/"
-    messages:
-        no_permissions: [funnies] You do not have the permissions.
+```properties title="📜 server/server.properties"
+# use a colon (:) to provide defaults inside configs
+server-port=25500
+gamemode=creative
+motd=welcome to funnies
+online-mode=false
+```
 
-    token: asdf
-    ```
+```yaml title="📜 server/plugins/someplugin/config.yml"
+bossbar: "funnies - https://example.com/"
+messages:
+    no_permissions: [funnies] You do not have the permissions.
+
+token: asdf
+```
 
 ## Special Variables
 

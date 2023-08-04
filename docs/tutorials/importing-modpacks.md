@@ -2,6 +2,14 @@
 
 `mcman` can import from the [mrpack](https://modrinth.com/modpacks) format (modrinth modpacks) or [packwiz](https://packwiz.infra.link/) packs.
 
+??? question "Can I import after initializing?"
+    Yes you can!
+
+    - For mrpacks: `mcman import mrpack <source>`
+    - For packwiz packs: `mcman import packwiz <source>`
+
+    The source arguments are the same
+
 ## mrpack
 
 You can import mrpacks with the `--mrpack` flag while initializing:
@@ -30,10 +38,6 @@ The `source` argument can be
 * An URL with `http`/`https` scheme
 * Path to a local `pack.toml` file
 
-??? question "Can I import after initializing?"
-    Yes you can!
+## Whats next?
 
-    - For mrpacks: `mcman import mrpack <source>`
-    - For packwiz packs: `mcman import packwiz <source>`
-
-    The source arguments are the same
+Tutorial -> Getting Started -> [Building](./getting-started.md#building)

@@ -1,6 +1,9 @@
 <!-- markdownlint-disable MD033 -->
 # `mcman` Documentation
 
+> Warning:
+> Outdated, see [this website](https://paradigmmc.github.io/mcman/) for more up-to-date docs
+
 You might be looking for [tutorial.md](./TUTORIAL.md)
 
 Index:

@@ -1,5 +1,9 @@
+# rust
 target/
+# developer testing
 test/
+# mkdocs output
+site/
 
 # mcman: Exclude mcman build outputs
 **/server

@@ -1,16 +1,6 @@
 # Downloadable
 
-A `Downloadable` is some project, entity etc. from a source.
-
-## Server Software
-
-- [Vanilla](../servertype/vanilla.md)
-- [Fabric](../servertype/fabric.md) - `modded`
-- [Quilt](../servertype/quilt.md) - `modded`
-- [PaperMC](../servertype/papermc.md) (paper, velocity and waterfall) - `bukkit`/`proxy`
-- [Purpur](./purpurmc.md) - `bukkit`
-- [BungeeCord](./bungeecord.md) - `proxy`
-- [BuildTools](./buildtools.md) (spigot and craftbukkit) - `bukkit`
+A `Downloadable` is a plugin, mod, datapack or any other thing that is, downloadable.
 
 ## Sources
 
