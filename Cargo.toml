@@ -2,8 +2,16 @@
 name = "mcman"
 version = "0.3.0"
 edition = "2021"
-authors = ["ParadigmMC"]
 repository = "https://github.com/ParadigmMC/mcman"
+homepage = "https://paradigmmc.github.io/mcman/"
+authors = ["ParadigmMC"]
+license = "gpl"
+description = "Powerful Minecraft Server Manager CLI"
+documentation = "https://paradigmmc.github.io/mcman/"
+keywords = [
+    "minecraft", "server"
+]
+categories = ["command-line-utilities", "config", ""]
 
 [profile.release]
 debug = false
@@ -37,3 +45,4 @@ sha2 = "0.10"
 notify = { version = "6.0.1", default-features = false }
 glob-match = "0.2"
 async-trait = "0.1.72"
+roxmltree = "0.18"

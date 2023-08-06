@@ -874,6 +874,7 @@ dependencies = [
  "pathdiff",
  "regex",
  "reqwest",
+ "roxmltree",
  "rpackwiz",
  "semver",
  "serde",

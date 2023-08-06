@@ -55,17 +55,3 @@ pub fn get_spigot_url(id: &str) -> String {
     let id_parsed = get_resource_id(id);
     format!("https://api.spiget.org/v2/resources/{id_parsed}/download")
 }
-
-pub async fn download_spigot_resource(
-    id: &str,
-    client: &reqwest::Client,
-) -> Result<reqwest::Response> {
-    //let version = fetch_spigot_resource_latest_ver(id, client).await.context("fetching latest version")?;
-    //let id_parsed = get_resource_id(id);
-
-    Ok(client
-        .get(get_spigot_url(id))
-        .send()
-        .await?
-        .error_for_status()?)
-}

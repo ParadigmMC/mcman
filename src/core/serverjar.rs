@@ -21,7 +21,7 @@ impl BuildContext {
         let serverjar_name = match self
             .server
             .jar
-            .get_install_method(&self.http_client)
+            .get_install_method(&self.http_client, &self.server.mc_version)
             .await?
         {
             InstallMethod::Installer {
@@ -35,7 +35,7 @@ impl BuildContext {
                     .downloadable(&self.server.jar, None, |state, filename| match state {
                         ReportBackState::Skipped => {
                             println!(
-                                "          {name} present ({})",
+                                "          {name} is present ({})",
                                 style(filename.clone()).dim()
                             );
                         }
@@ -49,15 +49,25 @@ impl BuildContext {
                     })
                     .await?;
 
+                let jar_name = jar_name.replace("${mcver}", &self.server.mc_version);
+
                 if !self.force && self.output_dir.join(&jar_name).exists() {
                     println!(
                         "          Skipping server jar ({})",
-                        style(jar_name.clone()).dim()
+                        style(if rename_from.is_some() {
+                            jar_name.clone()
+                        } else {
+                            "<in libraries>".to_owned()
+                        }).dim()
                     );
                 } else {
                     println!(
                         "          Installing server jar... ({})",
-                        style(jar_name.clone()).dim()
+                        style(if rename_from.is_some() {
+                            jar_name.clone()
+                        } else {
+                            "<in libraries>".to_owned()
+                        }).dim()
                     );
 
                     let mut cmd_args = vec!["-jar", &installer_jar];
@@ -105,7 +115,7 @@ impl BuildContext {
             }
         }?;
 
-        self.startup_method = self.server.jar.get_startup_method(&serverjar_name);
+        self.startup_method = self.server.jar.get_startup_method(&self.http_client, &serverjar_name, &self.server.mc_version).await?;
 
         Ok(())
     }

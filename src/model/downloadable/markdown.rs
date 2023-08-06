@@ -32,6 +32,9 @@ impl Downloadable {
                 let link = url.clone() + &str_process_job(job);
                 format!("[{job}]({link})")
             }
+            Self::Maven { url, group, .. } => {
+                format!("[{g}]({url}/{g})", g = group.replace('.', "/"))
+            }
             Self::Spigot { id } => {
                 format!("[{id}](https://www.spigotmc.org/resources/{id})")
             }
@@ -104,6 +107,11 @@ impl Downloadable {
                 map.insert("Version".to_owned(), format!("{build} / `{artifact}`"));
             }
 
+            Self::Maven { version, .. } => {
+                map.insert("Name".to_owned(), self.get_md_link());
+                map.insert("Version".to_owned(), version.to_owned());
+            }
+
             Self::Url {
                 url,
                 filename,
@@ -132,11 +140,12 @@ impl Downloadable {
     pub fn get_type_name(&self) -> String {
         match self {
             Self::Url { .. } => "URL",
-            Self::GithubRelease { .. } => "GithubRelease",
+            Self::GithubRelease { .. } => "GithubRel",
             Self::Jenkins { .. } => "Jenkins",
             Self::Modrinth { .. } => "Modrinth",
             Self::CurseRinth { .. } => "CurseRinth",
             Self::Spigot { .. } => "Spigot",
+            Self::Maven { .. } => "Maven",
         }
         .to_owned()
     }
@@ -180,6 +189,12 @@ impl Downloadable {
                 map.insert("Version/Release".to_owned(), build.clone());
                 map.insert("Asset/File".to_owned(), artifact.clone());
             }
+
+            Self::Maven { url, group, artifact, version, filename } => {
+                map.insert("Project/URL".to_owned(), format!("{group}.{artifact} - ({url})"));
+                map.insert("Version/Release".to_owned(), version.clone());
+                map.insert("Asset/File".to_owned(), filename.clone());
+            }
         }
 
         map
@@ -198,6 +213,9 @@ impl Downloadable {
                 } else {
                     "URL".to_string()
                 }
+            }
+            Self::Maven { group, artifact, .. } => {
+                format!("Maven/{group}.{artifact}")
             }
         }
     }

@@ -1,5 +1,6 @@
 pub mod env;
 pub mod hash;
+pub mod maven_import;
 pub mod md;
 pub mod mrpack;
 pub mod packwiz;
@@ -72,4 +73,15 @@ pub fn is_default_str(s: &str) -> bool {
 //       maybe also support bare asset id? current is asset filename
 pub fn match_artifact_name(input: &str, artifact_name: &str) -> bool {
     artifact_name.contains(input)
+}
+
+pub fn get_latest_semver(list: Vec<String>) -> Option<String> {
+    let mut list = list
+        .iter()
+        .filter_map(|s| semver::Version::parse(s).ok())
+        .collect::<Vec<_>>();
+
+    list.sort_by(semver::Version::cmp);
+
+    list.last().map(|v| v.to_string())
 }

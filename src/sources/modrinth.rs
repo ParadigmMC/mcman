@@ -174,15 +174,3 @@ pub async fn get_modrinth_url(
 
 // TODO: more complex version matching ie. mc version and server software
 // TODO: also impl modrinth in mcapi and use that instead
-pub async fn download_modrinth(
-    id: &str,
-    version: &str,
-    client: &reqwest::Client,
-    query: Option<(&str, &str)>,
-) -> Result<reqwest::Response> {
-    let url = get_modrinth_url(id, version, client, query).await?;
-
-    let res = client.get(&url).send().await?.error_for_status()?;
-
-    Ok(res)
-}

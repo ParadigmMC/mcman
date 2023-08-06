@@ -129,16 +129,3 @@ pub async fn get_curserinth_url(
 
     Ok(file.url.clone())
 }
-
-pub async fn download_curserinth(
-    id: &str,
-    version: &str,
-    client: &reqwest::Client,
-    query: Option<(&str, &str)>,
-) -> Result<reqwest::Response> {
-    let url = get_curserinth_url(id, version, client, query).await?;
-
-    let res = client.get(&url).send().await?.error_for_status()?;
-
-    Ok(res)
-}

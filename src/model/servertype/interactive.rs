@@ -8,10 +8,10 @@ use super::ServerType;
 impl ServerType {
     pub fn select_jar_interactive() -> Result<Self> {
         let items = vec![
-            SelectItem(0, "Vanilla       - No patches".to_owned()),
-            SelectItem(1, "PaperMC/Paper - Spigot fork, most popular".to_owned()),
-            SelectItem(2, "Purpur        - Paper fork".to_owned()),
-            SelectItem(3, "BuildTools    - Spigot or CraftBukkit".to_owned()),
+            SelectItem(0, "Vanilla    - No patches".to_owned()),
+            SelectItem(1, "PaperMC    - Spigot fork, most popular".to_owned()),
+            SelectItem(2, "Purpur     - Paper fork".to_owned()),
+            SelectItem(3, "BuildTools - Spigot or CraftBukkit".to_owned()),
         ];
 
         let jar_type = Select::with_theme(&ColorfulTheme::default())
@@ -58,15 +58,16 @@ impl ServerType {
 
     pub fn select_modded_jar_interactive() -> Result<Self> {
         let items = [
-            (0, "Quilt  - Modern, fabric compatible (Beta)"),
-            (1, "Fabric - Lightweight"),
-            //(2, "Forge  - Ye' olde modde"),
+            (0, "Quilt (fabric compatible)"),
+            (1, "Fabric"),
+            (2, "NeoForged (forge compatible)"),
+            (3, "Forge"),
         ];
 
         let items_str: Vec<String> = items.iter().map(|v| v.1.to_owned()).collect();
 
         let jar_type = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("Which (modded) server software to use?")
+            .with_prompt("Which mod loader to use?")
             .default(0)
             .items(&items_str)
             .interact()?;
@@ -80,7 +81,8 @@ impl ServerType {
                 loader: "latest".to_owned(),
                 installer: "latest".to_owned(),
             },
-            2 => todo!(),
+            2 => Self::NeoForge { loader: "latest".to_owned() },
+            3 => Self::Forge { loader: "latest".to_owned() },
             _ => unreachable!(),
         })
     }

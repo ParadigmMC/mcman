@@ -2,14 +2,15 @@ use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
+use crate::sources::maven::{get_maven_url, self};
 use crate::{model::Server, Source};
 
 use crate::sources::{
-    curserinth::{download_curserinth, fetch_curserinth_filename, get_curserinth_url},
+    curserinth::{ fetch_curserinth_filename, get_curserinth_url},
     github::{download_github_release, fetch_github_release_filename, get_github_release_url},
-    jenkins::{download_jenkins, get_jenkins_download_url, get_jenkins_filename},
-    modrinth::{download_modrinth, fetch_modrinth_filename, get_modrinth_url},
-    spigot::{download_spigot_resource, fetch_spigot_resource_latest_ver, get_spigot_url},
+    jenkins::{ get_jenkins_download_url, get_jenkins_filename},
+    modrinth::{ fetch_modrinth_filename, get_modrinth_url},
+    spigot::{fetch_spigot_resource_latest_ver, get_spigot_url},
 };
 mod import_url;
 mod markdown;
@@ -56,6 +57,17 @@ pub enum Downloadable {
         #[serde(default = "first")]
         artifact: String,
     },
+
+    Maven {
+        url: String,
+        group: String,
+        #[serde(default = "first")]
+        artifact: String,
+        #[serde(default = "latest")]
+        version: String,
+        #[serde(default = "artifact")]
+        filename: String,
+    },
 }
 
 pub fn latest() -> String {
@@ -66,13 +78,19 @@ pub fn first() -> String {
     "first".to_owned()
 }
 
+pub fn artifact() -> String {
+    "artifact".to_owned()
+}
+
 impl Downloadable {
-    /// only for exporting uses, every downloadable is supported* hehe :3 -dennis
     pub async fn get_url(
         &self,
         client: &reqwest::Client,
+        server: &Server,
         filename_hint: Option<&str>,
     ) -> Result<String> {
+        let mcver = &server.mc_version;
+
         match self {
             Self::Url { url, .. } => Ok(url.clone()),
 
@@ -84,7 +102,7 @@ impl Downloadable {
             }
             Self::Spigot { id } => Ok(get_spigot_url(id)),
             Self::GithubRelease { repo, tag, asset } => {
-                Ok(get_github_release_url(repo, tag, asset, client, filename_hint).await?)
+                Ok(get_github_release_url(repo, tag, asset, mcver, client, filename_hint).await?)
             }
 
             Self::Jenkins {
@@ -93,6 +111,10 @@ impl Downloadable {
                 build,
                 artifact,
             } => Ok(get_jenkins_download_url(client, url, job, build, artifact).await?),
+
+            Self::Maven { url, group, artifact, version, filename } => {
+                Ok(get_maven_url(client, url, group, artifact, version, filename, mcver).await?)
+            }
         }
     }
 }
@@ -101,34 +123,27 @@ impl Downloadable {
 impl Source for Downloadable {
     async fn download(
         &self,
-        _server: &Server,
+        server: &Server,
         client: &reqwest::Client,
         filename_hint: Option<&str>,
     ) -> Result<reqwest::Response> {
         match self {
-            Self::Url { url, .. } => Ok(client.get(url).send().await?.error_for_status()?),
-
-            Self::Modrinth { id, version } => {
-                Ok(download_modrinth(id, version, client, None).await?)
-            }
-            Self::CurseRinth { id, version } => {
-                Ok(download_curserinth(id, version, client, None).await?)
-            }
-            Self::Spigot { id } => Ok(download_spigot_resource(id, client).await?),
             Self::GithubRelease { repo, tag, asset } => {
-                Ok(download_github_release(repo, tag, asset, client, filename_hint).await?)
+                Ok(download_github_release(repo, tag, asset, &server.mc_version, client, filename_hint).await?)
             }
 
-            Self::Jenkins {
-                url,
-                job,
-                build,
-                artifact,
-            } => Ok(download_jenkins(client, url, job, build, artifact).await?),
+            dl => {
+                Ok(client.get(dl.get_url(client, server, filename_hint).await?)
+                    .send()
+                    .await?
+                    .error_for_status()?)
+            }
         }
     }
 
-    async fn get_filename(&self, _server: &Server, client: &reqwest::Client) -> Result<String> {
+    async fn get_filename(&self, server: &Server, client: &reqwest::Client) -> Result<String> {
+        let mcver = &server.mc_version;
+
         match self {
             Self::Url { url, filename, .. } => {
                 if let Some(filename) = filename {
@@ -156,7 +171,7 @@ impl Source for Downloadable {
 
             // problematic stuff part 2345
             Self::GithubRelease { repo, tag, asset } => {
-                Ok(fetch_github_release_filename(repo, tag, asset, client).await?)
+                Ok(fetch_github_release_filename(repo, tag, asset, mcver, client).await?)
             }
 
             Self::Jenkins {
@@ -167,6 +182,10 @@ impl Source for Downloadable {
             } => Ok(get_jenkins_filename(client, url, job, build, artifact)
                 .await?
                 .1),
+            
+            Self::Maven { url, group, artifact, version, filename } => {
+                Ok(maven::get_maven_filename(client, url, group, artifact, version, filename, mcver).await?)
+            }
         }
     }
 }
@@ -208,6 +227,21 @@ impl std::fmt::Display for Downloadable {
                 .field("Job", job)
                 .field("Build ID", build)
                 .field("Artifact", artifact)
+                .finish(),
+
+            Self::Maven {
+                url,
+                group,
+                artifact,
+                version,
+                filename,
+            } => f
+                .debug_struct("Maven")
+                .field("Instance URL", url)
+                .field("Group", group)
+                .field("Artifact", artifact)
+                .field("Version", version)
+                .field("Filename", filename)
                 .finish(),
         }
     }

@@ -6,12 +6,14 @@ use crate::Source;
 
 use crate::model::Downloadable;
 use crate::sources::{
-    fabric::{download_fabric, fetch_fabric_latest_installer, fetch_fabric_latest_loader},
-    jenkins::{download_jenkins, get_jenkins_filename},
-    papermc::{download_papermc_build, fetch_papermc_build},
-    purpur::{download_purpurmc_build, fetch_purpurmc_builds},
-    quilt::{download_quilt_installer, get_installer_filename, map_quilt_loader_version},
-    vanilla::fetch_vanilla,
+    fabric,
+    jenkins,
+    papermc,
+    purpur,
+    quilt,
+    vanilla,
+    neoforge,
+    forge,
 };
 
 use super::{Server, StartupMethod};
@@ -19,6 +21,7 @@ use super::{Server, StartupMethod};
 pub mod interactive;
 pub mod meta;
 
+#[derive(Debug, PartialEq)]
 pub enum SoftwareType {
     Normal,
     Modded,
@@ -64,6 +67,17 @@ pub enum ServerType {
 
         #[serde(default = "latest")]
         installer: String,
+    },
+
+    #[serde(alias = "neoforged")]
+    NeoForge {
+        #[serde(default = "latest")]
+        loader: String,
+    },
+
+    Forge {
+        #[serde(default = "latest")]
+        loader: String,
     },
 
     BuildTools {
@@ -139,7 +153,10 @@ impl ServerType {
             Self::PaperMC { project, .. } if project == "velocity" || project == "waterfall" => {
                 SoftwareType::Proxy
             }
-            Self::Quilt { .. } | Self::Fabric { .. } => SoftwareType::Modded,
+            Self::Quilt { .. }
+            | Self::Fabric { .. }
+            | Self::NeoForge { .. }
+            | Self::Forge { .. } => SoftwareType::Modded,
             Self::Vanilla {}
             | Self::Paper {}
             | Self::PaperMC { .. }
@@ -149,7 +166,11 @@ impl ServerType {
         }
     }
 
-    pub async fn get_install_method(&self, http_client: &reqwest::Client) -> Result<InstallMethod> {
+    pub async fn get_install_method(
+        &self,
+        http_client: &reqwest::Client,
+        mcver: &str,
+    ) -> Result<InstallMethod> {
         Ok(match self.clone() {
             Self::Quilt { loader, .. } => {
                 let mut args = vec!["install", "server", "${mcver}"];
@@ -168,12 +189,32 @@ impl ServerType {
                     rename_from: Some("quilt-server-launch.jar".to_owned()),
                     jar_name: format!(
                         "quilt-server-launch-${{mcver}}-{}.jar",
-                        map_quilt_loader_version(http_client, &loader)
+                        quilt::map_quilt_loader_version(http_client, &loader)
                             .await
                             .context("resolving quilt loader version id (latest/latest-beta)")?
                     ),
                 }
             }
+            Self::NeoForge { loader } => InstallMethod::Installer {
+                name: "NeoForged Installer".to_owned(),
+                label: "nfi".to_owned(),
+                args: vec!["--installServer".to_owned(), ".".to_owned()],
+                rename_from: None,
+                jar_name: format!(
+                    "libraries/net/neoforged/forge/${{mcver}}-{0}/forge-${{mcver}}-{0}-server.jar",
+                    neoforge::map_neoforge_version(&loader, mcver, http_client).await?
+                )
+            },
+            Self::Forge { loader } => InstallMethod::Installer {
+                name: "Forge Installer".to_owned(),
+                label: "fi".to_owned(),
+                args: vec!["--installServer".to_owned(), ".".to_owned()],
+                rename_from: None,
+                jar_name: format!(
+                    "libraries/net/minecraftforge/forge/${{mcver}}-{0}/forge-${{mcver}}-{0}-server.jar",
+                    forge::map_forge_version(&loader, mcver, http_client).await?
+                )
+            },
             Self::BuildTools { args, software } => {
                 let mut buildtools_args = vec![
                     "--compile",
@@ -206,17 +247,43 @@ impl ServerType {
         })
     }
 
-    pub fn get_startup_method(&self, serverjar_name: &str) -> StartupMethod {
-        #[allow(clippy::match_single_binding)]
-        match self {
-            //Self::Forge { .. } => StartupMethod::Custom(vec![""]),
-            //Self::NeoForge { .. } => StartupMethod::Custom(vec!["@libraries/net/neoforged/forge/1.20.1-47.1.57/win_args.txt"]),
+    pub async fn get_startup_method(
+        &self,
+        http_client: &reqwest::Client,
+        serverjar_name: &str,
+        mcver: &str,
+    ) -> Result<StartupMethod> {
+        Ok(match self {
+            Self::NeoForge { loader } => {
+                let l = neoforge::map_neoforge_version(loader, mcver, http_client).await?;
+
+                StartupMethod::Custom {
+                    windows: vec![format!(
+                        "@libraries/net/neoforged/forge/{mcver}-{l}/win_args.txt"
+                    )],
+                    linux: vec![format!(
+                        "@libraries/net/neoforged/forge/{mcver}-{l}/unix_args.txt"
+                    )],
+                }
+            }
+            Self::Forge { loader } => {
+                let l = forge::map_forge_version(loader, mcver, http_client).await?;
+
+                StartupMethod::Custom {
+                    windows: vec![format!(
+                        "@libraries/net/minecraftforge/forge/{mcver}-{l}/win_args.txt"
+                    )],
+                    linux: vec![format!(
+                        "@libraries/net/minecraftforge/forge/{mcver}-{l}/unix_args.txt"
+                    )],
+                }
+            }
             _ => StartupMethod::Jar(serverjar_name.to_owned()),
-        }
+        })
     }
 
     pub fn is_modded(&self) -> bool {
-        matches!(self, Self::Fabric { .. } | Self::Quilt { .. })
+        self.get_software_type() == SoftwareType::Modded
     }
 
     pub fn supports_eula_args(&self) -> bool {
@@ -234,43 +301,47 @@ impl Source for ServerType {
     ) -> Result<reqwest::Response> {
         let mcver = server.mc_version.clone();
         match self {
-            Self::Vanilla {} => Ok(fetch_vanilla(&mcver, client).await?),
+            Self::Vanilla {} => Ok(vanilla::fetch_vanilla(&mcver, client).await?),
             Self::PaperMC { project, build } => {
-                Ok(download_papermc_build(project, &mcver, build, client).await?)
+                Ok(papermc::download_papermc_build(project, &mcver, build, client).await?)
             }
-            Self::Purpur { build } => Ok(download_purpurmc_build(&mcver, build, client).await?),
+            Self::Purpur { build } => {
+                Ok(purpur::download_purpurmc_build(&mcver, build, client).await?)
+            }
 
-            Self::BungeeCord {} => Ok(download_jenkins(
-                client,
-                BUNGEECORD_JENKINS,
-                BUNGEECORD_JOB,
-                "latest",
-                BUNGEECORD_ARTIFACT,
-            )
-            .await?),
-
-            Self::BuildTools { .. } => Ok(download_jenkins(
-                client,
-                BUILDTOOLS_JENKINS,
-                "BuildTools",
-                "latest",
-                "BuildTools",
-            )
-            .await?),
-
-            Self::Paper {} => Ok(download_papermc_build("paper", &mcver, "latest", client).await?),
+            Self::Paper {} => {
+                Ok(papermc::download_papermc_build("paper", &mcver, "latest", client).await?)
+            }
             Self::Velocity {} => {
-                Ok(download_papermc_build("velocity", &mcver, "latest", client).await?)
+                Ok(papermc::download_papermc_build("velocity", &mcver, "latest", client).await?)
             }
             Self::Waterfall {} => {
-                Ok(download_papermc_build("waterfall", &mcver, "latest", client).await?)
+                Ok(papermc::download_papermc_build("waterfall", &mcver, "latest", client).await?)
             }
 
             Self::Fabric { loader, installer } => {
-                Ok(download_fabric(client, &mcver, loader, installer).await?)
+                Ok(fabric::download_fabric(client, &mcver, loader, installer).await?)
             }
 
-            Self::Quilt { installer, .. } => Ok(download_quilt_installer(client, installer).await?),
+            Self::Quilt { installer, .. } => {
+                Ok(quilt::download_quilt_installer(client, installer).await?)
+            }
+
+            Self::BungeeCord {} => Ok(bungeecord().download(server, client, filename_hint).await?),
+            Self::BuildTools { .. } => {
+                Ok(buildtools().download(server, client, filename_hint).await?)
+            }
+            Self::NeoForge { loader } => Ok(client
+                .get(neoforge::get_neoforge_installer_url(loader, &mcver, client).await?)
+                .send()
+                .await?
+                .error_for_status()?),
+
+            Self::Forge { loader } => Ok(client
+                .get(forge::get_forge_installer_url(loader, &mcver, client).await?)
+                .send()
+                .await?
+                .error_for_status()?),
 
             Self::Downloadable { inner } => inner.download(server, client, filename_hint).await,
         }
@@ -283,9 +354,10 @@ impl Source for ServerType {
             Self::PaperMC { project, build } => {
                 Ok(get_filename_papermc(project, &mcver, build, client).await?)
             }
+
             Self::Purpur { build } => {
                 if build == "latest" {
-                    let last_build = fetch_purpurmc_builds(&mcver, client)
+                    let last_build = purpur::fetch_purpurmc_builds(&mcver, client)
                         .await?
                         .last()
                         .cloned()
@@ -297,7 +369,7 @@ impl Source for ServerType {
             }
 
             Self::BungeeCord {} => {
-                let build = get_jenkins_filename(
+                let build = jenkins::get_jenkins_filename(
                     client,
                     BUNGEECORD_JENKINS,
                     BUNGEECORD_JOB,
@@ -310,7 +382,7 @@ impl Source for ServerType {
             }
 
             Self::BuildTools { .. } => {
-                let build = get_jenkins_filename(
+                let build = jenkins::get_jenkins_filename(
                     client,
                     BUILDTOOLS_JENKINS,
                     "BuildTools",
@@ -326,27 +398,36 @@ impl Source for ServerType {
             Self::Velocity {} => {
                 Ok(get_filename_papermc("velocity", &mcver, "latest", client).await?)
             }
+
             Self::Waterfall {} => {
                 Ok(get_filename_papermc("waterfall", &mcver, "latest", client).await?)
             }
 
             Self::Fabric { loader, installer } => {
                 let l = match loader.as_str() {
-                    "latest" => fetch_fabric_latest_loader(client).await?,
+                    "latest" => fabric::fetch_fabric_latest_loader(client).await?,
                     id => id.to_owned(),
                 };
 
                 let i = match installer.as_str() {
-                    "latest" => fetch_fabric_latest_installer(client).await?,
+                    "latest" => fabric::fetch_fabric_latest_installer(client).await?,
                     id => id.to_owned(),
                 };
 
-                Ok(format!(
-                    "fabric-server-mc.{mcver}-loader.{l}-launcher.{i}.jar"
-                ))
+                Ok(format!("fabric-server-{mcver}-{l}-{i}.jar"))
             }
 
-            Self::Quilt { installer, .. } => Ok(get_installer_filename(client, installer).await?),
+            Self::Quilt { installer, .. } => {
+                Ok(quilt::get_installer_filename(client, installer).await?)
+            }
+
+            Self::NeoForge { loader } => {
+                Ok(neoforge::get_neoforge_installer_filename(loader, &mcver, client).await?)
+            }
+
+            Self::Forge { loader } => {
+                Ok(forge::get_forge_installer_filename(loader, &mcver, client).await?)
+            }
 
             Self::Downloadable { inner } => inner.get_filename(server, client).await,
         }
@@ -370,6 +451,12 @@ impl std::fmt::Display for ServerType {
                 .field("installer", installer)
                 .finish(),
 
+            Self::NeoForge { loader } => {
+                f.debug_struct("NeoForged").field("loader", loader).finish()
+            }
+
+            Self::Forge { loader } => f.debug_struct("Forge").field("loader", loader).finish(),
+
             Self::BungeeCord {} => f.write_str("BungeeCord"),
             Self::BuildTools { .. } => f.write_str("BuildTools"),
             Self::Paper {} => f.write_str("Paper, latest"),
@@ -391,12 +478,30 @@ async fn get_filename_papermc(
     client: &reqwest::Client,
 ) -> Result<String> {
     if build == "latest" {
-        let build_id = fetch_papermc_build(project, mcver, build, client)
+        let build_id = papermc::fetch_papermc_build(project, mcver, build, client)
             .await?
             .build
             .to_string();
         Ok(format!("{project}-{mcver}-{build_id}.jar"))
     } else {
         Ok(format!("{project}-{mcver}-{build}.jar"))
+    }
+}
+
+pub fn bungeecord() -> Downloadable {
+    Downloadable::Jenkins {
+        url: BUNGEECORD_JENKINS.to_owned(),
+        job: BUNGEECORD_JOB.to_owned(),
+        build: "latest".to_owned(),
+        artifact: BUNGEECORD_ARTIFACT.to_owned(),
+    }
+}
+
+pub fn buildtools() -> Downloadable {
+    Downloadable::Jenkins {
+        url: BUILDTOOLS_JENKINS.to_owned(),
+        job: "BuildTools".to_owned(),
+        build: "latest".to_owned(),
+        artifact: "BuildTools".to_owned(),
     }
 }

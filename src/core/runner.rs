@@ -62,7 +62,7 @@ impl BuildContext {
         let (tx_stop, rx_stop) = oneshot::channel();
 
         // stdout
-        tokio::spawn(async move {
+        let stdout_process = tokio::spawn(async move {
             let mut tx = Some(tx_stop);
             for buf in BufReader::new(stdout).lines() {
                 let buf = buf.unwrap();
@@ -75,13 +75,14 @@ impl BuildContext {
 
                         if test_mode
                             && !test_passed_clone.load(std::sync::atomic::Ordering::Relaxed)
-                            && line.contains("INFO]: Done")
+                            && line.contains("]: Done")
                             && line.ends_with("For help, type \"help\"")
                             && tx.is_some()
                         {
                             println!(
-                                "{} Server started successfully, stopping in 5s...",
-                                style("<TE>").yellow().bold()
+                                "{} {}",
+                                style("<TE>").yellow().bold(),
+                                style("Server started successfully, stopping in 5s...").yellow()
                             );
                             test_passed_clone.store(true, std::sync::atomic::Ordering::Relaxed);
                             tx.take()
@@ -109,6 +110,7 @@ impl BuildContext {
         }
 
         let exit_status = child.wait()?;
+        stdout_process.await.context("Awaiting stdout proxy printing thread")?;
 
         if !exit_status.success() {
             println!();

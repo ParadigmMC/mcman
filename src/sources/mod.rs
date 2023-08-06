@@ -8,3 +8,6 @@ pub mod purpur;
 pub mod quilt;
 pub mod spigot;
 pub mod vanilla;
+pub mod maven;
+pub mod neoforge;
+pub mod forge;

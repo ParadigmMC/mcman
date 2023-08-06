@@ -425,7 +425,7 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
             }
             dl => {
                 let filename = dl.get_filename(server, http_client).await?;
-                if let Ok(url) = dl.get_url(http_client, Some(&filename)).await {
+                if let Ok(url) = dl.get_url(http_client, server, Some(&filename)).await {
                     files.push(MRPackFile {
                         hashes: HashMap::new(), // ! todo...???
                         env: None,
@@ -536,7 +536,7 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
             }
             dl => {
                 let filename = dl.get_filename(server, http_client).await?;
-                if let Ok(url) = dl.get_url(http_client, Some(&filename)).await {
+                if let Ok(url) = dl.get_url(http_client, server, Some(&filename)).await {
                     files.push(MRPackFile {
                         hashes: HashMap::new(), // ! todo...???
                         env: None,

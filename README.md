@@ -44,7 +44,17 @@ Submit a PR or open an issue if you have a mcman-server repository that we can a
 
 ## Changelog
 
-### `0.3.0` (unreleased)
+whats a semver? /s
+
+### `0.3.1` (unreleased)
+
+- Added [neoforge](https://neoforged.net/) server type
+- Added [Forge](https://forums.minecraftforge.net/) server type
+- Added Downloadable type **Maven**
+- Improved building process
+- Fixed a bug on `mcman run` which messed up the output when server crashes
+
+### `0.3.0`
 
 - Added [CurseRinth](https://curserinth.kuylar.dev/) support
 - Added **packwiz importing**
