@@ -58,7 +58,8 @@ impl BuildContext {
                             jar_name.clone()
                         } else {
                             "<in libraries>".to_owned()
-                        }).dim()
+                        })
+                        .dim()
                     );
                 } else {
                     println!(
@@ -67,7 +68,8 @@ impl BuildContext {
                             jar_name.clone()
                         } else {
                             "<in libraries>".to_owned()
-                        }).dim()
+                        })
+                        .dim()
                     );
 
                     let mut cmd_args = vec!["-jar", &installer_jar];
@@ -115,7 +117,11 @@ impl BuildContext {
             }
         }?;
 
-        self.startup_method = self.server.jar.get_startup_method(&self.http_client, &serverjar_name, &self.server.mc_version).await?;
+        self.startup_method = self
+            .server
+            .jar
+            .get_startup_method(&self.http_client, &serverjar_name, &self.server.mc_version)
+            .await?;
 
         Ok(())
     }

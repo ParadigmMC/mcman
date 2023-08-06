@@ -48,11 +48,12 @@ whats a semver? /s
 
 ### `0.3.1` (unreleased)
 
-- Added [neoforge](https://neoforged.net/) server type
+- Added [NeoForge](https://neoforged.net/) server type
 - Added [Forge](https://forums.minecraftforge.net/) server type
 - Added Downloadable type **Maven**
 - Improved building process
 - Fixed a bug on `mcman run` which messed up the output when server crashes
+- Some downloadables now support variables
 
 ### `0.3.0`
 

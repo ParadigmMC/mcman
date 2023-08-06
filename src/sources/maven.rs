@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 
 pub fn get_metadata_url(url: &str, group_id: &str, artifact_id: &str) -> String {
     format!(
@@ -76,7 +76,8 @@ pub async fn get_maven_filename(
 ) -> Result<String> {
     let version = match_maven_version(client, url, group_id, artifact_id, version, mcver).await?;
 
-    let file = file.replace("${artifact}", artifact_id)
+    let file = file
+        .replace("${artifact}", artifact_id)
         .replace("${version}", &version)
         .replace("${mcversion}", mcver)
         .replace("${mcver}", mcver);
@@ -100,22 +101,23 @@ pub async fn match_maven_version(
 
     let version = match version {
         "latest" => fetch_versions().await?.0,
-        id => if id.contains("$") {
-            let versions = fetch_versions().await?.1;
-            let id = id.replace("${artifact}", artifact_id)
-                .replace("${mcversion}", mcver)
-                .replace("${mcver}", mcver);
-            versions.iter().find(|v| {
-                v.to_owned() == &id
-            }).or_else(|| {
-                versions.iter().find(|v| {
-                    v.contains(&id)
-                })
-            }).ok_or(anyhow!("Couldn't resolve maven artifact version"))?
-            .to_owned()
-        } else {
-            id.to_owned()
-        },
+        id => {
+            if id.contains('$') {
+                let versions = fetch_versions().await?.1;
+                let id = id
+                    .replace("${artifact}", artifact_id)
+                    .replace("${mcversion}", mcver)
+                    .replace("${mcver}", mcver);
+                versions
+                    .iter()
+                    .find(|v| *v == &id)
+                    .or_else(|| versions.iter().find(|v| v.contains(&id)))
+                    .ok_or(anyhow!("Couldn't resolve maven artifact version"))?
+                    .clone()
+            } else {
+                id.to_owned()
+            }
+        }
     };
 
     Ok(version)

@@ -33,7 +33,7 @@ pub async fn get_latest_version_for(mcver: &str, client: &reqwest::Client) -> Re
         .await
         .context("Fetching NeoForge versions")?;
 
-    util::get_latest_semver(loader_versions).ok_or(anyhow!("No loader versions for {mcver}"))
+    util::get_latest_semver(&loader_versions).ok_or(anyhow!("No loader versions for {mcver}"))
 }
 
 pub async fn map_neoforge_version(

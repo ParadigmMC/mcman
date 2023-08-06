@@ -69,7 +69,9 @@ pub async fn fetch_github_release_asset(
         "latest" => releases.first(),
         id => releases.iter().find(|r| r.tag_name == id),
     }
-    .ok_or(anyhow!("Github release with tag '{tag}' not found on repository '{repo}'"))?;
+    .ok_or(anyhow!(
+        "Github release with tag '{tag}' not found on repository '{repo}'"
+    ))?;
 
     let assets = &release.assets;
 
@@ -86,16 +88,18 @@ pub async fn fetch_github_release_asset(
                 id.to_owned()
             };
 
-            assets.iter().find(|a| {
-                id == a.name
-            }).or(assets.iter().find(|a| {
-                a.name.contains(&id)
-            }))
+            assets
+                .iter()
+                .find(|a| id == a.name)
+                .or(assets.iter().find(|a| a.name.contains(&id)))
         }
     }
-    .ok_or(anyhow!("Github release asset with name '{asset}' on release '{}' not found", release.tag_name))?;
+    .ok_or(anyhow!(
+        "Github release asset with name '{asset}' on release '{}' not found",
+        release.tag_name
+    ))?;
 
-    Ok(resolved_asset.to_owned())
+    Ok(resolved_asset.clone())
 }
 
 pub async fn fetch_github_release_filename(

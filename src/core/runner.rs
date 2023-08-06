@@ -110,7 +110,9 @@ impl BuildContext {
         }
 
         let exit_status = child.wait()?;
-        stdout_process.await.context("Awaiting stdout proxy printing thread")?;
+        stdout_process
+            .await
+            .context("Awaiting stdout proxy printing thread")?;
 
         if !exit_status.success() {
             println!();

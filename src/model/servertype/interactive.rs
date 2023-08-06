@@ -81,8 +81,12 @@ impl ServerType {
                 loader: "latest".to_owned(),
                 installer: "latest".to_owned(),
             },
-            2 => Self::NeoForge { loader: "latest".to_owned() },
-            3 => Self::Forge { loader: "latest".to_owned() },
+            2 => Self::NeoForge {
+                loader: "latest".to_owned(),
+            },
+            3 => Self::Forge {
+                loader: "latest".to_owned(),
+            },
             _ => unreachable!(),
         })
     }

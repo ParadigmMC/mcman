@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result, Context};
+use anyhow::{anyhow, Context, Result};
 
 use crate::util;
 
@@ -30,7 +30,7 @@ pub async fn get_versions_for(mcver: &str, client: &reqwest::Client) -> Result<V
 pub async fn get_latest_version_for(mcver: &str, client: &reqwest::Client) -> Result<String> {
     let loader_versions = get_versions_for(mcver, client).await?;
 
-    util::get_latest_semver(loader_versions).ok_or(anyhow!("No loader versions for {mcver}"))
+    util::get_latest_semver(&loader_versions).ok_or(anyhow!("No loader versions for {mcver}"))
 }
 
 pub async fn map_forge_version(

@@ -109,7 +109,7 @@ impl Downloadable {
 
             Self::Maven { version, .. } => {
                 map.insert("Name".to_owned(), self.get_md_link());
-                map.insert("Version".to_owned(), version.to_owned());
+                map.insert("Version".to_owned(), version.clone());
             }
 
             Self::Url {
@@ -190,8 +190,17 @@ impl Downloadable {
                 map.insert("Asset/File".to_owned(), artifact.clone());
             }
 
-            Self::Maven { url, group, artifact, version, filename } => {
-                map.insert("Project/URL".to_owned(), format!("{group}.{artifact} - ({url})"));
+            Self::Maven {
+                url,
+                group,
+                artifact,
+                version,
+                filename,
+            } => {
+                map.insert(
+                    "Project/URL".to_owned(),
+                    format!("{group}.{artifact} - ({url})"),
+                );
                 map.insert("Version/Release".to_owned(), version.clone());
                 map.insert("Asset/File".to_owned(), filename.clone());
             }
@@ -214,7 +223,9 @@ impl Downloadable {
                     "URL".to_string()
                 }
             }
-            Self::Maven { group, artifact, .. } => {
+            Self::Maven {
+                group, artifact, ..
+            } => {
                 format!("Maven/{group}.{artifact}")
             }
         }

@@ -75,7 +75,7 @@ pub fn match_artifact_name(input: &str, artifact_name: &str) -> bool {
     artifact_name.contains(input)
 }
 
-pub fn get_latest_semver(list: Vec<String>) -> Option<String> {
+pub fn get_latest_semver(list: &[String]) -> Option<String> {
     let mut list = list
         .iter()
         .filter_map(|s| semver::Version::parse(s).ok())
@@ -83,5 +83,5 @@ pub fn get_latest_semver(list: Vec<String>) -> Option<String> {
 
     list.sort_by(semver::Version::cmp);
 
-    list.last().map(|v| v.to_string())
+    list.last().map(ToString::to_string)
 }

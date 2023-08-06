@@ -1,13 +1,13 @@
 pub mod curserinth;
 pub mod fabric;
+pub mod forge;
 pub mod github;
 pub mod jenkins;
+pub mod maven;
 pub mod modrinth;
+pub mod neoforge;
 pub mod papermc;
 pub mod purpur;
 pub mod quilt;
 pub mod spigot;
 pub mod vanilla;
-pub mod maven;
-pub mod neoforge;
-pub mod forge;

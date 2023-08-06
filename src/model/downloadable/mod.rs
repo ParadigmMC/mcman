@@ -2,14 +2,14 @@ use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use crate::sources::maven::{get_maven_url, self};
+use crate::sources::maven::{self, get_maven_url};
 use crate::{model::Server, Source};
 
 use crate::sources::{
-    curserinth::{ fetch_curserinth_filename, get_curserinth_url},
+    curserinth::{fetch_curserinth_filename, get_curserinth_url},
     github::{download_github_release, fetch_github_release_filename, get_github_release_url},
-    jenkins::{ get_jenkins_download_url, get_jenkins_filename},
-    modrinth::{ fetch_modrinth_filename, get_modrinth_url},
+    jenkins::{get_jenkins_download_url, get_jenkins_filename},
+    modrinth::{fetch_modrinth_filename, get_modrinth_url},
     spigot::{fetch_spigot_resource_latest_ver, get_spigot_url},
 };
 mod import_url;
@@ -112,9 +112,13 @@ impl Downloadable {
                 artifact,
             } => Ok(get_jenkins_download_url(client, url, job, build, artifact).await?),
 
-            Self::Maven { url, group, artifact, version, filename } => {
-                Ok(get_maven_url(client, url, group, artifact, version, filename, mcver).await?)
-            }
+            Self::Maven {
+                url,
+                group,
+                artifact,
+                version,
+                filename,
+            } => Ok(get_maven_url(client, url, group, artifact, version, filename, mcver).await?),
         }
     }
 }
@@ -128,16 +132,21 @@ impl Source for Downloadable {
         filename_hint: Option<&str>,
     ) -> Result<reqwest::Response> {
         match self {
-            Self::GithubRelease { repo, tag, asset } => {
-                Ok(download_github_release(repo, tag, asset, &server.mc_version, client, filename_hint).await?)
-            }
+            Self::GithubRelease { repo, tag, asset } => Ok(download_github_release(
+                repo,
+                tag,
+                asset,
+                &server.mc_version,
+                client,
+                filename_hint,
+            )
+            .await?),
 
-            dl => {
-                Ok(client.get(dl.get_url(client, server, filename_hint).await?)
-                    .send()
-                    .await?
-                    .error_for_status()?)
-            }
+            dl => Ok(client
+                .get(dl.get_url(client, server, filename_hint).await?)
+                .send()
+                .await?
+                .error_for_status()?),
         }
     }
 
@@ -182,10 +191,17 @@ impl Source for Downloadable {
             } => Ok(get_jenkins_filename(client, url, job, build, artifact)
                 .await?
                 .1),
-            
-            Self::Maven { url, group, artifact, version, filename } => {
-                Ok(maven::get_maven_filename(client, url, group, artifact, version, filename, mcver).await?)
-            }
+
+            Self::Maven {
+                url,
+                group,
+                artifact,
+                version,
+                filename,
+            } => Ok(maven::get_maven_filename(
+                client, url, group, artifact, version, filename, mcver,
+            )
+            .await?),
         }
     }
 }

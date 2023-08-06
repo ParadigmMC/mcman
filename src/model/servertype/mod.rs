@@ -5,16 +5,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use crate::Source;
 
 use crate::model::Downloadable;
-use crate::sources::{
-    fabric,
-    jenkins,
-    papermc,
-    purpur,
-    quilt,
-    vanilla,
-    neoforge,
-    forge,
-};
+use crate::sources::{fabric, forge, jenkins, neoforge, papermc, purpur, quilt, vanilla};
 
 use super::{Server, StartupMethod};
 
