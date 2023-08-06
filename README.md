@@ -46,7 +46,7 @@ Submit a PR or open an issue if you have a mcman-server repository that we can a
 
 whats a semver? /s
 
-### `0.3.1` (unreleased)
+### `0.4.0` (unreleased)
 
 - Added [NeoForge](https://neoforged.net/) server type
 - Added [Forge](https://forums.minecraftforge.net/) server type

@@ -15,7 +15,7 @@ impl ServerType {
             Self::PaperMC { .. } => "PaperMC".to_owned(),
             Self::Quilt { .. } => "Quilt".to_owned(),
             Self::BuildTools { .. } => "BuildTools".to_owned(),
-            Self::NeoForge { .. } => "NeoForged".to_owned(),
+            Self::NeoForge { .. } => "NeoForge".to_owned(),
             Self::Forge { .. } => "Forge".to_owned(),
             Self::Downloadable { inner } => inner.get_type_name(),
         }
@@ -39,7 +39,7 @@ impl ServerType {
                 format!("[PaperMC/{project}](https://github.com/PaperMC/{project}); build {build}")
             }
             Self::Quilt { .. } => "[Quilt](https://quiltmc.org/)".to_owned(),
-            Self::NeoForge { .. } => "[NeoForged](https://neoforged.net/)".to_owned(),
+            Self::NeoForge { .. } => "[NeoForge](https://neoforged.net/)".to_owned(),
             Self::Forge { .. } => "[Forge](https://forums.minecraftforge.net/)".to_owned(),
             Self::Downloadable { inner } => inner.get_md_link(),
         }

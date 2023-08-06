@@ -1,4 +1,4 @@
-# Server Type
+# Server Types
 
 A server type is like a [Downloadable](../downloadable/index.md) but for server softwares.
 
@@ -8,8 +8,10 @@ A server type is like a [Downloadable](../downloadable/index.md) but for server 
 ## Index
 
 - [Vanilla](../servertype/vanilla.md)
-- [Fabric](../servertype/fabric.md) - `modded`
 - [Quilt](../servertype/quilt.md) - `modded`
+- [Fabric](../servertype/fabric.md) - `modded`
+- [NeoForge](../servertype/neoforge.md) - `modded`
+- [Forge](../servertype/forge.md) - `modded`
 - [PaperMC](../servertype/papermc.md)
     - [Paper](../servertype/papermc.md#shortcuts) `bukkit`
     - [Velocity](../servertype/papermc.md#shortcuts) `proxy`

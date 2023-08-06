@@ -1,4 +1,4 @@
-# Downloadable
+# Downloadables
 
 A `Downloadable` is a plugin, mod, datapack or any other thing that is, downloadable.
 
@@ -9,4 +9,5 @@ A `Downloadable` is a plugin, mod, datapack or any other thing that is, download
 - [CurseRinth](./curserinth.md), curseforge api - `mods`
 - [Github Releases](./github-releases.md) - `*`
 - [Jenkins](./jenkins.md) - `*`
+- [Maven](./maven.md) - `*`
 - [Custom URL](./custom-url.md) - `*`

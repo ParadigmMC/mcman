@@ -34,18 +34,21 @@ nav:
       - reference/servertype/vanilla.md
       - reference/servertype/fabric.md
       - reference/servertype/quilt.md
+      - reference/servertype/neoforge.md
+      - reference/servertype/forge.md
       - reference/servertype/papermc.md
       - reference/servertype/purpurmc.md
       - reference/servertype/bungeecord.md
       - reference/servertype/buildtools.md
     - Downloadable:
-      - reference\downloadable\index.md
-      - reference\downloadable\modrinth.md
-      - reference\downloadable\curserinth.md
-      - reference\downloadable\spigot.md
-      - reference\downloadable\github-releases.md
-      - reference\downloadable\jenkins.md
-      - reference\downloadable\custom-url.md
+      - reference/downloadable/index.md
+      - reference/downloadable/modrinth.md
+      - reference/downloadable/curserinth.md
+      - reference/downloadable/spigot.md
+      - reference/downloadable/github-releases.md
+      - reference/downloadable/jenkins.md
+      - reference/downloadable/maven.md
+      - reference/downloadable/custom-url.md
 theme:
   name: material
   icon:
@@ -60,7 +63,6 @@ theme:
     - navigation.tracking
     - navigation.tabs
     - navigation.path
-    - navigation.indexes
     - content.code.copy
     - content.code.annotate
 markdown_extensions:
