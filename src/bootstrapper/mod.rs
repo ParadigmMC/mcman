@@ -86,7 +86,7 @@ fn bootstrap_entry(ctx: &BootstrapContext, entry: &DirEntry) -> Result<()> {
                 fs::write(output_path.clone(), output)
                     .context(format!("Writing {}", output_path.display()))?;
             }
-            "txt" | "yaml" | "yml" | "conf" | "config" | "toml" => {
+            "txt" | "yaml" | "yml" | "conf" | "config" | "toml" | "json" | "json5" => {
                 let input = fs::read_to_string(path)?;
                 let output = bootstrap_string(ctx, &input);
                 fs::write(output_path.clone(), output)
