@@ -7,6 +7,8 @@
 [![docker publish](https://img.shields.io/github/actions/workflow/status/ParadigmMC/mcman/publish.yml?logo=github&label=docker%20publish)](https://github.com/ParadigmMC/mcman/actions/workflows/publish.yml)
 ![GitHub Repo stars](https://img.shields.io/github/stars/ParadigmMC/mcman?logo=github)
 [![quiltmc featured](https://img.shields.io/badge/quiltmc-featured-8A2BE2)](https://tech.lgbt/@quiltmc/110690787441497920)
+![downloads](https://img.shields.io/github/downloads/ParadigmMC/mcman/total?logo=github)
+[![discord server](https://img.shields.io/discord/1108817072814817410?logo=discord)](https://discord.gg/YFuxNmKvSr)
 
 Powerful Minecraft Server Manager CLI. Easily install jars (server, plugins & mods) and write config files. Docker and git support included.
 
@@ -17,6 +19,7 @@ Powerful Minecraft Server Manager CLI. Easily install jars (server, plugins & mo
 | 🚀 [Installation](https://paradigmmc.github.io/mcman/installation/) | ✨ [Getting Started](https://paradigmmc.github.io/mcman/tutorials/getting-started/) | 📜 [Documentation](https://paradigmmc.github.io/mcman/) |
 | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------- | ------------------------------------------------------ |
 
+- Join the [discord](https://discord.gg/YFuxNmKvSr) for support!
 - 📋 Want an example? Here's [iptfreedom](https://github.com/IPTFreedom/iptfreedom)
 
 Submit a PR or open an issue if you have a mcman-server repository that we can add here!
