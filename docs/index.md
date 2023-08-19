@@ -16,7 +16,7 @@ mcman is a command line tool that makes it easier to create and manage minecraft
 - Downloads plugins, mods and datapacks
 - Provides a better way to manage configuration files
 - Gives you the ability to use variables from both the config file and environment variables inside your server's mod/plugin configuration files
-- Supports many sources to download from (13)
+- Supports many sources to download from (16)
 - Your source isn't supported? Just use a custom url
 - Import from URL
 - Import from mrpacks or packwiz packs
@@ -27,6 +27,5 @@ mcman is a command line tool that makes it easier to create and manage minecraft
 
 ## TODO
 
-- Maven support, also allowing Forge and NeoForge
 - Curseforge Modpack support
 - Better commands to search, add or remove mods/plugins/datapacks

@@ -341,11 +341,12 @@ impl Downloadable {
 
                 if let Some(asset) = file_opt {
                     idx = 1;
-                    items.push((asset.to_owned(), format!("From URL: {asset}")));
+                    items.push((asset.to_owned(), asset.to_owned()));
 
                     if asset.contains(&tag) && asset != tag {
-                        let t = asset.replace(&tag, "");
-                        items.push((t.clone(), format!("without tag name: {t}")));
+                        let t = asset.replace(&tag, "${tag}");
+                        items.push((t.clone(), t));
+                        idx = 2;
                     };
                 };
 

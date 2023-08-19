@@ -16,7 +16,7 @@ Download something from GitHub Releases
     The strings can contain variable syntax:
 
     - `${mcver}` or `${mcversion}` for the `mc_version` in [server.toml](../server.toml.md) (usable in `tag` and `asset`)
-    - `${tag}`, `${release}` or ${version} for the resolved github release version (usable in `asset`)
+    - `${tag}`, `${release}` or `${version}` for the resolved github release version (usable in `asset`)
 
 !!! note
     For the `asset` field, its first checked if the given asset exists on the release. If it doesn't, it will pick the first asset whose filename contains the `asset` value

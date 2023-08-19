@@ -9,9 +9,9 @@ use std::{
 use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::commands;
+use crate::{commands, sources::modrinth};
 
-use super::{ClientSideMod, Downloadable, ServerLauncher, ServerType, World};
+use super::{ClientSideMod, Downloadable, ServerLauncher, ServerType, World, SoftwareType};
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
@@ -108,6 +108,26 @@ impl Server {
         } else {
             Ok(())
         }
+    }
+
+    pub fn filter_modrinth_versions(&self, list: &[modrinth::ModrinthVersion]) -> Vec<modrinth::ModrinthVersion> {
+        let is_proxy = self.jar.get_software_type() == SoftwareType::Proxy;
+        let mcver = &self.mc_version;
+        let loader = self.jar.get_modrinth_name();
+
+        list.iter()
+        .filter(|v| {
+            is_proxy || v.game_versions.contains(mcver)
+        })
+        .filter(|v| {
+            if let Some(n) = &loader {
+                v.loaders.iter().any(|l| l == "datapack" || l == n)
+            } else {
+                true
+            }
+        })
+        .map(|v| v.clone())
+        .collect()
     }
 }
 

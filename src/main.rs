@@ -30,6 +30,7 @@ fn cli() -> Command {
         .subcommand(commands::init::cli())
         .subcommand(commands::build::cli())
         .subcommand(commands::run::cli())
+        .subcommand(commands::add::cli())
         .subcommand(commands::import::cli())
         .subcommand(commands::markdown::cli())
         .subcommand(commands::pull::cli())
@@ -48,6 +49,7 @@ async fn main() -> Result<()> {
         Some(("init", sub_matches)) => commands::init::run(sub_matches).await,
         Some(("build", sub_matches)) => commands::build::run(sub_matches).await.map(|_| ()),
         Some(("run", sub_matches)) => commands::run::run(sub_matches).await,
+        Some(("add", sub_matches)) => commands::add::run(sub_matches).await,
         Some(("import" | "i", sub_matches)) => commands::import::run(sub_matches).await,
         Some(("markdown" | "md", _)) => commands::markdown::run().await,
         Some(("pull", sub_matches)) => commands::pull::run(sub_matches),

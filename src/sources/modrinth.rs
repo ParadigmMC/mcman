@@ -11,12 +11,22 @@ pub struct ModrinthProject {
     pub categories: Vec<String>,
     pub client_side: DependencyType,
     pub server_side: DependencyType,
-    pub body: String,
+    //pub body: String,
     pub project_type: String,
     // ...
+    #[serde(default = "empty")]
     pub id: String,
-    pub team: String,
+    //pub team: String,
     pub versions: Vec<String>,
+}
+
+fn empty() -> String {
+    String::from("")
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ModrinthSearchResults {
+    pub hits: Vec<ModrinthProject>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -172,5 +182,19 @@ pub async fn get_modrinth_url(
     Ok(file.url.clone())
 }
 
-// TODO: more complex version matching ie. mc version and server software
-// TODO: also impl modrinth in mcapi and use that instead
+pub async fn search_modrinth(
+    client: &reqwest::Client,
+    query: &str,
+    facets: &str,
+) -> Result<Vec<ModrinthProject>> {
+    let res: ModrinthSearchResults = client
+        .get("https://api.modrinth.com/v2/search".to_owned())
+        .query(&[("query", query), ("facets", facets)])
+        .send()
+        .await?
+        .error_for_status()?
+        .json()
+        .await?;
+
+    Ok(res.hits)
+}

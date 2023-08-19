@@ -33,8 +33,8 @@ Submit a PR or open an issue if you have a mcman-server repository that we can a
 - 📚 Supports a variety of [sources](./DOCS.md#downloadable):
   - **Servers**:
     - 🌳 `Vanilla`, `Paper`, `Purpur`, `BuildTools` (Spigot/CraftBukkit)
-    - 📜 **Modded:** Fabric & Quilt
-    - ⛓️ **Proxies:** Velocity, Waterfall, BungeeCord
+    - 📜 **Modded:** `Quilt`, `Fabric`, `Forge` and `NeoForge`
+    - ⛓️ **Proxies:** `Velocity`, `Waterfall`, `BungeeCord`
   - **Plugins/Mods/Datapacks**: 🍀 `Modrinth`, 🔥 `CurseRinth` (Curseforge), 🚰  `Spigot` (resources)
   - **And even** :octocat: `Github Releases`, 🔗 `Custom URL`s and 💁 `Jenkins`!
 - ⚙️ Better configuration files with `config/`!

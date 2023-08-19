@@ -273,6 +273,37 @@ impl ServerType {
         })
     }
 
+    pub fn get_modrinth_facets(&self, mcver: &str) -> Result<String> {
+        let mut arr: Vec<Vec<String>> = vec![];
+
+        if self.get_software_type() != SoftwareType::Proxy {
+            arr.push(vec![format!("versions:{}", mcver.to_owned())]);
+        }
+
+        if let Some(n) = self.get_modrinth_name() {
+            arr.push(vec![format!("categories:{n}")]);
+        }
+
+        Ok(serde_json::to_string(&arr)?)
+    }
+
+    pub fn get_modrinth_name(&self) -> Option<String> {
+        match self {
+            Self::Fabric { .. } => Some("fabric"),
+            Self::Quilt { .. } => Some("quilt"),
+            Self::Forge { .. } => Some("forge"),
+            Self::NeoForge { .. } => Some("neoforge"),
+            Self::Paper {  } => Some("paper"),
+            Self::BuildTools { .. } => Some("spigot"),
+            Self::Purpur { .. } => Some("purpur"),
+            Self::BungeeCord {  } => Some("bungeecord"),
+            Self::Velocity {  } => Some("velocity"),
+            Self::Waterfall {  } => Some("waterfall"),
+            Self::PaperMC { project, .. } => Some(project.as_str()),
+            _ => None,
+        }.map(|o| o.to_owned())
+    }
+
     pub fn is_modded(&self) -> bool {
         self.get_software_type() == SoftwareType::Modded
     }

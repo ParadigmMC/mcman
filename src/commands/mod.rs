@@ -9,3 +9,4 @@ pub mod markdown;
 pub mod pull;
 pub mod run;
 pub mod version;
+pub mod add;
