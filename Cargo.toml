@@ -46,3 +46,4 @@ notify = { version = "6.0.1", default-features = false }
 glob-match = "0.2"
 async-trait = "0.1.72"
 roxmltree = "0.18"
+cached = "0.44.0"

@@ -87,6 +87,5 @@ pub trait Source {
         &self,
         server: &model::Server,
         client: &reqwest::Client,
-        filename_hint: Option<&str>,
     ) -> Result<reqwest::Response>;
 }

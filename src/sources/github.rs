@@ -1,6 +1,7 @@
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Result};
+use cached::{proc_macro::cached, UnboundCache};
 use serde::{Deserialize, Serialize};
 use tokio::time::sleep;
 
@@ -36,6 +37,13 @@ pub struct GithubAsset {
     pub name: String,
 }
 
+#[cached(
+    type = "UnboundCache<String, Vec<GithubRelease>>",
+    create = "{ UnboundCache::new() }",
+    convert = r#"{ format!("{repo}") }"#,
+    sync_writes = true,
+    result = true
+)]
 pub async fn fetch_github_releases(
     repo: &str,
     client: &reqwest::Client,
@@ -53,13 +61,19 @@ pub async fn fetch_github_releases(
     Ok(releases)
 }
 
-pub async fn fetch_github_release_asset(
+#[cached(
+    type = "UnboundCache<String, GithubRelease>",
+    create = "{ UnboundCache::new() }",
+    convert = r#"{ format!("{repo};{tag};{mcver}") }"#,
+    sync_writes = true,
+    result = true
+)]
+pub async fn fetch_github_release(
+    client: &reqwest::Client,
     repo: &str,
     tag: &str,
-    asset: &str,
     mcver: &str,
-    client: &reqwest::Client,
-) -> Result<GithubAsset> {
+) -> Result<GithubRelease> {
     let releases = fetch_github_releases(repo, client).await?;
 
     let tag = tag.replace("${mcver}", mcver);
@@ -72,6 +86,25 @@ pub async fn fetch_github_release_asset(
     .ok_or(anyhow!(
         "Github release with tag '{tag}' not found on repository '{repo}'"
     ))?;
+
+    Ok(release.clone())
+}
+
+#[cached(
+    type = "UnboundCache<String, GithubAsset>",
+    create = "{ UnboundCache::new() }",
+    convert = r#"{ format!("{repo};{tag};{asset};{mcver}") }"#,
+    sync_writes = true,
+    result = true
+)]
+pub async fn fetch_github_release_asset(
+    repo: &str,
+    tag: &str,
+    asset: &str,
+    mcver: &str,
+    client: &reqwest::Client,
+) -> Result<GithubAsset> {
+    let release = fetch_github_release(client, repo, tag, mcver).await?;
 
     let assets = &release.assets;
 
@@ -102,6 +135,13 @@ pub async fn fetch_github_release_asset(
     Ok(resolved_asset.clone())
 }
 
+#[cached(
+    type = "UnboundCache<String, String>",
+    create = "{ UnboundCache::new() }",
+    convert = r#"{ format!("{repo};{tag};{asset};{mcver}") }"#,
+    sync_writes = true,
+    result = true
+)]
 pub async fn fetch_github_release_filename(
     repo: &str,
     tag: &str,
@@ -114,53 +154,36 @@ pub async fn fetch_github_release_filename(
         .name)
 }
 
+#[cached(
+    type = "UnboundCache<String, String>",
+    create = "{ UnboundCache::new() }",
+    convert = r#"{ format!("{repo};{tag};{asset};{mcver}") }"#,
+    sync_writes = true,
+    result = true
+)]
 pub async fn get_github_release_url(
     repo: &str,
     tag: &str,
     asset: &str,
     mcver: &str,
-    client: &reqwest::Client,
-    filename_hint: Option<&str>,
+    client: &reqwest::Client
 ) -> Result<String> {
-    let filename = if let Some(filename) = filename_hint {
-        filename.to_owned()
-    } else {
-        let fetched_asset = fetch_github_release_asset(repo, tag, asset, mcver, client).await?;
-        fetched_asset.name
-    };
+    let fetched_tag = fetch_github_release(client, repo, tag, mcver).await?;
+    let fetched_asset = fetch_github_release_asset(repo, tag, asset, mcver, client).await?;
 
     Ok(format!(
-        "https://github.com/{repo}/releases/download/{tag}/{filename}"
+        "https://github.com/{repo}/releases/download/{}/{}",
+        fetched_tag.tag_name, fetched_asset.name
     ))
 }
 
-pub async fn download_github_release(
-    repo: &str,
-    tag: &str,
-    asset: &str,
-    mcver: &str,
-    client: &reqwest::Client,
-    filename_hint: Option<&str>,
-) -> Result<reqwest::Response> {
-    let filename = if let Some(filename) = filename_hint {
-        filename.to_owned()
-    } else {
-        let fetched_asset = fetch_github_release_asset(repo, tag, asset, mcver, client).await?;
-        fetched_asset.name
-    };
-
-    Ok(wait_ratelimit(
-        client
-            .get(format!(
-                "https://github.com/{repo}/releases/download/{tag}/{filename}"
-            ))
-            .send()
-            .await?,
-    )
-    .await?
-    .error_for_status()?)
-}
-
+#[cached(
+    type = "UnboundCache<String, String>",
+    create = "{ UnboundCache::new() }",
+    convert = r#"{ format!("{repo}") }"#,
+    sync_writes = true,
+    result = true
+)]
 pub async fn fetch_repo_description(client: &reqwest::Client, repo: &str) -> Result<String> {
     let desc = wait_ratelimit(
         client

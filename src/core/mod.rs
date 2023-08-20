@@ -167,7 +167,6 @@ impl BuildContext {
                 file,
                 &file_name,
                 dl,
-                Some(&file_name),
                 &self.server,
                 &self.http_client,
             )

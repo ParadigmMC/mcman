@@ -181,7 +181,6 @@ pub async fn packwiz_import_http(
                     filename: None,
                     desc: None,
                 },
-                None, //unneeded
                 server,
                 http_client,
             )

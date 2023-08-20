@@ -120,7 +120,6 @@ pub async fn mrpack_source_to_file(
             file,
             &format!("Downloading {src}..."),
             &downloadable,
-            None,
             server,
             http_client,
         )
@@ -425,7 +424,7 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
             }
             dl => {
                 let filename = dl.get_filename(server, http_client).await?;
-                if let Ok(url) = dl.get_url(http_client, server, Some(&filename)).await {
+                if let Ok(url) = dl.get_url(http_client, server).await {
                     files.push(MRPackFile {
                         hashes: HashMap::new(), // ! todo...???
                         env: None,
@@ -536,7 +535,7 @@ pub async fn export_mrpack<W: std::io::Write + std::io::Seek>(
             }
             dl => {
                 let filename = dl.get_filename(server, http_client).await?;
-                if let Ok(url) = dl.get_url(http_client, server, Some(&filename)).await {
+                if let Ok(url) = dl.get_url(http_client, server).await {
                     files.push(MRPackFile {
                         hashes: HashMap::new(), // ! todo...???
                         env: None,

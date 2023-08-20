@@ -319,7 +319,6 @@ impl Source for ServerType {
         &self,
         server: &Server,
         client: &reqwest::Client,
-        filename_hint: Option<&str>,
     ) -> Result<reqwest::Response> {
         let mcver = server.mc_version.clone();
         match self {
@@ -349,9 +348,9 @@ impl Source for ServerType {
                 Ok(quilt::download_quilt_installer(client, installer).await?)
             }
 
-            Self::BungeeCord {} => Ok(bungeecord().download(server, client, filename_hint).await?),
+            Self::BungeeCord {} => Ok(bungeecord().download(server, client).await?),
             Self::BuildTools { .. } => {
-                Ok(buildtools().download(server, client, filename_hint).await?)
+                Ok(buildtools().download(server, client).await?)
             }
             Self::NeoForge { loader } => Ok(client
                 .get(neoforge::get_neoforge_installer_url(loader, &mcver, client).await?)
@@ -365,7 +364,7 @@ impl Source for ServerType {
                 .await?
                 .error_for_status()?),
 
-            Self::Downloadable { inner } => inner.download(server, client, filename_hint).await,
+            Self::Downloadable { inner } => inner.download(server, client).await,
         }
     }
 

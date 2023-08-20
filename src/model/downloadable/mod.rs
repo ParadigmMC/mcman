@@ -7,7 +7,7 @@ use crate::{model::Server, Source};
 
 use crate::sources::{
     curserinth::{fetch_curserinth_filename, get_curserinth_url},
-    github::{download_github_release, fetch_github_release_filename, get_github_release_url},
+    github::{fetch_github_release_filename, get_github_release_url},
     jenkins::{get_jenkins_download_url, get_jenkins_filename},
     modrinth::{fetch_modrinth_filename, get_modrinth_url},
     spigot::{fetch_spigot_resource_latest_ver, get_spigot_url},
@@ -87,7 +87,6 @@ impl Downloadable {
         &self,
         client: &reqwest::Client,
         server: &Server,
-        filename_hint: Option<&str>,
     ) -> Result<String> {
         let mcver = &server.mc_version;
 
@@ -102,7 +101,7 @@ impl Downloadable {
             }
             Self::Spigot { id } => Ok(get_spigot_url(id)),
             Self::GithubRelease { repo, tag, asset } => {
-                Ok(get_github_release_url(repo, tag, asset, mcver, client, filename_hint).await?)
+                Ok(get_github_release_url(repo, tag, asset, mcver, client).await?)
             }
 
             Self::Jenkins {
@@ -129,25 +128,12 @@ impl Source for Downloadable {
         &self,
         server: &Server,
         client: &reqwest::Client,
-        filename_hint: Option<&str>,
     ) -> Result<reqwest::Response> {
-        match self {
-            Self::GithubRelease { repo, tag, asset } => Ok(download_github_release(
-                repo,
-                tag,
-                asset,
-                &server.mc_version,
-                client,
-                filename_hint,
-            )
-            .await?),
-
-            dl => Ok(client
-                .get(dl.get_url(client, server, filename_hint).await?)
-                .send()
-                .await?
-                .error_for_status()?),
-        }
+        Ok(client
+            .get(self.get_url(client, server).await?)
+            .send()
+            .await?
+            .error_for_status()?)
     }
 
     async fn get_filename(&self, server: &Server, client: &reqwest::Client) -> Result<String> {
