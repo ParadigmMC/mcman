@@ -112,6 +112,8 @@ impl Server {
 
     pub fn filter_modrinth_versions(&self, list: &[modrinth::ModrinthVersion]) -> Vec<modrinth::ModrinthVersion> {
         let is_proxy = self.jar.get_software_type() == SoftwareType::Proxy;
+        let is_vanilla = matches!(self.jar, ServerType::Vanilla {});
+
         let mcver = &self.mc_version;
         let loader = self.jar.get_modrinth_name();
 
@@ -123,7 +125,11 @@ impl Server {
             if let Some(n) = &loader {
                 v.loaders.iter().any(|l| l == "datapack" || l == n)
             } else {
-                true
+                if is_vanilla {
+                    v.loaders.contains(&"datapack".to_owned())
+                } else {
+                    true
+                }
             }
         })
         .map(|v| v.clone())

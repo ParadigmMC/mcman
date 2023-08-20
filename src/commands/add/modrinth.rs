@@ -11,7 +11,7 @@ pub fn cli() -> Command {
     Command::new("modrinth")
         .about("Add from modrinth")
         .visible_alias("mr")
-        .arg(arg!(<search>).required(false))
+        .arg(arg!(<search>...).required(false))
 }
 
 pub async fn run(matches: &ArgMatches) -> Result<()> {
