@@ -1,5 +1,6 @@
 use anyhow::{Context, Result, bail};
 use clap::{arg, ArgMatches, Command};
+use console::style;
 use dialoguer::{theme::ColorfulTheme, Input, Select};
 
 use crate::{
@@ -76,7 +77,23 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
 
     let version = versions[selection].clone();
 
-    match project.project_type.as_str() {
+    match if version.loaders.contains(&"datapack".to_owned()) {
+        if version.loaders.len() > 1 {
+            match Select::with_theme(&ColorfulTheme::default())
+                .with_prompt("Import as...")
+                .default(0)
+                .items(&["Datapack", "Mod/Plugin"])
+                .interact()? {
+                0 => "datapack",
+                1 => "mod",
+                _ => unreachable!(),
+            }
+        } else {
+            "datapack"
+        }
+    } else {
+        project.project_type.as_str()
+    } {
         "modpack" => {
             todo!("Modpack importing currently unsupported")
         }
@@ -107,6 +124,23 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
             server.refresh_markdown(&http_client).await?;
         
             println!(" > Added {} from modrinth", project.title);
+        }
+        "datapack" => {
+            let addon = Downloadable::Modrinth { id: project.slug.clone(), version: version.id.clone() };
+
+            let world_name = server.add_datapack(addon)?;
+        
+            server.save()?;
+
+            server.refresh_markdown(&http_client).await?;
+        
+            println!(
+                " > {} {} {} {world_name}{}",
+                style("Datapack ").green(),
+                project.title,
+                style("added to").green(),
+                style("!").green()
+            );
         }
         ty => bail!("Unsupported modrinth project type: '{ty}'"),
     }

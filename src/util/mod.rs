@@ -4,6 +4,7 @@ pub mod maven_import;
 pub mod md;
 pub mod mrpack;
 pub mod packwiz;
+pub mod logger;
 
 use anyhow::{Context, Result};
 use futures::StreamExt;

@@ -13,6 +13,8 @@ use crate::{commands, sources::modrinth};
 
 use super::{ClientSideMod, Downloadable, ServerLauncher, ServerType, World, SoftwareType};
 
+pub mod interactive;
+
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct MarkdownOptions {

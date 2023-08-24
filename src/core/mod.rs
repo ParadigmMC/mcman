@@ -7,7 +7,7 @@ use tokio::fs::{self, File};
 
 use crate::{
     model::{Server, StartupMethod},
-    util, Source,
+    util::{self, logger::Logger}, Source,
 };
 
 pub mod addons;
@@ -19,6 +19,7 @@ pub mod worlds;
 
 #[derive(Debug)]
 pub struct BuildContext {
+    pub logger: Logger,
     pub server: Server,
     pub http_client: reqwest::Client,
     pub output_dir: PathBuf,
@@ -33,6 +34,7 @@ pub struct BuildContext {
 impl Default for BuildContext {
     fn default() -> Self {
         Self {
+            logger: Logger::new(),
             server: Server::default(),
             force: false,
             http_client: reqwest::Client::default(),
