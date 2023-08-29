@@ -19,7 +19,9 @@ pub struct Network {
 
     pub name: String,
     pub proxy: String,
+    pub port: u16,
     pub variables: HashMap<String, String>,
+
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub plugins: Vec<Downloadable>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -73,6 +75,7 @@ impl Default for Network {
             path: PathBuf::from("."),
             name: String::new(),
             proxy: "proxy".to_owned(),
+            port: 25565,
             variables: HashMap::new(),
             plugins: vec![],
             mods: vec![],

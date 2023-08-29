@@ -13,7 +13,7 @@ proxy_flags = false
 nogui = true
 eula_args = true
 
-[[plugins]]
+[[worlds.world.datapacks]]
 type = "modrinth"
 id = "vanilla-refresh"
 version = "c1SnJlLJ"

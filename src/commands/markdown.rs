@@ -7,7 +7,7 @@ use std::fs::{self, File};
 use std::io::Write;
 
 use crate::create_http_client;
-use crate::model::Server;
+use crate::model::{Server, World};
 use crate::util::md::MarkdownTable;
 use anyhow::{Context, Result};
 use clap::Command;
@@ -27,6 +27,10 @@ pub static SERVERINFO_END: &str = "<!--end:mcman-server-->";
 pub static ADDONS_REGEX: &str = r"(<!--start:mcman-addons-->)([\w\W]*)(<!--end:mcman-addons-->)";
 pub static ADDONS_START: &str = "<!--start:mcman-addons-->";
 pub static ADDONS_END: &str = "<!--end:mcman-addons-->";
+
+pub static DP_REGEX: &str = r"(<!--start:mcman-datapacks-->)([\w\W]*)(<!--end:mcman-datapacks-->)";
+pub static DP_START: &str = "<!--start:mcman-datapacks-->";
+pub static DP_END: &str = "<!--end:mcman-datapacks-->";
 
 pub async fn run() -> Result<()> {
     let mut server = Server::load().context("Failed to load server.toml")?;
@@ -65,8 +69,22 @@ pub async fn update_files(http_client: &reqwest::Client, server: &Server) -> Res
     let addon_list_text =
         { ADDONS_START.to_owned() + NOTICE + "\n" + &addons_table.render() + "\n" + ADDONS_END };
 
+    let dp_text =
+        {
+            let mut sections = vec![];
+
+            for (name, w) in &server.worlds {
+                let table = create_table_world(http_client, w).await?.render();
+
+                sections.push(format!("# {name}\n\n{table}"));
+            }
+
+            DP_START.to_owned() + NOTICE + "\n" + &sections.join("\n\n") + "\n" + DP_END
+        };
+
     let serv_regex = Regex::new(SERVERINFO_REGEX).unwrap();
     let addon_regex = Regex::new(ADDONS_REGEX).unwrap();
+    let dp_regex = Regex::new(DP_REGEX).unwrap();
 
     let len = server.markdown.files.len();
     for (idx, filename) in server.markdown.files.iter().enumerate() {
@@ -93,8 +111,11 @@ pub async fn update_files(http_client: &reqwest::Client, server: &Server) -> Res
         let stage2 =
             addon_regex.replace_all(&stage1, |_caps: &regex::Captures| addon_list_text.clone());
 
+        let stage3 =
+            dp_regex.replace_all(&stage2, |_caps: &regex::Captures| dp_text.clone());
+
         let mut f = File::create(&path)?;
-        f.write_all(stage2.as_bytes())?;
+        f.write_all(stage3.as_bytes())?;
 
         println!(
             "   ({:w$}/{len}) Updated {}!",
@@ -130,6 +151,19 @@ pub async fn create_table_addons(
 
     for addon in &server.mods {
         table.add_from_map(&addon.fetch_info_to_map(http_client).await?);
+    }
+
+    Ok(table)
+}
+
+pub async fn create_table_world(
+    http_client: &reqwest::Client,
+    world: &World
+) -> Result<MarkdownTable> {
+    let mut table = MarkdownTable::new();
+
+    for dp in &world.datapacks {
+        table.add_from_map(&dp.fetch_info_to_map(http_client).await?);
     }
 
     Ok(table)

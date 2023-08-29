@@ -6,7 +6,7 @@ use dialoguer::theme::ColorfulTheme;
 use tokio::fs::{self, File};
 
 use crate::{
-    model::{Server, StartupMethod},
+    model::{Server, StartupMethod, Network},
     util::{self, logger::Logger}, Source,
 };
 
@@ -21,6 +21,7 @@ pub mod worlds;
 pub struct BuildContext {
     pub logger: Logger,
     pub server: Server,
+    pub network: Option<Network>,
     pub http_client: reqwest::Client,
     pub output_dir: PathBuf,
     pub force: bool,
@@ -36,6 +37,7 @@ impl Default for BuildContext {
         Self {
             logger: Logger::new(),
             server: Server::default(),
+            network: None,
             force: false,
             http_client: reqwest::Client::default(),
             output_dir: PathBuf::new(),
@@ -125,7 +127,7 @@ impl BuildContext {
                     .process_worlds()
                     .await
                     .context("Processing worlds/datapacks"),
-                "bootstrap" => self.bootstrap_files().context("Bootstrapping config files"),
+                "bootstrap" => self.bootstrap_files().await.context("Bootstrapping config files"),
                 "scripts" => self
                     .create_scripts()
                     .await

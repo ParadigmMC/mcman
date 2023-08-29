@@ -11,7 +11,6 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use clap::Command;
 
-mod bootstrapper;
 mod commands;
 mod core;
 mod model;

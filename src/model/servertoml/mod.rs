@@ -95,9 +95,9 @@ impl Server {
     pub fn format(&self, str: &str) -> String {
         mcapi::dollar_repl(str, |key| {
             match key {
-                "mcver" | "mcversion" => Some(self.mc_version.clone()),
-                // Maybe also allow self.variables? idk
-                _ => None,
+                "mcver" | "mcversion" | "SERVER_VERSION" => Some(self.mc_version.clone()),
+                "SERVER_NAME" => Some(self.name.clone()),
+                k => self.variables.get(k).cloned()
             }
         })
     }
