@@ -58,7 +58,6 @@ pub fn write_gitignore() -> Result<PathBuf> {
         ("**/server", "# mcman: Exclude mcman build outputs"),
         (".env", "# mcman: Exclude env secrets"),
         ("*.mrpack", "# mcman: Exclude exported mrpacks"),
-        ("*.zip", "# mcman: Exclude exported packs"),
     ] {
         if !list.contains(&ignore) {
             if !comment.is_empty() {

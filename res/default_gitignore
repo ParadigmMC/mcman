@@ -7,5 +7,4 @@ server/
 .env
 
 # exclude exported packs
-*.zip
 *.mrpack

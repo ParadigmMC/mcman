@@ -11,5 +11,3 @@ site/
 .env
 # mcman: Exclude exported mrpacks
 *.mrpack
-# mcman: Exclude exported packs
-*.zip
