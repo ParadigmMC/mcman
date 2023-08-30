@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 use clap::{arg, value_parser, ArgMatches, Command};
 
-use crate::{core::BuildContext, create_http_client, model::Server};
+use crate::{core::BuildContext, create_http_client, model::{Server, Lockfile}};
 
 pub fn cli() -> Command {
     Command::new("build")
@@ -26,6 +26,8 @@ pub async fn run(matches: &ArgMatches) -> Result<BuildContext> {
         .unwrap_or(&default_output)
         .clone();
 
+    let lockfile = Lockfile::load_from(&output_dir)?;
+
     let force = matches.get_flag("force");
 
     let skip_stages = matches
@@ -41,6 +43,7 @@ pub async fn run(matches: &ArgMatches) -> Result<BuildContext> {
         output_dir,
         force,
         skip_stages,
+        lockfile,
         ..Default::default()
     };
 

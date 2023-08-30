@@ -17,7 +17,7 @@ mod markdown;
 mod meta;
 mod packwiz;
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum Downloadable {
     // sources

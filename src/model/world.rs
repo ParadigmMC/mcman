@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::Downloadable;
 
-#[derive(Debug, Deserialize, Serialize, Default)]
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
 #[serde(default)]
 pub struct World {
     #[serde(skip_serializing_if = "Vec::is_empty")]

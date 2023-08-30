@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::Downloadable;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, Hash, PartialEq, Eq)]
 pub struct ClientSideMod {
     #[serde(flatten)]
     pub dl: Downloadable,
