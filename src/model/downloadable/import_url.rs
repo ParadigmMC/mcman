@@ -390,7 +390,7 @@ impl Downloadable {
             Some(_) | None => {
                 let items = vec!["Add as Custom URL", "Add as Jenkins", "Nevermind, cancel"];
                 let selection = Select::with_theme(&ColorfulTheme::default())
-                    .with_prompt("  How would you like to import this URL?")
+                    .with_prompt(format!("  How would you like to import this URL?\n  -> {urlstr}"))
                     .items(&items)
                     .default(0)
                     .interact_opt()?;
@@ -413,6 +413,7 @@ impl Downloadable {
 
                         let desc: String = Input::with_theme(&ColorfulTheme::default())
                             .with_prompt("  Optional description/comment?")
+                            .default(String::new())
                             .interact_text()?;
 
                         Ok(Self::Url {

@@ -16,7 +16,7 @@ mod core;
 mod model;
 mod sources;
 mod util;
-//mod hot_reload;
+mod hot_reload;
 
 fn cli() -> Command {
     Command::new("mcman")

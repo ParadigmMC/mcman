@@ -26,7 +26,7 @@ pub async fn run(matches: &ArgMatches) -> Result<BuildContext> {
         .unwrap_or(&default_output)
         .clone();
 
-    let lockfile = Lockfile::load_from(&output_dir)?;
+    let lockfile = Lockfile::get_lockfile(&output_dir)?;
 
     let force = matches.get_flag("force");
 
@@ -40,10 +40,14 @@ pub async fn run(matches: &ArgMatches) -> Result<BuildContext> {
     let mut ctx = BuildContext {
         server,
         http_client,
-        output_dir,
+        new_lockfile: Lockfile {
+            path: output_dir.join(".mcman.lock"),
+            ..Default::default()
+        },
         force,
         skip_stages,
         lockfile,
+        output_dir,
         ..Default::default()
     };
 

@@ -6,7 +6,7 @@ use dialoguer::theme::ColorfulTheme;
 use tokio::fs::{self, File};
 
 use crate::{
-    model::{Server, StartupMethod, Network, Lockfile},
+    model::{Server, StartupMethod, Network, Lockfile, Changes},
     util::{self, logger::Logger}, Source,
 };
 
@@ -25,7 +25,9 @@ pub struct BuildContext {
     pub http_client: reqwest::Client,
     pub output_dir: PathBuf,
     pub lockfile: Lockfile,
+    pub new_lockfile: Lockfile,
 
+    pub changes: Changes,
     pub force: bool,
     pub skip_stages: Vec<String>,
     pub start_time: Instant,
@@ -44,6 +46,8 @@ impl Default for BuildContext {
             http_client: reqwest::Client::default(),
             output_dir: PathBuf::new(),
             lockfile: Lockfile::default(),
+            new_lockfile: Lockfile::default(),
+            changes: Changes::default(),
             startup_method: StartupMethod::Jar(String::from("server.jar")),
             skip_stages: vec![],
             stage_index: 1,
@@ -57,6 +61,8 @@ impl BuildContext {
     pub async fn build_all(&mut self) -> Result<()> {
         self.stage_index = 1;
         self.start_time = Instant::now();
+
+        self.reload()?;
 
         println!(
             " {} {}...",
@@ -101,6 +107,12 @@ impl BuildContext {
             style(self.start_time.elapsed().as_millis().to_string() + "ms").blue(),
         );
 
+        Ok(())
+    }
+
+    pub fn reload(&mut self) -> Result<()> {
+        self.lockfile = Lockfile::get_lockfile(&self.output_dir)?;
+        self.changes = self.lockfile.get_changes(&self.server);
         Ok(())
     }
 

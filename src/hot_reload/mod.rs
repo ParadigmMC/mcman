@@ -1,12 +1,12 @@
 use anyhow::{Result, Context};
-use glob_match::glob_match;
 use notify::{Watcher, recommended_watcher, EventKind};
 
-use crate::{commands::build::BuildContext, create_http_client, model::Server};
+use crate::{core::BuildContext, create_http_client, model::Server};
 
 use self::config::{HotReloadConfig, HotReloadAction};
 
 pub mod config;
+pub mod pattern_serde;
 
 #[derive(Debug)]
 pub struct DevSession {
@@ -14,7 +14,7 @@ pub struct DevSession {
 }
 
 impl DevSession {
-    pub async fn start(config: &HotReloadConfig) -> Result<()> {
+    pub async fn start(config: HotReloadConfig) -> Result<()> {
         let server = Server::load().context("Failed to load server.toml")?;
         let http_client = create_http_client()?;
 
@@ -31,12 +31,12 @@ impl DevSession {
                     EventKind::Create(_) | EventKind::Modify(_) => {
                         for path in e.paths {
                             let Some(file) = config.files.iter().find(|f| {
-                                glob_match(&f.path, &path.to_string_lossy())
+                                f.path.matches_path(&path)
                             }) else {
                                 return;
                             };
 
-                            match file.action {
+                            match &file.action {
                                 HotReloadAction::Reload => {
 
                                 }
