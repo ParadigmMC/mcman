@@ -1,4 +1,4 @@
-use std::{env, path::{Path, PathBuf}};
+use std::{env, path::{Path, PathBuf}, collections::HashMap, time::SystemTime};
 
 use anyhow::{Result, Context, anyhow};
 use console::style;
@@ -6,15 +6,20 @@ use pathdiff::diff_paths;
 use tokio::{fs, io::AsyncWriteExt};
 use walkdir::WalkDir;
 
+use crate::model::BootstrappedFile;
+
 use super::BuildContext;
 
 impl BuildContext {
-    pub async fn bootstrap_files(&self) -> Result<()> {
+    pub async fn bootstrap_files(&mut self) -> Result<()> {
         if !Path::new(self.output_dir.as_path()).exists() {
             fs::create_dir_all(&self.output_dir)
                 .await
                 .context("Creating output directory (server/)")?;
         }
+
+        let lockfile_entries: HashMap<PathBuf, SystemTime> = HashMap::from_iter(self.lockfile.files.iter()
+            .map(|e| (e.path.clone(), e.date.clone())));
 
         for entry in WalkDir::new(self.server.path.join("config")) {
             let entry = entry
@@ -26,8 +31,13 @@ impl BuildContext {
             if entry.file_type().is_dir() {
                 continue;
             }
+
+            let source = entry.path();
+            let dest = self.map_config_path(source);
+            let diffed_paths = diff_paths(&dest, self.server.path.join("config"))
+                .ok_or(anyhow!("Cannot diff paths"))?;
     
-            self.bootstrap_file(entry.path()).await.context(format!(
+            self.bootstrap_file(&diffed_paths, lockfile_entries.get(&diffed_paths)).await.context(format!(
                 "Bootstrapping file: {}",
                 entry.path().display()
             ))?;
@@ -62,8 +72,8 @@ impl BuildContext {
         path_buf
     }
 
-    pub fn should_bootstrap_file(&self, source: &Path, _dest: &Path) -> bool {
-        let ext = source.extension().unwrap_or_default().to_str().unwrap_or_default();
+    pub fn should_bootstrap_file(&self, path: &Path) -> bool {
+        let ext = path.extension().unwrap_or_default().to_str().unwrap_or_default();
 
         let bootstrap_exts = vec![
             "properties", "txt", "yaml", "yml", "conf", "config", "toml", "json", "json5", "secret"
@@ -72,30 +82,50 @@ impl BuildContext {
         bootstrap_exts.contains(&ext)
     }
 
-    pub async fn bootstrap_file(&self, source: &Path) -> Result<()> {
-        let dest = self.map_config_path(source);
-        let diffed_paths = diff_paths(&dest, self.server.path.join("config"))
-            .ok_or(anyhow!("Cannot diff paths"))?;
-        let pretty_path = diffed_paths.display();
+    pub async fn bootstrap_file(&mut self, path: &PathBuf, cache: Option<&SystemTime>) -> Result<()> {
+        let pretty_path = path.display();
 
-        if self.should_bootstrap_file(source, &dest) {
-            let config_contents = fs::read_to_string(source)
-                .await.context(format!("Reading from '{}' ; [{pretty_path}]", source.display()))?;
+        let source = self.server.path.join("config").join(path);
+        let dest = self.output_dir.join(path);
 
-            let bootstrapped_contents = self.bootstrap_content(&config_contents);
+        let source_time = fs::metadata(&source).await?.modified()?;
 
-            fs::write(&dest, bootstrapped_contents)
-                .await.context(format!("Writing to '{}' ; [{pretty_path}]", dest.display()))?;
+        if self.force || {
+            if let Some(time) = cache {
+                &source_time > time
+            } else {
+                true
+            }
+        } {
+            if self.should_bootstrap_file(path) {
+                let config_contents = fs::read_to_string(&source)
+                    .await.context(format!("Reading from '{}' ; [{pretty_path}]", source.display()))?;
+    
+                let bootstrapped_contents = self.bootstrap_content(&config_contents);
+    
+                fs::write(&dest, bootstrapped_contents)
+                    .await.context(format!("Writing to '{}' ; [{pretty_path}]", dest.display()))?;
+            } else {
+                // ? idk why but read_to_string and fs::write works with 'dest' but fs::copy doesnt
+                fs::copy(&source, &dest)
+                    .await.context(format!("Copying '{}' to '{}' ; [{pretty_path}]", source.display(), dest.display()))?;
+            }
+    
+            println!(
+                "          {}",
+                style(format!("-> {pretty_path}")).dim()
+            );
         } else {
-            // ? idk why but read_to_string and fs::write works with 'dest' but fs::copy doesnt
-            fs::copy(source, self.output_dir.join(&diffed_paths))
-                .await.context(format!("Copying '{}' to '{}' ; [{pretty_path}]", source.display(), dest.display()))?;
+            println!(
+                "          {}",
+                style(format!("unchanged: {pretty_path}")).dim()
+            );
         }
 
-        println!(
-            "          {}",
-            style(format!("-> {pretty_path}")).dim()
-        );
+        self.new_lockfile.files.push(BootstrappedFile {
+            path: path.clone(),
+            date: source_time
+        });
 
         Ok(())
     }

@@ -100,6 +100,8 @@ impl BuildContext {
             self.run_stage("Scripts", "scripts").await?;
         }
 
+        self.write_lockfile()?;
+
         println!(
             " {} Successfully built {} in {}",
             ColorfulTheme::default().success_prefix,
@@ -113,6 +115,21 @@ impl BuildContext {
     pub fn reload(&mut self) -> Result<()> {
         self.lockfile = Lockfile::get_lockfile(&self.output_dir)?;
         self.changes = self.lockfile.get_changes(&self.server);
+        self.new_lockfile = Lockfile {
+            path: self.output_dir.join(".mcman.lock"),
+            ..Default::default()
+        };
+        Ok(())
+    }
+
+    pub fn write_lockfile(&mut self) -> Result<()> {
+        self.new_lockfile.save()?;
+
+        println!(
+            "          {}",
+            style("updated lockfile").dim()
+        );
+
         Ok(())
     }
 

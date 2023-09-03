@@ -81,7 +81,7 @@ impl BuildContext {
                         {
                             println!(
                                 "{} {}",
-                                style("<TE>").yellow().bold(),
+                                style("<mcman>").yellow().bold(),
                                 style("Server started successfully, stopping in 5s...").yellow()
                             );
                             test_passed_clone.store(true, std::sync::atomic::Ordering::Relaxed);
@@ -95,24 +95,30 @@ impl BuildContext {
             }
         });
 
-        if test_mode {
-            tokio::spawn(async move {
-                let Ok(command) = rx_stop.await else {
-                    return;
-                };
+        let command_sender = if test_mode {
+            Some(tokio::spawn(async move {
+                let command = rx_stop.await.unwrap();
                 tokio::time::sleep(Duration::from_secs(5)).await;
                 stdin
                     .as_mut()
                     .expect("stdin piped because test_mode")
                     .write_all(command)
                     .expect("stop/end command failed");
-            });
-        }
+                tokio::time::sleep(Duration::from_secs(5)).await;
+            }))
+        } else {
+            None
+        };
 
         let exit_status = child.wait()?;
         stdout_process
             .await
             .context("Awaiting stdout proxy printing thread")?;
+
+        if let Some(p) = command_sender {
+            p.await
+                .context("Awaiting command sender thread")?;
+        }
 
         if !exit_status.success() {
             println!();

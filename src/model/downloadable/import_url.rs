@@ -388,15 +388,19 @@ impl Downloadable {
             }
 
             Some(_) | None => {
-                let items = vec!["Add as Custom URL", "Add as Jenkins", "Nevermind, cancel"];
+                let items = vec!["Add as Custom URL", "Add as Jenkins"];
                 let selection = Select::with_theme(&ColorfulTheme::default())
                     .with_prompt(format!("  How would you like to import this URL?\n  -> {urlstr}"))
                     .items(&items)
-                    .default(0)
-                    .interact_opt()?;
+                    .default(if url.path().starts_with("/job") {
+                        1
+                    } else {
+                        0
+                    })
+                    .interact()?;
 
                 match selection {
-                    Some(0) => {
+                    0 => {
                         let inferred = urlstr
                             .split('?')
                             .next()
@@ -422,7 +426,7 @@ impl Downloadable {
                             desc: if desc.is_empty() { None } else { Some(desc) },
                         })
                     }
-                    Some(1) => {
+                    1 => {
                         // TODO: make it better..?
                         let j_url = if Confirm::with_theme(&ColorfulTheme::default())
                             .with_prompt(
@@ -490,7 +494,7 @@ impl Downloadable {
                             artifact,
                         })
                     }
-                    None | Some(_) => bail!("Cancelled"),
+                    _ => unreachable!(),
                 }
             }
         }

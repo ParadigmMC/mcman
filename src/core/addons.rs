@@ -45,14 +45,14 @@ impl BuildContext {
                 if path.exists() {
                     fs::remove_file(path).await?;
                     logger.item(idx, &format!(
-                        "{} {}",
-                        style("Deleted      : ").bold(),
+                        "{}: {}",
+                        style("Deleted   ").bold(),
                         style(filename).dim()
                     ));
                 } else {
                     logger.item(idx, &format!(
-                        "{} {}",
-                        style("Doesn't exist: ").bold(),
+                        "{}: {}",
+                        style("Not Found ").bold(),
                         style(filename).dim()
                     ));
                 }

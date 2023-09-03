@@ -164,7 +164,7 @@ impl ServerType {
     ) -> Result<InstallMethod> {
         Ok(match self.clone() {
             Self::Quilt { loader, .. } => {
-                let mut args = vec!["install", "server", "${mcver}"];
+                let mut args = vec!["install", "server", mcver];
 
                 if loader != "latest" {
                     args.push(&loader);
@@ -179,7 +179,7 @@ impl ServerType {
                     args: args.into_iter().map(ToOwned::to_owned).collect(),
                     rename_from: Some("quilt-server-launch.jar".to_owned()),
                     jar_name: format!(
-                        "quilt-server-launch-${{mcver}}-{}.jar",
+                        "quilt-server-launch-{mcver}-{}.jar",
                         quilt::map_quilt_loader_version(http_client, &loader)
                             .await
                             .context("resolving quilt loader version id (latest/latest-beta)")?
@@ -192,7 +192,7 @@ impl ServerType {
                 args: vec!["--installServer".to_owned(), ".".to_owned()],
                 rename_from: None,
                 jar_name: format!(
-                    "libraries/net/neoforged/forge/${{mcver}}-{0}/forge-${{mcver}}-{0}-server.jar",
+                    "libraries/net/neoforged/forge/{mcver}-{0}/forge-{mcver}-{0}-server.jar",
                     neoforge::map_neoforge_version(&loader, mcver, http_client).await?
                 )
             },
@@ -202,7 +202,7 @@ impl ServerType {
                 args: vec!["--installServer".to_owned(), ".".to_owned()],
                 rename_from: None,
                 jar_name: format!(
-                    "libraries/net/minecraftforge/forge/${{mcver}}-{0}/forge-${{mcver}}-{0}-server.jar",
+                    "libraries/net/minecraftforge/forge/{mcver}-{0}/forge-{mcver}-{0}-server.jar",
                     forge::map_forge_version(&loader, mcver, http_client).await?
                 )
             },
@@ -212,7 +212,7 @@ impl ServerType {
                     &software,
                     "--compile-if-changed",
                     "--rev",
-                    "${mcver}",
+                    mcver,
                 ];
 
                 for arg in &args {
@@ -225,7 +225,7 @@ impl ServerType {
                     args: buildtools_args.into_iter().map(ToOwned::to_owned).collect(),
                     rename_from: Some("server.jar".to_owned()),
                     jar_name: format!(
-                        "{}-${{mcver}}.jar",
+                        "{}-{mcver}.jar",
                         if software == "craftbukkit" {
                             "craftbukkit"
                         } else {

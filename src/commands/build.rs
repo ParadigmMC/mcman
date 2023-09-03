@@ -40,10 +40,6 @@ pub async fn run(matches: &ArgMatches) -> Result<BuildContext> {
     let mut ctx = BuildContext {
         server,
         http_client,
-        new_lockfile: Lockfile {
-            path: output_dir.join(".mcman.lock"),
-            ..Default::default()
-        },
         force,
         skip_stages,
         lockfile,
