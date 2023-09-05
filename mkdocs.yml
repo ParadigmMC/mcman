@@ -10,6 +10,7 @@ nav:
     - tutorials/folder-structure.md
     - tutorials/building.md
     - tutorials/variables.md
+    - tutorials/using-worlds.md
   - Commands:
     - commands/index.md
     - init: commands/init.md
@@ -44,6 +45,7 @@ nav:
       - reference/downloadable/index.md
       - reference/downloadable/modrinth.md
       - reference/downloadable/curserinth.md
+      - reference/downloadable/hangar.md
       - reference/downloadable/spigot.md
       - reference/downloadable/github-releases.md
       - reference/downloadable/jenkins.md

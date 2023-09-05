@@ -27,36 +27,37 @@ Submit a PR or open an issue if you have a mcman-server repository that we can a
 ## Features
 
 - 📜 Everything in one simple `server.toml` file!
-- 📥 Downloads the *server jar*, *plugins*, *mods* and *datapacks*!
+- 📥 Downloads the *server jar*, *plugins*, *mods*, *datapacks* and *worlds* (if any)!
 - 🔁 Always keep up to date with new builds and releases
 - ✔️ No more manually downloading jars or editing config files on remote
-- 📚 Supports a variety of [sources](./DOCS.md#downloadable):
-  - **Servers**:
-    - 🌳 `Vanilla`, `Paper`, `Purpur`, `BuildTools` (Spigot/CraftBukkit)
-    - 📜 **Modded:** `Quilt`, `Fabric`, `Forge` and `NeoForge`
-    - ⛓️ **Proxies:** `Velocity`, `Waterfall`, `BungeeCord`
-  - **Plugins/Mods/Datapacks**: 🍀 `Modrinth`, 🔥 `CurseRinth` (Curseforge), 🚰  `Spigot` (resources)
-  - **And even** :octocat: `Github Releases`, 🔗 `Custom URL`s and 💁 `Jenkins`!
+- 📚 Supports way too many sources, some are:
+  - Modrinth, CurseRinth, Spigot, Hangar, Github Releases, Jenkins, Maven
+  - If you need something else, it even supports custom urls!
 - ⚙️ Better configuration files with `config/`!
   - Allows you to use **variables** inside your config files
   - Use *environment variables* for secrets
-  - You can now use `git` to version-control your server without making a complex `.gitignore`!
-- 🐳 Supports Docker
+- :octocat: Fully `git`-compatible!
+- 🐳 Supports Docker, out of the box
 - 📦 Import from or export to [mrpack](./DOCS.md#mcman-import-mrpack-src)s!
 - 📦 Import from or export to [packwiz](./DOCS.md#mcman-import-mrpack-src) packs!
+- 🛡️ More secure than in-game plugin managers which are prone to permission attacks
 
 ## Changelog
 
 whats a semver? /s
 
-### `0.4.0` (unreleased)
+### `0.4.0`
 
 - Added [NeoForge](https://neoforged.net/) server type
 - Added [Forge](https://forums.minecraftforge.net/) server type
 - Added Downloadable type **Maven**
+- Added [Hangar](https://hangar.papermc.io/) support
 - Improved building process
+- Implemented a lockfile to speed things up and fix the remove-issue
 - Fixed a bug on `mcman run` which messed up the output when server crashes
 - Some downloadables now support variables
+- Experimental `add` command
+- Experimental `world` feature
 
 ### `0.3.0`
 

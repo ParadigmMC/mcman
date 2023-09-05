@@ -2,6 +2,9 @@
 
 Setup Spigot or CraftBukkit using [BuildTools](https://www.spigotmc.org/wiki/buildtools/).
 
+!!! note
+    `mcman` will need to run `java` to install the server, ensure it exists in the environment before building
+
 !!! example
     ```toml
     type = "buildtools"
