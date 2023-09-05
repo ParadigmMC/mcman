@@ -304,6 +304,31 @@ impl ServerType {
         }.map(|o| o.to_owned())
     }
 
+    pub fn get_hangar_platform(&self) -> Option<mcapi::hangar::Platform> {
+        match self {
+            Self::Waterfall {} => Some(mcapi::hangar::Platform::Waterfall),
+            Self::Velocity {} => Some(mcapi::hangar::Platform::Velocity),
+            Self::PaperMC { project, .. } if project == "waterfall" => Some(mcapi::hangar::Platform::Waterfall),
+            Self::PaperMC { project, .. } if project == "velocity" => Some(mcapi::hangar::Platform::Velocity),
+            Self::PaperMC { project, .. } if project == "paper" => Some(mcapi::hangar::Platform::Paper),
+            Self::Paper {  } | Self::Purpur { .. } => Some(mcapi::hangar::Platform::Paper),
+            _ => None
+        }
+    }
+
+    pub fn get_hangar_versions_filter(&self, mcver: &str) -> mcapi::hangar::VersionsFilter {
+        let platform = self.get_hangar_platform();
+        mcapi::hangar::VersionsFilter {
+            platform_version: if platform.is_some() {
+                Some(mcver.to_owned())
+            } else {
+                None
+            },
+            platform,
+            ..Default::default()
+        }
+    }
+
     pub fn is_modded(&self) -> bool {
         self.get_software_type() == SoftwareType::Modded
     }

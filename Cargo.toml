@@ -1,6 +1,6 @@
 [package]
 name = "mcman"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 repository = "https://github.com/ParadigmMC/mcman"
 homepage = "https://paradigmmc.github.io/mcman/"
@@ -28,7 +28,8 @@ futures = "0.3"
 indexmap = "2.0"
 indicatif = "0.17"
 java-properties = { git = "https://github.com/ParadigmMC/java-properties.git" }
-mcapi = { git = "https://github.com/ParadigmMC/mcapi.git" }
+#mcapi = { git = "https://github.com/ParadigmMC/mcapi.git" }
+mcapi = { path = "../mcapi" }
 pathdiff = { git = "https://github.com/Manishearth/pathdiff.git" }
 rpackwiz = { git = "https://github.com/vgskye/rpackwiz.git" }
 regex = "1.9"
@@ -42,8 +43,8 @@ toml = "0.7"
 walkdir = "2.3"
 zip = "0.6"
 sha2 = "0.10"
-notify = { version = "6.0.1", default-features = false }
+notify = { version = "6.0", default-features = false }
 glob = "0.3"
-async-trait = "0.1.72"
+async-trait = "0.1"
 roxmltree = "0.18"
-cached = "0.44.0"
+cached = "0.44"

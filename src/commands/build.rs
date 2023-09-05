@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 use clap::{arg, value_parser, ArgMatches, Command};
 
-use crate::{core::BuildContext, create_http_client, model::{Server, Lockfile}};
+use crate::{core::BuildContext, create_http_client, model::{Server, Lockfile, Network}};
 
 pub fn cli() -> Command {
     Command::new("build")
@@ -18,6 +18,7 @@ pub fn cli() -> Command {
 
 pub async fn run(matches: &ArgMatches) -> Result<BuildContext> {
     let server = Server::load().context("Failed to load server.toml")?;
+    let network = Network::load()?;
     let http_client = create_http_client()?;
 
     let default_output = server.path.join("server");
@@ -39,6 +40,7 @@ pub async fn run(matches: &ArgMatches) -> Result<BuildContext> {
 
     let mut ctx = BuildContext {
         server,
+        network,
         http_client,
         force,
         skip_stages,

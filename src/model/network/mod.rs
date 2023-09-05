@@ -6,7 +6,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 use super::{ClientSideMod, Downloadable};
@@ -53,16 +53,13 @@ impl Network {
     pub fn load_from(path: &PathBuf) -> Result<Self> {
         let data = read_to_string(path)?;
         let mut nw: Self = toml::from_str(&data)?;
-        nw.path = path
-            .parent()
-            .ok_or(anyhow!("Couldnt get parent dir"))?
-            .to_path_buf();
+        nw.path = path.clone();
         Ok(nw)
     }
 
     pub fn save(&self) -> Result<()> {
         let cfg_str = toml::to_string_pretty(&self)?;
-        let mut f = File::create(self.path.join("network.toml"))?;
+        let mut f = File::create(&self.path)?;
         f.write_all(cfg_str.as_bytes())?;
 
         Ok(())
@@ -72,7 +69,7 @@ impl Network {
 impl Default for Network {
     fn default() -> Self {
         Self {
-            path: PathBuf::from("."),
+            path: PathBuf::from("./network.toml"),
             name: String::new(),
             proxy: "proxy".to_owned(),
             port: 25565,

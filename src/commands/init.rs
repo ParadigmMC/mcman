@@ -10,7 +10,7 @@ use zip::ZipArchive;
 
 use crate::commands::markdown;
 use crate::create_http_client;
-use crate::model::ServerType;
+use crate::model::{ServerType, Network};
 use crate::util::env::{get_docker_version, write_dockerfile, write_dockerignore, write_gitignore};
 use crate::util::mrpack::{mrpack_import_configs, mrpack_read_index, mrpack_source_to_file};
 use crate::util::packwiz::{packwiz_fetch_pack_from_src, packwiz_import_from_source};
@@ -25,8 +25,17 @@ pub fn cli() -> Command {
     Command::new("init")
         .about("Initialize a new mcman server")
         .arg(arg!(--name [name] "The name of the server"))
-        .arg(arg!(--mrpack [src] "Import from a modrinth modpack"))
+        .arg(arg!(--mrpack [src] "Import from a modrinth modpack").visible_alias("mr"))
         .arg(arg!(--packwiz [src] "Import from a packwiz pack").visible_alias("pw"))
+        .arg(arg!(--network "Create a default network.toml").visible_alias("nw"))
+}
+
+#[allow(dead_code)]
+pub enum InitType {
+    Normal,
+    MRPack(String),
+    Packwiz(String),
+    Network,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -59,7 +68,11 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     let theme = ColorfulTheme::default();
 
     let name = Input::<String>::with_theme(&theme)
-        .with_prompt("Server name?")
+        .with_prompt(if matches.contains_id("network") {
+            "Network name?"
+        } else {
+            "Server name?"
+        })
         .default(name.clone())
         .with_initial_text(&name)
         .interact_text()?;
@@ -68,6 +81,8 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         init_mrpack(src, &name, &http_client).await?;
     } else if let Some(src) = matches.get_one::<String>("packwiz") {
         init_packwiz(src, &name, &http_client).await?;
+    } else if matches.contains_id("network") {
+        init_network(&http_client, &name).await?;
     } else {
         init_normal(&http_client, &name).await?;
     }
@@ -128,6 +143,37 @@ pub async fn init_normal(http_client: &reqwest::Client, name: &str) -> Result<()
     };
 
     init_final(http_client, &mut server, false).await?;
+
+    Ok(())
+}
+
+pub async fn init_network(_http_client: &reqwest::Client, name: &str) -> Result<()> {
+    let port = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("Which port should the network be on?")
+        .default(25565 as u16)
+        .interact_text()?;
+
+    let network = Network {
+        name: name.to_owned(),
+        port,
+        ..Default::default()
+    };
+
+    network.save()?;
+
+    println!(
+        " > {} {} {}",
+        style("Network").green(),
+        style(name).bold(),
+        style("has been initialized!").green()
+    );
+
+    println!(
+        " > {} {} {}",
+        style("Initialize servers in this network using").cyan(),
+        style("mcman init").bold(),
+        style("inside sub-folders").cyan(),
+    );
 
     Ok(())
 }

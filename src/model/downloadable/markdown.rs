@@ -28,6 +28,9 @@ impl Downloadable {
             Self::GithubRelease { repo, .. } => {
                 format!("[{repo}](https://github.com/{repo})")
             }
+            Self::Hangar { id, .. } => {
+                format!("[{id}](https://hangar.papermc.io/{id})")
+            }
             Self::Jenkins { url, job, .. } => {
                 let link = url.clone() + &str_process_job(job);
                 format!("[{job}]({link})")
@@ -86,6 +89,17 @@ impl Downloadable {
                 map.insert("Description".to_owned(), sanitize(&desc)?);
             }
 
+            Self::Hangar { id, version } => {
+                let proj = mcapi::hangar::fetch_project(client, id).await?;
+
+                map.insert(
+                    "Name".to_owned(),
+                    format!("[{}](https://hangar.papermc.io/{})", proj.name, proj.namespace.to_string()),
+                );
+                map.insert("Description".to_owned(), sanitize(&proj.description)?);
+                map.insert("Version".to_owned(), version.clone());
+            }
+
             Self::GithubRelease { repo, tag, asset } => {
                 let desc = fetch_repo_description(client, repo).await?;
 
@@ -142,6 +156,7 @@ impl Downloadable {
             Self::Url { .. } => "URL",
             Self::GithubRelease { .. } => "GithubRel",
             Self::Jenkins { .. } => "Jenkins",
+            Self::Hangar { .. } => "Hangar",
             Self::Modrinth { .. } => "Modrinth",
             Self::CurseRinth { .. } => "CurseRinth",
             Self::Spigot { .. } => "Spigot",
@@ -170,7 +185,7 @@ impl Downloadable {
                 map.insert("Asset/File".to_owned(), asset.clone());
             }
 
-            Self::Modrinth { id, version } | Self::CurseRinth { id, version } => {
+            Self::Modrinth { id, version } | Self::CurseRinth { id, version } | Self::Hangar { id, version } => {
                 map.insert("Project/URL".to_owned(), id.clone());
                 map.insert("Version/Release".to_owned(), version.clone());
             }
@@ -211,14 +226,15 @@ impl Downloadable {
 
     pub fn to_short_string(&self) -> String {
         match self {
-            Self::Modrinth { id, .. } => format!("Modrinth/{id}"),
-            Self::CurseRinth { id, .. } => format!("CurseRinth/{id}"),
-            Self::Spigot { id } => format!("Spigot/{id}"),
-            Self::GithubRelease { repo, .. } => format!("Github/{repo}"),
-            Self::Jenkins { job, .. } => format!("Jenkins/{job}"),
+            Self::Modrinth { id, .. } => format!("Modrinth:{id}"),
+            Self::Hangar { id, .. } => format!("Hangar:{id}"),
+            Self::CurseRinth { id, .. } => format!("CurseRinth:{id}"),
+            Self::Spigot { id } => format!("Spigot:{id}"),
+            Self::GithubRelease { repo, .. } => format!("Github:{repo}"),
+            Self::Jenkins { job, .. } => format!("Jenkins:{job}"),
             Self::Url { filename, .. } => {
                 if let Some(f) = filename {
-                    format!("URL/{f}")
+                    format!("URL:{f}")
                 } else {
                     "URL".to_string()
                 }
@@ -226,7 +242,7 @@ impl Downloadable {
             Self::Maven {
                 group, artifact, ..
             } => {
-                format!("Maven/{group}.{artifact}")
+                format!("Maven:{group}.{artifact}")
             }
         }
     }

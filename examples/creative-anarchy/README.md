@@ -2,6 +2,11 @@
 
 [![mcman badge](https://img.shields.io/badge/uses-mcman-purple?logo=github)](https://github.com/ParadigmMC/mcman)
 
+A creative server demonstrating:
+
+- Custom server jars
+- Hangar Plugins
+
 <!-- run 'mcman md' to update! -->
 
 <!--start:mcman-server-->
@@ -13,6 +18,7 @@
 ## Plugins
 
 <!--start:mcman-addons-->
-|  |
-|  |
+| Name                                                   | Description                                                                                      | Version |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ------- |
+| [ChessCraft](https://hangar.papermc.io/jmp/ChessCraft) | Paper plugin adding in-world chess matches against players and chess engines (CPUs) to Minecraft | latest  |
 <!--end:mcman-addons-->

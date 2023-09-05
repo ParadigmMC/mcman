@@ -11,3 +11,4 @@ pub mod purpur;
 pub mod quilt;
 pub mod spigot;
 pub mod vanilla;
+pub mod hangar;

@@ -15,10 +15,10 @@ proxy_flags = false
 nogui = true
 eula_args = true
 
-# [[mods]]
-# type = "modrinth"
-# id = "create-fabric"
-# version = "wKEEi1qX"
+[[mods]]
+type = "modrinth"
+id = "create-fabric"
+version = "wKEEi1qX"
 
 [[mods]]
 type = "modrinth"

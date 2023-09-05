@@ -1,5 +1,5 @@
 use anyhow::{Result, Context};
-use notify::{Watcher, recommended_watcher, EventKind};
+use notify::{recommended_watcher, EventKind};
 
 use crate::{core::BuildContext, create_http_client, model::Server};
 

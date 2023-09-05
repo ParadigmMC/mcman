@@ -2,6 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
+use crate::sources::hangar::{get_hangar_url, get_hangar_filename};
 use crate::sources::maven::{self, get_maven_url};
 use crate::{model::Server, Source};
 
@@ -32,13 +33,26 @@ pub enum Downloadable {
     },
 
     #[serde(alias = "mr")]
-    Modrinth { id: String, version: String },
+    Modrinth {
+        id: String,
+        #[serde(default = "latest")]
+        version: String
+    },
 
     #[serde(alias = "cr")]
-    CurseRinth { id: String, version: String },
+    CurseRinth {
+        id: String,
+        #[serde(default = "latest")]
+        version: String
+    },
 
     Spigot {
         id: String, // weird ass api
+    },
+
+    Hangar {
+        id: String,
+        version: String,
     },
 
     #[serde(rename = "ghrel")]
@@ -99,6 +113,9 @@ impl Downloadable {
             Self::CurseRinth { id, version } => {
                 Ok(get_curserinth_url(id, version, client, None).await?)
             }
+            Self::Hangar { id, version } => {
+                Ok(get_hangar_url(client, id, version, mcver, server.jar.get_hangar_versions_filter(mcver)).await?)
+            }
             Self::Spigot { id } => Ok(get_spigot_url(id)),
             Self::GithubRelease { repo, tag, asset } => {
                 Ok(get_github_release_url(repo, tag, asset, mcver, client).await?)
@@ -154,10 +171,16 @@ impl Source for Downloadable {
                 let filename = fetch_modrinth_filename(id, version, client, None).await?;
                 Ok(filename)
             }
+
             Self::CurseRinth { id, version } => {
                 let filename = fetch_curserinth_filename(id, version, client, None).await?;
                 Ok(filename)
             }
+
+            Self::Hangar { id, version } => {
+                Ok(get_hangar_filename(client, id, version, mcver, server.jar.get_hangar_versions_filter(mcver)).await?)
+            }
+
             Self::Spigot { id } => {
                 let ver = fetch_spigot_resource_latest_ver(id, client).await?;
                 // amazing.. bruh...
@@ -199,6 +222,12 @@ impl std::fmt::Display for Downloadable {
 
             Self::Modrinth { id, version } => f
                 .debug_struct("Modrinth")
+                .field("id", id)
+                .field("version", version)
+                .finish(),
+            
+            Self::Hangar { id, version } => f
+                .debug_struct("Hangar")
                 .field("id", id)
                 .field("version", version)
                 .finish(),
