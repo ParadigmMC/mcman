@@ -9,7 +9,7 @@
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use clap::Command;
+use clap::Parser;
 
 mod commands;
 mod core;
@@ -18,48 +18,71 @@ mod sources;
 mod util;
 //mod hot_reload;
 
-fn cli() -> Command {
-    Command::new("mcman")
-        .about("Powerful Minecraft Server Manager CLI")
-        .after_help("To start building servers, try 'mcman init'")
-        .author("ParadigmMC")
-        .color(clap::ColorChoice::Always)
-        .subcommand_required(true)
-        .arg_required_else_help(true)
-        .subcommand(commands::init::cli())
-        .subcommand(commands::build::cli())
-        .subcommand(commands::run::cli())
-        .subcommand(commands::add::cli())
-        .subcommand(commands::import::cli())
-        .subcommand(commands::markdown::cli())
-        .subcommand(commands::pull::cli())
-        .subcommand(commands::env::cli())
-        .subcommand(commands::world::cli())
-        .subcommand(commands::info::cli())
-        .subcommand(commands::version::cli())
-        .subcommand(commands::export::cli())
-        .subcommand(commands::eject::cli())
+#[derive(clap::Parser)]
+#[command(author = "ParadigmMC", color = clap::ColorChoice::Always)]
+#[command(about = "Powerful Minecraft Server Manager CLI")]
+#[command(after_help = "To start building servers, try 'mcman init'")]
+#[command(subcommand_required = true, arg_required_else_help = true)]
+struct CLI {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(clap::Subcommand)]
+enum Commands {
+    /// Initialize a new mcman server
+    Init(commands::init::Args),
+    /// Build using server.toml configuration
+    Build(commands::build::Args),
+    /// Test the server (stops it when it ends startup)
+    Run(commands::run::Args),
+    /// Add a plugin/mod/datapack
+    #[command(subcommand)]
+    Add(commands::add::Commands),
+    /// Importing tools
+    #[command(subcommand)]
+    Import(commands::import::Commands),
+    /// Update markdown files with server info
+    #[command(visible_alias = "md")]
+    Markdown,
+    /// Pull files from server/ to config/
+    Pull(commands::pull::Args),
+    /// Helpers for setting up the environment
+    #[command(subcommand)]
+    Env(commands::env::Commands),
+    /// Pack or unpack a world
+    #[command(subcommand, visible_alias = "w")]
+    World(commands::world::Commands),
+    /// Show info about the server in console
+    Info,
+    #[command(visible_alias = "v")]
+    Version,
+    /// Exporting tools
+    #[command(subcommand)]
+    Export(commands::export::Commands),
+    /// Eject - remove everything related to mcman
+    #[command(hide = true)]
+    Eject,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let matches = cli().get_matches();
+    let args = CLI::parse();
 
-    match matches.subcommand() {
-        Some(("init", sub_matches)) => commands::init::run(sub_matches).await,
-        Some(("build", sub_matches)) => commands::build::run(sub_matches).await.map(|_| ()),
-        Some(("run", sub_matches)) => commands::run::run(sub_matches).await,
-        Some(("add", sub_matches)) => commands::add::run(sub_matches).await,
-        Some(("import" | "i", sub_matches)) => commands::import::run(sub_matches).await,
-        Some(("markdown" | "md", _)) => commands::markdown::run().await,
-        Some(("pull", sub_matches)) => commands::pull::run(sub_matches),
-        Some(("env", sub_matches)) => commands::env::run(sub_matches),
-        Some(("world" | "w" | "worlds", sub_matches)) => commands::world::run(sub_matches).await,
-        Some(("info", _)) => commands::info::run(),
-        Some(("version" | "v", _)) => commands::version::run().await,
-        Some(("export", sub_matches)) => commands::export::run(sub_matches).await,
-        Some(("eject", _)) => commands::eject::run(),
-        _ => unreachable!(),
+    match args.command {
+        Commands::Init(args) => commands::init::run(args).await,
+        Commands::Build(args) => commands::build::run(args).await.map(|_| ()),
+        Commands::Run(args) => commands::run::run(args).await,
+        Commands::Add(commands) => commands::add::run(commands).await,
+        Commands::Import(subcommands) => commands::import::run(subcommands).await,
+        Commands::Markdown => commands::markdown::run().await,
+        Commands::Pull(args) => commands::pull::run(args),
+        Commands::Env(commands) => commands::env::run(commands),
+        Commands::World(commands) => commands::world::run(commands).await,
+        Commands::Info => commands::info::run(),
+        Commands::Version => commands::version::run().await,
+        Commands::Export(commands) => commands::export::run(commands).await,
+        Commands::Eject => commands::eject::run(),
     }
 }
 

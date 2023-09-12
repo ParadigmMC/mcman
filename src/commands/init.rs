@@ -10,7 +10,7 @@ use zip::ZipArchive;
 
 use crate::commands::markdown;
 use crate::create_http_client;
-use crate::model::{ServerType, Network};
+use crate::model::{Network, ServerType};
 use crate::util::env::{get_docker_version, write_dockerfile, write_dockerignore, write_gitignore};
 use crate::util::mrpack::{mrpack_import_configs, mrpack_read_index, mrpack_source_to_file};
 use crate::util::packwiz::{packwiz_fetch_pack_from_src, packwiz_import_from_source};
@@ -19,15 +19,21 @@ use crate::{
     sources::vanilla::fetch_latest_mcver,
 };
 use anyhow::{bail, Context, Result};
-use clap::{arg, ArgMatches, Command};
 
-pub fn cli() -> Command {
-    Command::new("init")
-        .about("Initialize a new mcman server")
-        .arg(arg!(--name [name] "The name of the server"))
-        .arg(arg!(--mrpack [src] "Import from a modrinth modpack").visible_alias("mr"))
-        .arg(arg!(--packwiz [src] "Import from a packwiz pack").visible_alias("pw"))
-        .arg(arg!(--network "Create a default network.toml").visible_alias("nw"))
+#[derive(clap::Args)]
+pub struct Args {
+    /// The name of the server
+    #[arg(long)]
+    name: Option<String>,
+    /// Import from a modrinth modpack
+    #[arg(long, visible_alias = "mr", value_name = "src", group = "type")]
+    mrpack: Option<String>,
+    /// Import from a packwiz pack
+    #[arg(long, visible_alias = "pw", value_name = "src", group = "type")]
+    packwiz: Option<String>,
+    /// Create a default network.toml
+    #[arg(long, visible_alias = "nw", group = "type")]
+    network: bool,
 }
 
 #[allow(dead_code)]
@@ -39,7 +45,7 @@ pub enum InitType {
 }
 
 #[allow(clippy::too_many_lines)]
-pub async fn run(matches: &ArgMatches) -> Result<()> {
+pub async fn run(args: Args) -> Result<()> {
     let http_client = create_http_client()?;
 
     println!(" > {}", style("Initializing new server...").cyan());
@@ -54,8 +60,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     }
 
     let current_dir = std::env::current_dir()?;
-    let name = matches.get_one::<String>("name");
-    let name = if let Some(name) = name {
+    let name = if let Some(name) = args.name {
         name.clone()
     } else {
         current_dir
@@ -68,7 +73,7 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
     let theme = ColorfulTheme::default();
 
     let name = Input::<String>::with_theme(&theme)
-        .with_prompt(if matches.contains_id("network") {
+        .with_prompt(if args.network {
             "Network name?"
         } else {
             "Server name?"
@@ -77,11 +82,11 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         .with_initial_text(&name)
         .interact_text()?;
 
-    if let Some(src) = matches.get_one::<String>("mrpack") {
-        init_mrpack(src, &name, &http_client).await?;
-    } else if let Some(src) = matches.get_one::<String>("packwiz") {
-        init_packwiz(src, &name, &http_client).await?;
-    } else if matches.contains_id("network") {
+    if let Some(src) = args.mrpack {
+        init_mrpack(&src, &name, &http_client).await?;
+    } else if let Some(src) = args.packwiz {
+        init_packwiz(&src, &name, &http_client).await?;
+    } else if args.network {
         init_network(&http_client, &name).await?;
     } else {
         init_normal(&http_client, &name).await?;

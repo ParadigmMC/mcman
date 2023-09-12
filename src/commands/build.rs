@@ -1,40 +1,39 @@
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
-use clap::{arg, value_parser, ArgMatches, Command};
 
-use crate::{core::BuildContext, create_http_client, model::{Server, Lockfile, Network}};
+use crate::{
+    core::BuildContext,
+    create_http_client,
+    model::{Lockfile, Network, Server},
+};
 
-pub fn cli() -> Command {
-    Command::new("build")
-        .about("Build using server.toml configuration")
-        .arg(
-            arg!(-o --output [FILE] "The output directory for the server")
-                .value_parser(value_parser!(PathBuf)),
-        )
-        .arg(arg!(--skip [stages] "Skip some stages").value_delimiter(','))
-        .arg(arg!(--force "Don't skip downloading already downloaded jars"))
+#[derive(clap::Args)]
+pub struct Args {
+    /// The output directory for the server
+    #[arg(short, long, value_name = "file")]
+    output: Option<PathBuf>,
+    /// Skip some stages
+    #[arg(long, value_name = "stages")]
+    skip: Vec<String>,
+    #[arg(long)]
+    /// Don't skip downloading already downloaded jars
+    force: bool,
 }
 
-pub async fn run(matches: &ArgMatches) -> Result<BuildContext> {
+pub async fn run(args: Args) -> Result<BuildContext> {
     let server = Server::load().context("Failed to load server.toml")?;
     let network = Network::load()?;
     let http_client = create_http_client()?;
 
     let default_output = server.path.join("server");
-    let output_dir = matches
-        .get_one::<PathBuf>("output")
-        .unwrap_or(&default_output)
-        .clone();
+    let output_dir = args.output.unwrap_or(default_output);
 
     let lockfile = Lockfile::get_lockfile(&output_dir)?;
 
-    let force = matches.get_flag("force");
+    let force = args.force;
 
-    let skip_stages = matches
-        .get_many::<String>("skip")
-        .map(|o| o.cloned().collect::<Vec<String>>())
-        .unwrap_or(vec![]);
+    let skip_stages = args.skip;
 
     std::fs::create_dir_all(&output_dir).context("Failed to create output directory")?;
 

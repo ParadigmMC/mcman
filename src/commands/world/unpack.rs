@@ -1,28 +1,30 @@
 use std::time::Duration;
 
-use anyhow::{Context, Result, bail};
-use clap::{arg, ArgMatches, Command};
+use anyhow::{bail, Context, Result};
 use dialoguer::{theme::ColorfulTheme, Select};
 use indicatif::{ProgressBar, ProgressStyle};
 
-use crate::{
-    model::Server, util::SelectItem,
-};
+use crate::{model::Server, util::SelectItem};
 
-pub fn cli() -> Command {
-    Command::new("unpack")
-        .about("Unpack (unzip) a world inside worlds/, even if it exists")
-        .visible_alias("unzip")
-        .arg(arg!([world] "The world to unpack"))
+#[derive(clap::Args)]
+pub struct Args {
+    /// The world to unpack
+    world: Option<String>,
 }
 
-pub async fn run(matches: &ArgMatches) -> Result<()> {
+pub async fn run(args: Args) -> Result<()> {
     let server = Server::load().context("Failed to load server.toml")?;
 
-    let zipfile = if let Some(s) = matches.get_one::<String>("world") {
-        server.path.join("worlds").join(if s.ends_with(".zip") { s.clone() } else { format!("{s}.zip") })
+    let zipfile = if let Some(s) = args.world {
+        server.path.join("worlds").join(if s.ends_with(".zip") {
+            s.clone()
+        } else {
+            format!("{s}.zip")
+        })
     } else {
-        let worlds = server.path.join("worlds")
+        let worlds = server
+            .path
+            .join("worlds")
             .read_dir()?
             .collect::<Result<Vec<std::fs::DirEntry>, std::io::Error>>()?;
 
@@ -31,9 +33,14 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         } else if worlds.len() == 1 {
             worlds[0].path()
         } else {
-            let items = worlds.iter()
-                .map(|entry|
-                    SelectItem(entry.path(), entry.file_name().to_string_lossy().into_owned()))
+            let items = worlds
+                .iter()
+                .map(|entry| {
+                    SelectItem(
+                        entry.path(),
+                        entry.file_name().to_string_lossy().into_owned(),
+                    )
+                })
                 .collect::<Vec<_>>();
 
             let idx = Select::with_theme(&ColorfulTheme::default())
@@ -52,14 +59,14 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         .unwrap_or("world".to_owned());
     let world_name = world_name.strip_suffix(".zip").unwrap_or(&world_name);
 
-    let spinner = ProgressBar::new_spinner().with_style(ProgressStyle::with_template(
-        " {spinner:.dim.bold} {msg}",
-    )?).with_message(format!("Unzipping world '{world_name}'..."));
+    let spinner = ProgressBar::new_spinner()
+        .with_style(ProgressStyle::with_template(" {spinner:.dim.bold} {msg}")?)
+        .with_message(format!("Unzipping world '{world_name}'..."));
 
     spinner.enable_steady_tick(Duration::from_millis(200));
-    
+
     crate::core::worlds::unzip(&zipfile, &server.path.join("server"))?;
-    
+
     spinner.finish_with_message(format!("Unzipped world '{world_name}' successfully"));
 
     Ok(())

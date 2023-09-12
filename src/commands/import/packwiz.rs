@@ -1,26 +1,23 @@
 use anyhow::{Context, Result};
-use clap::{arg, ArgMatches, Command};
 use console::style;
 
 use crate::{create_http_client, model::Server, util::packwiz::packwiz_import_from_source};
 
-pub fn cli() -> Command {
-    Command::new("packwiz")
-        .about("Import from packwiz")
-        .visible_alias("pw")
-        .arg(arg!(<source> "File or url").required(true))
+#[derive(clap::Args)]
+pub struct Args {
+    source: String,
 }
 
-pub async fn run(matches: &ArgMatches) -> Result<()> {
+pub async fn run(args: Args) -> Result<()> {
     let mut server = Server::load().context("Failed to load server.toml")?;
     let http_client = create_http_client()?;
 
-    let src = matches.get_one::<String>("source").unwrap();
+    let src = args.source;
 
     println!(" > {}", style("Importing from packwiz pack.toml...").dim());
 
     let (_pack, mod_count, config_count) =
-        packwiz_import_from_source(&http_client, src, &mut server).await?;
+        packwiz_import_from_source(&http_client, &src, &mut server).await?;
 
     server.save()?;
 

@@ -1,25 +1,24 @@
-use anyhow::{Context, Result, bail};
-use clap::{arg, ArgMatches, Command};
+use anyhow::{bail, Context, Result};
 use console::style;
 use dialoguer::{theme::ColorfulTheme, Input, Select};
 
 use crate::{
     create_http_client,
-    model::{Downloadable, Server, SoftwareType}, sources::modrinth, util::SelectItem,
+    model::{Downloadable, Server, SoftwareType},
+    sources::modrinth,
+    util::SelectItem,
 };
 
-pub fn cli() -> Command {
-    Command::new("modrinth")
-        .about("Add from modrinth")
-        .visible_alias("mr")
-        .arg(arg!(<search>...).required(false))
+#[derive(clap::Args)]
+pub struct Args {
+    search: Option<String>,
 }
 
-pub async fn run(matches: &ArgMatches) -> Result<()> {
+pub async fn run(args: Args) -> Result<()> {
     let mut server = Server::load().context("Failed to load server.toml")?;
     let http_client = create_http_client()?;
 
-    let query = if let Some(s) = matches.get_one::<String>("search") {
+    let query = if let Some(s) = args.search {
         s.to_owned()
     } else {
         Input::with_theme(&ColorfulTheme::default())
@@ -36,14 +35,28 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
         bail!("No modrinth projects found for query '{query}'");
     }
 
-    let items = projects.iter().map(|p| {
-        SelectItem(p, format!("{} {} [{}]\n{s:w$}{}", match p.project_type.as_str() {
-            "mod" => "(mod)",
-            "datapack" => "( dp)",
-            "modpack" => "(mrp)",
-            _ => "( ? )",
-        }, p.title, p.slug, p.description, s = " ", w = 10))
-    }).collect::<Vec<_>>();
+    let items = projects
+        .iter()
+        .map(|p| {
+            SelectItem(
+                p,
+                format!(
+                    "{} {} [{}]\n{s:w$}{}",
+                    match p.project_type.as_str() {
+                        "mod" => "(mod)",
+                        "datapack" => "( dp)",
+                        "modpack" => "(mrp)",
+                        _ => "( ? )",
+                    },
+                    p.title,
+                    p.slug,
+                    p.description,
+                    s = " ",
+                    w = 10
+                ),
+            )
+        })
+        .collect::<Vec<_>>();
 
     let idx = Select::with_theme(&ColorfulTheme::default())
         .with_prompt("Which project?")
@@ -83,7 +96,8 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
                 .with_prompt("Import as...")
                 .default(0)
                 .items(&["Datapack", "Mod/Plugin"])
-                .interact()? {
+                .interact()?
+            {
                 0 => "datapack",
                 1 => "mod",
                 _ => unreachable!(),
@@ -98,7 +112,10 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
             todo!("Modpack importing currently unsupported")
         }
         "mod" => {
-            let addon = Downloadable::Modrinth { id: project.slug.clone(), version: version.id.clone() };
+            let addon = Downloadable::Modrinth {
+                id: project.slug.clone(),
+                version: version.id.clone(),
+            };
 
             let is_plugin = match server.jar.get_software_type() {
                 SoftwareType::Modded => false,
@@ -112,28 +129,31 @@ pub async fn run(matches: &ArgMatches) -> Result<()> {
                         == 0
                 }
             };
-        
+
             if is_plugin {
                 server.plugins.push(addon);
             } else {
                 server.mods.push(addon);
             }
-        
+
             server.save()?;
-        
+
             server.refresh_markdown(&http_client).await?;
-        
+
             println!(" > Added {} from modrinth", project.title);
         }
         "datapack" => {
-            let addon = Downloadable::Modrinth { id: project.slug.clone(), version: version.id.clone() };
+            let addon = Downloadable::Modrinth {
+                id: project.slug.clone(),
+                version: version.id.clone(),
+            };
 
             let world_name = server.add_datapack(addon)?;
-        
+
             server.save()?;
 
             server.refresh_markdown(&http_client).await?;
-        
+
             println!(
                 " > {} {} {} {world_name}{}",
                 style("Datapack ").green(),

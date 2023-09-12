@@ -1,17 +1,10 @@
 use std::cmp::Ordering;
 
 use anyhow::Result;
-use clap::Command;
 use console::style;
 use semver::Version;
 
 use crate::{create_http_client, sources::github};
-
-pub fn cli() -> Command {
-    Command::new("version")
-        .about("Show version information")
-        .visible_alias("v")
-}
 
 pub async fn run() -> Result<()> {
     println!(

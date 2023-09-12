@@ -1,19 +1,15 @@
 use anyhow::Result;
-use clap::{ArgMatches, Command};
 
 mod unpack;
 
-pub fn cli() -> Command {
-    Command::new("world")
-        .about("Pack or unpack a world")
-        .visible_alias("w")
-        .subcommand(unpack::cli())
+#[derive(clap::Subcommand)]
+pub enum Commands {
+    #[command(visible_alias = "unzip")]
+    Unpack(unpack::Args),
 }
 
-pub async fn run(matches: &ArgMatches) -> Result<()> {
-    match matches.subcommand() {
-        Some(("unpack" | "unzip", sub_matches)) => unpack::run(sub_matches).await?,
-        _ => unreachable!(),
+pub async fn run(commands: Commands) -> Result<()> {
+    match commands {
+        Commands::Unpack(args) => unpack::run(args).await,
     }
-    Ok(())
 }
