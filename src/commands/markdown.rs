@@ -10,13 +10,6 @@ use crate::create_http_client;
 use crate::model::{Server, World};
 use crate::util::md::MarkdownTable;
 use anyhow::{Context, Result};
-use clap::Command;
-
-pub fn cli() -> Command {
-    Command::new("markdown")
-        .about("Update markdown files with server info")
-        .visible_alias("md")
-}
 
 pub static NOTICE: &str = "";
 pub static SERVERINFO_REGEX: &str =
@@ -69,18 +62,17 @@ pub async fn update_files(http_client: &reqwest::Client, server: &Server) -> Res
     let addon_list_text =
         { ADDONS_START.to_owned() + NOTICE + "\n" + &addons_table.render() + "\n" + ADDONS_END };
 
-    let dp_text =
-        {
-            let mut sections = vec![];
+    let dp_text = {
+        let mut sections = vec![];
 
-            for (name, w) in &server.worlds {
-                let table = create_table_world(http_client, w).await?.render();
+        for (name, w) in &server.worlds {
+            let table = create_table_world(http_client, w).await?.render();
 
-                sections.push(format!("# {name}\n\n{table}"));
-            }
+            sections.push(format!("# {name}\n\n{table}"));
+        }
 
-            DP_START.to_owned() + NOTICE + "\n" + &sections.join("\n\n") + "\n" + DP_END
-        };
+        DP_START.to_owned() + NOTICE + "\n" + &sections.join("\n\n") + "\n" + DP_END
+    };
 
     let serv_regex = Regex::new(SERVERINFO_REGEX).unwrap();
     let addon_regex = Regex::new(ADDONS_REGEX).unwrap();
@@ -111,8 +103,7 @@ pub async fn update_files(http_client: &reqwest::Client, server: &Server) -> Res
         let stage2 =
             addon_regex.replace_all(&stage1, |_caps: &regex::Captures| addon_list_text.clone());
 
-        let stage3 =
-            dp_regex.replace_all(&stage2, |_caps: &regex::Captures| dp_text.clone());
+        let stage3 = dp_regex.replace_all(&stage2, |_caps: &regex::Captures| dp_text.clone());
 
         let mut f = File::create(&path)?;
         f.write_all(stage3.as_bytes())?;
@@ -158,7 +149,7 @@ pub async fn create_table_addons(
 
 pub async fn create_table_world(
     http_client: &reqwest::Client,
-    world: &World
+    world: &World,
 ) -> Result<MarkdownTable> {
     let mut table = MarkdownTable::new();
 

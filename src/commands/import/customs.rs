@@ -1,15 +1,10 @@
 use anyhow::{Context, Result};
-use clap::Command;
 use console::style;
 
 use crate::{
     create_http_client,
     model::{Downloadable, Server},
 };
-
-pub fn cli() -> Command {
-    Command::new("customs").about("Try to import all custom urls again")
-}
 
 pub async fn run() -> Result<()> {
     let mut server = Server::load().context("Failed to load server.toml")?;

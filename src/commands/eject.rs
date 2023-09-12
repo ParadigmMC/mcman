@@ -1,17 +1,10 @@
 use std::fs;
 
 use anyhow::{Context, Result};
-use clap::Command;
 use console::style;
 use dialoguer::{theme::ColorfulTheme, Input};
 
 use crate::model::Server;
-
-pub fn cli() -> Command {
-    Command::new("eject")
-        .hide(true)
-        .about("Eject - remove everything related to mcman")
-}
 
 #[allow(unused_must_use)]
 pub fn run() -> Result<()> {

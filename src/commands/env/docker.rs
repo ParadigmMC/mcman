@@ -1,5 +1,4 @@
 use anyhow::{Context, Result};
-use clap::{ArgMatches, Command};
 use console::style;
 
 use crate::{
@@ -7,11 +6,7 @@ use crate::{
     util::env::{write_dockerfile, write_dockerignore},
 };
 
-pub fn cli() -> Command {
-    Command::new("docker").about("Write the default Dockerfile and .dockerignore")
-}
-
-pub fn run(_matches: &ArgMatches) -> Result<()> {
+pub fn run() -> Result<()> {
     let server = Server::load().context("Failed to load server.toml")?;
 
     write_dockerfile(&server.path).context("writing Dockerfile")?;

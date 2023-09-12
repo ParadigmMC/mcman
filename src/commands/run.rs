@@ -1,16 +1,18 @@
 use anyhow::{anyhow, Context, Result};
-use clap::{arg, ArgMatches, Command};
 
-pub fn cli() -> Command {
-    super::build::cli()
-        .name("run")
-        .arg(arg!(--test "Test the server (stops it when it ends startup)"))
+#[derive(clap::Args)]
+pub struct Args {
+    #[command(flatten)]
+    build_args: crate::commands::build::Args,
+    /// Test the server (stops it when it ends startup)
+    #[arg(long)]
+    test: bool,
 }
 
-pub async fn run(matches: &ArgMatches) -> Result<()> {
-    let mut ctx = super::build::run(matches).await?;
+pub async fn run(args: Args) -> Result<()> {
+    let mut ctx = super::build::run(args.build_args).await?;
 
-    let test_mode = matches.get_flag("test");
+    let test_mode = args.test;
 
     ctx.run(test_mode).context("Starting child process")?;
     let status = ctx.pipe_child_process(test_mode).await?;

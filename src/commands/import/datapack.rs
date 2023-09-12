@@ -1,5 +1,4 @@
 use anyhow::{Context, Result};
-use clap::{arg, ArgMatches, Command};
 use console::style;
 use dialoguer::Input;
 
@@ -8,18 +7,17 @@ use crate::{
     model::{Downloadable, Server},
 };
 
-pub fn cli() -> Command {
-    Command::new("datapack")
-        .about("Import datapack from url")
-        .visible_alias("dp")
-        .arg(arg!(<url>).required(false))
+#[derive(clap::Args)]
+pub struct Args {
+    #[arg(value_name = "SRC")]
+    url: Option<String>,
 }
 
-pub async fn run(matches: &ArgMatches) -> Result<()> {
+pub async fn run(args: Args) -> Result<()> {
     let mut server = Server::load().context("Failed to load server.toml")?;
     let http_client = create_http_client()?;
 
-    let urlstr = match matches.get_one::<String>("url") {
+    let urlstr = match args.url {
         Some(url) => url.clone(),
         None => Input::<String>::new().with_prompt("URL:").interact_text()?,
     };

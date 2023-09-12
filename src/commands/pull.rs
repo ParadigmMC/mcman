@@ -1,7 +1,6 @@
 use std::{fs, path::PathBuf};
 
 use anyhow::{anyhow, bail, Context, Result};
-use clap::{arg, ArgMatches, Command};
 use console::style;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use glob::glob;
@@ -9,25 +8,23 @@ use pathdiff::diff_paths;
 
 use crate::model::Server;
 
-pub fn cli() -> Command {
-    Command::new("pull")
-        .about("Pull files from server/ to config/")
-        .arg(
-            arg!(<file> "Files to pull")
-                .required(true),
-        )
+#[derive(clap::Args)]
+pub struct Args {
+    /// Files to pull
+    #[arg(required = true)]
+    file: String,
 }
 
-pub fn run(matches: &ArgMatches) -> Result<()> {
+pub fn run(args: Args) -> Result<()> {
     let server = Server::load().context("Failed to load server.toml")?;
 
-    let files = matches.get_one::<String>("file").unwrap();
+    let files = args.file;
 
-    for entry in glob(files)? {
+    for entry in glob(&files)? {
         let entry = entry?;
 
-        let diff =
-            diff_paths(&entry, fs::canonicalize(&server.path)?).ok_or(anyhow!("Cannot diff paths"))?;
+        let diff = diff_paths(&entry, fs::canonicalize(&server.path)?)
+            .ok_or(anyhow!("Cannot diff paths"))?;
 
         if !diff.starts_with("server") {
             bail!("You aren't inside server/");
@@ -40,17 +37,16 @@ pub fn run(matches: &ArgMatches) -> Result<()> {
         destination.push("config");
         destination.extend(iter);
 
-        
         fs::create_dir_all(destination.parent().unwrap()).context("Failed to create dirs")?;
 
         if destination.exists()
-        && !Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt(format!(
-                "File '{}' already exists, overwrite?",
-                destination.display()
-            ))
-            .default(false)
-            .interact()?
+            && !Confirm::with_theme(&ColorfulTheme::default())
+                .with_prompt(format!(
+                    "File '{}' already exists, overwrite?",
+                    destination.display()
+                ))
+                .default(false)
+                .interact()?
         {
             continue;
         }

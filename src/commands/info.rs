@@ -1,15 +1,10 @@
 use crate::model::Server;
 use crate::util::md::MarkdownTable;
 use anyhow::{Context, Result};
-use clap::Command;
 use console::style;
 use indexmap::IndexMap;
 
 use super::markdown::create_table_server_console;
-
-pub fn cli() -> Command {
-    Command::new("info").about("Show info about the server in console")
-}
 
 pub fn run() -> Result<()> {
     let server = Server::load().context("Failed to load server.toml")?;
