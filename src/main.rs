@@ -55,6 +55,7 @@ enum Commands {
     World(commands::world::Commands),
     /// Show info about the server in console
     Info,
+    /// Show version information
     #[command(visible_alias = "v")]
     Version,
     /// Exporting tools
