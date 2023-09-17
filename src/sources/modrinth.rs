@@ -92,7 +92,7 @@ pub struct ModrinthFile {
     pub url: String,
     pub filename: String,
     pub primary: bool,
-    pub size: i64,
+    pub size: i32,
     // file_type omitted
 }
 

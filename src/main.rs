@@ -7,15 +7,20 @@
 #![allow(clippy::struct_excessive_bools)]
 #![allow(unknown_lints)]
 
+use std::{path::PathBuf, collections::HashMap};
+
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cache::Cache;
 use clap::Parser;
+use model::{Server, Network};
 
 mod commands;
 mod core;
 mod model;
 mod sources;
 mod util;
+mod cache;
 //mod hot_reload;
 
 #[derive(clap::Parser)]
@@ -103,14 +108,83 @@ pub fn create_http_client() -> Result<reqwest::Client> {
 
 #[async_trait]
 pub trait Source {
-    async fn get_filename(
+    async fn resolve_source(
         &self,
-        server: &model::Server,
-        client: &reqwest::Client,
-    ) -> Result<String>;
-    async fn download(
-        &self,
-        server: &model::Server,
-        client: &reqwest::Client,
-    ) -> Result<reqwest::Response>;
+        app: &App,
+    ) -> Result<FileSource>;
+}
+
+pub struct BaseApp {
+    pub http_client: reqwest::Client,
+}
+
+impl BaseApp {
+    pub fn new() -> Result<Self> {
+        let b = reqwest::Client::builder().user_agent(APP_USER_AGENT);
+
+        Ok(Self {
+            http_client: b.build().context("Failed to create HTTP client")?
+        })
+    }
+
+    fn into_app(self) -> Result<App> {
+        Ok(App {
+            http_client: self.http_client,
+            server: Server::load().context("Failed to load server.toml")?,
+            network: Network::load()?
+        })
+    }
+}
+
+pub struct App {
+    pub http_client: reqwest::Client,
+    pub server: Server,
+    pub network: Option<Network>,
+}
+
+impl App {
+    pub fn new() -> Result<Self> {
+        BaseApp::new()?.into_app()
+    }
+
+    pub fn mc_version(&self) -> String {
+        self.server.mc_version.clone()
+    }
+
+    pub fn get_cache(&self, ns: &str) -> Option<Cache> {
+        // TODO check if cache should be enabled to return None
+        Cache::get_cache(ns)
+    }
+
+    pub fn has_in_cache(&self, ns: &str, path: &str) -> bool {
+        self.get_cache(ns)
+            .map(|c| c.exists(path))
+            .unwrap_or(false)
+    }
+}
+
+pub enum FileSource {
+    Download {
+        url: String,
+        filename: String,
+        cache: CacheStrategy,
+        size: Option<i32>,
+        hashes: HashMap<String, String>,
+    },
+
+    Cached {
+        path: PathBuf,
+    }
+}
+
+pub enum CacheStrategy {
+    File {
+        path: PathBuf,
+    },
+    Indexed {
+        index_path: PathBuf,
+        key: String,
+        value: PathBuf,
+    },
+    None,
 }

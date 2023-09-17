@@ -1,42 +1,59 @@
+use std::collections::HashMap;
+
 use anyhow::{anyhow, Result};
+use mcapi::fabric::{FabricLoader, FabricInstaller, FABRIC_META_URL};
 
-pub async fn fetch_fabric_latest_loader(client: &reqwest::Client) -> Result<String> {
-    let loaders = mcapi::fabric::fetch_loaders(client).await?;
+use crate::{App, FileSource, CacheStrategy};
 
-    Ok(loaders
-        .first()
-        .ok_or(anyhow!("Couldn't get latest fabric loader"))?
-        .version
-        .clone())
-}
+pub struct FabricAPI<'a>(&'a App);
 
-pub async fn fetch_fabric_latest_installer(client: &reqwest::Client) -> Result<String> {
-    let installers = mcapi::fabric::fetch_installers(client).await?;
+impl<'a> FabricAPI<'a> {
+    pub async fn fetch_loaders(&self) -> Result<Vec<FabricLoader>> {
+        Ok(mcapi::fabric::fetch_loaders(&self.0.http_client).await?)
+    }
 
-    Ok(installers
-        .first()
-        .ok_or(anyhow!("Couldn't get latest fabric installer"))?
-        .version
-        .clone())
-}
+    pub async fn fetch_latest_loader(&self) -> Result<String> {
+        Ok(self.fetch_loaders().await?.first().ok_or(anyhow!("No fabric loaders???"))?.version.clone())
+    }
 
-pub async fn download_fabric(
-    client: &reqwest::Client,
-    mcver: &str,
-    loader: &str,
-    installer: &str,
-) -> Result<reqwest::Response> {
-    Ok(mcapi::fabric::download_server_jar(
-        client,
-        mcver,
-        &match loader {
-            "latest" => fetch_fabric_latest_loader(client).await?,
+    pub async fn fetch_installers(&self) -> Result<Vec<FabricInstaller>> {
+        Ok(mcapi::fabric::fetch_installers(&self.0.http_client).await?)
+    }
+
+    pub async fn fetch_latest_installer(&self) -> Result<String> {
+        Ok(self.fetch_installers().await?.first().ok_or(anyhow!("No fabric installers???"))?.version.clone())
+    }
+
+    pub async fn resolve_source(&self, loader: &str, installer: &str) -> Result<FileSource> {
+        let loader = match loader {
+            "latest" => self.fetch_latest_loader().await?,
             id => id.to_owned(),
-        },
-        &match installer {
-            "latest" => fetch_fabric_latest_installer(client).await?,
+        };
+
+        let installer = match installer {
+            "latest" => self.fetch_latest_installer().await?,
             id => id.to_owned(),
-        },
-    )
-    .await?)
+        };
+
+        let cached_file_path = format!("fabric-server-{}-{installer}-{loader}.jar", self.0.mc_version());
+
+        if self.0.has_in_cache("fabric", &cached_file_path) {
+            Ok(FileSource::Cached { path: self.0.get_cache("fabric").unwrap().0.join(cached_file_path) })
+        } else {
+            Ok(FileSource::Download {
+                url: format!(
+                    "{FABRIC_META_URL}/v2/versions/loader/{}/{loader}/{installer}/server/jar",
+                    self.0.mc_version()
+                ),
+                filename: cached_file_path.clone(),
+                cache: if let Some(cache) = self.0.get_cache("fabric") {
+                    CacheStrategy::File { path: cache.0.join(cached_file_path) }
+                } else {
+                    CacheStrategy::None
+                },
+                size: None,
+                hashes: HashMap::new(),
+            })
+        }
+    }
 }

@@ -1,14 +1,58 @@
 //! Bad way pls fix
 //!        - dennis
 
+use std::collections::HashMap;
+
 use anyhow::{anyhow, Result};
 
-use crate::util::match_artifact_name;
+use crate::{util::match_artifact_name, FileSource, CacheStrategy, App};
 
 //pub static API_MAGIC_JOB: &str = "/api/json?tree=url,name,builds[*[url,number,result,artifacts[relativePath,fileName]]]";
 static API_MAGIC_JOB: &str = "/api/json?tree=builds[*[url,number,result]]";
 static API_MAGIC_BUILD: &str = "/api/json";
 static SUCCESS_STR: &str = "SUCCESS";
+
+pub async fn resolve_source(
+    app: &App,
+    url: &str,
+    job: &str,
+    build: &str,
+    artifact: &str,
+) -> Result<FileSource> {
+    let (build_url, filename, relative_path, build_number, md5hash) =
+        get_jenkins_filename(&app.http_client, url, job, build, artifact).await?;
+
+    // ci.luckto.me => ci-lucko-me
+    let folder = url.replace("https://", "");
+    let folder = folder.replace("http://", "");
+    let folder = folder.replace("/", " ");
+    let folder = folder.trim();
+    let folder = folder.replace(" ", "-");
+
+    let cached_file_path = format!("{folder}/{job}/{build_number}/{filename}");
+
+    if app.has_in_cache("jenkins", &cached_file_path) {
+        Ok(FileSource::Cached { path: app.get_cache("jenkins").unwrap().0.join(cached_file_path) })
+    } else {
+        Ok(FileSource::Download {
+            url: format!("{build_url}artifact/{relative_path}"),
+            filename,
+            cache: if let Some(cache) = app.get_cache("jenkins") {
+                CacheStrategy::File { path: cache.0.join(cached_file_path) }
+            } else {
+                CacheStrategy::None
+            },
+            size: None,
+            hashes: if let Some(md5) = md5hash {
+                HashMap::from([
+                    ("md5".to_owned(), md5.clone())
+                ])
+            } else {
+                HashMap::new()
+            }
+        })
+    }
+}
 
 // has 1 dep, beware lol
 pub fn str_process_job(job: &str) -> String {
@@ -52,14 +96,14 @@ pub async fn get_jenkins_build_value(
     Ok(v)
 }
 
-/// returns (`build_url`, fileName, relativePath, `build_number`)
+/// returns (`build_url`, fileName, relativePath, `build_number`, md5)
 pub async fn get_jenkins_filename(
     client: &reqwest::Client,
     url: &str,
     job: &str,
     build: &str,
     artifact_id: &str,
-) -> Result<(String, String, String, i64)> {
+) -> Result<(String, String, String, i64, Option<String>)> {
     let j = get_jenkins_job_value(client, url, job).await?;
 
     let mut filtered_builds = j["builds"]
@@ -90,11 +134,19 @@ pub async fn get_jenkins_filename(
         "artifact for jenkins build artifact not found ({url};{job};{build};{artifact_id})"
     ))?;
 
+    let md5hash = if let Some(serde_json::Value::Array(values)) = matched_build.get("fingerprint") {
+        values.iter().find(|v| v["fileName"].as_str().unwrap() == artifact["fileName"].as_str().unwrap())
+            .map(|v| v["hash"].as_str().unwrap().to_owned())
+    } else {
+        None
+    };
+
     Ok((
         build_url.to_owned(),
         artifact["fileName"].as_str().unwrap().to_owned(),
         artifact["relativePath"].as_str().unwrap().to_owned(),
         matched_build["number"].as_i64().unwrap(),
+        md5hash
     ))
 }
 
