@@ -120,7 +120,10 @@ impl<'a> CurserinthAPI<'a> {
         let cached_file_path = format!("{id}/{}/{}", version.id, file.filename);
 
         if self.0.has_in_cache("curserinth", &cached_file_path) {
-            Ok(FileSource::Cached { path: self.0.get_cache("curserinth").unwrap().0.join(cached_file_path) })
+            Ok(FileSource::Cached {
+                path: self.0.get_cache("curserinth").unwrap().0.join(cached_file_path),
+                filename: file.filename,
+            })
         } else {
             Ok(FileSource::Download {
                 url: file.url,

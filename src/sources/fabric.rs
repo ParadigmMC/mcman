@@ -38,7 +38,10 @@ impl<'a> FabricAPI<'a> {
         let cached_file_path = format!("fabric-server-{}-{installer}-{loader}.jar", self.0.mc_version());
 
         if self.0.has_in_cache("fabric", &cached_file_path) {
-            Ok(FileSource::Cached { path: self.0.get_cache("fabric").unwrap().0.join(cached_file_path) })
+            Ok(FileSource::Cached {
+                path: self.0.get_cache("fabric").unwrap().0.join(cached_file_path),
+                filename: cached_file_path.clone(),
+            })
         } else {
             Ok(FileSource::Download {
                 url: format!(

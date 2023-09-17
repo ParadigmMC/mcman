@@ -174,6 +174,7 @@ pub enum FileSource {
 
     Cached {
         path: PathBuf,
+        filename: String,
     }
 }
 

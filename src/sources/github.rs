@@ -206,7 +206,8 @@ impl<'a> GithubAPI<'a> {
 
         if has_in_cache {
             Ok(FileSource::Cached {
-                path: self.0.get_cache(CACHE_DIR).unwrap().0.join(cached_file_path)
+                path: self.0.get_cache(CACHE_DIR).unwrap().0.join(cached_file_path),
+                filename: asset.name,
             })
         } else {
             Ok(FileSource::Download {

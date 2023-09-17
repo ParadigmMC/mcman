@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
-use anyhow::{bail, Result};
-use serde::{Deserialize, Serialize};
+use anyhow::{Result, anyhow};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
+
+use crate::{App, FileSource, CacheStrategy};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ModrinthProject {
@@ -96,105 +98,89 @@ pub struct ModrinthFile {
     // file_type omitted
 }
 
-pub async fn fetch_modrinth_project(client: &reqwest::Client, id: &str) -> Result<ModrinthProject> {
-    Ok(client
-        .get("https://api.modrinth.com/v2/project/".to_owned() + id)
-        .send()
-        .await?
-        .error_for_status()?
-        .json::<ModrinthProject>()
-        .await?)
-}
+pub struct ModrinthAPI<'a>(&'a App);
 
-pub async fn fetch_modrinth_filename(
-    id: &str,
-    version: &str,
-    client: &reqwest::Client,
-    query: Option<(&str, &str)>,
-) -> Result<String> {
-    let project = fetch_modrinth_versions(client, id, query).await?;
+static API_URL: &str = "https://api.modrinth.com/v2";
 
-    let verdata = match version {
-        "latest" => project.first(),
-        id => project
-            .iter()
-            .find(|&v| v.id == id || v.version_number == id),
-    };
+impl<'a> ModrinthAPI<'a> {
+    pub async fn fetch_api<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
+        let json: T = self.0.http_client.get(url).send().await?.error_for_status()?.json().await?;
+        
+        Ok(json)
+    }
 
-    let Some(verdata) = verdata else {
-        bail!("Release '{version}' for project '{id}' not found");
-    };
+    pub async fn fetch_project(&self, id: &str) -> Result<ModrinthProject> {
+        self.fetch_api(&format!("{API_URL}/project/{id}")).await
+    }
 
-    let Some(file) = verdata.files.first() else {
-        bail!("No files for project '{id}' version '{version}'");
-    };
+    pub async fn fetch_all_versions(&self, id: &str) -> Result<Vec<ModrinthVersion>> {
+        self.fetch_api(&format!("{API_URL}/project/{id}/version")).await
+    }
 
-    Ok(file.filename.clone())
-}
+    pub async fn fetch_versions(&self, id: &str) -> Result<Vec<ModrinthVersion>> {
+        let versions = self.fetch_all_versions(id).await?;
 
-pub async fn fetch_modrinth_versions(
-    client: &reqwest::Client,
-    id: &str,
-    query: Option<(&str, &str)>,
-) -> Result<Vec<ModrinthVersion>> {
-    let versions: Vec<ModrinthVersion> = client
-        .get(
-            "https://api.modrinth.com/v2/project/".to_owned()
-                + id
-                + "/version"
-                + &(match query {
-                    Some((jar, mcver)) => {
-                        format!("?loaders=[\"{jar}\"]&game_versions=[\"{mcver}\"]")
+        Ok(self.0.server.filter_modrinth_versions(&versions))
+    }
+
+    pub async fn fetch_version(&self, id: &str, version: &str) -> Result<ModrinthVersion> {
+        let versions = self.fetch_versions(id).await?;
+
+        let ver = version.replace("${mcver}", &self.0.mc_version());
+        let ver = ver.replace("${mcversion}", &self.0.mc_version());
+
+        let version_data = match ver.as_str() {
+            "latest" => versions.first(),
+            ver =>  versions.iter().find(|v| v.id == ver || v.name == ver || v.version_number == ver)
+        }.ok_or(anyhow!("Couln't find version '{ver}' ('{version}') for Modrinth project '{id}'"))?.clone();
+
+        Ok(version_data)
+    }
+
+    pub async fn fetch_file(&self, id: &str, version: &str) -> Result<(ModrinthFile, ModrinthVersion)> {
+        let version = self.fetch_version(id, version).await?;
+
+        Ok((
+            version.files.iter().find(|f| f.primary)
+                .ok_or(anyhow!("No primary file found on modrinth:{id}/{} ({})", version.id, version.name))?.clone(),
+            version
+        ))
+    }
+
+    pub async fn search(&self, query: &str) -> Result<Vec<ModrinthProject>> {
+        Ok(self.0.http_client.get(format!("{API_URL}/search"))
+            .query(&[("query", query), ("facets", &self.0.server.jar.get_modrinth_facets(&self.0.mc_version())?)])
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?)
+    }
+
+    pub async fn resolve_source(&self, id: &str, version: &str) -> Result<FileSource> {
+        let (file, version) = self.fetch_file(id, version).await?;
+
+        let cached_file_path = format!("{id}/{}/{}", version.id, file.filename);
+
+        if self.0.has_in_cache("modrinth", &cached_file_path) {
+            Ok(FileSource::Cached {
+                path: self.0.get_cache("modrinth").unwrap().0.join(cached_file_path),
+                filename: file.filename,
+            })
+        } else {
+            Ok(FileSource::Download {
+                url: file.url,
+                filename: file.filename,
+                cache: if let Some(cache) = self.0.get_cache("modrinth") {
+                    CacheStrategy::File {
+                        path: cache.0.join(cached_file_path),
                     }
-                    None => String::new(),
-                }),
-        )
-        .send()
-        .await?
-        .error_for_status()?
-        .json()
-        .await?;
-
-    Ok(versions)
-}
-
-pub async fn get_modrinth_url(
-    id: &str,
-    version: &str,
-    client: &reqwest::Client,
-    query: Option<(&str, &str)>,
-) -> Result<String> {
-    let project = fetch_modrinth_versions(client, id, query).await?;
-
-    let verdata = match version {
-        "latest" => project.first(),
-        id => project.iter().find(|&v| v.id == id),
-    };
-
-    let Some(verdata) = verdata else {
-        bail!("Release '{version}' for project '{id}' not found");
-    };
-
-    let Some(file) = verdata.files.first() else {
-        bail!("No files for project '{id}' version '{version}'");
-    };
-
-    Ok(file.url.clone())
-}
-
-pub async fn search_modrinth(
-    client: &reqwest::Client,
-    query: &str,
-    facets: &str,
-) -> Result<Vec<ModrinthProject>> {
-    let res: ModrinthSearchResults = client
-        .get("https://api.modrinth.com/v2/search".to_owned())
-        .query(&[("query", query), ("facets", facets)])
-        .send()
-        .await?
-        .error_for_status()?
-        .json()
-        .await?;
-
-    Ok(res.hits)
+                } else {
+                    CacheStrategy::None
+                },
+                size: Some(file.size),
+                hashes: file.hashes,
+            })
+        }
+    }
 }

@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 
-use crate::{util::match_artifact_name, FileSource, CacheStrategy, App};
+use crate::{util::match_artifact_name, App, CacheStrategy, FileSource};
 
 //pub static API_MAGIC_JOB: &str = "/api/json?tree=url,name,builds[*[url,number,result,artifacts[relativePath,fileName]]]";
 static API_MAGIC_JOB: &str = "/api/json?tree=builds[*[url,number,result]]";
@@ -32,24 +32,27 @@ pub async fn resolve_source(
     let cached_file_path = format!("{folder}/{job}/{build_number}/{filename}");
 
     if app.has_in_cache("jenkins", &cached_file_path) {
-        Ok(FileSource::Cached { path: app.get_cache("jenkins").unwrap().0.join(cached_file_path) })
+        Ok(FileSource::Cached {
+            path: app.get_cache("jenkins").unwrap().0.join(cached_file_path),
+            filename,
+        })
     } else {
         Ok(FileSource::Download {
             url: format!("{build_url}artifact/{relative_path}"),
             filename,
             cache: if let Some(cache) = app.get_cache("jenkins") {
-                CacheStrategy::File { path: cache.0.join(cached_file_path) }
+                CacheStrategy::File {
+                    path: cache.0.join(cached_file_path),
+                }
             } else {
                 CacheStrategy::None
             },
             size: None,
             hashes: if let Some(md5) = md5hash {
-                HashMap::from([
-                    ("md5".to_owned(), md5.clone())
-                ])
+                HashMap::from([("md5".to_owned(), md5.clone())])
             } else {
                 HashMap::new()
-            }
+            },
         })
     }
 }
@@ -135,7 +138,9 @@ pub async fn get_jenkins_filename(
     ))?;
 
     let md5hash = if let Some(serde_json::Value::Array(values)) = matched_build.get("fingerprint") {
-        values.iter().find(|v| v["fileName"].as_str().unwrap() == artifact["fileName"].as_str().unwrap())
+        values
+            .iter()
+            .find(|v| v["fileName"].as_str().unwrap() == artifact["fileName"].as_str().unwrap())
             .map(|v| v["hash"].as_str().unwrap().to_owned())
     } else {
         None
@@ -146,7 +151,7 @@ pub async fn get_jenkins_filename(
         artifact["fileName"].as_str().unwrap().to_owned(),
         artifact["relativePath"].as_str().unwrap().to_owned(),
         matched_build["number"].as_i64().unwrap(),
-        md5hash
+        md5hash,
     ))
 }
 
@@ -157,7 +162,7 @@ pub async fn get_jenkins_download_url(
     build: &str,
     artifact: &str,
 ) -> Result<String> {
-    let (build_url, _, relative_path, _build_number) =
+    let (build_url, _, relative_path, _build_number, _md5) =
         get_jenkins_filename(client, url, job, build, artifact).await?;
 
     Ok(build_url + "artifact/" + &relative_path)
