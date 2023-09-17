@@ -188,6 +188,14 @@ impl<'a> App {
         sources::maven::MavenAPI(&self)
     }
 
+    pub fn forge(&'a self) -> sources::forge::ForgeAPI<'a> {
+        sources::forge::ForgeAPI(&self)
+    }
+
+    pub fn neoforge(&'a self) -> sources::neoforge::NeoforgeAPI<'a> {
+        sources::neoforge::NeoforgeAPI(&self)
+    }
+
     
 }
 
