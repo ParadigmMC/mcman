@@ -44,7 +44,7 @@ pub struct CurseRinthVersion {
 
 pub static CURSERINTH_API: &str = "https://curserinth-api.kuylar.dev/v2";
 
-pub struct CurserinthAPI<'a>(&'a App);
+pub struct CurserinthAPI<'a>(pub &'a App);
 
 impl<'a> CurserinthAPI<'a> {
     pub async fn fetch_api<T: DeserializeOwned>(

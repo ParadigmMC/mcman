@@ -5,7 +5,7 @@ use mcapi::hangar::{Platform, ProjectVersion};
 
 use crate::{App, CacheStrategy, FileSource};
 
-pub struct HangarAPI<'a>(&'a App);
+pub struct HangarAPI<'a>(pub &'a App);
 
 impl<'a> HangarAPI<'a> {
     pub async fn fetch_hangar_version(&self, id: &str, version: &str) -> Result<ProjectVersion> {

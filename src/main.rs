@@ -163,6 +163,34 @@ impl App {
     }
 }
 
+impl<'a> App {
+    pub fn github(&'a self) -> sources::github::GithubAPI<'a> {
+        sources::github::GithubAPI(&self)
+    }
+
+    pub fn modrinth(&'a self) -> sources::modrinth::ModrinthAPI<'a> {
+        sources::modrinth::ModrinthAPI(&self)
+    }
+
+    pub fn curserinth(&'a self) -> sources::curserinth::CurserinthAPI<'a> {
+        sources::curserinth::CurserinthAPI(&self)
+    }
+
+    pub fn hangar(&'a self) -> sources::hangar::HangarAPI<'a> {
+        sources::hangar::HangarAPI(&self)
+    }
+
+    pub fn fabric(&'a self) -> sources::fabric::FabricAPI<'a> {
+        sources::fabric::FabricAPI(&self)
+    }
+
+    pub fn maven(&'a self) -> sources::maven::MavenAPI<'a> {
+        sources::maven::MavenAPI(&self)
+    }
+
+    
+}
+
 pub enum FileSource {
     Download {
         url: String,

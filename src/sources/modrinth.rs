@@ -98,7 +98,7 @@ pub struct ModrinthFile {
     // file_type omitted
 }
 
-pub struct ModrinthAPI<'a>(&'a App);
+pub struct ModrinthAPI<'a>(pub &'a App);
 
 static API_URL: &str = "https://api.modrinth.com/v2";
 

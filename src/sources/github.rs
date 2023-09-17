@@ -77,7 +77,7 @@ pub struct GithubRepository {
 static CACHE_DIR: &str = "github";
 static API_URL: &str = "https://api.github.com";
 
-pub struct GithubAPI<'a>(&'a App);
+pub struct GithubAPI<'a>(pub &'a App);
 
 impl<'a> GithubAPI<'a> {
     pub async fn fetch_api<T: DeserializeOwned + Clone + Serialize>(

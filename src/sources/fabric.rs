@@ -5,7 +5,7 @@ use mcapi::fabric::{FabricLoader, FabricInstaller, FABRIC_META_URL};
 
 use crate::{App, FileSource, CacheStrategy};
 
-pub struct FabricAPI<'a>(&'a App);
+pub struct FabricAPI<'a>(pub &'a App);
 
 impl<'a> FabricAPI<'a> {
     pub async fn fetch_loaders(&self) -> Result<Vec<FabricLoader>> {
@@ -39,7 +39,7 @@ impl<'a> FabricAPI<'a> {
 
         if self.0.has_in_cache("fabric", &cached_file_path) {
             Ok(FileSource::Cached {
-                path: self.0.get_cache("fabric").unwrap().0.join(cached_file_path),
+                path: self.0.get_cache("fabric").unwrap().0.join(&cached_file_path),
                 filename: cached_file_path.clone(),
             })
         } else {

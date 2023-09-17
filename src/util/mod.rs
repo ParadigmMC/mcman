@@ -85,3 +85,13 @@ pub fn get_latest_semver(list: &[String]) -> Option<String> {
 
     list.last().map(ToString::to_string)
 }
+
+/// ci.luckto.me => ci-lucko-me
+pub fn url_to_folder(url: &str) -> String {
+    let folder = url.replace("https://", "");
+    let folder = folder.replace("http://", "");
+    let folder = folder.replace("/", " ");
+    let folder = folder.trim();
+    let folder = folder.replace(" ", "-");
+    folder
+}

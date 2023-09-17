@@ -1,124 +1,142 @@
+use std::collections::HashMap;
+
 use anyhow::{anyhow, Result};
 
-pub fn get_metadata_url(url: &str, group_id: &str, artifact_id: &str) -> String {
-    format!(
-        "{url}/{}/{artifact_id}/maven-metadata.xml",
-        group_id.replace('.', "/")
-    )
-}
+use crate::{App, FileSource, util, CacheStrategy};
 
-pub async fn get_maven_versions(
-    client: &reqwest::Client,
-    url: &str,
-    group_id: &str,
-    artifact_id: &str,
-) -> Result<(String, Vec<String>)> {
-    let xml = client
-        .get(get_metadata_url(url, group_id, artifact_id))
-        .send()
-        .await?
-        .text()
-        .await?;
+pub struct MavenAPI<'a>(pub &'a App);
 
-    let doc = roxmltree::Document::parse(&xml)?;
+impl<'a> MavenAPI<'a> {
+    pub fn get_metadata_url(url: &str, group_id: &str, artifact_id: &str) -> String {
+        format!(
+            "{url}/{}/{artifact_id}/maven-metadata.xml",
+            group_id.replace('.', "/")
+        )
+    }
 
-    let latest = doc.descendants().find_map(|t| {
-        if t.tag_name().name() == "latest" {
-            Some(t.text()?.to_owned())
-        } else {
-            None
-        }
-    });
+    pub async fn fetch_versions(
+        &self,
+        url: &str,
+        group_id: &str,
+        artifact_id: &str,
+    ) -> Result<(String, Vec<String>)> {
+        let xml = self.0.http_client
+            .get(Self::get_metadata_url(url, group_id, artifact_id))
+            .send()
+            .await?
+            .text()
+            .await?;
 
-    let list = doc
-        .descendants()
-        .filter_map(|t| {
-            if t.tag_name().name() == "version" {
+        let doc = roxmltree::Document::parse(&xml)?;
+
+        let latest = doc.descendants().find_map(|t| {
+            if t.tag_name().name() == "latest" {
                 Some(t.text()?.to_owned())
             } else {
                 None
             }
-        })
-        .collect::<Vec<_>>();
+        });
 
-    Ok((
-        latest.unwrap_or_else(|| list.first().cloned().unwrap_or_default()),
-        list,
-    ))
-}
+        let list = doc
+            .descendants()
+            .filter_map(|t| {
+                if t.tag_name().name() == "version" {
+                    Some(t.text()?.to_owned())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
 
-pub async fn get_maven_url(
-    client: &reqwest::Client,
-    url: &str,
-    group_id: &str,
-    artifact_id: &str,
-    version: &str,
-    file: &str,
-    mcver: &str,
-) -> Result<String> {
-    let version = match_maven_version(client, url, group_id, artifact_id, version, mcver).await?;
+        Ok((
+            latest.unwrap_or_else(|| list.first().cloned().unwrap_or_default()),
+            list,
+        ))
+    }
 
-    Ok(format!(
-        "{url}/{}/{artifact_id}/{version}/{}",
-        group_id.replace('.', "/"),
-        get_maven_filename(client, url, group_id, artifact_id, &version, file, mcver).await?
-    ))
-}
+    pub async fn fetch_version(
+        &self,
+        url: &str,
+        group_id: &str,
+        artifact_id: &str,
+        version: &str,
+    ) -> Result<String> {
+        let fetch_versions = || self.fetch_versions(url, group_id, artifact_id);
 
-pub async fn get_maven_filename(
-    client: &reqwest::Client,
-    url: &str,
-    group_id: &str,
-    artifact_id: &str,
-    version: &str,
-    file: &str,
-    mcver: &str,
-) -> Result<String> {
-    let version = match_maven_version(client, url, group_id, artifact_id, version, mcver).await?;
-
-    let file = file
-        .replace("${artifact}", artifact_id)
-        .replace("${version}", &version)
-        .replace("${mcversion}", mcver)
-        .replace("${mcver}", mcver);
-
-    Ok(if file.contains('.') {
-        file
-    } else {
-        file + ".jar"
-    })
-}
-
-pub async fn match_maven_version(
-    client: &reqwest::Client,
-    url: &str,
-    group_id: &str,
-    artifact_id: &str,
-    version: &str,
-    mcver: &str,
-) -> Result<String> {
-    let fetch_versions = || get_maven_versions(client, url, group_id, artifact_id);
-
-    let version = match version {
-        "latest" => fetch_versions().await?.0,
-        id => {
-            if id.contains('$') {
-                let versions = fetch_versions().await?.1;
-                let id = id
-                    .replace("${artifact}", artifact_id)
-                    .replace("${mcversion}", mcver)
-                    .replace("${mcver}", mcver);
-                versions
-                    .iter()
-                    .find(|v| *v == &id)
-                    .or_else(|| versions.iter().find(|v| v.contains(&id)))
-                    .ok_or(anyhow!("Couldn't resolve maven artifact version"))?
-                    .clone()
-            } else {
-                id.to_owned()
+        let version = match version {
+            "latest" => fetch_versions().await?.0,
+            id => {
+                if id.contains('$') {
+                    let versions = fetch_versions().await?.1;
+                    let id = id
+                        .replace("${artifact}", artifact_id)
+                        .replace("${mcversion}", &self.0.mc_version())
+                        .replace("${mcver}", &self.0.mc_version());
+                    versions
+                        .iter()
+                        .find(|v| *v == &id)
+                        .or_else(|| versions.iter().find(|v| v.contains(&id)))
+                        .ok_or(anyhow!("Couldn't resolve maven artifact version (url={url},g={group_id},a={artifact_id})"))?
+                        .clone()
+                } else {
+                    id.to_owned()
+                }
             }
-        }
-    };
+        };
+    
+        Ok(version)
+    }
 
-    Ok(version)
+    pub async fn resolve_source(
+        &self,
+        url: &str,
+        group_id: &str,
+        artifact_id: &str,
+        version: &str,
+        file: &str,
+    ) -> Result<FileSource> {
+        let version = self.fetch_version(url, group_id, artifact_id, version).await?;
+
+        let file = file
+            .replace("${artifact}", artifact_id)
+            .replace("${version}", &version)
+            .replace("${mcversion}", &self.0.mc_version())
+            .replace("${mcver}", &self.0.mc_version());
+
+        let file = if file.contains('.') {
+            file
+        } else {
+            file + ".jar"
+        };
+
+        let download_url = format!(
+            "{url}/{}/{artifact_id}/{version}/{file}",
+            group_id.replace('.', "/"),
+        );
+
+        let cached_file_path = format!(
+            "{}/{}/{artifact_id}/{version}/{file}",
+            util::url_to_folder(url),
+            group_id.replace(".", "/"),
+        );
+
+        if self.0.has_in_cache("maven", &cached_file_path) {
+            Ok(FileSource::Cached {
+                path: self.0.get_cache("maven").unwrap().0.join(cached_file_path),
+                filename: file,
+            })
+        } else {
+            Ok(FileSource::Download {
+                url: download_url,
+                filename: file,
+                cache: if let Some(cache) = self.0.get_cache("maven") {
+                    CacheStrategy::File { path: cache.0.join(cached_file_path) }
+                } else {
+                    CacheStrategy::None
+                },
+                size: None,
+                hashes: HashMap::new(),
+            })
+        }
+    }
 }
