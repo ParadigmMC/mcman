@@ -1,78 +1,89 @@
+use std::collections::HashMap;
+
 use anyhow::{anyhow, Result};
+use serde::{de::DeserializeOwned, Serialize};
 
-pub async fn fetch_papermc_versions(
-    project: &str,
-    client: &reqwest::Client,
-) -> Result<Vec<String>> {
-    let project = mcapi::papermc::fetch_papermc_project(client, project).await?;
+use crate::{App, FileSource, CacheStrategy};
 
-    Ok(project.versions)
-}
+pub struct PaperMCAPI<'a>(&'a App);
 
-pub async fn fetch_papermc_builds(
-    project: &str,
-    version: &str,
-    client: &reqwest::Client,
-) -> Result<mcapi::papermc::PaperBuildsResponse> {
-    Ok(mcapi::papermc::fetch_papermc_builds(
-        client,
-        project,
-        &match version {
-            "latest" => {
-                let v = fetch_papermc_versions(project, client).await?;
+const PAPERMC_URL: &str = "https://api.papermc.io/v2";
+const CACHE_DIR: &str = "papermc";
 
-                v.last()
-                    .ok_or(anyhow!("Couldn't get latest version"))?
-                    .clone()
-            }
-            id => id.to_owned(),
-        },
-    )
-    .await?)
-}
+impl<'a> PaperMCAPI<'a> {
+    pub async fn fetch_api<T: DeserializeOwned + Clone + Serialize>(
+        &self,
+        url: String,
+    ) -> Result<T> {
+        let response = self.0.http_client
+            .get(&url)
+            .send()
+            .await?;
+        
+        let json: T = response
+            .error_for_status()?
+            .json()
+            .await?;
 
-pub async fn fetch_papermc_build(
-    project: &str,
-    version: &str,
-    build: &str,
-    client: &reqwest::Client,
-) -> Result<mcapi::papermc::PaperVersionBuild> {
-    let builds = fetch_papermc_builds(project, version, client).await?;
-    Ok(match build {
-        "latest" => builds.builds.last(),
-        id => builds.builds.iter().find(|&b| b.build.to_string() == id),
+        Ok(json)
     }
-    .ok_or(anyhow!(
-        "Latest build for project {project} {version} not found"
-    ))?
-    .clone())
-}
 
-pub async fn download_papermc_build(
-    project: &str,
-    version: &str,
-    build_id: &str,
-    client: &reqwest::Client,
-) -> Result<reqwest::Response> {
-    let builds = fetch_papermc_builds(project, version, client).await?;
-    let build = match build_id {
-        "latest" => builds.builds.last(),
-        id => builds.builds.iter().find(|&b| b.build.to_string() == id),
+    pub async fn fetch_versions(&self, project: &str) -> Result<Vec<String>> {
+        Ok(mcapi::papermc::fetch_papermc_project(&self.0.http_client, project).await?.versions)
     }
-    .ok_or(anyhow!(
-        "Build '{build_id}' for project {project} {version} not found"
-    ))?
-    .clone();
-    Ok(
-        mcapi::papermc::download_papermc_build(
-            client,
+
+    pub async fn fetch_builds(&self, project: &str, version: &str) -> Result<mcapi::papermc::PaperBuildsResponse> {
+        Ok(mcapi::papermc::fetch_papermc_builds(
+            &self.0.http_client,
             project,
-            &builds.version,
-            build.build,
-            &build.downloads
-                .get("application")
-                .ok_or(anyhow!("downloads['application'] missing for papermc project {project}/{version}/{build_id}"))?
-                .name
-        ).await?
-    )
+            version
+        )
+        .await?)
+    }
+
+    pub async fn fetch_build(&self, project: &str, version: &str, build: &str) -> Result<mcapi::papermc::PaperVersionBuild> {
+        let builds = self.fetch_builds(project, version).await?;
+        Ok(match build {
+            "latest" => builds.builds.last().ok_or(anyhow!(
+                "Latest papermc build for project {project} {version} not found"
+            ))?
+            .clone(),
+            id => builds.builds.iter().find(|&b| b.build.to_string() == id).ok_or(anyhow!(
+                "PaperMC build '{build}' for project {project} {version} not found"
+            ))?
+            .clone(),
+        })
+    }
+
+    pub async fn resolve_source(&self, project: &str, version: &str, build: &str) -> Result<FileSource> {
+        let resolved_build = self.fetch_build(project, version, build).await?;
+        
+        let download = resolved_build.downloads.get("application")
+            .ok_or(anyhow!("downloads['application'] missing for papermc project {project} {version}, build {build} ({})", resolved_build.build))?;
+        let cached_file_path = format!("{project}/{}", download.name);
+
+        let has_in_cache = self.0.has_in_cache(CACHE_DIR, &cached_file_path);
+
+        if has_in_cache {
+            Ok(FileSource::Cached {
+                path: self.0.get_cache(CACHE_DIR).unwrap().0.join(cached_file_path),
+                filename: download.name.clone(),
+            })
+        } else {
+            Ok(FileSource::Download {
+                url: format!(
+                    "{PAPERMC_URL}/projects/{project}/versions/{version}/builds/{}/downloads/{}",
+                    resolved_build.build, download.name
+                ),
+                filename: download.name.clone(),
+                cache: if let Some(cache) = self.0.get_cache(CACHE_DIR) {
+                    CacheStrategy::File { path: cache.0.join(cached_file_path) }
+                } else {
+                    CacheStrategy::None
+                },
+                size: None,
+                hashes: HashMap::new(),
+            })
+        }
+    }
 }

@@ -67,14 +67,6 @@ pub fn is_default_str(s: &str) -> bool {
     s == "latest"
 }
 
-// TODO: better asset matching
-//       for example: 'FastAsyncWorldEdit-Bukkit-2.6.1.jar'
-//                    'FastAsyncWorldEdit-Bukkit-${mcver}.jar'
-//       maybe also support bare asset id? current is asset filename
-pub fn match_artifact_name(input: &str, artifact_name: &str) -> bool {
-    artifact_name.contains(input)
-}
-
 pub fn get_latest_semver(list: &[String]) -> Option<String> {
     let mut list = list
         .iter()
