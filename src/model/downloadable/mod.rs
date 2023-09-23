@@ -1,18 +1,13 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use crate::sources::hangar::{get_hangar_url, get_hangar_filename};
-use crate::sources::maven::{self, get_maven_url};
-use crate::{model::Server, Source};
+use crate::sources::jenkins;
+use crate::{ResolvedFile, CacheStrategy, App};
+use crate::Source;
 
-use crate::sources::{
-    curserinth::{fetch_curserinth_filename, get_curserinth_url},
-    github::{fetch_github_release_filename, get_github_release_url},
-    jenkins::{get_jenkins_download_url, get_jenkins_filename},
-    modrinth::{fetch_modrinth_filename, get_modrinth_url},
-    spigot::{fetch_spigot_resource_latest_ver, get_spigot_url},
-};
 mod import_url;
 mod markdown;
 mod meta;
@@ -36,18 +31,20 @@ pub enum Downloadable {
     Modrinth {
         id: String,
         #[serde(default = "latest")]
-        version: String
+        version: String,
     },
 
     #[serde(alias = "cr")]
     CurseRinth {
         id: String,
         #[serde(default = "latest")]
-        version: String
+        version: String,
     },
 
     Spigot {
-        id: String, // weird ass api
+        id: String,
+        #[serde(default = "latest")]
+        version: String,
     },
 
     Hangar {
@@ -96,184 +93,39 @@ pub fn artifact() -> String {
     "artifact".to_owned()
 }
 
-impl Downloadable {
-    pub async fn get_url(
-        &self,
-        client: &reqwest::Client,
-        server: &Server,
-    ) -> Result<String> {
-        let mcver = &server.mc_version;
-
-        match self {
-            Self::Url { url, .. } => Ok(url.clone()),
-
-            Self::Modrinth { id, version } => {
-                Ok(get_modrinth_url(id, version, client, None).await?)
-            }
-            Self::CurseRinth { id, version } => {
-                Ok(get_curserinth_url(id, version, client, None).await?)
-            }
-            Self::Hangar { id, version } => {
-                Ok(get_hangar_url(client, id, version, mcver, server.jar.get_hangar_versions_filter(mcver)).await?)
-            }
-            Self::Spigot { id } => Ok(get_spigot_url(id)),
-            Self::GithubRelease { repo, tag, asset } => {
-                Ok(get_github_release_url(repo, tag, asset, mcver, client).await?)
-            }
-
-            Self::Jenkins {
-                url,
-                job,
-                build,
-                artifact,
-            } => Ok(get_jenkins_download_url(client, url, job, build, artifact).await?),
-
-            Self::Maven {
-                url,
-                group,
-                artifact,
-                version,
-                filename,
-            } => Ok(get_maven_url(client, url, group, artifact, version, filename, mcver).await?),
-        }
-    }
-}
-
 #[async_trait]
 impl Source for Downloadable {
-    async fn download(
-        &self,
-        server: &Server,
-        client: &reqwest::Client,
-    ) -> Result<reqwest::Response> {
-        Ok(client
-            .get(self.get_url(client, server).await?)
-            .send()
-            .await?
-            .error_for_status()?)
-    }
-
-    async fn get_filename(&self, server: &Server, client: &reqwest::Client) -> Result<String> {
-        let mcver = &server.mc_version;
-
+    async fn resolve_source(&self, app: &App) -> Result<ResolvedFile> {
         match self {
-            Self::Url { url, filename, .. } => {
-                if let Some(filename) = filename {
-                    return Ok(filename.clone());
-                }
-
-                let url_clean = url.split('?').next().unwrap_or(url);
-                Ok(url_clean.split('/').last().unwrap().to_string())
-            }
-
-            Self::Modrinth { id, version } => {
-                // nvm
-                let filename = fetch_modrinth_filename(id, version, client, None).await?;
-                Ok(filename)
-            }
-
-            Self::CurseRinth { id, version } => {
-                let filename = fetch_curserinth_filename(id, version, client, None).await?;
-                Ok(filename)
-            }
-
-            Self::Hangar { id, version } => {
-                Ok(get_hangar_filename(client, id, version, mcver, server.jar.get_hangar_versions_filter(mcver)).await?)
-            }
-
-            Self::Spigot { id } => {
-                let ver = fetch_spigot_resource_latest_ver(id, client).await?;
-                // amazing.. bruh...
-                Ok(format!("{id}-{ver}.jar"))
-            }
-
-            // problematic stuff part 2345
-            Self::GithubRelease { repo, tag, asset } => {
-                Ok(fetch_github_release_filename(repo, tag, asset, mcver, client).await?)
-            }
-
+            Self::Url {
+                url,
+                filename,
+                ..
+            } => Ok(ResolvedFile {
+                url: url.clone(),
+                filename: filename.clone(),
+                cache: CacheStrategy::None,
+                size: None,
+                hashes: HashMap::new(),
+            }),
+            Self::Modrinth { id, version } => app.modrinth().resolve_source(id, version).await,
+            Self::CurseRinth { id, version } => app.curserinth().resolve_source(id, version).await,
+            Self::Spigot { id, version } => app.spigot().resolve_source(id, version).await,
+            Self::Hangar { id, version } => app.hangar().resolve_source(id, version).await,
+            Self::GithubRelease { repo, tag, asset } => app.github().resolve_source(repo, tag, asset).await,
             Self::Jenkins {
                 url,
                 job,
                 build,
                 artifact,
-            } => Ok(get_jenkins_filename(client, url, job, build, artifact)
-                .await?
-                .1),
-
+            } => jenkins::resolve_source(app, url, job, build, artifact).await,
             Self::Maven {
                 url,
                 group,
                 artifact,
                 version,
                 filename,
-            } => Ok(maven::get_maven_filename(
-                client, url, group, artifact, version, filename, mcver,
-            )
-            .await?),
-        }
-    }
-}
-
-impl std::fmt::Display for Downloadable {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Url { url, .. } => f.write_fmt(format_args!("Custom URL: {url}")),
-
-            Self::Modrinth { id, version } => f
-                .debug_struct("Modrinth")
-                .field("id", id)
-                .field("version", version)
-                .finish(),
-            
-            Self::Hangar { id, version } => f
-                .debug_struct("Hangar")
-                .field("id", id)
-                .field("version", version)
-                .finish(),
-
-            Self::CurseRinth { id, version } => f
-                .debug_struct("CurseRinth")
-                .field("id", id)
-                .field("version", version)
-                .finish(),
-
-            Self::Spigot { id } => f.write_fmt(format_args!("Spigot: {id}")),
-
-            Self::GithubRelease { repo, tag, asset } => f
-                .debug_struct("GithubRelease")
-                .field("Repository", repo)
-                .field("Tag/Release", tag)
-                .field("Asset", asset)
-                .finish(),
-
-            Self::Jenkins {
-                url,
-                job,
-                build,
-                artifact,
-            } => f
-                .debug_struct("Jenkins")
-                .field("Instance URL", url)
-                .field("Job", job)
-                .field("Build ID", build)
-                .field("Artifact", artifact)
-                .finish(),
-
-            Self::Maven {
-                url,
-                group,
-                artifact,
-                version,
-                filename,
-            } => f
-                .debug_struct("Maven")
-                .field("Instance URL", url)
-                .field("Group", group)
-                .field("Artifact", artifact)
-                .field("Version", version)
-                .field("Filename", filename)
-                .finish(),
+            } => app.maven().resolve_source(url, group, artifact, version, filename).await,
         }
     }
 }

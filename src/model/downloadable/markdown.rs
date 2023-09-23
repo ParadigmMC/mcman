@@ -4,13 +4,7 @@ use regex::Regex;
 
 use crate::{
     model::Downloadable,
-    sources::{
-        curserinth::fetch_curserinth_project,
-        github::fetch_repo_description,
-        jenkins::{fetch_jenkins_description, str_process_job},
-        modrinth::fetch_modrinth_project,
-        spigot::fetch_spigot_info,
-    },
+    sources::jenkins::{fetch_jenkins_description, str_process_job}, App,
 };
 
 impl Downloadable {
@@ -38,7 +32,7 @@ impl Downloadable {
             Self::Maven { url, group, .. } => {
                 format!("[{g}]({url}/{g})", g = group.replace('.', "/"))
             }
-            Self::Spigot { id } => {
+            Self::Spigot { id, .. } => {
                 format!("[{id}](https://www.spigotmc.org/resources/{id})")
             }
             Self::Modrinth { id, .. } => {
@@ -52,13 +46,13 @@ impl Downloadable {
 
     pub async fn fetch_info_to_map(
         &self,
-        client: &reqwest::Client,
+        app: &App,
     ) -> Result<IndexMap<String, String>> {
         let mut map: IndexMap<String, String> = IndexMap::new();
 
         match self {
             Self::Modrinth { id, version } => {
-                let proj = fetch_modrinth_project(client, id).await?;
+                let proj = app.modrinth().fetch_project(id).await?;
 
                 map.insert(
                     "Name".to_owned(),
@@ -69,7 +63,7 @@ impl Downloadable {
             }
 
             Self::CurseRinth { id, version } => {
-                let proj = fetch_curserinth_project(client, id).await?;
+                let proj = app.curserinth().fetch_project(id).await?;
 
                 map.insert(
                     "Name".to_owned(),
@@ -79,18 +73,19 @@ impl Downloadable {
                 map.insert("Version".to_owned(), version.clone());
             }
 
-            Self::Spigot { id } => {
-                let (name, desc) = fetch_spigot_info(client, id).await?;
+            Self::Spigot { id, version } => {
+                let (name, desc) = app.spigot().fetch_info(id).await?;
 
                 map.insert(
                     "Name".to_owned(),
                     format!("[{name}](https://www.spigotmc.org/resources/{id})"),
                 );
                 map.insert("Description".to_owned(), sanitize(&desc)?);
+                map.insert("Version".to_owned(), version.clone());
             }
 
             Self::Hangar { id, version } => {
-                let proj = mcapi::hangar::fetch_project(client, id).await?;
+                let proj = mcapi::hangar::fetch_project(&app.http_client, id).await?;
 
                 map.insert(
                     "Name".to_owned(),
@@ -101,7 +96,7 @@ impl Downloadable {
             }
 
             Self::GithubRelease { repo, tag, asset } => {
-                let desc = fetch_repo_description(client, repo).await?;
+                let desc = app.github().fetch_repo_description(repo).await?;
 
                 map.insert("Name".to_owned(), self.get_md_link());
                 map.insert("Description".to_owned(), sanitize(&desc)?);
@@ -114,7 +109,7 @@ impl Downloadable {
                 build,
                 artifact,
             } => {
-                let desc = fetch_jenkins_description(client, url, job).await?;
+                let desc = fetch_jenkins_description(&app.http_client, url, job).await?;
 
                 map.insert("Name".to_owned(), self.get_md_link());
                 map.insert("Description".to_owned(), sanitize(&desc)?);
@@ -190,8 +185,9 @@ impl Downloadable {
                 map.insert("Version/Release".to_owned(), version.clone());
             }
 
-            Self::Spigot { id } => {
+            Self::Spigot { id, version } => {
                 map.insert("Project/URL".to_owned(), id.clone());
+                map.insert("Version/Release".to_owned(), version.clone());
             }
 
             Self::Jenkins {
@@ -229,9 +225,9 @@ impl Downloadable {
             Self::Modrinth { id, .. } => format!("Modrinth:{id}"),
             Self::Hangar { id, .. } => format!("Hangar:{id}"),
             Self::CurseRinth { id, .. } => format!("CurseRinth:{id}"),
-            Self::Spigot { id } => format!("Spigot:{id}"),
+            Self::Spigot { id, .. } => format!("Spigot:{id}"),
             Self::GithubRelease { repo, .. } => format!("Github:{repo}"),
-            Self::Jenkins { job, .. } => format!("Jenkins:{job}"),
+            Self::Jenkins { job,  .. } => format!("Jenkins:{job}"),
             Self::Url { filename, .. } => {
                 if let Some(f) = filename {
                     format!("URL:{f}")

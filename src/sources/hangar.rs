@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::{anyhow, Context, Result};
 use mcapi::hangar::{Platform, ProjectVersion};
 
-use crate::{App, CacheStrategy, FileSource};
+use crate::{App, CacheStrategy, ResolvedFile};
 
 pub struct HangarAPI<'a>(pub &'a App);
 
@@ -55,7 +55,7 @@ impl<'a> HangarAPI<'a> {
         Ok(version)
     }
 
-    pub async fn resolve_source(&self, id: &str, version: &str) -> Result<FileSource> {
+    pub async fn resolve_source(&self, id: &str, version: &str) -> Result<ResolvedFile> {
         let version = self
             .fetch_hangar_version(id, version)
             .await
@@ -78,28 +78,18 @@ impl<'a> HangarAPI<'a> {
 
         let cached_file_path = format!("{id}/{}/{}", version.name, download.get_file_info().name);
 
-        if self.0.has_in_cache("hangar", &cached_file_path) {
-            Ok(FileSource::Cached {
-                path: self.0.get_cache("hangar").unwrap().0.join(cached_file_path),
-                filename: download.get_file_info().name,
-            })
-        } else {
-            Ok(FileSource::Download {
-                url: download.get_url(),
-                filename: download.get_file_info().name,
-                cache: if let Some(cache) = self.0.get_cache("hangar") {
-                    CacheStrategy::File {
-                        path: cache.0.join(cached_file_path),
-                    }
-                } else {
-                    CacheStrategy::None
-                },
-                size: Some(download.get_file_info().size_bytes as i32),
-                hashes: HashMap::from([(
-                    "sha256".to_owned(),
-                    download.get_file_info().sha256_hash,
-                )]),
-            })
-        }
+        Ok(ResolvedFile {
+            url: download.get_url(),
+            filename: download.get_file_info().name,
+            cache: CacheStrategy::File {
+                namespace: String::from("hangar"),
+                path: cached_file_path,
+            },
+            size: Some(download.get_file_info().size_bytes as i32),
+            hashes: HashMap::from([(
+                "sha256".to_owned(),
+                download.get_file_info().sha256_hash,
+            )]),
+        })
     }
 }

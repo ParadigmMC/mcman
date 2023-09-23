@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-use crate::{App, FileSource, CacheStrategy};
+use crate::{App, ResolvedFile, CacheStrategy};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ModrinthProject {
@@ -157,30 +157,20 @@ impl<'a> ModrinthAPI<'a> {
             .await?)
     }
 
-    pub async fn resolve_source(&self, id: &str, version: &str) -> Result<FileSource> {
+    pub async fn resolve_source(&self, id: &str, version: &str) -> Result<ResolvedFile> {
         let (file, version) = self.fetch_file(id, version).await?;
 
         let cached_file_path = format!("{id}/{}/{}", version.id, file.filename);
 
-        if self.0.has_in_cache("modrinth", &cached_file_path) {
-            Ok(FileSource::Cached {
-                path: self.0.get_cache("modrinth").unwrap().0.join(cached_file_path),
-                filename: file.filename,
-            })
-        } else {
-            Ok(FileSource::Download {
-                url: file.url,
-                filename: file.filename,
-                cache: if let Some(cache) = self.0.get_cache("modrinth") {
-                    CacheStrategy::File {
-                        path: cache.0.join(cached_file_path),
-                    }
-                } else {
-                    CacheStrategy::None
-                },
-                size: Some(file.size),
-                hashes: file.hashes,
-            })
-        }
+        Ok(ResolvedFile {
+            url: file.url,
+            filename: file.filename,
+            cache: CacheStrategy::File {
+                namespace: String::from("modrinth"),
+                path: cached_file_path,
+            },
+            size: Some(file.size),
+            hashes: file.hashes,
+        })
     }
 }

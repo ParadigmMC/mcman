@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::{anyhow, Result};
 use mcapi::fabric::{FabricLoader, FabricInstaller, FABRIC_META_URL};
 
-use crate::{App, FileSource, CacheStrategy};
+use crate::{App, ResolvedFile, CacheStrategy};
 
 pub struct FabricAPI<'a>(pub &'a App);
 
@@ -24,7 +24,7 @@ impl<'a> FabricAPI<'a> {
         Ok(self.fetch_installers().await?.first().ok_or(anyhow!("No fabric installers???"))?.version.clone())
     }
 
-    pub async fn resolve_source(&self, loader: &str, installer: &str) -> Result<FileSource> {
+    pub async fn resolve_source(&self, loader: &str, installer: &str) -> Result<ResolvedFile> {
         let loader = match loader {
             "latest" => self.fetch_latest_loader().await?,
             id => id.to_owned(),
@@ -37,26 +37,15 @@ impl<'a> FabricAPI<'a> {
 
         let cached_file_path = format!("fabric-server-{}-{installer}-{loader}.jar", self.0.mc_version());
 
-        if self.0.has_in_cache("fabric", &cached_file_path) {
-            Ok(FileSource::Cached {
-                path: self.0.get_cache("fabric").unwrap().0.join(&cached_file_path),
-                filename: cached_file_path.clone(),
-            })
-        } else {
-            Ok(FileSource::Download {
-                url: format!(
-                    "{FABRIC_META_URL}/v2/versions/loader/{}/{loader}/{installer}/server/jar",
-                    self.0.mc_version()
-                ),
-                filename: cached_file_path.clone(),
-                cache: if let Some(cache) = self.0.get_cache("fabric") {
-                    CacheStrategy::File { path: cache.0.join(cached_file_path) }
-                } else {
-                    CacheStrategy::None
-                },
-                size: None,
-                hashes: HashMap::new(),
-            })
-        }
+        Ok(ResolvedFile {
+            url: format!(
+                "{FABRIC_META_URL}/v2/versions/loader/{}/{loader}/{installer}/server/jar",
+                self.0.mc_version()
+            ),
+            filename: cached_file_path.clone(),
+            cache: CacheStrategy::File { namespace: String::from("fabric"), path: cached_file_path },
+            size: None,
+            hashes: HashMap::new(),
+        })
     }
 }

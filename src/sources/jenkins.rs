@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 
-use crate::{App, CacheStrategy, FileSource};
+use crate::{App, CacheStrategy, ResolvedFile};
 
 //pub static API_MAGIC_JOB: &str = "/api/json?tree=url,name,builds[*[url,number,result,artifacts[relativePath,fileName]]]";
 static API_MAGIC_JOB: &str = "/api/json?tree=builds[*[url,number,result]]";
@@ -18,7 +18,7 @@ pub async fn resolve_source(
     job: &str,
     build: &str,
     artifact: &str,
-) -> Result<FileSource> {
+) -> Result<ResolvedFile> {
     let (build_url, filename, relative_path, build_number, md5hash) =
         get_jenkins_filename(&app.http_client, url, job, build, artifact).await?;
 
@@ -31,30 +31,20 @@ pub async fn resolve_source(
 
     let cached_file_path = format!("{folder}/{job}/{build_number}/{filename}");
 
-    if app.has_in_cache("jenkins", &cached_file_path) {
-        Ok(FileSource::Cached {
-            path: app.get_cache("jenkins").unwrap().0.join(cached_file_path),
-            filename,
-        })
-    } else {
-        Ok(FileSource::Download {
-            url: format!("{build_url}artifact/{relative_path}"),
-            filename,
-            cache: if let Some(cache) = app.get_cache("jenkins") {
-                CacheStrategy::File {
-                    path: cache.0.join(cached_file_path),
-                }
-            } else {
-                CacheStrategy::None
-            },
-            size: None,
-            hashes: if let Some(md5) = md5hash {
-                HashMap::from([("md5".to_owned(), md5.clone())])
-            } else {
-                HashMap::new()
-            },
-        })
-    }
+    Ok(ResolvedFile {
+        url: format!("{build_url}artifact/{relative_path}"),
+        filename,
+        cache: CacheStrategy::File {
+            namespace: String::from("jenkins"),
+            path: cached_file_path,
+        },
+        size: None,
+        hashes: if let Some(md5) = md5hash {
+            HashMap::from([("md5".to_owned(), md5.clone())])
+        } else {
+            HashMap::new()
+        },
+    })
 }
 
 // has 1 dep, beware lol

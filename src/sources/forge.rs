@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 
-use crate::{util, App, FileSource};
+use crate::{util, App, ResolvedFile};
 
 pub static FORGE_MAVEN: &str = "https://maven.minecraftforge.net";
 pub static FORGE_GROUP: &str = "net.minecraftforge";
@@ -43,7 +43,7 @@ impl<'a> ForgeAPI<'a> {
         })
     }
 
-    pub async fn resolve_source(&self, loader: &str) -> Result<FileSource> {
+    pub async fn resolve_source(&self, loader: &str) -> Result<ResolvedFile> {
         self.0.maven().resolve_source(FORGE_MAVEN, FORGE_GROUP, FORGE_ARTIFACT, &format!(
             "{}-{}",
             self.0.mc_version(),

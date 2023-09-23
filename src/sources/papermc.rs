@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use anyhow::{anyhow, Result};
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{App, FileSource, CacheStrategy};
+use crate::{App, ResolvedFile, CacheStrategy};
 
-pub struct PaperMCAPI<'a>(&'a App);
+pub struct PaperMCAPI<'a>(pub &'a App);
 
 const PAPERMC_URL: &str = "https://api.papermc.io/v2";
 const CACHE_DIR: &str = "papermc";
@@ -55,35 +55,22 @@ impl<'a> PaperMCAPI<'a> {
         })
     }
 
-    pub async fn resolve_source(&self, project: &str, version: &str, build: &str) -> Result<FileSource> {
+    pub async fn resolve_source(&self, project: &str, version: &str, build: &str) -> Result<ResolvedFile> {
         let resolved_build = self.fetch_build(project, version, build).await?;
         
         let download = resolved_build.downloads.get("application")
             .ok_or(anyhow!("downloads['application'] missing for papermc project {project} {version}, build {build} ({})", resolved_build.build))?;
         let cached_file_path = format!("{project}/{}", download.name);
 
-        let has_in_cache = self.0.has_in_cache(CACHE_DIR, &cached_file_path);
-
-        if has_in_cache {
-            Ok(FileSource::Cached {
-                path: self.0.get_cache(CACHE_DIR).unwrap().0.join(cached_file_path),
-                filename: download.name.clone(),
-            })
-        } else {
-            Ok(FileSource::Download {
-                url: format!(
-                    "{PAPERMC_URL}/projects/{project}/versions/{version}/builds/{}/downloads/{}",
-                    resolved_build.build, download.name
-                ),
-                filename: download.name.clone(),
-                cache: if let Some(cache) = self.0.get_cache(CACHE_DIR) {
-                    CacheStrategy::File { path: cache.0.join(cached_file_path) }
-                } else {
-                    CacheStrategy::None
-                },
-                size: None,
-                hashes: HashMap::new(),
-            })
-        }
+        Ok(ResolvedFile {
+            url: format!(
+                "{PAPERMC_URL}/projects/{project}/versions/{version}/builds/{}/downloads/{}",
+                resolved_build.build, download.name
+            ),
+            filename: download.name.clone(),
+            cache: CacheStrategy::File { namespace: CACHE_DIR.to_owned(), path: cached_file_path },
+            size: None,
+            hashes: HashMap::new(),
+        })
     }
 }

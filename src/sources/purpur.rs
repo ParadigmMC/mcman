@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-use crate::{App, FileSource, CacheStrategy};
+use crate::{App, ResolvedFile, CacheStrategy};
 
-pub struct PurpurAPI<'a>(&'a App);
+pub struct PurpurAPI<'a>(pub &'a App);
 
 pub const API_URL: &str = "https://api.purpurmc.org/v2/purpur";
 pub const CACHE_DIR: &str = "purpur";
@@ -40,36 +40,23 @@ impl<'a> PurpurAPI<'a> {
         })
     }
 
-    pub async fn resolve_source(&self, version: &str, build: &str) -> Result<FileSource> {
+    pub async fn resolve_source(&self, version: &str, build: &str) -> Result<ResolvedFile> {
         let resolved_build = self.fetch_build(version, build).await?;
         
         let cached_file_path = format!("purpur-{version}-{}.jar", resolved_build.build);
 
-        let has_in_cache = self.0.has_in_cache(CACHE_DIR, &cached_file_path);
-
-        if has_in_cache {
-            Ok(FileSource::Cached {
-                path: self.0.get_cache(CACHE_DIR).unwrap().0.join(&cached_file_path),
-                filename: cached_file_path.clone(),
-            })
-        } else {
-            Ok(FileSource::Download {
-                url: format!(
-                    "{API_URL}/{version}/{}/download",
-                    resolved_build.build
-                ),
-                filename: cached_file_path.clone(),
-                cache: if let Some(cache) = self.0.get_cache(CACHE_DIR) {
-                    CacheStrategy::File { path: cache.0.join(cached_file_path) }
-                } else {
-                    CacheStrategy::None
-                },
-                size: None,
-                hashes: HashMap::from([
-                    ("md5".to_owned(), resolved_build.md5)
-                ]),
-            })
-        }
+        Ok(ResolvedFile {
+            url: format!(
+                "{API_URL}/{version}/{}/download",
+                resolved_build.build
+            ),
+            filename: cached_file_path.clone(),
+            cache: CacheStrategy::File { namespace: CACHE_DIR.to_owned(), path: cached_file_path },
+            size: None,
+            hashes: HashMap::from([
+                ("md5".to_owned(), resolved_build.md5)
+            ]),
+        })
     }
 }
 

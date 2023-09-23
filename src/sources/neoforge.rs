@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 
-use crate::{util, App, FileSource};
+use crate::{util, App, ResolvedFile};
 
 pub static NEOFORGE_MAVEN: &str = "https://maven.neoforged.net/releases";
 pub static NEOFORGE_GROUP: &str = "net.neoforged";
@@ -43,7 +43,7 @@ impl<'a> NeoforgeAPI<'a> {
         })
     }
 
-    pub async fn resolve_source(&self, loader: &str) -> Result<FileSource> {
+    pub async fn resolve_source(&self, loader: &str) -> Result<ResolvedFile> {
         self.0.maven().resolve_source(NEOFORGE_MAVEN, NEOFORGE_GROUP, NEOFORGE_ARTIFACT, &format!(
             "{}-{}",
             self.0.mc_version(),

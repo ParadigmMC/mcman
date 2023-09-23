@@ -2,12 +2,12 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::Source;
+use crate::{Source, App, ResolvedFile};
 
 use crate::model::Downloadable;
-use crate::sources::{fabric, forge, jenkins, neoforge, papermc, purpur, quilt, vanilla};
+use crate::sources::quilt;
 
-use super::{Server, StartupMethod};
+use super::StartupMethod;
 
 pub mod interactive;
 pub mod meta;
@@ -159,7 +159,7 @@ impl ServerType {
 
     pub async fn get_install_method(
         &self,
-        http_client: &reqwest::Client,
+        app: &App,
         mcver: &str,
     ) -> Result<InstallMethod> {
         Ok(match self.clone() {
@@ -180,7 +180,7 @@ impl ServerType {
                     rename_from: Some("quilt-server-launch.jar".to_owned()),
                     jar_name: format!(
                         "quilt-server-launch-{mcver}-{}.jar",
-                        quilt::map_quilt_loader_version(http_client, &loader)
+                        quilt::map_quilt_loader_version(&app.http_client, &loader)
                             .await
                             .context("resolving quilt loader version id (latest/latest-beta)")?
                     ),
@@ -193,7 +193,7 @@ impl ServerType {
                 rename_from: None,
                 jar_name: format!(
                     "libraries/net/neoforged/forge/{mcver}-{0}/forge-{mcver}-{0}-server.jar",
-                    neoforge::map_neoforge_version(&loader, mcver, http_client).await?
+                    app.neoforge().resolve_version(&loader).await?
                 )
             },
             Self::Forge { loader } => InstallMethod::Installer {
@@ -203,7 +203,7 @@ impl ServerType {
                 rename_from: None,
                 jar_name: format!(
                     "libraries/net/minecraftforge/forge/{mcver}-{0}/forge-{mcver}-{0}-server.jar",
-                    forge::map_forge_version(&loader, mcver, http_client).await?
+                    app.forge().resolve_version(&loader).await?
                 )
             },
             Self::BuildTools { args, software } => {
@@ -240,13 +240,13 @@ impl ServerType {
 
     pub async fn get_startup_method(
         &self,
-        http_client: &reqwest::Client,
+        app: &App,
         serverjar_name: &str,
         mcver: &str,
     ) -> Result<StartupMethod> {
         Ok(match self {
             Self::NeoForge { loader } => {
-                let l = neoforge::map_neoforge_version(loader, mcver, http_client).await?;
+                let l = app.neoforge().resolve_version(loader).await?;
 
                 StartupMethod::Custom {
                     windows: vec![format!(
@@ -258,7 +258,7 @@ impl ServerType {
                 }
             }
             Self::Forge { loader } => {
-                let l = forge::map_forge_version(loader, mcver, http_client).await?;
+                let l = app.forge().resolve_version(loader).await?;
 
                 StartupMethod::Custom {
                     windows: vec![format!(
@@ -340,197 +340,24 @@ impl ServerType {
 
 #[async_trait]
 impl Source for ServerType {
-    async fn download(
-        &self,
-        server: &Server,
-        client: &reqwest::Client,
-    ) -> Result<reqwest::Response> {
-        let mcver = server.mc_version.clone();
+    async fn resolve_source(&self, app: &App) -> Result<ResolvedFile> {
+        let version = &app.mc_version();
+
         match self {
-            Self::Vanilla {} => Ok(vanilla::fetch_vanilla(&mcver, client).await?),
-            Self::PaperMC { project, build } => {
-                Ok(papermc::download_papermc_build(project, &mcver, build, client).await?)
-            }
-            Self::Purpur { build } => {
-                Ok(purpur::download_purpurmc_build(&mcver, build, client).await?)
-            }
-
-            Self::Paper {} => {
-                Ok(papermc::download_papermc_build("paper", &mcver, "latest", client).await?)
-            }
-            Self::Velocity {} => {
-                Ok(papermc::download_papermc_build("velocity", &mcver, "latest", client).await?)
-            }
-            Self::Waterfall {} => {
-                Ok(papermc::download_papermc_build("waterfall", &mcver, "latest", client).await?)
-            }
-
-            Self::Fabric { loader, installer } => {
-                Ok(fabric::download_fabric(client, &mcver, loader, installer).await?)
-            }
-
-            Self::Quilt { installer, .. } => {
-                Ok(quilt::download_quilt_installer(client, installer).await?)
-            }
-
-            Self::BungeeCord {} => Ok(bungeecord().download(server, client).await?),
-            Self::BuildTools { .. } => {
-                Ok(buildtools().download(server, client).await?)
-            }
-            Self::NeoForge { loader } => Ok(client
-                .get(neoforge::get_neoforge_installer_url(loader, &mcver, client).await?)
-                .send()
-                .await?
-                .error_for_status()?),
-
-            Self::Forge { loader } => Ok(client
-                .get(forge::get_forge_installer_url(loader, &mcver, client).await?)
-                .send()
-                .await?
-                .error_for_status()?),
-
-            Self::Downloadable { inner } => inner.download(server, client).await,
+            ServerType::Vanilla {  } => app.vanilla().resolve_source(version).await,
+            ServerType::PaperMC { project, build } => app.papermc().resolve_source(project, version, build).await,
+            ServerType::Purpur { build } => app.purpurmc().resolve_source(version, build).await,
+            ServerType::Fabric { loader, installer } => app.fabric().resolve_source(loader, installer).await,
+            ServerType::Quilt { loader, installer } => app.quilt().resolve_installer(installer).await,
+            ServerType::NeoForge { loader } => app.neoforge().resolve_source(loader).await,
+            ServerType::Forge { loader } => app.forge().resolve_source(loader).await,
+            ServerType::BuildTools { software, args } => buildtools().resolve_source(app).await,
+            ServerType::Paper {  } => app.papermc().resolve_source("paper", version, "latest").await,
+            ServerType::Velocity {  } => app.papermc().resolve_source("velocity", version, "latest").await,
+            ServerType::Waterfall {  } => app.papermc().resolve_source("waterfall", version, "latest").await,
+            ServerType::BungeeCord {  } => bungeecord().resolve_source(app).await,
+            ServerType::Downloadable { inner } => inner.resolve_source(app).await,
         }
-    }
-
-    async fn get_filename(&self, server: &Server, client: &reqwest::Client) -> Result<String> {
-        let mcver = server.mc_version.clone();
-        match self {
-            Self::Vanilla {} => Ok(format!("server-{mcver}.jar")),
-            Self::PaperMC { project, build } => {
-                Ok(get_filename_papermc(project, &mcver, build, client).await?)
-            }
-
-            Self::Purpur { build } => {
-                if build == "latest" {
-                    let last_build = purpur::fetch_purpurmc_builds(&mcver, client)
-                        .await?
-                        .last()
-                        .cloned()
-                        .unwrap_or("latest".to_owned());
-                    Ok(format!("purpur-{mcver}-{last_build}.jar"))
-                } else {
-                    Ok(format!("purpur-{mcver}-{build}.jar"))
-                }
-            }
-
-            Self::BungeeCord {} => {
-                let build = jenkins::get_jenkins_filename(
-                    client,
-                    BUNGEECORD_JENKINS,
-                    BUNGEECORD_JOB,
-                    "latest",
-                    BUNGEECORD_ARTIFACT,
-                )
-                .await?
-                .3;
-                Ok(format!("BungeeCord-{build}.jar"))
-            }
-
-            Self::BuildTools { .. } => {
-                let build = jenkins::get_jenkins_filename(
-                    client,
-                    BUILDTOOLS_JENKINS,
-                    "BuildTools",
-                    "latest",
-                    "BuildTools",
-                )
-                .await?
-                .3;
-                Ok(format!("BuildTools-{build}.jar"))
-            }
-
-            Self::Paper {} => Ok(get_filename_papermc("paper", &mcver, "latest", client).await?),
-            Self::Velocity {} => {
-                Ok(get_filename_papermc("velocity", &mcver, "latest", client).await?)
-            }
-
-            Self::Waterfall {} => {
-                Ok(get_filename_papermc("waterfall", &mcver, "latest", client).await?)
-            }
-
-            Self::Fabric { loader, installer } => {
-                let l = match loader.as_str() {
-                    "latest" => fabric::fetch_fabric_latest_loader(client).await?,
-                    id => id.to_owned(),
-                };
-
-                let i = match installer.as_str() {
-                    "latest" => fabric::fetch_fabric_latest_installer(client).await?,
-                    id => id.to_owned(),
-                };
-
-                Ok(format!("fabric-server-{mcver}-{l}-{i}.jar"))
-            }
-
-            Self::Quilt { installer, .. } => {
-                Ok(quilt::get_installer_filename(client, installer).await?)
-            }
-
-            Self::NeoForge { loader } => {
-                Ok(neoforge::get_neoforge_installer_filename(loader, &mcver, client).await?)
-            }
-
-            Self::Forge { loader } => {
-                Ok(forge::get_forge_installer_filename(loader, &mcver, client).await?)
-            }
-
-            Self::Downloadable { inner } => inner.get_filename(server, client).await,
-        }
-    }
-}
-
-impl std::fmt::Display for ServerType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Vanilla {} => f.write_str("Vanilla"),
-
-            Self::Fabric { loader, installer } => f
-                .debug_struct("Fabric")
-                .field("loader", loader)
-                .field("installer", installer)
-                .finish(),
-
-            Self::Quilt { loader, installer } => f
-                .debug_struct("Quilt")
-                .field("loader", loader)
-                .field("installer", installer)
-                .finish(),
-
-            Self::NeoForge { loader } => {
-                f.debug_struct("NeoForged").field("loader", loader).finish()
-            }
-
-            Self::Forge { loader } => f.debug_struct("Forge").field("loader", loader).finish(),
-
-            Self::BungeeCord {} => f.write_str("BungeeCord"),
-            Self::BuildTools { .. } => f.write_str("BuildTools"),
-            Self::Paper {} => f.write_str("Paper, latest"),
-            Self::Velocity {} => f.write_str("Velocity, latest"),
-            Self::Waterfall {} => f.write_str("Waterfall, latest"),
-            Self::PaperMC { project, build } => {
-                f.write_str(&format!("PaperMC/{project}, build {build}"))
-            }
-            Self::Purpur { build } => f.write_str(&format!("Purpur, build {build}")),
-            Self::Downloadable { inner } => inner.fmt(f),
-        }
-    }
-}
-
-async fn get_filename_papermc(
-    project: &str,
-    mcver: &str,
-    build: &str,
-    client: &reqwest::Client,
-) -> Result<String> {
-    if build == "latest" {
-        let build_id = papermc::fetch_papermc_build(project, mcver, build, client)
-            .await?
-            .build
-            .to_string();
-        Ok(format!("{project}-{mcver}-{build_id}.jar"))
-    } else {
-        Ok(format!("{project}-{mcver}-{build}.jar"))
     }
 }
 

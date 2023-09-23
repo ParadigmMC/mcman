@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::Result;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-use crate::{App, FileSource, CacheStrategy};
+use crate::{App, ResolvedFile, CacheStrategy};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct SpigotResourceVersion {
@@ -13,7 +13,7 @@ struct SpigotResourceVersion {
 
 
 
-pub struct SpigotAPI<'a>(&'a App);
+pub struct SpigotAPI<'a>(pub &'a App);
 
 pub const API_URL: &str = "https://api.spiget.org/v2";
 pub const CACHE_DIR: &str = "spiget";
@@ -58,35 +58,22 @@ impl<'a> SpigotAPI<'a> {
         self.fetch_api(&format!("{API_URL}/resources/{}/versions/{version}", Self::get_resource_id(id))).await
     }
 
-    pub async fn resolve_source(&self, id: &str, version: &str) -> Result<FileSource> {
+    pub async fn resolve_source(&self, id: &str, version: &str) -> Result<ResolvedFile> {
         let resolved_version = self.fetch_version(id, version).await?;
 
         let filename = format!("spigot-{id}-{}.jar", resolved_version.name);
         let cached_file_path = format!("{id}/{}.jar", resolved_version.id);
 
-        let has_in_cache = self.0.has_in_cache(CACHE_DIR, &cached_file_path);
-
-        if has_in_cache {
-            Ok(FileSource::Cached {
-                path: self.0.get_cache(CACHE_DIR).unwrap().0.join(cached_file_path),
-                filename: filename.clone(),
-            })
-        } else {
-            Ok(FileSource::Download {
-                url: format!(
-                    "{API_URL}/resources/{}/versions/{version}/download",
-                    Self::get_resource_id(id)
-                ),
-                filename,
-                cache: if let Some(cache) = self.0.get_cache(CACHE_DIR) {
-                    CacheStrategy::File { path: cache.0.join(cached_file_path) }
-                } else {
-                    CacheStrategy::None
-                },
-                size: None,
-                hashes: HashMap::new(),
-            })
-        }
+        Ok(ResolvedFile {
+            url: format!(
+                "{API_URL}/resources/{}/versions/{version}/download",
+                Self::get_resource_id(id)
+            ),
+            filename,
+            cache: CacheStrategy::File { namespace: CACHE_DIR.to_owned(), path: cached_file_path },
+            size: None,
+            hashes: HashMap::new(),
+        })
     }
 }
 

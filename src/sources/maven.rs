@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 
-use crate::{App, FileSource, util, CacheStrategy};
+use crate::{App, ResolvedFile, util, CacheStrategy};
 
 pub struct MavenAPI<'a>(pub &'a App);
 
@@ -94,7 +94,7 @@ impl<'a> MavenAPI<'a> {
         artifact_id: &str,
         version: &str,
         file: &str,
-    ) -> Result<FileSource> {
+    ) -> Result<ResolvedFile> {
         let version = self.fetch_version(url, group_id, artifact_id, version).await?;
 
         let file = file
@@ -120,23 +120,14 @@ impl<'a> MavenAPI<'a> {
             group_id.replace(".", "/"),
         );
 
-        if self.0.has_in_cache("maven", &cached_file_path) {
-            Ok(FileSource::Cached {
-                path: self.0.get_cache("maven").unwrap().0.join(cached_file_path),
-                filename: file,
-            })
-        } else {
-            Ok(FileSource::Download {
-                url: download_url,
-                filename: file,
-                cache: if let Some(cache) = self.0.get_cache("maven") {
-                    CacheStrategy::File { path: cache.0.join(cached_file_path) }
-                } else {
-                    CacheStrategy::None
-                },
-                size: None,
-                hashes: HashMap::new(),
-            })
-        }
+        Ok(ResolvedFile {
+            url: download_url,
+            filename: file,
+            cache: CacheStrategy::File { 
+                namespace: String::from("maven"),
+                path: cached_file_path },
+            size: None,
+            hashes: HashMap::new(),
+        })
     }
 }

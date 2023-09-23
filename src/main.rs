@@ -7,7 +7,7 @@
 #![allow(clippy::struct_excessive_bools)]
 #![allow(unknown_lints)]
 
-use std::{path::PathBuf, collections::HashMap};
+use std::collections::HashMap;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
@@ -111,7 +111,7 @@ pub trait Source {
     async fn resolve_source(
         &self,
         app: &App,
-    ) -> Result<FileSource>;
+    ) -> Result<ResolvedFile>;
 }
 
 pub struct BaseApp {
@@ -188,6 +188,10 @@ impl<'a> App {
         sources::maven::MavenAPI(&self)
     }
 
+    pub fn quilt(&'a self) -> sources::quilt::QuiltAPI<'a> {
+        sources::quilt::QuiltAPI(&self)
+    }
+
     pub fn forge(&'a self) -> sources::forge::ForgeAPI<'a> {
         sources::forge::ForgeAPI(&self)
     }
@@ -196,32 +200,40 @@ impl<'a> App {
         sources::neoforge::NeoforgeAPI(&self)
     }
 
-    
+    pub fn papermc(&'a self) -> sources::papermc::PaperMCAPI<'a> {
+        sources::papermc::PaperMCAPI(&self)
+    }
+
+    pub fn purpurmc(&'a self) -> sources::purpur::PurpurAPI<'a> {
+        sources::purpur::PurpurAPI(&self)
+    }
+
+    pub fn spigot(&'a self) -> sources::spigot::SpigotAPI<'a> {
+        sources::spigot::SpigotAPI(&self)
+    }
+
+    pub fn vanilla(&'a self) -> sources::vanilla::VanillaAPI<'a> {
+        sources::vanilla::VanillaAPI(&self)
+    }
 }
 
-pub enum FileSource {
-    Download {
-        url: String,
-        filename: String,
-        cache: CacheStrategy,
-        size: Option<i32>,
-        hashes: HashMap<String, String>,
-    },
-
-    Cached {
-        path: PathBuf,
-        filename: String,
-    }
+pub struct ResolvedFile {
+    url: String,
+    filename: String,
+    cache: CacheStrategy,
+    size: Option<i32>,
+    hashes: HashMap<String, String>,
 }
 
 pub enum CacheStrategy {
     File {
-        path: PathBuf,
+        namespace: String,
+        path: String,
     },
     Indexed {
-        index_path: PathBuf,
+        index_path: String,
         key: String,
-        value: PathBuf,
+        value: String,
     },
     None,
 }

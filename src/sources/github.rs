@@ -6,7 +6,7 @@ use reqwest::{header::{HeaderMap, HeaderValue}, StatusCode};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use tokio::time::sleep;
 
-use crate::{App, FileSource, CacheStrategy};
+use crate::{App, ResolvedFile, CacheStrategy};
 
 pub trait GithubRequestExt {
     fn with_token(self, token: Option<String>) -> Self;
@@ -197,34 +197,26 @@ impl<'a> GithubAPI<'a> {
         Ok((release, asset))
     }
 
-    pub async fn resolve_source(&self, repo: &str, release_tag: &str, asset_name: &str) -> Result<FileSource> {
+    pub async fn resolve_source(&self, repo: &str, release_tag: &str, asset_name: &str) -> Result<ResolvedFile> {
         let (release, asset) = self.fetch_asset(repo, release_tag, asset_name).await?;
         
         let cached_file_path = format!("{repo}/releases/{}/{}", release.tag_name, asset.name);
 
         let has_in_cache = self.0.has_in_cache(CACHE_DIR, &cached_file_path);
 
-        if has_in_cache {
-            Ok(FileSource::Cached {
-                path: self.0.get_cache(CACHE_DIR).unwrap().0.join(cached_file_path),
-                filename: asset.name,
-            })
-        } else {
-            Ok(FileSource::Download {
-                url: format!(
-                    "https://github.com/{repo}/releases/download/{}/{}",
-                    release.tag_name, asset.name
-                ),
-                filename: asset.name,
-                cache: if let Some(cache) = self.0.get_cache(CACHE_DIR) {
-                    CacheStrategy::File { path: cache.0.join(cached_file_path) }
-                } else {
-                    CacheStrategy::None
-                },
-                size: Some(asset.size),
-                hashes: HashMap::new(),
-            })
-        }
+        Ok(ResolvedFile {
+            url: format!(
+                "https://github.com/{repo}/releases/download/{}/{}",
+                release.tag_name, asset.name
+            ),
+            filename: asset.name,
+            cache: CacheStrategy::File {
+                namespace: CACHE_DIR.to_owned(),
+                path: cached_file_path
+            },
+            size: Some(asset.size),
+            hashes: HashMap::new(),
+        })
     }
 }
 

@@ -3,12 +3,10 @@ use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
 use reqwest::Url;
 
 use crate::{
-    model::Server,
     sources::{
-        curserinth::{fetch_curserinth_versions, CurseRinthVersion},
-        github::fetch_github_releases,
-        modrinth::{fetch_modrinth_versions, ModrinthVersion},
-    },
+        curserinth::CurseRinthVersion,
+        modrinth::ModrinthVersion,
+    }, App,
 };
 
 use super::Downloadable;
@@ -16,8 +14,7 @@ use super::Downloadable;
 impl Downloadable {
     #[allow(clippy::too_many_lines)]
     pub async fn from_url_interactive(
-        client: &reqwest::Client,
-        _server: &Server,
+        app: &App,
         urlstr: &str,
         datapack_mode: bool,
     ) -> Result<Self> {
@@ -61,11 +58,9 @@ impl Downloadable {
                     .to_owned()
                     .to_owned();
 
-                let versions: Vec<ModrinthVersion> = fetch_modrinth_versions(client, &id, None)
+                let versions: Vec<ModrinthVersion> = app.modrinth().fetch_versions(&id)
                     .await?
                     .into_iter()
-                    // TODO: better filtering, commented out because proxy server versioning is complex..?
-                    //.filter(|v| v.game_versions.contains(&server.mc_version))
                     .filter(|v| {
                         if datapack_mode {
                             v.loaders.contains(&"datapack".to_owned())
@@ -134,8 +129,7 @@ impl Downloadable {
                     .to_owned()
                     .to_owned();
 
-                let versions: Vec<CurseRinthVersion> =
-                    fetch_curserinth_versions(client, &id, None).await?;
+                let (versions, _) = app.curserinth().fetch_versions(&id).await?;
 
                 let version = if let Some(&"version") = segments.get(2) {
                     let ver_num = segments
@@ -204,10 +198,8 @@ impl Downloadable {
                 let version = if let Some(v) = segments.get(4) {
                     v.to_owned().to_owned()
                 } else {
-                    let versions: Vec<ModrinthVersion> = fetch_modrinth_versions(client, &id, None)
-                        .await?
-                        .into_iter()
-                        .collect();
+                    let (versions, _) = app.curserinth().fetch_versions(&id)
+                        .await?;
 
                     if versions.is_empty() {
                         bail!("No compatible versions in curseforge/rinth project");
@@ -254,6 +246,7 @@ impl Downloadable {
 
                 Ok(Downloadable::Spigot {
                     id: id.to_owned().to_owned(),
+                    version: "latest".to_owned()
                 })
             }
             // the code under this domain is awful.. srry
@@ -307,7 +300,7 @@ impl Downloadable {
                     }
                 };
 
-                let fetched_tags = fetch_github_releases(&repo, client).await?;
+                let fetched_tags = app.github().fetch_releases(&repo).await?;
 
                 let tag = if let Some(t) = tag_opt {
                     t

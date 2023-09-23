@@ -4,9 +4,9 @@
 use anyhow::{anyhow, Result};
 use mcapi::quilt::{self, InstallerVariant};
 
-use crate::{App, FileSource};
+use crate::{App, ResolvedFile};
 
-pub struct QuiltAPI<'a>(&'a App);
+pub struct QuiltAPI<'a>(pub &'a App);
 
 pub const QUILT_MAVEN_URL: &str = "https://maven.quiltmc.org/repository/release";
 pub const QUILT_MAVEN_GROUP: &str = "org.quiltmc";
@@ -14,7 +14,7 @@ pub const QUILT_MAVEN_ARTIFACT: &str = "quilt-installer";
 pub const QUILT_MAVEN_FILE: &str = "${artifact}-${version}.jar";
 
 impl<'a> QuiltAPI<'a> {
-    pub async fn resolve_installer(&self, version: &str) -> Result<FileSource> {
+    pub async fn resolve_installer(&self, version: &str) -> Result<ResolvedFile> {
         self.0.maven().resolve_source(
             QUILT_MAVEN_URL,
             QUILT_MAVEN_GROUP,

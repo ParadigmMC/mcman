@@ -6,21 +6,17 @@ use rpackwiz::model::{
 
 use crate::{
     model::Server,
-    sources::{
-        curserinth::{fetch_curserinth_project, fetch_curserinth_versions},
-        modrinth::{fetch_modrinth_project, fetch_modrinth_versions, DependencyType},
-    },
+    sources::modrinth::DependencyType,
     util::{hash::get_hash_url, packwiz::PackwizExportOptions},
-    Source,
+    Source, App,
 };
 
 use super::Downloadable;
 
 impl Downloadable {
     pub async fn from_pw_mod(
+        app: &App,
         m: &Mod,
-        http_client: &reqwest::Client,
-        server: &Server,
     ) -> Result<Option<Self>> {
         Ok(Some(if let Some(upd) = &m.update {
             if let Some(mr) = &upd.modrinth {
@@ -39,8 +35,7 @@ impl Downloadable {
             }
         } else {
             Self::from_url_interactive(
-                http_client,
-                server,
+                app,
                 &m.download
                     .url
                     .clone()
@@ -55,15 +50,14 @@ impl Downloadable {
     #[allow(clippy::too_many_lines)] // xd
     pub async fn to_pw_mod(
         &self,
-        http_client: &reqwest::Client,
-        server: &Server,
+        app: &App,
         opts: &PackwizExportOptions,
         is_opt: Option<bool>,
         desc_override: &str,
     ) -> Result<Option<(String, Mod)>> {
         Ok(match &self {
             Self::Modrinth { id, version } => {
-                let proj = fetch_modrinth_project(http_client, id).await?;
+                let proj = app.modrinth().fetch_project(id).await?;
 
                 let side = match (proj.server_side.clone(), proj.client_side.clone()) {
                     (DependencyType::Incompatible | DependencyType::Unsupported, _) => Side::Client,
@@ -71,21 +65,7 @@ impl Downloadable {
                     _ => Side::Both,
                 };
 
-                let versions = fetch_modrinth_versions(http_client, id, None).await?;
-
-                let verdata = if version == "latest" {
-                    versions.first()
-                } else {
-                    versions.iter().find(|&v| v.id == version.clone())
-                };
-
-                let Some(verdata) = verdata else {
-                    bail!("Release '{version}' for project '{id}' not found");
-                };
-
-                let Some(file) = verdata.files.first() else {
-                    bail!("No files for project '{id}' version '{version}'");
-                };
+                let (file, ver) = app.modrinth().fetch_file(id, version).await?;
 
                 let hash = file
                     .hashes
