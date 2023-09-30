@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::{Source, App, ResolvedFile};
+use crate::{Resolvable, App, ResolvedFile};
 
 use crate::model::Downloadable;
 use crate::sources::quilt;
@@ -339,7 +339,7 @@ impl ServerType {
 }
 
 #[async_trait]
-impl Source for ServerType {
+impl Resolvable for ServerType {
     async fn resolve_source(&self, app: &App) -> Result<ResolvedFile> {
         let version = &app.mc_version();
 

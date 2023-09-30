@@ -202,8 +202,6 @@ impl<'a> GithubAPI<'a> {
         
         let cached_file_path = format!("{repo}/releases/{}/{}", release.tag_name, asset.name);
 
-        let has_in_cache = self.0.has_in_cache(CACHE_DIR, &cached_file_path);
-
         Ok(ResolvedFile {
             url: format!(
                 "https://github.com/{repo}/releases/download/{}/{}",

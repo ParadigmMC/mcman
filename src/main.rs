@@ -13,14 +13,17 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cache::Cache;
 use clap::Parser;
+use indicatif::MultiProgress;
 use model::{Server, Network};
 
 mod commands;
 mod core;
+mod app;
 mod model;
 mod sources;
 mod util;
 mod cache;
+mod interop;
 //mod hot_reload;
 
 #[derive(clap::Parser)]
@@ -75,20 +78,22 @@ enum Commands {
 async fn main() -> Result<()> {
     let args = CLI::parse();
 
+    let base_app = BaseApp::new()?;
+
     match args.command {
-        Commands::Init(args) => commands::init::run(args).await,
-        Commands::Build(args) => commands::build::run(args).await.map(|_| ()),
-        Commands::Run(args) => commands::run::run(args).await,
-        Commands::Add(commands) => commands::add::run(commands).await,
-        Commands::Import(subcommands) => commands::import::run(subcommands).await,
-        Commands::Markdown => commands::markdown::run().await,
-        Commands::Pull(args) => commands::pull::run(args),
-        Commands::Env(commands) => commands::env::run(commands),
-        Commands::World(commands) => commands::world::run(commands).await,
-        Commands::Info => commands::info::run(),
-        Commands::Version => commands::version::run().await,
-        Commands::Export(commands) => commands::export::run(commands).await,
-        Commands::Eject => commands::eject::run(),
+        Commands::Init(args) => commands::init::run(base_app, args).await,
+        Commands::Build(args) => commands::build::run(base_app.upgrade(), args).await.map(|_| ()),
+        Commands::Run(args) => commands::run::run(base_app.upgrade(), args).await,
+        Commands::Add(commands) => commands::add::run(base_app.upgrade(), commands).await,
+        Commands::Import(subcommands) => commands::import::run(base_app.upgrade(), subcommands).await,
+        Commands::Markdown => commands::markdown::run(base_app.upgrade(), ).await,
+        Commands::Pull(args) => commands::pull::run(base_app.upgrade(), args),
+        Commands::Env(commands) => commands::env::run(base_app.upgrade(), commands),
+        Commands::World(commands) => commands::world::run(base_app.upgrade(), commands).await,
+        Commands::Info => commands::info::run(base_app.upgrade()),
+        Commands::Version => commands::version::run(base_app).await,
+        Commands::Export(commands) => commands::export::run(base_app.upgrade(), commands).await,
+        Commands::Eject => commands::eject::run(base_app.upgrade(), ),
     }
 }
 
@@ -107,7 +112,7 @@ pub fn create_http_client() -> Result<reqwest::Client> {
 }
 
 #[async_trait]
-pub trait Source {
+pub trait Resolvable {
     async fn resolve_source(
         &self,
         app: &App,
@@ -127,11 +132,12 @@ impl BaseApp {
         })
     }
 
-    fn into_app(self) -> Result<App> {
+    fn upgrade(self) -> Result<App> {
         Ok(App {
             http_client: self.http_client,
             server: Server::load().context("Failed to load server.toml")?,
-            network: Network::load()?
+            network: Network::load()?,
+            multi_progress: MultiProgress::new(),
         })
     }
 }
@@ -140,11 +146,13 @@ pub struct App {
     pub http_client: reqwest::Client,
     pub server: Server,
     pub network: Option<Network>,
+
+    pub multi_progress: MultiProgress,
 }
 
 impl App {
     pub fn new() -> Result<Self> {
-        BaseApp::new()?.into_app()
+        BaseApp::new()?.upgrade()
     }
 
     pub fn mc_version(&self) -> String {
@@ -221,7 +229,7 @@ pub struct ResolvedFile {
     url: String,
     filename: String,
     cache: CacheStrategy,
-    size: Option<i32>,
+    size: Option<u64>,
     hashes: HashMap<String, String>,
 }
 

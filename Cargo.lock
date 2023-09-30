@@ -125,6 +125,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "base16ct"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c7f02d4ea65f2c1853089ffd8d2787bdbc63de2f0d29dedbcf8ccdfa0ccd4cf"
+
+[[package]]
 name = "base64"
 version = "0.21.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -896,16 +902,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af150ab688ff2122fcef229be89cb50dd66af9e01a4ff320cc137eecc9bacc38"
 
 [[package]]
-name = "java-properties"
-version = "1.4.1"
-source = "git+https://github.com/ParadigmMC/java-properties.git#7da510446157759c01d405b19cc8870169a58f56"
-dependencies = [
- "encoding_rs",
- "lazy_static",
- "regex",
-]
-
-[[package]]
 name = "jobserver"
 version = "0.1.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1007,17 +1003,19 @@ version = "0.4.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "base16ct",
  "cached",
  "clap",
  "console",
  "dialoguer",
+ "digest",
  "dirs",
  "futures",
  "glob",
  "indexmap 2.0.0",
  "indicatif",
- "java-properties",
  "mcapi",
+ "md-5",
  "notify",
  "pathdiff",
  "regex",
@@ -1027,6 +1025,7 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
+ "sha1",
  "sha2",
  "tempfile",
  "tokio",

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::sources::jenkins;
 use crate::{ResolvedFile, CacheStrategy, App};
-use crate::Source;
+use crate::Resolvable;
 
 mod import_url;
 mod markdown;
@@ -94,7 +94,7 @@ pub fn artifact() -> String {
 }
 
 #[async_trait]
-impl Source for Downloadable {
+impl Resolvable for Downloadable {
     async fn resolve_source(&self, app: &App) -> Result<ResolvedFile> {
         match self {
             Self::Url {
@@ -103,7 +103,13 @@ impl Source for Downloadable {
                 ..
             } => Ok(ResolvedFile {
                 url: url.clone(),
-                filename: filename.clone(),
+                filename:
+                    if let Some(filename) = filename {
+                        filename.clone()
+                    } else {
+                        let url_clean = url.split('?').next().unwrap_or(url);
+                        url_clean.split('/').last().unwrap().to_string()
+                    },
                 cache: CacheStrategy::None,
                 size: None,
                 hashes: HashMap::new(),

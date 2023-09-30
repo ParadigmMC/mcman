@@ -7,7 +7,7 @@ use tokio::fs::{self, File};
 
 use crate::{
     model::{Server, StartupMethod, Network, Lockfile, Changes},
-    util::{self, logger::Logger}, Source,
+    util::{self, logger::Logger}, Resolvable,
 };
 
 pub mod addons;
@@ -171,7 +171,7 @@ impl BuildContext {
 
     pub async fn downloadable<F: Fn(ReportBackState, &str)>(
         &self,
-        dl: &(impl Source + std::fmt::Debug),
+        dl: &(impl Resolvable + std::fmt::Debug),
         folder_path: Option<&str>,
         report_back: F,
     ) -> Result<String> {

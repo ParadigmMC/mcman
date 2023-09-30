@@ -11,7 +11,7 @@ use futures::StreamExt;
 use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
 use tokio::{fs::File, io::BufWriter};
 
-use crate::{model::Server, Source};
+use crate::{model::Server, Resolvable};
 
 pub struct SelectItem<T>(pub T, pub String);
 
@@ -24,7 +24,7 @@ impl<T> ToString for SelectItem<T> {
 pub async fn download_with_progress(
     file: File,
     message: &str,
-    downloadable: &impl Source,
+    downloadable: &impl Resolvable,
     server: &Server,
     client: &reqwest::Client,
 ) -> Result<()> {

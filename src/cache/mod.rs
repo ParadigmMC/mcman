@@ -16,8 +16,12 @@ impl Cache {
         Ok(serde_json::from_str(&content)?)
     }
 
+    pub fn path(&self, path: &str) -> PathBuf {
+        self.0.join(path)
+    }
+
     pub fn exists(&self, path: &str) -> bool {
-        self.0.join(path).exists()
+        self.path(path).exists()
     }
 
     pub fn try_get_json<T: DeserializeOwned>(&self, path: &str) -> Result<Option<T>> {

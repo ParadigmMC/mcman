@@ -8,6 +8,7 @@ use console::style;
 use pathdiff::diff_paths;
 use reqwest::{IntoUrl, Url};
 use rpackwiz::model::{HashFormat, Mod, Pack, PackFile, PackIndex, Side};
+use serde::de::DeserializeOwned;
 use tokio::{
     fs::{self, File},
     io::AsyncWriteExt,
@@ -21,7 +22,7 @@ use crate::{
     util::{
         download_with_progress,
         hash::{hash_contents, hash_file},
-    },
+    }, App,
 };
 
 pub struct PackwizExportOptions {
@@ -68,6 +69,47 @@ pub async fn packwiz_fetch_pack_from_src(http_client: &reqwest::Client, src: &st
             read_toml(&base).await.context("Reading pack.toml")?
         },
     )
+}
+
+pub enum PackwizPackSource<'a> {
+    RemoteURL(&'a App, Url),
+    LocalFolder(&'a App, PathBuf),
+}
+
+impl<'a> PackwizPackSource<'a> {
+    pub async fn parse_toml<T: DeserializeOwned>(&self, relative_path: &str) -> Result<T> {
+        match self {
+            PackwizPackSource::RemoteURL(app, base_url) => {
+                let contents = app.http_client
+                    .get(base_url.join(&relative_path)?)
+                    .send()
+                    .await?
+                    .error_for_status()?
+                    .text()
+                    .await?;
+
+                Ok(toml::from_str(&contents)?)
+            },
+            PackwizPackSource::LocalFolder(_, base_folder) => {
+                let str = fs::read_to_string(base_folder.join(relative_path)).await?;
+                Ok(toml::from_str(&str)?)
+            },
+        }
+    }
+
+    pub async fn get_pack_toml(&self) -> Result<Pack> {
+        self.parse_toml("pack.toml").await.context("Fetching pack.toml")
+    }
+
+    pub async fn get_pack_index(&self) -> Result<(Pack, PackIndex)> {
+        let pack = self.get_pack_toml().await?;
+        let index = self.parse_toml(&pack.index.file).await?;
+        Ok((pack, index))
+    }
+
+    pub async fn get_metafile(&self, file: &PackFile) -> Result<Mod> {
+        self.parse_toml(&file.file).await
+    }
 }
 
 #[allow(clippy::too_many_lines)]

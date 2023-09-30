@@ -8,7 +8,7 @@ use crate::{
     model::Server,
     sources::modrinth::DependencyType,
     util::{hash::get_hash_url, packwiz::PackwizExportOptions},
-    Source, App,
+    Resolvable, App,
 };
 
 use super::Downloadable;
