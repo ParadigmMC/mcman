@@ -7,6 +7,8 @@ use std::{
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
+use crate::ResolvedFile;
+
 use super::{Downloadable, ClientSideMod, World, Server};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -15,9 +17,9 @@ pub struct Lockfile {
     #[serde(skip)]
     pub path: PathBuf,
 
-    pub plugins: Vec<(String, Downloadable)>,
-    pub mods: Vec<(String, Downloadable)>,
-    pub clientsidemods: Vec<(String, ClientSideMod)>,
+    pub plugins: Vec<(Downloadable, ResolvedFile)>,
+    pub mods: Vec<(Downloadable, ResolvedFile)>,
+    pub clientsidemods: Vec<(Downloadable, ResolvedFile)>,
     pub worlds: HashMap<String, World>,
 
     pub files: Vec<BootstrappedFile>
@@ -45,8 +47,8 @@ impl<T> Change<T> {
 
 #[derive(Debug, Default)]
 pub struct Changes {
-    pub plugins: Vec<Change<(String, Downloadable)>>,
-    pub mods: Vec<Change<(String, Downloadable)>>,
+    pub plugins: Vec<Change<(Downloadable, ResolvedFile)>>,
+    pub mods: Vec<Change<(Downloadable, ResolvedFile)>>,
     // datapacks, etc...
 }
 
@@ -75,51 +77,6 @@ impl Lockfile {
         f.write_all(cfg_str.as_bytes())?;
 
         Ok(())
-    }
-
-    pub fn get_changes(
-        &self,
-        server: &Server,
-    ) -> Changes {
-        let mut changes = Changes::default();
-
-        // plugins
-
-        let server_plugins: HashMap<Downloadable, String> = HashMap::from_iter(server.plugins
-            .iter()
-            .map(|p| (p.clone(), String::new())));
-
-        let lockfile_plugins: HashMap<Downloadable, String> = HashMap::from_iter(self.plugins
-            .iter().map(|(s, p)| (p.clone(), s.clone())));
-
-        for added_plugin in server_plugins.keys().filter(|p| !lockfile_plugins.contains_key(p.to_owned())) {
-            changes.plugins.push(Change::Added((String::new(), added_plugin.to_owned().clone())));
-        }
-
-        for removed_plugin in lockfile_plugins.keys().filter(|p| !server_plugins.contains_key(p.to_owned())) {
-            let filename = lockfile_plugins[removed_plugin].clone();
-            changes.plugins.push(Change::Removed((filename, removed_plugin.to_owned().clone())));
-        }
-
-        // mods
-
-        let server_mods: HashMap<Downloadable, String> = HashMap::from_iter(server.mods
-            .iter()
-            .map(|p| (p.clone(), String::new())));
-
-        let lockfile_mods: HashMap<Downloadable, String> = HashMap::from_iter(self.mods
-            .iter().map(|(s, p)| (p.clone(), s.clone())));
-
-        for added_mod in server_mods.keys().filter(|p| !lockfile_mods.contains_key(p.to_owned())) {
-            changes.mods.push(Change::Added((String::new(), added_mod.to_owned().clone())));
-        }
-
-        for removed_mod in lockfile_mods.keys().filter(|p| !server_mods.contains_key(p.to_owned())) {
-            let filename = lockfile_mods[removed_mod].clone();
-            changes.mods.push(Change::Removed((filename, removed_mod.to_owned().clone())));
-        }
-
-        changes
     }
 }
 

@@ -14,14 +14,15 @@ use tokio::{
 
 use crate::model::InstallMethod;
 
-use super::{BuildContext, ReportBackState};
+use super::BuildContext;
 
-impl BuildContext {
-    pub async fn download_server_jar(&mut self) -> Result<()> {
+impl<'a> BuildContext<'a> {
+    pub async fn download_server_jar(&'a self) -> Result<String> {
         let serverjar_name = match self
+            .app
             .server
             .jar
-            .get_install_method(&self.http_client, &self.server.mc_version)
+            .get_install_method(&self.app)
             .await?
         {
             InstallMethod::Installer {
@@ -31,25 +32,13 @@ impl BuildContext {
                 rename_from,
                 jar_name,
             } => {
-                let installer_jar = self
-                    .downloadable(&self.server.jar, None, |state, filename| match state {
-                        ReportBackState::Skipped => {
-                            println!(
-                                "          {name} is present ({})",
-                                style(filename.clone()).dim()
-                            );
-                        }
-                        ReportBackState::Downloading => {
-                            println!(
-                                "          Downloading {name}... ({})",
-                                style(filename.clone()).dim()
-                            );
-                        }
-                        ReportBackState::Downloaded => {}
-                    })
+                let (_, resolved) = self
+                    .downloadable(&self.app.server.jar, "", None)
                     .await?;
 
-                let jar_name = jar_name.replace("${mcver}", &self.server.mc_version);
+                let installer_jar = resolved.filename;
+
+                let jar_name = jar_name.replace("${mcver}", &self.app.server.mc_version);
 
                 if !self.force && self.output_dir.join(&jar_name).exists() {
                     println!(
@@ -95,35 +84,16 @@ impl BuildContext {
                     }
                 }
 
-                Ok(jar_name)
+                jar_name
             }
             InstallMethod::SingleJar => {
-                self.downloadable(&self.server.jar, None, |state, server_jar| match state {
-                    ReportBackState::Skipped => {
-                        println!(
-                            "          Skipping server jar ({})",
-                            style(server_jar.clone()).dim()
-                        );
-                    }
-                    ReportBackState::Downloading => {
-                        println!(
-                            "          Downloading server jar ({})",
-                            style(server_jar.clone()).dim()
-                        );
-                    }
-                    ReportBackState::Downloaded => {}
-                })
-                .await
+                self
+                    .downloadable(&self.app.server.jar, "", None)
+                    .await?.1.filename
             }
-        }?;
+        };
 
-        self.startup_method = self
-            .server
-            .jar
-            .get_startup_method(&self.http_client, &serverjar_name, &self.server.mc_version)
-            .await?;
-
-        Ok(())
+        Ok(serverjar_name)
     }
 
     pub async fn execute_child(
@@ -133,7 +103,7 @@ impl BuildContext {
         tag: &str,
     ) -> Result<()> {
         let mut child = std::process::Command::new(cmd.0)
-            .args(cmd.1.iter().map(|a| self.server.format(a)))
+            .args(cmd.1.iter().map(|a| self.app.server.format(a)))
             .current_dir(&self.output_dir)
             .stdout(Stdio::piped())
             .stderr(Stdio::null())

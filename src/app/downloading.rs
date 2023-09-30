@@ -9,15 +9,15 @@ use sha2::{Sha256, Sha512};
 use tokio::{fs::File, io::BufWriter};
 use digest::{Digest, DynDigest};
 
-use crate::{App, Resolvable, CacheStrategy};
+use crate::{App, Resolvable, CacheStrategy, ResolvedFile};
 
 impl App {
     pub async fn download(
         &self,
-        resolvable: impl Resolvable + ToString + Debug,
-        destination: impl AsRef<PathBuf>,
+        resolvable: &(impl Resolvable + ToString + Debug),
+        destination: PathBuf,
         progress_bar: ProgressBar,
-    ) -> Result<()> {
+    ) -> Result<ResolvedFile> {
         progress_bar.set_style(ProgressStyle::with_template("{spinner:.blue} {prefix} {msg}...")?);
         progress_bar.set_prefix("Resolving");
         progress_bar.set_message(resolvable.to_string());
@@ -26,11 +26,11 @@ impl App {
         let resolved = resolvable.resolve_source(&self).await
             .context(format!("Resolving {resolvable:#?}"))?;
 
-        let cached_file = match resolved.cache {
+        let cached_file = match &resolved.cache {
             CacheStrategy::File { namespace, path } => {
-                if let Some(cache) = self.get_cache(&namespace) {
-                    if cache.exists(&path) {
-                        Some(cache.path(&path))
+                if let Some(cache) = self.get_cache(namespace) {
+                    if cache.exists(path) {
+                        Some(cache.path(path))
                     } else {
                         None
                     }
@@ -65,7 +65,7 @@ impl App {
             None
         };
 
-        let file_path = destination.as_ref().join(&resolved.filename);
+        let file_path = destination.join(&resolved.filename);
 
         tokio::fs::create_dir_all(file_path.parent().unwrap()).await
             .context(format!("Creating parent directories of '{}'", file_path.to_string_lossy()))?;
@@ -89,7 +89,7 @@ impl App {
 
             if size_matches {
                 // file already there and is ok
-                return Ok(());
+                return Ok(resolved);
             }
         }
 
@@ -126,7 +126,7 @@ impl App {
             progress_bar.set_prefix("Fetching");
             progress_bar.set_message(resolved.filename.clone());
 
-            let response = self.http_client.get(resolved.url)
+            let response = self.http_client.get(&resolved.url)
                 .send()
                 .await?
                 .error_for_status()?;
@@ -184,6 +184,6 @@ impl App {
             progress_bar.finish();
         }
 
-        Ok(())
+        Ok(resolved)
     }
 }

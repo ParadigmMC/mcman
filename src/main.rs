@@ -15,6 +15,7 @@ use cache::Cache;
 use clap::Parser;
 use indicatif::MultiProgress;
 use model::{Server, Network};
+use serde::{Serialize, Deserialize};
 
 mod commands;
 mod core;
@@ -142,6 +143,7 @@ impl BaseApp {
     }
 }
 
+#[derive(Debug)]
 pub struct App {
     pub http_client: reqwest::Client,
     pub server: Server,
@@ -225,6 +227,7 @@ impl<'a> App {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResolvedFile {
     url: String,
     filename: String,

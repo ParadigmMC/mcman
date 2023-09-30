@@ -5,7 +5,7 @@ use anyhow::{Context, Result};
 use crate::{
     core::BuildContext,
     create_http_client,
-    model::{Lockfile, Network, Server},
+    model::{Lockfile, Network, Server}, App,
 };
 
 #[derive(clap::Args)]
@@ -21,12 +21,8 @@ pub struct Args {
     force: bool,
 }
 
-pub async fn run(args: Args) -> Result<BuildContext> {
-    let server = Server::load().context("Failed to load server.toml")?;
-    let network = Network::load()?;
-    let http_client = create_http_client()?;
-
-    let default_output = server.path.join("server");
+pub async fn run(app: App, args: Args) -> Result<BuildContext> {
+    let default_output = app.server.path.join("server");
     let output_dir = args.output.unwrap_or(default_output);
 
     let lockfile = Lockfile::get_lockfile(&output_dir)?;
@@ -38,14 +34,15 @@ pub async fn run(args: Args) -> Result<BuildContext> {
     std::fs::create_dir_all(&output_dir).context("Failed to create output directory")?;
 
     let mut ctx = BuildContext {
-        server,
-        network,
-        http_client,
+        app: &app,
         force,
         skip_stages,
         lockfile,
         output_dir,
-        ..Default::default()
+        force: false,
+        lockfile: Lockfile::default(),
+        new_lockfile: Lockfile::default(),
+        server_process: None,
     };
 
     ctx.build_all().await?;

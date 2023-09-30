@@ -10,7 +10,7 @@ use crate::model::BootstrappedFile;
 
 use super::BuildContext;
 
-impl BuildContext {
+impl<'a> BuildContext<'a> {
     pub async fn bootstrap_files(&mut self) -> Result<()> {
         if !Path::new(self.output_dir.as_path()).exists() {
             fs::create_dir_all(&self.output_dir)
@@ -21,7 +21,7 @@ impl BuildContext {
         let lockfile_entries: HashMap<PathBuf, SystemTime> = HashMap::from_iter(self.lockfile.files.iter()
             .map(|e| (e.path.clone(), e.date.clone())));
 
-        for entry in WalkDir::new(self.server.path.join("config")) {
+        for entry in WalkDir::new(self.app.server.path.join("config")) {
             let entry = entry
                 .map_err(|e| anyhow!(
                     "Can't walk directory/file: {}",
@@ -34,7 +34,7 @@ impl BuildContext {
 
             let source = entry.path();
             let dest = self.map_config_path(source);
-            let diffed_paths = diff_paths(&dest, self.server.path.join("config"))
+            let diffed_paths = diff_paths(&dest, self.app.server.path.join("config"))
                 .ok_or(anyhow!("Cannot diff paths"))?;
     
             self.bootstrap_file(&diffed_paths, lockfile_entries.get(&diffed_paths)).await.context(format!(
@@ -43,7 +43,7 @@ impl BuildContext {
             ))?;
         }
 
-        if self.server.launcher.eula_args && !self.server.jar.supports_eula_args() {
+        if self.app.server.launcher.eula_args && !self.app.server.jar.supports_eula_args() {
             println!(
                 "          {}",
                 style("=> eula.txt [eula_args unsupported]").dim()
@@ -85,7 +85,7 @@ impl BuildContext {
     pub async fn bootstrap_file(&mut self, path: &PathBuf, cache: Option<&SystemTime>) -> Result<()> {
         let pretty_path = path.display();
 
-        let source = self.server.path.join("config").join(path);
+        let source = self.app.server.path.join("config").join(path);
         let dest = self.output_dir.join(path);
 
         let source_time = fs::metadata(&source).await?.modified()?;
@@ -141,13 +141,13 @@ impl BuildContext {
             };
 
             match k {
-                "SERVER_NAME" => Some(self.server.name.clone()),
-                "SERVER_VERSION" | "mcver" | "mcversion" => Some(self.server.mc_version.clone()),
-                "PLUGIN_COUNT" => Some(self.server.plugins.len().to_string()),
-                "MOD_COUNT" => Some(self.server.mods.len().to_string()),
-                "WORLD_COUNT" => Some(self.server.worlds.len().to_string()),
-                "CLIENTSIDE_MOD_COUNT" => Some(self.server.clientsidemods.len().to_string()),
-                k => self.server.variables.get(k)
+                "SERVER_NAME" => Some(self.app.server.name.clone()),
+                "SERVER_VERSION" | "mcver" | "mcversion" => Some(self.app.server.mc_version.clone()),
+                "PLUGIN_COUNT" => Some(self.app.server.plugins.len().to_string()),
+                "MOD_COUNT" => Some(self.app.server.mods.len().to_string()),
+                "WORLD_COUNT" => Some(self.app.server.worlds.len().to_string()),
+                "CLIENTSIDE_MOD_COUNT" => Some(self.app.server.clientsidemods.len().to_string()),
+                k => self.app.server.variables.get(k)
                     .cloned()
                     .or(env::var(k).ok())
             }.or(def)

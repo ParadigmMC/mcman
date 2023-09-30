@@ -1,9 +1,8 @@
 use anyhow::{Result, Context};
-use indicatif::{ProgressBar, ProgressBarIter, ProgressIterator, ProgressStyle, ProgressFinish};
+use indicatif::{ProgressBar, ProgressIterator, ProgressStyle, ProgressFinish};
 use zip::{ZipArchive, read::ZipFile, ZipWriter, write::FileOptions};
 use std::{
     collections::HashMap,
-    fs::{self, File},
     io::{Read, Seek, Write},
     time::Duration,
 };
@@ -253,10 +252,11 @@ impl<W: Write + Seek> MRPackWriter<W> {
     }
 
     pub fn write_index(&mut self, index: &MRPackIndex) -> Result<()> {
-        self.write_file(MRPACK_INDEX_FILE, serde_json::to_string_pretty(index)?.as_bytes()?)
+        self.write_file(MRPACK_INDEX_FILE, serde_json::to_string_pretty(index)?.as_bytes())
     }
 
     pub fn finish(&mut self) -> Result<()> {
-        self.0.finish()
+        self.0.finish()?;
+        Ok(())
     }
 }

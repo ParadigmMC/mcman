@@ -244,6 +244,12 @@ impl Downloadable {
     }
 }
 
+impl ToString for Downloadable {
+    fn to_string(&self) -> String {
+        self.to_short_string()
+    }
+}
+
 static SANITIZE_R1: &str = "<(?:\"[^\"]*\"['\"]*|'[^']*'['\"]*|[^'\">])+>";
 
 fn sanitize(s: &str) -> Result<String> {

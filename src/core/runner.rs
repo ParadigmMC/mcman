@@ -12,10 +12,11 @@ use tokio::sync::oneshot;
 
 use super::BuildContext;
 
-impl BuildContext {
+impl<'a> BuildContext<'a> {
     pub fn run(&mut self, test_mode: bool) -> Result<()> {
-        println!();
-        println!(" {} {}...", style("> Running").bold(), self.server.name,);
+        todo!()
+        /* println!();
+        println!(" {} {}...", style("> Running").bold(), self.app.server.name,);
         println!();
 
         let platform = if std::env::consts::FAMILY == "windows" {
@@ -26,9 +27,9 @@ impl BuildContext {
 
         let child = std::process::Command::new("java")
             .args(
-                self.server
+                self.app.server
                     .launcher
-                    .get_arguments(&self.startup_method, platform),
+                    .get_arguments(&self.app.server.jar.get_startup_method(&self.app, serverjar_name), platform),
             )
             .current_dir(&self.output_dir)
             .stdin(if test_mode {
@@ -43,7 +44,7 @@ impl BuildContext {
 
         self.server_process = Some(child);
 
-        Ok(())
+        Ok(()) */
     }
 
     pub async fn pipe_child_process(&mut self, test_mode: bool) -> Result<ExitStatus> {

@@ -160,8 +160,8 @@ impl ServerType {
     pub async fn get_install_method(
         &self,
         app: &App,
-        mcver: &str,
     ) -> Result<InstallMethod> {
+        let mcver = &app.server.mc_version;
         Ok(match self.clone() {
             Self::Quilt { loader, .. } => {
                 let mut args = vec!["install", "server", mcver];
@@ -242,8 +242,8 @@ impl ServerType {
         &self,
         app: &App,
         serverjar_name: &str,
-        mcver: &str,
     ) -> Result<StartupMethod> {
+        let mcver = &app.server.mc_version;
         Ok(match self {
             Self::NeoForge { loader } => {
                 let l = app.neoforge().resolve_version(loader).await?;
@@ -335,6 +335,26 @@ impl ServerType {
 
     pub fn supports_eula_args(&self) -> bool {
         !matches!(self, Self::Vanilla {}) && !self.is_modded()
+    }
+}
+
+impl ToString for ServerType {
+    fn to_string(&self) -> String {
+        match self {
+            ServerType::Vanilla {  } => String::from("Vanilla"),
+            ServerType::PaperMC { project, build } => format!("{project} build {build}"),
+            ServerType::Purpur { build } => format!("Purpur build {build}"),
+            ServerType::Fabric { loader, installer } => format!("Fabric v{loader}"),
+            ServerType::Quilt { loader, installer } => format!("Quilt v{loader}"),
+            ServerType::NeoForge { loader } => format!("NeoForge v{loader}"),
+            ServerType::Forge { loader } => format!("Forge v{loader}"),
+            ServerType::BuildTools { software, args } => format!("(BuildTools) {software}"),
+            ServerType::Paper {  } => format!("Paper"),
+            ServerType::Velocity {  } => format!("Velocity"),
+            ServerType::Waterfall {  } => format!("Waterfall"),
+            ServerType::BungeeCord {  } => format!("BungeeCord"),
+            ServerType::Downloadable { inner } => inner.to_string(),
+        }
     }
 }
 

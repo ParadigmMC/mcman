@@ -4,15 +4,17 @@ use anyhow::Result;
 use console::style;
 use tokio::fs;
 
+use crate::model::StartupMethod;
+
 use super::BuildContext;
 
-impl BuildContext {
-    pub async fn create_scripts(&self) -> Result<()> {
+impl<'a> BuildContext<'a> {
+    pub async fn create_scripts(&self, startup: StartupMethod) -> Result<()> {
         fs::write(
             self.output_dir.join("start.bat"),
-            self.server
+            self.app.server
                 .launcher
-                .generate_script_win(&self.server.name, &self.startup_method),
+                .generate_script_win(&self.app.server.name, &startup),
         )
         .await?;
 
@@ -35,16 +37,11 @@ impl BuildContext {
         }
 
         file.write_all(
-            self.server
+            self.app.server
                 .launcher
-                .generate_script_linux(&self.server.name, &self.startup_method)
+                .generate_script_linux(&self.app.server.name, &startup)
                 .as_bytes(),
         )?;
-
-        println!(
-            "          {}",
-            style("start.bat and start.sh created").dim()
-        );
 
         Ok(())
     }
