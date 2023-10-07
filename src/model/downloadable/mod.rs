@@ -5,13 +5,11 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use crate::sources::jenkins;
-use crate::{ResolvedFile, CacheStrategy, App};
-use crate::Resolvable;
+use crate::app::{ResolvedFile, CacheStrategy, App, Resolvable};
 
 mod import_url;
 mod markdown;
 mod meta;
-mod packwiz;
 
 #[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq)]
 #[serde(tag = "type", rename_all = "lowercase")]

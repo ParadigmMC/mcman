@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::{anyhow, Result};
 use mcapi::fabric::{FabricLoader, FabricInstaller, FABRIC_META_URL};
 
-use crate::{App, ResolvedFile, CacheStrategy};
+use crate::app::{App, ResolvedFile, CacheStrategy};
 
 pub struct FabricAPI<'a>(pub &'a App);
 

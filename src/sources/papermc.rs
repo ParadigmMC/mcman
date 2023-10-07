@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::{anyhow, Result};
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{App, ResolvedFile, CacheStrategy};
+use crate::app::{App, ResolvedFile, CacheStrategy};
 
 pub struct PaperMCAPI<'a>(pub &'a App);
 

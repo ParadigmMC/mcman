@@ -3,7 +3,7 @@ use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
 use reqwest::Url;
 
 use crate::{
-    sources::modrinth::ModrinthVersion, App,
+    sources::modrinth::ModrinthVersion, app::App,
 };
 
 use super::Downloadable;

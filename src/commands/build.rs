@@ -21,7 +21,7 @@ pub struct Args {
     force: bool,
 }
 
-pub async fn run(app: App, args: Args) -> Result<BuildContext> {
+pub async fn run(app: App, args: Args) -> Result<()> {
     let default_output = app.server.path.join("server");
     let output_dir = args.output.unwrap_or(default_output);
 
@@ -39,13 +39,11 @@ pub async fn run(app: App, args: Args) -> Result<BuildContext> {
         skip_stages,
         lockfile,
         output_dir,
-        force: false,
-        lockfile: Lockfile::default(),
         new_lockfile: Lockfile::default(),
         server_process: None,
     };
 
     ctx.build_all().await?;
 
-    Ok(ctx)
+    Ok(())
 }

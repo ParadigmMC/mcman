@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::{anyhow, Context, Result};
 use mcapi::hangar::{Platform, ProjectVersion};
 
-use crate::{App, CacheStrategy, ResolvedFile};
+use crate::app::{App, CacheStrategy, ResolvedFile};
 
 pub struct HangarAPI<'a>(pub &'a App);
 
@@ -85,7 +85,7 @@ impl<'a> HangarAPI<'a> {
                 namespace: String::from("hangar"),
                 path: cached_file_path,
             },
-            size: Some(download.get_file_info().size_bytes as i32),
+            size: Some(download.get_file_info().size_bytes as u64),
             hashes: HashMap::from([(
                 "sha256".to_owned(),
                 download.get_file_info().sha256_hash,

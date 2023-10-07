@@ -9,7 +9,7 @@ use sha2::{Sha256, Sha512};
 use tokio::{fs::File, io::BufWriter};
 use digest::{Digest, DynDigest};
 
-use crate::{App, Resolvable, CacheStrategy, ResolvedFile};
+use super::{App, Resolvable, CacheStrategy, ResolvedFile};
 
 impl App {
     pub async fn download(
@@ -26,7 +26,20 @@ impl App {
         let resolved = resolvable.resolve_source(&self).await
             .context(format!("Resolving {resolvable:#?}"))?;
 
-        let cached_file = match &resolved.cache {
+        self.download_resolved(resolved, destination, progress_bar).await
+    }
+
+    pub async fn download_resolved(
+        &self,
+        resolved: ResolvedFile,
+        destination: PathBuf,
+        progress_bar: ProgressBar,
+    ) -> Result<ResolvedFile> {
+        progress_bar.set_style(ProgressStyle::with_template("{spinner:.blue} {prefix} {msg}...")?);
+        progress_bar.set_prefix("Checking");
+        progress_bar.enable_steady_tick(Duration::from_millis(250));
+
+        let cached_file_path = match &resolved.cache {
             CacheStrategy::File { namespace, path } => {
                 if let Some(cache) = self.get_cache(namespace) {
                     if cache.exists(path) {
@@ -42,14 +55,9 @@ impl App {
             CacheStrategy::None => None,
         };
 
-        let hasher_name = resolved.hashes
-            .get_key_value("sha512")
-            .or(resolved.hashes.get_key_value("sha256"))
-            .or(resolved.hashes.get_key_value("md5"))
-            .or(resolved.hashes.get_key_value("sha1"))
-            .map(|h| h.0);
+        let hasher = Self::get_best_hash(&resolved.hashes);
 
-        let mut hasher = if let Some(name) = hasher_name {
+        let mut hasher = if let Some((name, hash)) = hasher {
             let digester: Box<dyn DynDigest> = match name.as_str() {
                 "sha256" => Box::new(Sha256::new()),
                 "sha512" => Box::new(Sha512::new()),
@@ -58,9 +66,7 @@ impl App {
                 _ => unreachable!(),
             };
 
-            let hash = resolved.hashes[name].clone();
-
-            Some((digester, hash))
+            Some((name, digester, hash))
         } else {
             None
         };
@@ -69,11 +75,9 @@ impl App {
 
         tokio::fs::create_dir_all(file_path.parent().unwrap()).await
             .context(format!("Creating parent directories of '{}'", file_path.to_string_lossy()))?;
-        let target_file = File::create(&file_path).await
-            .context(format!("Creating destination file at '{}'", file_path.to_string_lossy()))?;
 
         if file_path.exists() {
-            let meta = target_file.metadata().await
+            let meta = file_path.metadata()
                 .context(format!("Getting metadata of file '{}'", file_path.to_string_lossy()))?;
             if meta.is_dir() {
                 bail!("'{}' is a directory and not a file", file_path.to_string_lossy());
@@ -93,7 +97,10 @@ impl App {
             }
         }
 
-        if let Some(cached) = cached_file {
+        let target_file = File::create(&file_path).await
+            .context(format!("Creating destination file at '{}'", file_path.to_string_lossy()))?;
+
+        if let Some(cached) = cached_file_path {
             let cached_size = cached.metadata()
                 .context(format!("Getting metadata of cached file at '{}'", cached.to_string_lossy()))?.len();
 
@@ -106,7 +113,7 @@ impl App {
             //progress_bar.disable_steady_tick();
             // TODO: progressbar (i couldnt do it :c)
             //progress_bar.set_style(ProgressStyle::with_template("{prefix:.green.bold} {msg} [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")?);
-            progress_bar.set_prefix("Copying");
+            progress_bar.set_prefix("Copying from cache");
 
             let mut cache_file = File::open(&cached).await
                 .context(format!("Opening file '{}' from cache dir", cached.to_string_lossy()))?;
@@ -150,13 +157,18 @@ impl App {
             progress_bar.set_style(ProgressStyle::with_template("{prefix:.green.bold} {msg} [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")?);
             progress_bar.set_prefix("Downloading");
 
-            let mut file_writer = BufWriter::new(target_file);
+            let mut file_writer = BufWriter::new(match &cached_file_path {
+                Some(path) => File::create(path)
+                    .await
+                    .context(format!("Creating cache file at '{}'", path.to_string_lossy()))?,
+                None => target_file,
+            });
         
             let mut stream = response.bytes_stream();
             while let Some(item) = stream.next().await {
                 let item = item?;
 
-                if let Some((ref mut digest, _)) = hasher {
+                if let Some((_, ref mut digest, _)) = hasher {
                     digest.update(&item);
                 }
 
@@ -166,17 +178,24 @@ impl App {
                 progress_bar.inc(item.len() as u64);
             }
 
-            if let Some((digest, resolved_hash)) = hasher {
+            if let Some((hash_name, digest, resolved_hash)) = hasher {
                 let stream_hash = base16ct::lower::encode_string(&digest.finalize());
 
                 if resolved_hash != stream_hash {
                     // TODO: skipping checks etc
                     // also pretty msg
                     bail!("Mismatched hash!
-                    Type: {}
+                    Type: {hash_name}
                     Expected hash: {resolved_hash}
-                    Real hash: {stream_hash}", hasher_name.unwrap());
+                    Real hash: {stream_hash}");
                 }
+            }
+
+            if let Some(cached_file_path) = cached_file_path {
+                progress_bar.set_style(ProgressStyle::with_template("{spinner:.blue} {prefix} {msg}...")?);
+                progress_bar.set_prefix("Copying from cache");
+
+                tokio::fs::copy(cached_file_path, file_path).await?;
             }
         
             progress_bar.set_style(ProgressStyle::with_template("{prefix:.green.bold} {msg}")?);

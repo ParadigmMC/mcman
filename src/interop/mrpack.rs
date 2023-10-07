@@ -8,7 +8,7 @@ use std::{
 };
 use serde::{Serialize, Deserialize};
 
-use crate::{App, model::{ServerType, Downloadable}, Resolvable};
+use crate::{app::{App, Resolvable}, model::{ServerType, Downloadable}};
 
 pub struct MRPackInterop<'a>(pub &'a mut App);
 

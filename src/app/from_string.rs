@@ -1,6 +1,8 @@
 use anyhow::Result;
 
-use crate::{App, model::Downloadable};
+use crate::model::Downloadable;
+
+use super::App;
 
 impl App {
     pub async fn dl_from_url(

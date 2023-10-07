@@ -6,7 +6,6 @@ use regex::Regex;
 use std::fs::{self, File};
 use std::io::Write;
 
-use crate::create_http_client;
 use crate::model::{Server, World};
 use crate::util::md::MarkdownTable;
 use anyhow::{Context, Result};
@@ -119,46 +118,6 @@ pub async fn update_files(http_client: &reqwest::Client, server: &Server) -> Res
     Ok(())
 }
 
-pub fn create_table_server(server: &Server) -> MarkdownTable {
-    let mut map = IndexMap::new();
-
-    map.insert("Version".to_owned(), server.mc_version.clone());
-    map.insert("Type".to_owned(), server.jar.get_md_link());
-
-    map.extend(server.jar.get_metadata());
-
-    MarkdownTable::from_map(&map)
-}
-
-pub async fn create_table_addons(
-    http_client: &reqwest::Client,
-    server: &Server,
-) -> Result<MarkdownTable> {
-    let mut table = MarkdownTable::new();
-
-    for plugin in &server.plugins {
-        table.add_from_map(&plugin.fetch_info_to_map(http_client).await?);
-    }
-
-    for addon in &server.mods {
-        table.add_from_map(&addon.fetch_info_to_map(http_client).await?);
-    }
-
-    Ok(table)
-}
-
-pub async fn create_table_world(
-    http_client: &reqwest::Client,
-    world: &World,
-) -> Result<MarkdownTable> {
-    let mut table = MarkdownTable::new();
-
-    for dp in &world.datapacks {
-        table.add_from_map(&dp.fetch_info_to_map(http_client).await?);
-    }
-
-    Ok(table)
-}
 
 pub fn create_table_server_console(server: &Server) -> MarkdownTable {
     let mut map = IndexMap::new();

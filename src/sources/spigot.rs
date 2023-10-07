@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::Result;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-use crate::{App, ResolvedFile, CacheStrategy};
+use crate::app::{App, ResolvedFile, CacheStrategy};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct SpigotResourceVersion {

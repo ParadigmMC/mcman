@@ -36,7 +36,7 @@ pub struct Server {
 
     pub name: String,
     pub mc_version: String, // TODO: version type for comparing
-    #[serde(with = "super::servertype")]
+    #[serde(with = "super::servertype::parse")]
     pub jar: ServerType,
     pub variables: HashMap<String, String>,
     pub launcher: ServerLauncher,

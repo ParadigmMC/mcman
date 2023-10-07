@@ -6,7 +6,7 @@ use reqwest::{header::{HeaderMap, HeaderValue}, StatusCode};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use tokio::time::sleep;
 
-use crate::{App, ResolvedFile, CacheStrategy};
+use crate::app::{App, ResolvedFile, CacheStrategy};
 
 pub trait GithubRequestExt {
     fn with_token(self, token: Option<String>) -> Self;
@@ -66,7 +66,7 @@ pub struct GithubRelease {
 pub struct GithubAsset {
     pub url: String,
     pub name: String,
-    pub size: i32,
+    pub size: u64,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

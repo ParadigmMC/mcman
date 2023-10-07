@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 
-use crate::{util, App, ResolvedFile};
+use crate::{util, app::App, app::ResolvedFile};
 
 pub static NEOFORGE_MAVEN: &str = "https://maven.neoforged.net/releases";
 pub static NEOFORGE_GROUP: &str = "net.neoforged";

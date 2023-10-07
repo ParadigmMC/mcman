@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 
-use crate::{util, App, ResolvedFile};
+use crate::app::{App, ResolvedFile};
 
 pub static FORGE_MAVEN: &str = "https://maven.minecraftforge.net";
 pub static FORGE_GROUP: &str = "net.minecraftforge";
@@ -28,7 +28,7 @@ impl<'a> ForgeAPI<'a> {
     }
 
     pub async fn fetch_latest(&self) -> Result<String> {
-        util::get_latest_semver(&self.fetch_versions().await?).ok_or(anyhow!("No forge loader versions for {}", self.0.mc_version()))
+        crate::util::get_latest_semver(&self.fetch_versions().await?).ok_or(anyhow!("No forge loader versions for {}", self.0.mc_version()))
     }
 
     pub async fn resolve_version(

@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
-use crate::{Resolvable, App, ResolvedFile};
+use crate::app::{Resolvable, App, ResolvedFile};
 
 use crate::model::Downloadable;
 use crate::sources::quilt;
@@ -11,6 +11,7 @@ use super::StartupMethod;
 
 pub mod interactive;
 pub mod meta;
+pub mod parse;
 
 #[derive(Debug, PartialEq)]
 pub enum SoftwareType {
@@ -18,13 +19,6 @@ pub enum SoftwareType {
     Modded,
     Proxy,
     Unknown,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(untagged)]
-pub enum Bridge {
-    ServerType(ServerType),
-    Downloadable(Downloadable),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -87,42 +81,6 @@ pub enum ServerType {
         #[serde(flatten)]
         inner: Downloadable,
     },
-}
-
-fn latest() -> String {
-    "latest".to_owned()
-}
-
-fn spigot() -> String {
-    "spigot".to_owned()
-}
-
-static BUNGEECORD_JENKINS: &str = "https://ci.md-5.net";
-static BUNGEECORD_JOB: &str = "BungeeCord";
-static BUNGEECORD_ARTIFACT: &str = "BungeeCord";
-static BUILDTOOLS_JENKINS: &str = "https://hub.spigotmc.org/jenkins";
-
-impl From<Bridge> for ServerType {
-    fn from(value: Bridge) -> Self {
-        match value {
-            Bridge::ServerType(ty) => ty,
-            Bridge::Downloadable(d) => Self::Downloadable { inner: d },
-        }
-    }
-}
-
-pub fn serialize<S>(st: &ServerType, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    st.serialize(serializer)
-}
-
-pub fn deserialize<'de, D>(deserializer: D) -> Result<ServerType, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    Ok(ServerType::from(Bridge::deserialize(deserializer)?))
 }
 
 #[derive(Debug)]
@@ -380,6 +338,19 @@ impl Resolvable for ServerType {
         }
     }
 }
+
+fn latest() -> String {
+    "latest".to_owned()
+}
+
+fn spigot() -> String {
+    "spigot".to_owned()
+}
+
+static BUNGEECORD_JENKINS: &str = "https://ci.md-5.net";
+static BUNGEECORD_JOB: &str = "BungeeCord";
+static BUNGEECORD_ARTIFACT: &str = "BungeeCord";
+static BUILDTOOLS_JENKINS: &str = "https://hub.spigotmc.org/jenkins";
 
 pub fn bungeecord() -> Downloadable {
     Downloadable::Jenkins {

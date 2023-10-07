@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 
-use crate::{App, CacheStrategy, ResolvedFile};
+use crate::app::{App, CacheStrategy, ResolvedFile};
 
 //pub static API_MAGIC_JOB: &str = "/api/json?tree=url,name,builds[*[url,number,result,artifacts[relativePath,fileName]]]";
 static API_MAGIC_JOB: &str = "/api/json?tree=builds[*[url,number,result]]";

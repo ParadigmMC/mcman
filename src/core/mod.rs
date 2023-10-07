@@ -8,7 +8,7 @@ use tokio::fs::{self, File};
 
 use crate::{
     model::{Server, StartupMethod, Network, Lockfile, Changes},
-    util::{self, logger::Logger}, Resolvable, App, ResolvedFile,
+    util::{self, logger::Logger}, app::{Resolvable, App, ResolvedFile},
 };
 
 pub mod addons;

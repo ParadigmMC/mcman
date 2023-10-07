@@ -1,7 +1,7 @@
 use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-use crate::{App, ResolvedFile, CacheStrategy};
+use crate::app::{App, ResolvedFile, CacheStrategy};
 
 use super::modrinth::{ModrinthFile, ModrinthProject, VersionType};
 

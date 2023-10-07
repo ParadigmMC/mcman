@@ -1,15 +1,15 @@
 use std::{
     fs::{read_to_string, File},
     io::Write,
-    path::PathBuf, time::SystemTime, collections::HashMap,
+    path::PathBuf, time::SystemTime
 };
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::ResolvedFile;
+use crate::app::ResolvedFile;
 
-use super::{Downloadable, ClientSideMod, World, Server};
+use super::Downloadable;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]
@@ -19,8 +19,6 @@ pub struct Lockfile {
 
     pub plugins: Vec<(Downloadable, ResolvedFile)>,
     pub mods: Vec<(Downloadable, ResolvedFile)>,
-    pub clientsidemods: Vec<(Downloadable, ResolvedFile)>,
-    pub worlds: HashMap<String, World>,
 
     pub files: Vec<BootstrappedFile>
 }
@@ -86,8 +84,6 @@ impl Default for Lockfile {
             path: PathBuf::from("./.mcman.lock"),
             plugins: vec![],
             mods: vec![],
-            worlds: HashMap::new(),
-            clientsidemods: vec![],
             files: vec![],
         }
     }

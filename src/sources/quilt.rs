@@ -4,7 +4,7 @@
 use anyhow::{anyhow, Result};
 use mcapi::quilt::{self, InstallerVariant};
 
-use crate::{App, ResolvedFile};
+use crate::app::{App, ResolvedFile};
 
 pub struct QuiltAPI<'a>(pub &'a App);
 

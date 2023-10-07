@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 
-use crate::{App, ResolvedFile, util, CacheStrategy};
+use crate::app::{App, ResolvedFile, CacheStrategy};
 
 pub struct MavenAPI<'a>(pub &'a App);
 
@@ -116,7 +116,7 @@ impl<'a> MavenAPI<'a> {
 
         let cached_file_path = format!(
             "{}/{}/{artifact_id}/{version}/{file}",
-            util::url_to_folder(url),
+            crate::util::url_to_folder(url),
             group_id.replace(".", "/"),
         );
 
