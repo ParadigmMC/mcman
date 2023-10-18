@@ -1,6 +1,5 @@
 use anyhow::Result;
 
-mod customs;
 mod datapack;
 mod mrpack;
 mod packwiz;
@@ -18,8 +17,6 @@ pub enum Commands {
     /// Import from packwiz
     #[command(visible_alias = "pw")]
     Packwiz(packwiz::Args),
-    /// Try to import all custom urls again
-    Customs,
 }
 
 pub async fn run(subcommands: Commands) -> Result<()> {
@@ -28,7 +25,6 @@ pub async fn run(subcommands: Commands) -> Result<()> {
         Commands::Datapack(args) => datapack::run(args).await?,
         Commands::Mrpack(args) => mrpack::run(args).await?,
         Commands::Packwiz(args) => packwiz::run(args).await?,
-        Commands::Customs => customs::run().await?,
     }
     Ok(())
 }

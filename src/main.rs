@@ -7,15 +7,9 @@
 #![allow(clippy::struct_excessive_bools)]
 #![allow(unknown_lints)]
 
-use std::collections::HashMap;
-
-use anyhow::{Context, Result};
-use async_trait::async_trait;
-use cache::Cache;
+use anyhow::Result;
+use app::BaseApp;
 use clap::Parser;
-use indicatif::MultiProgress;
-use model::{Server, Network};
-use serde::{Serialize, Deserialize};
 
 mod commands;
 mod core;
@@ -23,7 +17,6 @@ mod app;
 mod model;
 mod sources;
 mod util;
-mod cache;
 mod interop;
 //mod hot_reload;
 
@@ -94,6 +87,6 @@ async fn main() -> Result<()> {
         Commands::Info => commands::info::run(base_app.upgrade()),
         Commands::Version => commands::version::run(base_app).await,
         Commands::Export(commands) => commands::export::run(base_app.upgrade(), commands).await,
-        Commands::Eject => commands::eject::run(base_app.upgrade(), ),
+        Commands::Eject => commands::eject::run(base_app.upgrade()),
     }
 }

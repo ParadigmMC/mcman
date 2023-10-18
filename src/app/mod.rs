@@ -4,6 +4,7 @@ mod progress;
 mod from_string;
 mod caching;
 mod resolvable;
+mod actions;
 
 use anyhow::{Result, Context};
 use indicatif::MultiProgress;
@@ -83,56 +84,42 @@ impl App {
     }
 }
 
+macro_rules! api_methods {
+    ($name:ident, $t:ident) => {
+        pub fn $name(&'a self) -> sources::$name::$t<'a> {
+            sources::$name::$t(&self)
+        }
+    };
+}
+
 impl<'a> App {
-    pub fn github(&'a self) -> sources::github::GithubAPI<'a> {
-        sources::github::GithubAPI(&self)
+    api_methods!(vanilla, VanillaAPI);
+
+    api_methods!(github, GithubAPI);
+    api_methods!(maven, MavenAPI);
+    
+    api_methods!(modrinth, ModrinthAPI);
+    api_methods!(curserinth, CurserinthAPI);
+
+    api_methods!(neoforge, NeoforgeAPI);
+    api_methods!(forge, ForgeAPI);
+    api_methods!(fabric, FabricAPI);
+    api_methods!(quilt, QuiltAPI);
+    
+    api_methods!(papermc, PaperMCAPI);
+    api_methods!(hangar, HangarAPI);
+    api_methods!(purpur, PurpurAPI);
+    api_methods!(spigot, SpigotAPI);
+
+    pub fn markdown(&'a self) -> crate::interop::markdown::MarkdownAPI<'a> {
+        crate::interop::markdown::MarkdownAPI(&self)
     }
 
-    pub fn modrinth(&'a self) -> sources::modrinth::ModrinthAPI<'a> {
-        sources::modrinth::ModrinthAPI(&self)
+    pub fn packwiz(mut self) -> crate::interop::packwiz::PackwizInterop<'a> {
+        crate::interop::packwiz::PackwizInterop(&mut self)
     }
 
-    pub fn curserinth(&'a self) -> sources::curserinth::CurserinthAPI<'a> {
-        sources::curserinth::CurserinthAPI(&self)
-    }
-
-    pub fn hangar(&'a self) -> sources::hangar::HangarAPI<'a> {
-        sources::hangar::HangarAPI(&self)
-    }
-
-    pub fn fabric(&'a self) -> sources::fabric::FabricAPI<'a> {
-        sources::fabric::FabricAPI(&self)
-    }
-
-    pub fn maven(&'a self) -> sources::maven::MavenAPI<'a> {
-        sources::maven::MavenAPI(&self)
-    }
-
-    pub fn quilt(&'a self) -> sources::quilt::QuiltAPI<'a> {
-        sources::quilt::QuiltAPI(&self)
-    }
-
-    pub fn forge(&'a self) -> sources::forge::ForgeAPI<'a> {
-        sources::forge::ForgeAPI(&self)
-    }
-
-    pub fn neoforge(&'a self) -> sources::neoforge::NeoforgeAPI<'a> {
-        sources::neoforge::NeoforgeAPI(&self)
-    }
-
-    pub fn papermc(&'a self) -> sources::papermc::PaperMCAPI<'a> {
-        sources::papermc::PaperMCAPI(&self)
-    }
-
-    pub fn purpurmc(&'a self) -> sources::purpur::PurpurAPI<'a> {
-        sources::purpur::PurpurAPI(&self)
-    }
-
-    pub fn spigot(&'a self) -> sources::spigot::SpigotAPI<'a> {
-        sources::spigot::SpigotAPI(&self)
-    }
-
-    pub fn vanilla(&'a self) -> sources::vanilla::VanillaAPI<'a> {
-        sources::vanilla::VanillaAPI(&self)
+    pub fn mrpack(mut self) -> crate::interop::mrpack::MRPackInterop<'a> {
+        crate::interop::mrpack::MRPackInterop(&mut self)
     }
 }

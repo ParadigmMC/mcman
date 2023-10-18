@@ -5,7 +5,6 @@ pub mod env;
 pub mod hash;
 pub mod maven_import;
 pub mod md;
-pub mod packwiz;
 pub mod logger;
 
 pub struct SelectItem<T>(pub T, pub String);

@@ -2,7 +2,7 @@ use anyhow::Result;
 use console::style;
 use dialoguer::{theme::ColorfulTheme, Input};
 
-use crate::App;
+use crate::app::App;
 
 pub async fn init_network(app: &mut App) -> Result<()> {
     let nw = app.network.as_mut().unwrap();
@@ -19,7 +19,7 @@ pub async fn init_network(app: &mut App) -> Result<()> {
     println!(
         " > {} {} {}",
         style("Network").green(),
-        style(nw.name).bold(),
+        style(&nw.name).bold(),
         style("has been initialized!").green()
     );
 

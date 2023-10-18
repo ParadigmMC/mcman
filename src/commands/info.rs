@@ -4,12 +4,10 @@ use anyhow::{Context, Result};
 use console::style;
 use indexmap::IndexMap;
 
-use super::markdown::create_table_server_console;
-
 pub fn run(app: App) -> Result<()> {
     let server = Server::load().context("Failed to load server.toml")?;
 
-    let table = create_table_server_console(&server);
+    let table = app.markdown().table_server();
 
     let mut server_info = IndexMap::new();
 

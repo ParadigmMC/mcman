@@ -1,5 +1,7 @@
 use anyhow::{anyhow, Context, Result};
 
+use crate::app::App;
+
 #[derive(clap::Args)]
 pub struct Args {
     #[command(flatten)]
@@ -9,8 +11,8 @@ pub struct Args {
     test: bool,
 }
 
-pub async fn run(args: Args) -> Result<()> {
-    let mut ctx = super::build::run(args.build_args).await?;
+pub async fn run(app: App, args: Args) -> Result<()> {
+    let mut ctx = super::build::run(app, args.build_args).await?;
 
     let test_mode = args.test;
 

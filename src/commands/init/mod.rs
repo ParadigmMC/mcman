@@ -1,22 +1,20 @@
 use console::style;
 use dialoguer::Confirm;
-use dialoguer::{theme::ColorfulTheme, Input, Select};
+use dialoguer::{theme::ColorfulTheme, Input};
+use indicatif::{MultiProgress, ProgressBar};
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use tempfile::Builder;
-use zip::ZipArchive;
 
 use crate::commands::init::init::init_normal;
 use crate::commands::init::network::init_network;
 use crate::commands::markdown;
-use crate::{BaseApp, App};
-use crate::model::{Network, ServerType};
+use crate::app::{BaseApp, App};
+use crate::model::Network;
 use crate::util::env::{get_docker_version, write_dockerfile, write_dockerignore, write_gitignore};
-use crate::util::mrpack::{mrpack_import_configs, mrpack_read_index, mrpack_source_to_file};
-use crate::util::packwiz::{packwiz_fetch_pack_from_src, packwiz_import_from_source};
-use crate::model::{Server, ServerLauncher};
+use crate::model::Server;
 use anyhow::{bail, Context, Result};
 
 pub mod init;
@@ -88,6 +86,7 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                 ..Default::default()
             }),
             server: Server::default(),
+            multi_progress: MultiProgress::new(),
         };
 
         init_network(&mut app).await?;
@@ -102,15 +101,26 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
             http_client: base_app.http_client,
             network: None,
             server: Server {
-                name,
+                name: name.clone(),
                 ..Default::default()
             },
+            multi_progress: MultiProgress::new(),
         };
 
         if let Some(src) = args.mrpack {
-            init_mrpack(&src, &name, &mut app).await?;
+            let tmp_dir = Builder::new().prefix("mcman-mrpack-import").tempdir()?;
+
+            let f = if Path::new(&src).exists() {
+                std::fs::File::open(&src)?
+            } else {
+                let dl = app.dl_from_string(&src).await?;
+                let resolved = app.download(&dl, tmp_dir.path().to_path_buf(), ProgressBar::new_spinner()).await?;
+                let path = tmp_dir.path().join(&resolved.filename);
+                std::fs::File::open(path)?
+            };
+            app.mrpack().import_all(f, Some(name)).await?;
         } else if let Some(src) = args.packwiz {
-            init_packwiz(&src, &name, &mut app).await?;
+            app.packwiz().import_all(&src).await?;
         } else {
             init_normal(&mut app).await?;
         }
@@ -119,161 +129,12 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
     Ok(())
 }
 
-
-pub async fn init_mrpack(src: &str, name: &str, app: &BaseApp) -> Result<()> {
-    println!(" > {}", style("Importing from mrpack...").cyan());
-
-    let tmp_dir = Builder::new().prefix("mcman-mrpack-import").tempdir()?;
-
-    let mut server = Server {
-        name: name.to_owned(),
-        ..Default::default()
-    };
-
-    let f = mrpack_source_to_file(src, app, &tmp_dir, &server).await?;
-
-    let mut archive = ZipArchive::new(f).context("reading mrpack zip archive")?;
-
-    let pack = mrpack_read_index(&mut archive)?;
-
-    server.mc_version = if let Some(v) = pack.dependencies.get("minecraft") {
-        v.clone()
-    } else {
-        let latest_ver = fetch_latest_mcver(app)
-            .await
-            .context("Fetching latest version")?;
-
-        Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Server version?")
-            .default(latest_ver)
-            .interact_text()?
-    };
-
-    server.jar = {
-        if let Some(ver) = pack.dependencies.get("quilt-loader") {
-            println!(
-                " > {} {}",
-                style("Using quilt loader").cyan(),
-                style(ver).bold()
-            );
-            ServerType::Quilt {
-                loader: ver.clone(),
-                installer: "latest".to_owned(),
-            }
-        } else if let Some(ver) = pack.dependencies.get("fabric-loader") {
-            println!(
-                " > {} {}",
-                style("Using fabric loader").cyan(),
-                style(ver).bold()
-            );
-            ServerType::Fabric {
-                loader: ver.clone(),
-                installer: "latest".to_owned(),
-            }
-        } else {
-            ServerType::select_modded_jar_interactive()?
-        }
-    };
-
-    println!(" > {}", style("Importing mods...").green().bold());
-
-    pack.import_all(&mut server, app).await?;
-
-    println!(
-        " > {}",
-        style("Importing configuration files...").green().bold()
-    );
-
-    let config_count = mrpack_import_configs(&server, &mut archive)?;
-
-    println!(
-        " > {} {} {} {} {}",
-        style("Imported").green().bold(),
-        style(pack.files.len()).cyan(),
-        style("mods and").green(),
-        style(config_count).cyan(),
-        style("config files from .mrpack").green(),
-    );
-
-    init_final(app, &mut server, false).await?;
-
-    Ok(())
-}
-
-pub async fn init_packwiz(src: &str, name: &str, app: &BaseApp) -> Result<()> {
-    println!(" > {}", style("Importing from packwiz...").cyan());
-
-    let mut server = Server {
-        name: name.to_owned(),
-        ..Default::default()
-    };
-
-    let pack = packwiz_fetch_pack_from_src(app, src).await?;
-
-    server.mc_version = if let Some(v) = pack.versions.get("minecraft") {
-        v.clone()
-    } else {
-        // TODO: [acceptable-versions] or something idk
-
-        let latest_ver = fetch_latest_mcver(app)
-            .await
-            .context("Fetching latest version")?;
-
-        Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Server version?")
-            .default(latest_ver)
-            .interact_text()?
-    };
-
-    server.jar = {
-        if let Some(ver) = pack.versions.get("quilt") {
-            println!(
-                " > {} {}",
-                style("Using quilt loader").cyan(),
-                style(ver).bold()
-            );
-            ServerType::Quilt {
-                loader: ver.clone(),
-                installer: "latest".to_owned(),
-            }
-        } else if let Some(ver) = pack.versions.get("fabric") {
-            println!(
-                " > {} {}",
-                style("Using fabric loader").cyan(),
-                style(ver).bold()
-            );
-            ServerType::Fabric {
-                loader: ver.clone(),
-                installer: "latest".to_owned(),
-            }
-        } else {
-            ServerType::select_modded_jar_interactive()?
-        }
-    };
-
-    let (_pack, mod_count, config_count) =
-        packwiz_import_from_source(app, src, &mut server).await?;
-
-    println!(
-        " > {} {} {} {} {}",
-        style("Imported").green().bold(),
-        style(mod_count).cyan(),
-        style("mods and").green(),
-        style(config_count).cyan(),
-        style("config files from packwiz").green(),
-    );
-
-    init_final(app, &mut server, false).await?;
-
-    Ok(())
-}
-
 pub async fn init_final(
-    app: &BaseApp,
+    app: &App,
     server: &mut Server,
     is_proxy: bool,
 ) -> Result<()> {
-    server.save()?;
+    app.server.save()?;
 
     initialize_environment(is_proxy).context("Initializing environment")?;
 
@@ -292,9 +153,7 @@ pub async fn init_final(
         server.markdown.files = vec!["README.md".to_owned()];
         server.save()?;
 
-        super::markdown::update_files(app, server)
-            .await
-            .context("updating markdown files")?;
+        app.markdown().update_files().await?;
     }
 
     println!(
@@ -353,7 +212,7 @@ pub fn initialize_environment(is_proxy: bool) -> Result<()> {
 
     if !is_proxy {
         let mut f = File::create("./config/server.properties")?;
-        f.write_all(include_bytes!("../../res/server.properties"))?;
+        f.write_all(include_bytes!("../../../res/server.properties"))?;
     }
 
     Ok(())

@@ -324,7 +324,7 @@ impl Resolvable for ServerType {
         match self {
             ServerType::Vanilla {  } => app.vanilla().resolve_source(version).await,
             ServerType::PaperMC { project, build } => app.papermc().resolve_source(project, version, build).await,
-            ServerType::Purpur { build } => app.purpurmc().resolve_source(version, build).await,
+            ServerType::Purpur { build } => app.purpur().resolve_source(version, build).await,
             ServerType::Fabric { loader, installer } => app.fabric().resolve_source(loader, installer).await,
             ServerType::Quilt { loader, installer } => app.quilt().resolve_installer(installer).await,
             ServerType::NeoForge { loader } => app.neoforge().resolve_source(loader).await,

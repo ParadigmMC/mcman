@@ -102,16 +102,6 @@ impl Server {
         })
     }
 
-    pub async fn refresh_markdown(&self, http_client: &reqwest::Client) -> Result<()> {
-        if self.markdown.auto_update {
-            commands::markdown::update_files(http_client, self)
-                .await
-                .context("updating markdown files")
-        } else {
-            Ok(())
-        }
-    }
-
     pub fn filter_modrinth_versions(&self, list: &[modrinth::ModrinthVersion]) -> Vec<modrinth::ModrinthVersion> {
         let is_proxy = self.jar.get_software_type() == SoftwareType::Proxy;
         let is_vanilla = matches!(self.jar, ServerType::Vanilla {});

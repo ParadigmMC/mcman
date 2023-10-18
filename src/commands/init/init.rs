@@ -1,7 +1,7 @@
-use anyhow::{Result, Context};
+use anyhow::Result;
 use dialoguer::{Input, theme::ColorfulTheme, Select};
 
-use crate::{App, model::{ServerLauncher, ServerType}};
+use crate::{app::App, model::{ServerLauncher, ServerType}};
 
 pub async fn init_normal(app: &mut App) -> Result<()> {
     let serv_type = Select::with_theme(&ColorfulTheme::default())

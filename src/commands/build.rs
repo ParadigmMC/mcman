@@ -4,8 +4,7 @@ use anyhow::{Context, Result};
 
 use crate::{
     core::BuildContext,
-    create_http_client,
-    model::{Lockfile, Network, Server}, App,
+    model::Lockfile, app::App,
 };
 
 #[derive(clap::Args)]
