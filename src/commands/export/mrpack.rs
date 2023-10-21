@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 
-use crate::{create_http_client, model::Server, util::mrpack::export_mrpack};
+use crate::app::App;
 
 #[derive(clap::Args)]
 pub struct Args {
@@ -13,11 +13,8 @@ pub struct Args {
     version: Option<String>,
 }
 
-pub async fn run(args: Args) -> Result<()> {
-    let server = Server::load().context("Failed to load server.toml")?;
-    let http_client = create_http_client()?;
-
-    let s = server
+pub async fn run(mut app: App, args: Args) -> Result<()> {
+    let s = app.server
         .name
         .clone()
         .replace(|c: char| !c.is_alphanumeric(), "");
@@ -33,19 +30,10 @@ pub async fn run(args: Args) -> Result<()> {
         output_filename
     };
 
-    let version_id = args.version;
-
     let output_file =
         std::fs::File::create(output_filename).context("Creating mrpack output file")?;
 
-    export_mrpack(
-        &http_client,
-        &server,
-        None,
-        &version_id.unwrap_or("".to_string()),
-        output_file,
-    )
-    .await?;
+    app.mrpack().export_all(output_file).await?;
 
     Ok(())
 }

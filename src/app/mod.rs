@@ -5,6 +5,7 @@ mod from_string;
 mod caching;
 mod resolvable;
 mod actions;
+mod feedback;
 
 use anyhow::{Result, Context};
 use indicatif::MultiProgress;
@@ -21,6 +22,30 @@ pub const APP_USER_AGENT: &str = concat!(
     " - ",
     env!("CARGO_PKG_REPOSITORY"),
 );
+
+#[derive(Debug, Clone, Copy)]
+pub enum AddonType {
+    Plugin,
+    Mod,
+}
+
+impl AddonType {
+    pub fn folder(&self) -> String {
+        match self {
+            Self::Mod => String::from("mods"),
+            Self::Plugin => String::from("plugins"),
+        }
+    }
+}
+
+impl std::fmt::Display for AddonType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Plugin => "plugin",
+            Self::Mod => "mod",
+        })
+    }
+}
 
 pub struct BaseApp {
     pub http_client: reqwest::Client,
@@ -72,6 +97,31 @@ impl App {
         self.server.mc_version.clone()
     }
 
+    pub fn var<I: AsRef<str>>(&self, var: I) -> Option<String> {
+        let k = var.as_ref();
+        match k {
+            "SERVER_NAME" => Some(self.server.name.clone()),
+            "SERVER_VERSION" | "mcver" | "mcversion" => Some(self.server.mc_version.clone()),
+            "PLUGIN_COUNT" => Some(self.server.plugins.len().to_string()),
+            "MOD_COUNT" => Some(self.server.mods.len().to_string()),
+            "WORLD_COUNT" => Some(self.server.worlds.len().to_string()),
+            "CLIENTSIDE_MOD_COUNT" => Some(self.server.clientsidemods.len().to_string()),
+            k => if let Some(v) = std::env::var(k).ok() {
+                Some(v)
+            } else {
+                if k.starts_with("NW_") {
+                    if let Some(nw) = &self.network {
+                        nw.variables.get(k.strip_prefix("NW_").unwrap()).cloned()
+                    } else {
+                        None
+                    }
+                } else {
+                    self.server.variables.get(k).cloned()
+                }
+            }
+        }
+    }
+
     pub fn get_cache(&self, ns: &str) -> Option<Cache> {
         // TODO check if cache should be enabled to return None
         Cache::get_cache(ns)
@@ -115,11 +165,11 @@ impl<'a> App {
         crate::interop::markdown::MarkdownAPI(&self)
     }
 
-    pub fn packwiz(mut self) -> crate::interop::packwiz::PackwizInterop<'a> {
-        crate::interop::packwiz::PackwizInterop(&mut self)
+    pub fn packwiz(&'a mut self) -> crate::interop::packwiz::PackwizInterop<'a> {
+        crate::interop::packwiz::PackwizInterop(self)
     }
 
-    pub fn mrpack(mut self) -> crate::interop::mrpack::MRPackInterop<'a> {
-        crate::interop::mrpack::MRPackInterop(&mut self)
+    pub fn mrpack(&'a mut self) -> crate::interop::mrpack::MRPackInterop<'a> {
+        crate::interop::mrpack::MRPackInterop(self)
     }
 }

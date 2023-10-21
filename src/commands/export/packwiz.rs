@@ -2,11 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 
-use crate::{
-    create_http_client,
-    model::Server,
-    util::packwiz::{export_packwiz, PackwizExportOptions},
-};
+use crate::app::App;
 
 #[derive(clap::Args)]
 pub struct Args {
@@ -18,22 +14,13 @@ pub struct Args {
     cfcdn: bool,
 }
 
-pub async fn run(args: Args) -> Result<()> {
-    let server = Server::load().context("Failed to load server.toml")?;
-    let http_client = create_http_client()?;
-
-    let default_output = server.path.join("pack");
+pub async fn run(app: App, args: Args) -> Result<()> {
+    let default_output = app.server.path.join("pack");
     let output_dir = args.output.unwrap_or(default_output);
 
     let cf_usecdn = args.cfcdn;
 
-    export_packwiz(
-        &output_dir,
-        &http_client,
-        &server,
-        &PackwizExportOptions { cf_usecdn },
-    )
-    .await?;
+    todo!();
 
     Ok(())
 }

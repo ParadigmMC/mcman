@@ -1,7 +1,7 @@
-use std::{env, path::{Path, PathBuf}, collections::HashMap, time::SystemTime};
+use std::{path::{Path, PathBuf}, collections::HashMap, time::{SystemTime, Duration}};
 
 use anyhow::{Result, Context, anyhow};
-use console::style;
+use indicatif::{ProgressBar, ProgressStyle};
 use pathdiff::diff_paths;
 use tokio::{fs, io::AsyncWriteExt};
 use walkdir::WalkDir;
@@ -12,11 +12,14 @@ use super::BuildContext;
 
 impl<'a> BuildContext<'a> {
     pub async fn bootstrap_files(&mut self) -> Result<()> {
-        if !Path::new(self.output_dir.as_path()).exists() {
-            fs::create_dir_all(&self.output_dir)
-                .await
-                .context("Creating output directory (server/)")?;
-        }
+        let pb = self.app.multi_progress.add(ProgressBar::new_spinner()
+            .with_style(ProgressStyle::with_template("{spinner:.blue} {prefix} {msg}")?)
+            .with_prefix("Bootstrapping"));
+        pb.enable_steady_tick(Duration::from_millis(250));
+
+        fs::create_dir_all(&self.output_dir)
+            .await
+            .context("Creating output directory (server/)")?;
 
         let lockfile_entries: HashMap<PathBuf, SystemTime> = HashMap::from_iter(self.lockfile.files.iter()
             .map(|e| (e.path.clone(), e.date.clone())));
@@ -36,6 +39,8 @@ impl<'a> BuildContext<'a> {
             let dest = self.map_config_path(source);
             let diffed_paths = diff_paths(&dest, self.app.server.path.join("config"))
                 .ok_or(anyhow!("Cannot diff paths"))?;
+
+            pb.set_message(diffed_paths.to_string_lossy().to_string());
     
             self.bootstrap_file(&diffed_paths, lockfile_entries.get(&diffed_paths)).await.context(format!(
                 "Bootstrapping file: {}",
@@ -44,17 +49,15 @@ impl<'a> BuildContext<'a> {
         }
 
         if self.app.server.launcher.eula_args && !self.app.server.jar.supports_eula_args() {
-            println!(
-                "          {}",
-                style("=> eula.txt [eula_args unsupported]").dim()
-            );
+            self.app.log("=> eula.txt [eula_args unsupported]")?;
             fs::File::create(self.output_dir.join("eula.txt"))
                 .await?
                 .write_all(b"eula=true\n")
                 .await?;
         }
 
-        println!("          {}", style("Bootstrapping complete").dim());
+        pb.disable_steady_tick();
+        pb.finish_with_message("complete");
 
         Ok(())
     }
@@ -111,15 +114,9 @@ impl<'a> BuildContext<'a> {
                     .await.context(format!("Copying '{}' to '{}' ; [{pretty_path}]", source.display(), dest.display()))?;
             }
     
-            println!(
-                "          {}",
-                style(format!("-> {pretty_path}")).dim()
-            );
+            self.app.log(format!("-> {pretty_path}"))?;
         } else {
-            println!(
-                "          {}",
-                style(format!("unchanged: {pretty_path}")).dim()
-            );
+            self.app.log(format!("unchanged: {pretty_path}"))?;
         }
 
         self.new_lockfile.files.push(BootstrappedFile {
@@ -140,17 +137,7 @@ impl<'a> BuildContext<'a> {
                 (k, None)
             };
 
-            match k {
-                "SERVER_NAME" => Some(self.app.server.name.clone()),
-                "SERVER_VERSION" | "mcver" | "mcversion" => Some(self.app.server.mc_version.clone()),
-                "PLUGIN_COUNT" => Some(self.app.server.plugins.len().to_string()),
-                "MOD_COUNT" => Some(self.app.server.mods.len().to_string()),
-                "WORLD_COUNT" => Some(self.app.server.worlds.len().to_string()),
-                "CLIENTSIDE_MOD_COUNT" => Some(self.app.server.clientsidemods.len().to_string()),
-                k => self.app.server.variables.get(k)
-                    .cloned()
-                    .or(env::var(k).ok())
-            }.or(def)
+            self.app.var(k).or(def)
         })
     }
 }

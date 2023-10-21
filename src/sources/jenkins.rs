@@ -135,8 +135,8 @@ pub async fn get_jenkins_filename(
     let md5hash = if let Some(serde_json::Value::Array(values)) = matched_build.get("fingerprint") {
         values
             .iter()
-            .find(|v| v["fileName"].as_str().unwrap() == artifact["fileName"].as_str().unwrap())
-            .map(|v| v["hash"].as_str().unwrap().to_owned())
+            .find(|v| v["fileName"].as_str() == Some(artifact["fileName"].as_str().unwrap()))
+            .map(|v| v["hash"].as_str().unwrap_or_default().to_owned())
     } else {
         None
     };

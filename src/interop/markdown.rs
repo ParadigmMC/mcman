@@ -29,7 +29,7 @@ impl<'a> MarkdownAPI<'a> {
             let path = self.0.server.path.join(file);
 
             if !path.exists() {
-                self.0.multi_progress.println(format!("WARN: {file} does not exist! skipping"));
+                self.0.warn(format!("{file} does not exist! Skipping"))?;
                 continue;
             }
 

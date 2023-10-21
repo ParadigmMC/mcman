@@ -2,7 +2,7 @@ use std::{fs, path::PathBuf, time::Duration};
 
 use anyhow::{anyhow, bail, Context, Result};
 use console::style;
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use dialoguer::theme::ColorfulTheme;
 use glob::glob;
 use indicatif::ProgressBar;
 use pathdiff::diff_paths;
@@ -47,19 +47,11 @@ pub fn run(app: App, args: Args) -> Result<()> {
         fs::create_dir_all(destination.parent().unwrap()).context("Failed to create dirs")?;
 
         if destination.exists() {
-            if app.multi_progress.suspend(|| Confirm::with_theme(&ColorfulTheme::default())
-                .with_prompt(format!(
-                    "File '{}' already exists, overwrite?",
-                    destination.display()
-                ))
-                .default(false)
-                .interact())? {
-                app.multi_progress.println(format!(
-                    " {} {} {}",
-                    ColorfulTheme::default().error_prefix,
-                    style("Skipped").yellow().bold(),
-                    destination.display()
-                ));
+            if app.confirm(&format!(
+                "File '{}' already exists, overwrite?",
+                destination.display()
+            ))? {
+                app.info(format!("Skipped {}", destination.display()))?;
                 skipped += 1;
             } else {
                 continue;
@@ -82,7 +74,7 @@ pub fn run(app: App, args: Args) -> Result<()> {
                 .to_string_lossy()
             )
             .dim()
-        ));
+        ))?;
 
         count += 1;
     }

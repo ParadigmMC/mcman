@@ -1,5 +1,7 @@
 use anyhow::Result;
 
+use crate::app::App;
+
 mod unpack;
 
 #[derive(clap::Subcommand)]
@@ -8,8 +10,8 @@ pub enum Commands {
     Unpack(unpack::Args),
 }
 
-pub async fn run(commands: Commands) -> Result<()> {
+pub async fn run(app: App, commands: Commands) -> Result<()> {
     match commands {
-        Commands::Unpack(args) => unpack::run(args).await,
+        Commands::Unpack(args) => unpack::run(app, args).await,
     }
 }

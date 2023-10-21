@@ -8,7 +8,7 @@ use tokio::fs::{self, File};
 
 use crate::{
     model::{Server, StartupMethod, Network, Lockfile, Changes},
-    util::{self, logger::Logger}, app::{Resolvable, App, ResolvedFile},
+    util::{self, logger::Logger}, app::{Resolvable, App, ResolvedFile, AddonType},
 };
 
 pub mod addons;
@@ -66,11 +66,11 @@ impl<'a> BuildContext<'a> {
         let server_jar = self.download_server_jar().await?;
 
         if !self.app.server.plugins.is_empty() {
-            self.download_addons("plugins").await?;
+            self.download_addons(AddonType::Plugin).await?;
         }
 
         if !self.app.server.mods.is_empty() {
-            self.download_addons("mods").await?;
+            self.download_addons(AddonType::Mod).await?;
         }
 
         // TODO worlds/datapacks
@@ -82,9 +82,7 @@ impl<'a> BuildContext<'a> {
 
             self.create_scripts(startup).await?;
 
-            progress_bar.println(format!(
-                "   start.bat and start.sh created"
-            ));
+            self.app.log("start.bat and start.sh created")?;
         }
 
         self.write_lockfile()?;
@@ -99,8 +97,18 @@ impl<'a> BuildContext<'a> {
         Ok(())
     }
 
+    /// Load to self.lockfile and create a default one at self.new_lockfile
     pub fn reload(&mut self) -> Result<()> {
-        self.lockfile = Lockfile::get_lockfile(&self.output_dir)?;
+        self.lockfile = match Lockfile::get_lockfile(&self.output_dir) {
+            Ok(f) => f,
+            Err(_) => {
+                self.app.warn("Lockfile error, using default")?;
+                Lockfile {
+                    path: self.output_dir.join(".mcman.lock"),
+                    ..Default::default()
+                }
+            },
+        };
         self.new_lockfile = Lockfile {
             path: self.output_dir.join(".mcman.lock"),
             ..Default::default()
@@ -108,13 +116,11 @@ impl<'a> BuildContext<'a> {
         Ok(())
     }
 
+    /// Save new_lockfile
     pub fn write_lockfile(&mut self) -> Result<()> {
         self.new_lockfile.save()?;
 
-        println!(
-            "          {}",
-            style("updated lockfile").dim()
-        );
+        self.app.log("updated lockfile")?;
 
         Ok(())
     }

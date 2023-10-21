@@ -1,5 +1,7 @@
 use anyhow::Result;
 
+use crate::app::App;
+
 mod datapack;
 mod mrpack;
 mod packwiz;
@@ -19,12 +21,12 @@ pub enum Commands {
     Packwiz(packwiz::Args),
 }
 
-pub async fn run(subcommands: Commands) -> Result<()> {
+pub async fn run(mut app: App, subcommands: Commands) -> Result<()> {
     match subcommands {
-        Commands::Url(args) => url::run(args).await?,
-        Commands::Datapack(args) => datapack::run(args).await?,
-        Commands::Mrpack(args) => mrpack::run(args).await?,
-        Commands::Packwiz(args) => packwiz::run(args).await?,
+        Commands::Url(args) => url::run(app, args).await?,
+        Commands::Datapack(args) => datapack::run(app, args).await?,
+        Commands::Mrpack(args) => mrpack::run(app, args).await?,
+        Commands::Packwiz(args) => packwiz::run(app, args).await?,
     }
     Ok(())
 }

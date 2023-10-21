@@ -6,6 +6,8 @@
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::struct_excessive_bools)]
 #![allow(unknown_lints)]
+// its used mutably, silly rustc
+#![allow(unused_mut)]
 
 use anyhow::Result;
 use app::BaseApp;
@@ -72,21 +74,21 @@ enum Commands {
 async fn main() -> Result<()> {
     let args = CLI::parse();
 
-    let base_app = BaseApp::new()?;
+    let mut base_app = BaseApp::new()?;
 
     match args.command {
         Commands::Init(args) => commands::init::run(base_app, args).await,
-        Commands::Build(args) => commands::build::run(base_app.upgrade(), args).await.map(|_| ()),
-        Commands::Run(args) => commands::run::run(base_app.upgrade(), args).await,
-        Commands::Add(commands) => commands::add::run(base_app.upgrade(), commands).await,
-        Commands::Import(subcommands) => commands::import::run(base_app.upgrade(), subcommands).await,
-        Commands::Markdown => commands::markdown::run(base_app.upgrade(), ).await,
-        Commands::Pull(args) => commands::pull::run(base_app.upgrade(), args),
-        Commands::Env(commands) => commands::env::run(base_app.upgrade(), commands),
-        Commands::World(commands) => commands::world::run(base_app.upgrade(), commands).await,
-        Commands::Info => commands::info::run(base_app.upgrade()),
+        Commands::Build(args) => commands::build::run(base_app.upgrade()?, args).await.map(|_| ()),
+        Commands::Run(args) => commands::run::run(base_app.upgrade()?, args).await,
+        Commands::Add(commands) => commands::add::run(base_app.upgrade()?, commands).await,
+        Commands::Import(subcommands) => commands::import::run(base_app.upgrade()?, subcommands).await,
+        Commands::Markdown => commands::markdown::run(base_app.upgrade()?, ).await,
+        Commands::Pull(args) => commands::pull::run(base_app.upgrade()?, args),
+        Commands::Env(commands) => commands::env::run(base_app.upgrade()?, commands),
+        Commands::World(commands) => commands::world::run(base_app.upgrade()?, commands).await,
+        Commands::Info => commands::info::run(base_app.upgrade()?),
         Commands::Version => commands::version::run(base_app).await,
-        Commands::Export(commands) => commands::export::run(base_app.upgrade(), commands).await,
-        Commands::Eject => commands::eject::run(base_app.upgrade()),
+        Commands::Export(commands) => commands::export::run(base_app.upgrade()?, commands).await,
+        Commands::Eject => commands::eject::run(base_app.upgrade()?),
     }
 }

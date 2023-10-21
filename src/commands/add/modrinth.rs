@@ -3,10 +3,9 @@ use console::style;
 use dialoguer::{theme::ColorfulTheme, Input, Select};
 
 use crate::{
-    create_http_client,
     model::{Downloadable, Server, SoftwareType},
     sources::modrinth,
-    util::SelectItem,
+    util::SelectItem, app::App,
 };
 
 #[derive(clap::Args)]
@@ -14,18 +13,16 @@ pub struct Args {
     search: Option<String>,
 }
 
-pub async fn run(args: Args) -> Result<()> {
-    let mut server = Server::load().context("Failed to load server.toml")?;
-    let http_client = create_http_client()?;
-
+pub async fn run(mut app: App, args: Args) -> Result<()> {
     let query = if let Some(s) = args.search {
         s.to_owned()
     } else {
-        Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Search on modrinth:")
-            .allow_empty(true)
-            .interact_text()?
+        app.prompt_string("Search on Modrinth")?
     };
+
+    todo!();
+
+    /* 
 
     let facets = server.jar.get_modrinth_facets(&server.mc_version)?;
 
@@ -163,7 +160,7 @@ pub async fn run(args: Args) -> Result<()> {
             );
         }
         ty => bail!("Unsupported modrinth project type: '{ty}'"),
-    }
+    } */
 
     Ok(())
 }

@@ -1,51 +1,26 @@
-use anyhow::{Context, Result};
-use dialoguer::{theme::ColorfulTheme, Input, Select};
+use anyhow::Result;
 
-use crate::{
-    create_http_client,
-    model::{Downloadable, Server, SoftwareType},
-};
+use crate::app::App;
 
 #[derive(clap::Args)]
 pub struct Args {
     url: Option<String>,
 }
 
-pub async fn run(args: Args) -> Result<()> {
-    let mut server = Server::load().context("Failed to load server.toml")?;
-    let http_client = create_http_client()?;
-
+pub async fn run(mut app: App, args: Args) -> Result<()> {
     let urlstr = match args.url {
         Some(url) => url.clone(),
-        None => Input::<String>::new().with_prompt("URL:").interact_text()?,
+        None => app.prompt_string("URL")?,
     };
 
-    let addon = Downloadable::from_url_interactive(&http_client, &server, &urlstr, false).await?;
+    let addon = app.dl_from_string(&urlstr).await?;
+    
+    app.add_addon_inferred(&addon)?;
 
-    let is_plugin = match server.jar.get_software_type() {
-        SoftwareType::Modded => false,
-        SoftwareType::Normal | SoftwareType::Proxy => true,
-        SoftwareType::Unknown => {
-            Select::with_theme(&ColorfulTheme::default())
-                .with_prompt("Import as...")
-                .default(0)
-                .items(&["Plugin", "Mod"])
-                .interact()?
-                == 0
-        }
-    };
+    app.save_changes()?;
+    app.refresh_markdown().await?;
 
-    if is_plugin {
-        server.plugins.push(addon);
-    } else {
-        server.mods.push(addon);
-    }
-
-    server.save()?;
-
-    server.refresh_markdown(&http_client).await?;
-
-    println!(" > Imported!");
+    app.success(format!("Added {}", addon.to_short_string()))?;
 
     Ok(())
 }

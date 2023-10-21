@@ -1,10 +1,10 @@
 use std::time::Duration;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Result};
 use dialoguer::{theme::ColorfulTheme, Select};
 use indicatif::{ProgressBar, ProgressStyle};
 
-use crate::{model::Server, util::SelectItem};
+use crate::{util::SelectItem, app::App};
 
 #[derive(clap::Args)]
 pub struct Args {
@@ -12,17 +12,16 @@ pub struct Args {
     world: Option<String>,
 }
 
-pub async fn run(args: Args) -> Result<()> {
-    let server = Server::load().context("Failed to load server.toml")?;
-
+pub async fn run(app: App, args: Args) -> Result<()> {
     let zipfile = if let Some(s) = args.world {
-        server.path.join("worlds").join(if s.ends_with(".zip") {
+        app.server.path.join("worlds").join(if s.ends_with(".zip") {
             s.clone()
         } else {
             format!("{s}.zip")
         })
     } else {
-        let worlds = server
+        let worlds = app
+            .server
             .path
             .join("worlds")
             .read_dir()?
@@ -65,7 +64,7 @@ pub async fn run(args: Args) -> Result<()> {
 
     spinner.enable_steady_tick(Duration::from_millis(200));
 
-    crate::core::worlds::unzip(&zipfile, &server.path.join("server"))?;
+    crate::core::worlds::unzip(&zipfile, &app.server.path.join("server"))?;
 
     spinner.finish_with_message(format!("Unzipped world '{world_name}' successfully"));
 

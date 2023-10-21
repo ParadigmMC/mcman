@@ -25,7 +25,7 @@ impl<'a> MRPackInterop<'a> {
         progress_bar.set_prefix("Reading zip file");
         progress_bar.enable_steady_tick(Duration::from_millis(250));
 
-        let mrpack = MRPackReader::from_reader(reader)?;
+        let mut mrpack = MRPackReader::from_reader(reader)?;
 
         progress_bar.set_prefix("Reading index of");
 
@@ -117,10 +117,9 @@ impl<'a> MRPackInterop<'a> {
 
                 map
             },
-            name: self.0.server.variables.get("MODPACK_NAME").unwrap_or(&self.0.server.name).clone(),
-            // TODO vars api
-            summary: self.0.server.variables.get("MODPACK_SUMMARY").cloned(),
-            version_id: self.0.server.variables.get("MODPACK_VERSION").cloned().unwrap_or_default(),
+            name: self.0.var("MODPACK_NAME").unwrap_or(self.0.server.name.clone()),
+            summary: self.0.var("MODPACK_SUMMARY"),
+            version_id: self.0.var("MODPACK_VERSION").unwrap_or_default(),
             game: "minecraft".to_owned(),
         };
 
@@ -193,7 +192,7 @@ impl<R: Read + Seek> MRPackReader<R> {
         Ok(Self(ZipArchive::new(reader).context("Reading mrpack zip archive")?))
     }
 
-    pub fn read_index(&self) -> Result<MRPackIndex> {
+    pub fn read_index(&mut self) -> Result<MRPackIndex> {
         let mut entry = self.0.by_name(MRPACK_INDEX_FILE)?;
         let mut zip_content = Vec::new();
         entry
@@ -213,7 +212,7 @@ impl<R: Read + Seek> MRPackReader<R> {
                 continue; // folder
             }
 
-            let relative_path = if filename.starts_with("overrides") {
+            if filename.starts_with("overrides") {
                 let relative = filename.strip_prefix("overrides/").unwrap();
 
                 if map.contains_key(relative) {
@@ -231,7 +230,7 @@ impl<R: Read + Seek> MRPackReader<R> {
         Ok(map)
     }
 
-    pub fn get_file<'a>(&'a self, filename: &str) -> Result<ZipFile<'a>> {
+    pub fn get_file<'a>(&'a mut self, filename: &str) -> Result<ZipFile<'a>> {
         Ok(self.0.by_name(filename)?)
     }
 }
@@ -246,7 +245,7 @@ impl<W: Write + Seek> MRPackWriter<W> {
     pub fn write_file(&mut self, path: &str, bytes: &[u8]) -> Result<()> {
         self.0.start_file(path, FileOptions::default())?;
 
-        self.0.write_all(bytes);
+        self.0.write_all(bytes)?;
 
         Ok(())
     }

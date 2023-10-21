@@ -3,40 +3,26 @@ use console::style;
 use dialoguer::Input;
 
 use crate::{
-    create_http_client,
-    model::{Downloadable, Server},
+    model::{Downloadable, Server}, app::App,
 };
 
 #[derive(clap::Args)]
 pub struct Args {
-    #[arg(value_name = "SRC")]
     url: Option<String>,
 }
 
-pub async fn run(args: Args) -> Result<()> {
-    let mut server = Server::load().context("Failed to load server.toml")?;
-    let http_client = create_http_client()?;
-
+pub async fn run(mut app: App, args: Args) -> Result<()> {
     let urlstr = match args.url {
         Some(url) => url.clone(),
-        None => Input::<String>::new().with_prompt("URL:").interact_text()?,
+        None => app.prompt_string("URL")?,
     };
 
-    let dl = Downloadable::from_url_interactive(&http_client, &server, &urlstr, true).await?;
+    let dl = app.dl_from_string(&urlstr).await?;
 
-    let world_name = server.add_datapack(dl.clone())?;
+    app.add_datapack(&dl)?;
 
-    server.save()?;
-
-    println!(
-        " > {} {} {} {world_name}{}",
-        style("Datapack from").green(),
-        dl.to_short_string(),
-        style("added to").green(),
-        style("!").green()
-    );
-
-    server.refresh_markdown(&http_client).await?;
+    app.save_changes()?;
+    app.refresh_markdown().await?;
 
     Ok(())
 }

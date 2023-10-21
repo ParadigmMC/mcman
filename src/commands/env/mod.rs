@@ -1,5 +1,7 @@
 use anyhow::Result;
 
+use crate::app::App;
+
 mod docker;
 mod gitignore;
 
@@ -11,9 +13,9 @@ pub enum Commands {
     Docker,
 }
 
-pub fn run(commands: Commands) -> Result<()> {
+pub fn run(app: App, commands: Commands) -> Result<()> {
     match commands {
-        Commands::Gitignore => gitignore::run(),
-        Commands::Docker => docker::run(),
+        Commands::Gitignore => gitignore::run(app),
+        Commands::Docker => docker::run(app),
     }
 }

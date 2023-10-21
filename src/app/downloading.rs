@@ -144,7 +144,7 @@ impl App {
                 (Some(size), Some(len)) => {
                     if size != len {
                         // TODO: pretty msg
-                        progress_bar.println(format!("WARNING: content length is wrong! expected: {size}, actual: {len}"));
+                        self.warn(format!("content length is wrong! expected: {size}, actual: {len}"));
                     }
 
                     progress_bar.set_length(len);

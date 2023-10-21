@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, Context};
 use dialoguer::{Input, theme::ColorfulTheme, Select};
 
 use crate::{app::App, model::{ServerLauncher, ServerType}};

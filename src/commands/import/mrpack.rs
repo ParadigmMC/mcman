@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use indicatif::ProgressBar;
 use tempfile::Builder;
 
@@ -27,10 +27,8 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
 
     app.mrpack().import_all(f, None).await?;
 
-    app.server.save()?;
+    app.save_changes()?;
     app.refresh_markdown().await?;
-
-    println!(" > Imported!");
 
     Ok(())
 }

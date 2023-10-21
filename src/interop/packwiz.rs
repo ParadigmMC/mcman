@@ -81,10 +81,7 @@ impl<'a> PackwizInterop<'a> {
                     self.0.server.mods.push(dl);
                 } else {
                     // TODO: ???
-                    self.0.multi_progress.println(format!(
-                        "Warning! unsupported metafile: {} - please open an issue at github",
-                        file.file
-                    ));
+                    self.0.warn(format!("unsupported metafile: {} - please open an issue at github", file.file))?;
                 }
             } else {
                 let output_path = self.0.server.path.join(&file.file);
@@ -123,7 +120,7 @@ impl<'a> PackwizInterop<'a> {
     }
 
     pub async fn from_mod(&self, m: &Mod) -> Result<Downloadable> {
-        if let Some(dl) = self.from_mod_update(&m.update) {
+        if let Some(dl) = self.from_mod_update(&m.update)? {
             Ok(dl)
         } else {
             self.0.dl_from_url(&m.download
@@ -134,25 +131,25 @@ impl<'a> PackwizInterop<'a> {
         }
     }
 
-    pub fn from_mod_update(&self, mod_update: &Option<ModUpdate>) -> Option<Downloadable> {
+    pub fn from_mod_update(&self, mod_update: &Option<ModUpdate>) -> Result<Option<Downloadable>> {
         if let Some(upd) = mod_update {
             if let Some(mr) = &upd.modrinth {
-                Some(Downloadable::Modrinth {
+                Ok(Some(Downloadable::Modrinth {
                     id: mr.mod_id.clone(),
                     version: mr.version.clone(),
-                })
+                }))
             } else if let Some(cf) = &upd.curseforge {
-                Some(Downloadable::CurseRinth {
+                Ok(Some(Downloadable::CurseRinth {
                     id: cf.project_id.to_string(),
                     version: cf.file_id.to_string(),
-                })
+                }))
             } else {
                 // TODO clarify
-                self.0.multi_progress.println(format!("Warning: unknown mod update!"));
-                None
+                self.0.warn(format!("unknown mod update"))?;
+                Ok(None)
             }
         } else {
-            None
+            Ok(None)
         }
     }
 

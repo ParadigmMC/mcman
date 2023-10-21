@@ -16,11 +16,13 @@ pub async fn run(app: App, args: Args) -> Result<()> {
 
     let test_mode = args.test;
 
-    ctx.run(test_mode).context("Starting child process")?;
+    /*ctx.run(test_mode).context("Starting child process")?;
     let status = ctx.pipe_child_process(test_mode).await?;
 
     match status.code() {
         Some(i) if i > 0 => Err(anyhow!("java exited with code {i}")),
         _ => Ok(()),
-    }
+    }*/
+
+    Ok(())
 }
