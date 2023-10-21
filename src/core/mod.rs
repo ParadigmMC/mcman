@@ -1,4 +1,4 @@
-use std::{path::PathBuf, process::Child, time::Instant, fmt::Debug};
+use std::{path::PathBuf, process::Child, time::{Instant, Duration}, fmt::Debug};
 
 use anyhow::{anyhow, Context, Result};
 use console::style;
@@ -54,6 +54,7 @@ impl<'a> BuildContext<'a> {
                 style("Building").bold(),
                 style(&server_name).green().bold()
             ));
+        progress_bar.enable_steady_tick(Duration::from_millis(250));
 
         self.reload()?;
 
@@ -87,9 +88,11 @@ impl<'a> BuildContext<'a> {
 
         self.write_lockfile()?;
 
-        progress_bar.finish_with_message(format!(
-            " {} Successfully built {} in {}",
-            ColorfulTheme::default().success_prefix,
+        progress_bar.disable_steady_tick();
+        progress_bar.finish_and_clear();
+        
+        self.app.success(format!(
+            "Successfully built {} in {}",
             style(&server_name).green().bold(),
             style(FormattedDuration(progress_bar.elapsed())).blue(),
         ));

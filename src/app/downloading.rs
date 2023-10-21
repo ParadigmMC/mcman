@@ -144,7 +144,7 @@ impl App {
                 (Some(size), Some(len)) => {
                     if size != len {
                         // TODO: pretty msg
-                        self.warn(format!("content length is wrong! expected: {size}, actual: {len}"));
+                        self.warn(format!("content length is wrong! expected: {size}, actual: {len}"))?;
                     }
 
                     progress_bar.set_length(len);
@@ -196,6 +196,8 @@ impl App {
                 progress_bar.set_prefix("Copying from cache");
 
                 tokio::fs::copy(cached_file_path, file_path).await?;
+
+                self.success("Copied from le cache :3")?;
             }
         
             progress_bar.set_style(ProgressStyle::with_template("{prefix:.green.bold} {msg}")?);

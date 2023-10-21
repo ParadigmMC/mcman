@@ -14,6 +14,8 @@ impl<'a> BuildContext<'a> {
         &mut self,
         addon_type: AddonType,
     ) -> Result<()> {
+        self.app.print_job(&format!("Processing {addon_type}s..."))?;
+
         let server_list = match addon_type {
             AddonType::Plugin => &self.app.server.plugins,
             AddonType::Mod => &self.app.server.mods,
@@ -49,14 +51,13 @@ impl<'a> BuildContext<'a> {
             fs::remove_file(self.output_dir.join(addon_type.folder()).join(removed_file)).await?;
         }
 
-        pb.set_style(ProgressStyle::with_template("{msg}")?);
-        pb.set_message(format!(
-            " {} Processed {} {addon_type}{} in {}",
-            ColorfulTheme::default().success_prefix,
+        pb.finish_and_clear();
+        self.app.success(format!(
+            "Processed {} {addon_type}{} in {}",
             files_list.len(),
             if files_list.len() == 1 { "" } else { "s" },
             FormattedDuration(pb.elapsed())
-        ));
+        ))?;
 
         Ok(())
     }

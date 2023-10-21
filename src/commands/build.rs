@@ -24,8 +24,6 @@ pub async fn run(app: App, args: Args) -> Result<()> {
     let default_output = app.server.path.join("server");
     let output_dir = args.output.unwrap_or(default_output);
 
-    let lockfile = Lockfile::get_lockfile(&output_dir)?;
-
     let force = args.force;
 
     let skip_stages = args.skip;
@@ -36,8 +34,8 @@ pub async fn run(app: App, args: Args) -> Result<()> {
         app: &app,
         force,
         skip_stages,
-        lockfile,
         output_dir,
+        lockfile: Lockfile::default(),
         new_lockfile: Lockfile::default(),
         server_process: None,
     };

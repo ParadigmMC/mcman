@@ -12,6 +12,8 @@ use super::BuildContext;
 
 impl<'a> BuildContext<'a> {
     pub async fn bootstrap_files(&mut self) -> Result<()> {
+        self.app.print_job("Bootstrapping...")?;
+
         let pb = self.app.multi_progress.add(ProgressBar::new_spinner()
             .with_style(ProgressStyle::with_template("{spinner:.blue} {prefix} {msg}")?)
             .with_prefix("Bootstrapping"));
@@ -57,7 +59,8 @@ impl<'a> BuildContext<'a> {
         }
 
         pb.disable_steady_tick();
-        pb.finish_with_message("complete");
+        pb.finish_and_clear();
+        self.app.success("Bootstrapping complete")?;
 
         Ok(())
     }
@@ -114,9 +117,9 @@ impl<'a> BuildContext<'a> {
                     .await.context(format!("Copying '{}' to '{}' ; [{pretty_path}]", source.display(), dest.display()))?;
             }
     
-            self.app.log(format!("-> {pretty_path}"))?;
+            self.app.log(format!("  -> {pretty_path}"))?;
         } else {
-            self.app.log(format!("unchanged: {pretty_path}"))?;
+            self.app.log(format!("  unchanged: {pretty_path}"))?;
         }
 
         self.new_lockfile.files.push(BootstrappedFile {

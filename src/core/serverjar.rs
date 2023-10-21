@@ -41,25 +41,30 @@ impl<'a> BuildContext<'a> {
                 let jar_name = jar_name.replace("${mcver}", &self.app.server.mc_version);
 
                 if !self.force && self.output_dir.join(&jar_name).exists() {
-                    println!(
-                        "          Skipping server jar ({})",
+                    self.app.log(
+                        format!("  Skipping server jar ({})",
                         style(if rename_from.is_some() {
                             jar_name.clone()
                         } else {
                             "<in libraries>".to_owned()
                         })
-                        .dim()
-                    );
+                        .dim())
+                    )?;
                 } else {
-                    println!(
-                        "          Installing server jar... ({})",
+                    let pb = self.app.multi_progress.add(ProgressBar::new_spinner().with_style(ProgressStyle::with_template(
+                        "  {spinner:.dim.bold} {msg}",
+                    )?));
+                    pb.enable_steady_tick(Duration::from_millis(250));
+
+                    pb.set_message(format!(
+                        "  Installing server jar... ({})",
                         style(if rename_from.is_some() {
                             jar_name.clone()
                         } else {
                             "<in libraries>".to_owned()
                         })
                         .dim()
-                    );
+                    ));
 
                     let mut cmd_args = vec!["-jar", &installer_jar];
 
@@ -72,16 +77,28 @@ impl<'a> BuildContext<'a> {
                         .context(format!("Executing command: 'java {}'", cmd_args.join(" ")))
                         .context(format!("Running installer: {name}"))?;
 
-                    if let Some(from) = rename_from {
-                        println!(
-                            "          Renaming... ({})",
+                    if let Some(from) = &rename_from {
+                        pb.set_message(format!(
+                            "  Renaming... ({})",
                             style(format!("{from} => {jar_name}")).dim()
-                        );
+                        ));
 
-                        fs::rename(self.output_dir.join(&from), self.output_dir.join(&jar_name))
+                        fs::rename(self.output_dir.join(from), self.output_dir.join(&jar_name))
                             .await
                             .context(format!("Renaming: {from} => {jar_name}"))?;
                     }
+
+                    self.app.log(
+                        format!("  Server jar installed ({})",
+                        style(if rename_from.is_some() {
+                            jar_name.clone()
+                        } else {
+                            "<in libraries>".to_owned()
+                        })
+                        .dim())
+                    )?;
+
+                    pb.finish_and_clear();
                 }
 
                 jar_name
@@ -110,9 +127,9 @@ impl<'a> BuildContext<'a> {
             .spawn()
             .context("Running ".to_owned() + label)?;
 
-        let spinner = ProgressBar::new_spinner().with_style(ProgressStyle::with_template(
-            "          {spinner:.dim.bold} {msg}",
-        )?);
+        let spinner = self.app.multi_progress.add(ProgressBar::new_spinner().with_style(ProgressStyle::with_template(
+            "  {spinner:.dim.bold} {msg}",
+        )?));
 
         spinner.enable_steady_tick(Duration::from_millis(200));
 

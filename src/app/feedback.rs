@@ -35,6 +35,14 @@ impl App {
         ))?)
     }
 
+    pub fn print_job(&self, job: &str) -> Result<()> {
+        Ok(self.multi_progress.println(format!(
+            "{} {}",
+            ColorfulTheme::default().active_item_prefix,
+           style(job).cyan().bold()
+        ))?)
+    }
+
     pub fn prompt_string(&self, prompt: &str) -> Result<String> {
         Ok(self.multi_progress.suspend(|| {
             Input::with_theme(&ColorfulTheme::default())
