@@ -52,12 +52,12 @@ impl<'a> BuildContext<'a> {
                     )?;
                 } else {
                     let pb = self.app.multi_progress.add(ProgressBar::new_spinner().with_style(ProgressStyle::with_template(
-                        "  {spinner:.dim.bold} {msg}",
+                        "  {spinner:.green} {msg}",
                     )?));
                     pb.enable_steady_tick(Duration::from_millis(250));
 
                     pb.set_message(format!(
-                        "  Installing server jar... ({})",
+                        "Installing server jar... ({})",
                         style(if rename_from.is_some() {
                             jar_name.clone()
                         } else {
@@ -79,7 +79,7 @@ impl<'a> BuildContext<'a> {
 
                     if let Some(from) = &rename_from {
                         pb.set_message(format!(
-                            "  Renaming... ({})",
+                            "Renaming... ({})",
                             style(format!("{from} => {jar_name}")).dim()
                         ));
 
@@ -89,7 +89,7 @@ impl<'a> BuildContext<'a> {
                     }
 
                     self.app.log(
-                        format!("  Server jar installed ({})",
+                        format!("  Server jar installed successfully ({})",
                         style(if rename_from.is_some() {
                             jar_name.clone()
                         } else {
@@ -128,12 +128,11 @@ impl<'a> BuildContext<'a> {
             .context("Running ".to_owned() + label)?;
 
         let spinner = self.app.multi_progress.add(ProgressBar::new_spinner().with_style(ProgressStyle::with_template(
-            "  {spinner:.dim.bold} {msg}",
+            "    {spinner:.green} {prefix:.bold} {msg}",
         )?));
 
         spinner.enable_steady_tick(Duration::from_millis(200));
-
-        let prefix = style(format!("[{tag}]")).bold();
+        spinner.set_prefix(format!("[{tag}]"));
 
         let mut log_file =
             File::create(self.output_dir.join(".".to_owned() + tag + ".mcman.log")).await?;
@@ -143,7 +142,7 @@ impl<'a> BuildContext<'a> {
             .await?;
 
         for buf in BufReader::new(child.stdout.take().unwrap()).lines() {
-            let buf = buf.unwrap();
+            let buf = buf.context("Reading child process stdout buffer")?;
             let buf = buf.trim();
 
             if !buf.is_empty() {
@@ -151,7 +150,7 @@ impl<'a> BuildContext<'a> {
                 log_file.write_all(b"\n").await?;
 
                 if let Some(last_line) = buf.split('\n').last() {
-                    spinner.set_message(format!("{prefix} {last_line}"));
+                    spinner.set_message(last_line.to_string());
                 }
             }
         }
@@ -160,6 +159,7 @@ impl<'a> BuildContext<'a> {
             bail!("{label} exited with non-zero code");
         }
 
+        spinner.disable_steady_tick();
         spinner.finish_and_clear();
 
         Ok(())

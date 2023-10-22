@@ -20,7 +20,7 @@ mod model;
 mod sources;
 mod util;
 mod interop;
-//mod hot_reload;
+mod hot_reload;
 
 #[derive(clap::Parser)]
 #[command(author = "ParadigmMC", color = clap::ColorChoice::Always)]

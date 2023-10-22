@@ -9,28 +9,28 @@ use super::App;
 impl App {
     pub fn warn<S: std::fmt::Display>(&self, message: S) -> Result<()> {
         Ok(self.multi_progress.println(format!(
-            " {} {message}",
+            "  {} {message}",
             style("⚠ Warn").yellow().bold()
         ))?)
     }
 
     pub fn success<S: std::fmt::Display>(&self, message: S) -> Result<()> {
         Ok(self.multi_progress.println(format!(
-            " {} {message}",
+            "  {} {message}",
             ColorfulTheme::default().success_prefix
         ))?)
     }
 
     pub fn info<S: std::fmt::Display>(&self, message: S) -> Result<()> {
         Ok(self.multi_progress.println(format!(
-            " {} {message}",
+            "  {} {message}",
            style("🛈 Info").bold()
         ))?)
     }
 
     pub fn log<S: std::fmt::Display>(&self, message: S) -> Result<()> {
         Ok(self.multi_progress.println(format!(
-            "{}",
+            "  {}",
            style(message).dim()
         ))?)
     }

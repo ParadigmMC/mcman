@@ -88,11 +88,15 @@ impl<'a> BuildContext<'a> {
         bootstrap_exts.contains(&ext)
     }
 
-    pub async fn bootstrap_file(&mut self, path: &PathBuf, cache: Option<&SystemTime>) -> Result<()> {
-        let pretty_path = path.display();
+    pub async fn bootstrap_file(
+        &mut self,
+        rel_path: &PathBuf,
+        cache: Option<&SystemTime>
+    ) -> Result<()> {
+        let pretty_path = rel_path.display();
 
-        let source = self.app.server.path.join("config").join(path);
-        let dest = self.output_dir.join(path);
+        let source = self.app.server.path.join("config").join(rel_path);
+        let dest = self.output_dir.join(rel_path);
 
         let source_time = fs::metadata(&source).await?.modified()?;
 
@@ -103,7 +107,7 @@ impl<'a> BuildContext<'a> {
                 true
             }
         } {
-            if self.should_bootstrap_file(path) {
+            if self.should_bootstrap_file(rel_path) {
                 let config_contents = fs::read_to_string(&source)
                     .await.context(format!("Reading from '{}' ; [{pretty_path}]", source.display()))?;
     
@@ -123,7 +127,7 @@ impl<'a> BuildContext<'a> {
         }
 
         self.new_lockfile.files.push(BootstrappedFile {
-            path: path.clone(),
+            path: rel_path.clone(),
             date: source_time
         });
 

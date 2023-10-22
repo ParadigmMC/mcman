@@ -1,7 +1,6 @@
 use std::{collections::HashSet, time::Duration};
 
 use anyhow::{Context, Result};
-use dialoguer::theme::ColorfulTheme;
 use indicatif::{ProgressIterator, ProgressBar, ProgressStyle, FormattedDuration};
 use tokio::fs;
 
@@ -14,12 +13,17 @@ impl<'a> BuildContext<'a> {
         &mut self,
         addon_type: AddonType,
     ) -> Result<()> {
-        self.app.print_job(&format!("Processing {addon_type}s..."))?;
-
         let server_list = match addon_type {
             AddonType::Plugin => &self.app.server.plugins,
             AddonType::Mod => &self.app.server.mods,
         };
+
+        self.app.print_job(&format!(
+            "Processing {} {addon_type}{}...{}",
+            server_list.len(),
+            if server_list.len() == 1 { "" } else { "s" },
+            if server_list.len() < 200 { "" } else { " may god help you" },
+        ))?;
 
         let mut files_list = HashSet::new();
 
@@ -52,12 +56,14 @@ impl<'a> BuildContext<'a> {
         }
 
         pb.finish_and_clear();
-        self.app.success(format!(
-            "Processed {} {addon_type}{} in {}",
-            files_list.len(),
-            if files_list.len() == 1 { "" } else { "s" },
-            FormattedDuration(pb.elapsed())
-        ))?;
+        if files_list.len() >= 10 {
+            self.app.success(format!(
+                "Processed {} {addon_type}{} in {}",
+                files_list.len(),
+                if files_list.len() == 1 { "" } else { "s" },
+                FormattedDuration(pb.elapsed())
+            ))?;
+        }
 
         Ok(())
     }

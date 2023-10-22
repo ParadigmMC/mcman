@@ -1,7 +1,7 @@
 use anyhow::{Result, Context};
-use notify::{recommended_watcher, EventKind};
+use notify::{recommended_watcher, EventKind, Watcher, RecursiveMode};
 
-use crate::{core::BuildContext, create_http_client, model::Server};
+use crate::{core::BuildContext, model::Lockfile, app::App};
 
 use self::config::{HotReloadConfig, HotReloadAction};
 
@@ -9,20 +9,20 @@ pub mod config;
 pub mod pattern_serde;
 
 #[derive(Debug)]
-pub struct DevSession {
-    pub ctx: BuildContext,
+pub struct DevSession<'a> {
+    pub ctx: BuildContext<'a>,
 }
 
-impl DevSession {
-    pub async fn start(config: HotReloadConfig) -> Result<()> {
-        let server = Server::load().context("Failed to load server.toml")?;
-        let http_client = create_http_client()?;
-
-        let ctx = BuildContext {
-            http_client,
-            output_dir: server.path.join("server"),
-            server,
-            ..Default::default()
+impl<'a> DevSession<'a> {
+    pub async fn start(mut app: App, config: HotReloadConfig) -> Result<()> {
+        let mut ctx = BuildContext {
+            app: &app,
+            output_dir: app.server.path.join("server"),
+            force: false,
+            lockfile: Lockfile::default(),
+            new_lockfile: Lockfile::default(),
+            server_process: None,
+            skip_stages: vec![],
         };
 
         let mut config_watcher = recommended_watcher(move |e: std::result::Result<notify::Event, notify::Error>| {
@@ -59,7 +59,23 @@ impl DevSession {
             }
         })?;
 
-        
+        let mut servertoml_watcher = notify::recommended_watcher(move |e: std::result::Result<notify::Event, notify::Error>| {
+            let Ok(e) = e else {
+                return;   
+            };
+
+            match e.kind {
+                EventKind::Modify(_) => {
+                    // need state or smth smh idk
+                    // ctx.build_all().await?;
+                }
+                _ => {}
+            }
+        })?;
+
+        config_watcher.watch(app.server.path.join("config").as_path(), RecursiveMode::Recursive)?;
+
+        servertoml_watcher.watch(app.server.path.join("server.toml").as_path(), RecursiveMode::NonRecursive)?;
 
         Ok(())
     }

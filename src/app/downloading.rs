@@ -1,6 +1,7 @@
 use std::{path::PathBuf, time::Duration, fmt::Debug};
 
 use anyhow::{Result, bail, Context};
+use console::style;
 use futures::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
 use md5::Md5;
@@ -8,8 +9,25 @@ use sha1::Sha1;
 use sha2::{Sha256, Sha512};
 use tokio::{fs::File, io::BufWriter};
 use digest::{Digest, DynDigest};
+use tokio_util::io::ReaderStream;
 
 use super::{App, Resolvable, CacheStrategy, ResolvedFile};
+
+struct Bomb<T: FnMut()>(pub bool, pub T);
+
+impl<T: FnMut()> Bomb<T> {
+    pub fn defuse(&mut self) {
+        self.0 = false;
+    }
+}
+
+impl<T: FnMut()> Drop for Bomb<T> {
+    fn drop(&mut self) {
+        if self.0 {
+            self.1()
+        }
+    }
+}
 
 impl App {
     pub async fn download(
@@ -39,6 +57,7 @@ impl App {
         progress_bar.set_prefix("Checking");
         progress_bar.enable_steady_tick(Duration::from_millis(250));
 
+        // Some(Path) if file exists in cache
         let cached_file_path = match &resolved.cache {
             CacheStrategy::File { namespace, path } => {
                 if let Some(cache) = self.get_cache(namespace) {
@@ -57,6 +76,7 @@ impl App {
 
         let hasher = Self::get_best_hash(&resolved.hashes);
 
+        // if resolved has hashes, Some((hash name, dyndigest, hash value))
         let mut hasher = if let Some((name, hash)) = hasher {
             let digester: Box<dyn DynDigest> = match name.as_str() {
                 "sha256" => Box::new(Sha256::new()),
@@ -71,6 +91,24 @@ impl App {
             None
         };
 
+        let validate_hash = |hasher: Option<(String, Box<dyn DynDigest>, String)>| {
+            if let Some((hash_name, digest, resolved_hash)) = hasher {
+                let stream_hash = base16ct::lower::encode_string(&digest.finalize());
+
+                if resolved_hash != stream_hash {
+                    // TODO: skipping checks etc
+                    // also pretty msg
+                    bail!("Mismatched hash!
+                    Type: {hash_name}
+                    Expected hash: {resolved_hash}
+                    Real hash: {stream_hash}");
+                }
+            }
+
+            Ok(())
+        };
+
+        // dest. file path
         let file_path = destination.join(&resolved.filename);
 
         tokio::fs::create_dir_all(file_path.parent().unwrap()).await
@@ -93,6 +131,12 @@ impl App {
 
             if size_matches {
                 // file already there and is ok
+                self.log(format!(
+                    "  {} {}",
+                    style("Skipped   ").green(),
+                    progress_bar.message()
+                ))?;
+
                 return Ok(resolved);
             }
         }
@@ -100,35 +144,60 @@ impl App {
         let target_file = File::create(&file_path).await
             .context(format!("Creating destination file at '{}'", file_path.to_string_lossy()))?;
 
+        // this bomb will explode (delete target_file) if its not defused (fn exits with Err)
+        let mut bomb = Bomb(true, || {
+            // i mean, atleast try right
+            let _ = std::fs::remove_file(&file_path);
+        });
+
         if let Some(cached) = cached_file_path {
             let cached_size = cached.metadata()
                 .context(format!("Getting metadata of cached file at '{}'", cached.to_string_lossy()))?.len();
 
             if let Some(size) = resolved.size {
                 if cached_size != size {
+                    // TODO: un-bail, delete cached file, retry
                     bail!("Cached file size is wrong! expected: {size}, actual: {cached_size}, path: {}", cached.to_string_lossy());
                 }
             }
 
-            //progress_bar.disable_steady_tick();
-            // TODO: progressbar (i couldnt do it :c)
-            //progress_bar.set_style(ProgressStyle::with_template("{prefix:.green.bold} {msg} [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")?);
+            progress_bar.disable_steady_tick();
+            progress_bar.set_style(ProgressStyle::with_template("{prefix:.green.bold} {msg} [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")?);
+            progress_bar.set_length(cached_size);
             progress_bar.set_prefix("Copying from cache");
 
             let mut cache_file = File::open(&cached).await
                 .context(format!("Opening file '{}' from cache dir", cached.to_string_lossy()))?;
             let mut file_writer = BufWriter::new(target_file);
-            
-            tokio::io::copy(&mut cache_file, &mut file_writer).await
-                .context(format!("Copying cached file
-                -> From: {}
-                -> To: {}", cached.to_string_lossy(), file_path.to_string_lossy()))?;
 
-            // TODO: hash checks etc
+            let mut stream = ReaderStream::new(cache_file);
+            while let Some(item) = stream.next().await {
+                let item = item?;
+
+                if let Some((_, ref mut digest, _)) = hasher {
+                    digest.update(&item);
+                }
+
+                tokio::io::copy(&mut item.as_ref(), &mut file_writer).await
+                    .context(format!("Copying cached file
+                    -> From: {}
+                    -> To: {}", cached.to_string_lossy(), file_path.to_string_lossy()))?;
+        
+                progress_bar.inc(item.len() as u64);
+            }
+
+            // TODO: retry downloading if fails
+            validate_hash(hasher)?;
         
             progress_bar.set_style(ProgressStyle::with_template("{prefix:.green.bold} {msg}")?);
-            progress_bar.set_prefix("Copied");
-            progress_bar.finish();
+            progress_bar.set_prefix("Copied    ");
+            progress_bar.set_message(resolved.filename.clone());
+            self.log(format!(
+                "  {} {}",
+                style(progress_bar.prefix()).green().bold(),
+                progress_bar.message()
+            ))?;
+            progress_bar.finish_and_clear();
         } else {
             progress_bar.set_prefix("Fetching");
             progress_bar.set_message(resolved.filename.clone());
@@ -157,11 +226,23 @@ impl App {
             progress_bar.set_style(ProgressStyle::with_template("{prefix:.green.bold} {msg} [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")?);
             progress_bar.set_prefix("Downloading");
 
-            let mut file_writer = BufWriter::new(match &cached_file_path {
-                Some(path) => File::create(path)
-                    .await
-                    .context(format!("Creating cache file at '{}'", path.to_string_lossy()))?,
-                None => target_file,
+            // if file can be cached, BufWriter to the file in cache dir
+            // otherwise BufWriter to output file
+            let mut file_writer = BufWriter::new(match &resolved.cache {
+                CacheStrategy::File { namespace, path } => {
+                    match self.get_cache(namespace) {
+                        Some(cache) => {
+                            let f = cache.path(path);
+                            tokio::fs::create_dir_all(f.parent().unwrap()).await?;
+                            File::create(&f)
+                                .await
+                                .context(format!("Creating cache file at '{path}'"))?
+                        },
+                        None => target_file,
+                    }
+                }
+                CacheStrategy::Indexed { .. } => todo!(),
+                CacheStrategy::None => target_file,
             });
         
             let mut stream = response.bytes_stream();
@@ -178,32 +259,33 @@ impl App {
                 progress_bar.inc(item.len() as u64);
             }
 
-            if let Some((hash_name, digest, resolved_hash)) = hasher {
-                let stream_hash = base16ct::lower::encode_string(&digest.finalize());
+            validate_hash(hasher)?;
 
-                if resolved_hash != stream_hash {
-                    // TODO: skipping checks etc
-                    // also pretty msg
-                    bail!("Mismatched hash!
-                    Type: {hash_name}
-                    Expected hash: {resolved_hash}
-                    Real hash: {stream_hash}");
-                }
-            }
-
-            if let Some(cached_file_path) = cached_file_path {
+            // if we downloaded to cache instead of output above, copy the file to output
+            // small todo: maybe write to both while downloading?
+            if let Some(cached_file_path) = match &resolved.cache {
+                CacheStrategy::File { namespace, path } => self.get_cache(namespace).map(|c| c.path(path)),
+                CacheStrategy::Indexed { .. } => todo!(),
+                CacheStrategy::None => None,
+            } {
                 progress_bar.set_style(ProgressStyle::with_template("{spinner:.blue} {prefix} {msg}...")?);
                 progress_bar.set_prefix("Copying from cache");
 
-                tokio::fs::copy(cached_file_path, file_path).await?;
-
-                self.success("Copied from le cache :3")?;
+                tokio::fs::copy(cached_file_path, &file_path).await?;
             }
         
             progress_bar.set_style(ProgressStyle::with_template("{prefix:.green.bold} {msg}")?);
             progress_bar.set_prefix("Downloaded");
-            progress_bar.finish();
+            self.log(format!(
+                "  {} {}",
+                style(progress_bar.prefix()).green().bold(),
+                progress_bar.message()
+            ))?;
+            progress_bar.finish_and_clear();
         }
+
+        // succeeded, so defuse
+        bomb.defuse();
 
         Ok(resolved)
     }

@@ -29,17 +29,17 @@ Submit a PR or open an issue if you have a mcman-server repository that we can a
 - 📜 Everything in one simple `server.toml` file!
 - 📥 Downloads the *server jar*, *plugins*, *mods*, *datapacks* and *worlds* (if any)!
 - 🔁 Always keep up to date with new builds and releases
-- ✔️ No more manually downloading jars or editing config files on remote
+- ✔️ No third-party hosts (metadata/mirrors)
+- :octocat: Fully `git`-compatible!
+- 🐳 Supports Docker, out of the box
+- 📦 Import from or export to [mrpack](./DOCS.md#mcman-import-mrpack-src)s!
+- 📦 Import from or export to [packwiz](./DOCS.md#mcman-import-mrpack-src) packs!
 - 📚 Supports way too many sources, some are:
   - Modrinth, CurseRinth, Spigot, Hangar, Github Releases, Jenkins, Maven
   - If you need something else, it even supports custom urls!
 - ⚙️ Better configuration files with `config/`!
   - Allows you to use **variables** inside your config files
   - Use *environment variables* for secrets
-- :octocat: Fully `git`-compatible!
-- 🐳 Supports Docker, out of the box
-- 📦 Import from or export to [mrpack](./DOCS.md#mcman-import-mrpack-src)s!
-- 📦 Import from or export to [packwiz](./DOCS.md#mcman-import-mrpack-src) packs!
 - 🛡️ More secure than in-game plugin managers which are prone to permission attacks
 
 ## Changelog

@@ -1,14 +1,12 @@
-use std::{path::PathBuf, process::Child, time::{Instant, Duration}, fmt::Debug};
+use std::{path::PathBuf, process::Child, time::Duration, fmt::Debug};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::Result;
 use console::style;
-use dialoguer::theme::ColorfulTheme;
 use indicatif::{ProgressBar, FormattedDuration};
-use tokio::fs::{self, File};
 
 use crate::{
-    model::{Server, StartupMethod, Network, Lockfile, Changes},
-    util::{self, logger::Logger}, app::{Resolvable, App, ResolvedFile, AddonType},
+    model::Lockfile,
+    app::{Resolvable, App, ResolvedFile, AddonType},
 };
 
 pub mod addons;
@@ -32,28 +30,16 @@ pub struct BuildContext<'a> {
 }
 
 impl<'a> BuildContext<'a> {
-    pub fn from_app(app: &'a App) -> Self {
-        Self {
-            app,
-            force: false,
-            output_dir: PathBuf::new(),
-            lockfile: Lockfile::default(),
-            new_lockfile: Lockfile::default(),
-            skip_stages: vec![],
-            server_process: None,
-        }
-    }
-}
-
-impl<'a> BuildContext<'a> {
     pub async fn build_all(&'a mut self) -> Result<()> {
         let server_name = self.app.server.name.clone();
+        let banner = format!(
+            "{} {}...",
+            style("Building").bold(),
+            style(&server_name).green().bold()
+        );
+        self.app.print_job(&banner)?;
         let progress_bar = self.app.multi_progress.add(ProgressBar::new_spinner())
-            .with_message(format!(
-                "{} {}...",
-                style("Building").bold(),
-                style(&server_name).green().bold()
-            ));
+            .with_message(banner);
         progress_bar.enable_steady_tick(Duration::from_millis(250));
 
         self.reload()?;
@@ -95,7 +81,7 @@ impl<'a> BuildContext<'a> {
             "Successfully built {} in {}",
             style(&server_name).green().bold(),
             style(FormattedDuration(progress_bar.elapsed())).blue(),
-        ));
+        ))?;
 
         Ok(())
     }
