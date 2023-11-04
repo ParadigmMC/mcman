@@ -109,6 +109,7 @@ impl<'a> GithubAPI<'a> {
             .await?;
         
         if response.status() == StatusCode::NOT_MODIFIED {
+            self.0.dbg(format!("GithubAPI: Cache hit: {cache_path}"));
             Ok(cached_data.unwrap().data)
         } else {
             let last_modified = response.headers().get("Last-Modified").cloned();
@@ -126,6 +127,7 @@ impl<'a> GithubAPI<'a> {
                         last_modified: last_modified.to_str()?.to_owned(),
                         data: json.clone(),
                     }).context("Saving github api response to cache")?;
+                    self.0.dbg(format!("GithubAPI: Saved: {cache_path}"));
                 }
             }
 

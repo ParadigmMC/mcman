@@ -1,6 +1,6 @@
 use std::{
     io::Write,
-    process::{ExitStatus, Stdio},
+    process::{ExitStatus, Stdio, Child, ChildStdin, ChildStdout, ChildStderr},
     sync::{atomic::AtomicBool, Arc},
     time::Duration,
 };
@@ -8,7 +8,9 @@ use std::{
 use anyhow::{bail, Context, Result};
 use console::style;
 use std::io::{BufRead, BufReader};
-use tokio::sync::oneshot;
+use tokio::sync::{oneshot, RwLock, mpsc};
+
+use crate::app::App;
 
 use super::BuildContext;
 

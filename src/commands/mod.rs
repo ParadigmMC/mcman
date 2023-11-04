@@ -11,3 +11,6 @@ pub mod run;
 pub mod version;
 pub mod add;
 pub mod world;
+pub mod download;
+pub mod dev;
+pub mod cache;

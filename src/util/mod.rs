@@ -2,7 +2,6 @@ use anyhow::Result;
 use regex::Regex;
 
 pub mod env;
-pub mod hash;
 pub mod maven_import;
 pub mod md;
 pub mod logger;

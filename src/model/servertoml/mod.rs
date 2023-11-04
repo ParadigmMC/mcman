@@ -115,7 +115,7 @@ impl Server {
         })
         .filter(|v| {
             if let Some(n) = &loader {
-                v.loaders.iter().any(|l| l == "datapack" || l == n)
+                v.loaders.iter().any(|l| l == "datapack" || l == n || (l == "fabric" && n == "quilt"))
             } else {
                 if is_vanilla {
                     v.loaders.contains(&"datapack".to_owned())

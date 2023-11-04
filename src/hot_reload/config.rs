@@ -9,7 +9,7 @@ use serde::{Serialize, Deserialize};
 pub enum HotReloadAction {
     Reload,
     Restart,
-    ReloadPlugin(String),
+    #[serde(alias = "run")]
     RunCommand(String),
 }
 
@@ -18,10 +18,25 @@ pub struct HotReloadConfig {
     #[serde(skip)]
     pub path: PathBuf,
 
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::default")]
     pub files: Vec<Entry>,
-    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
     pub events: HashMap<String, HotReloadAction>,
+}
+
+impl Default for HotReloadConfig {
+    fn default() -> Self {
+        Self {
+            path: PathBuf::from("./hotreload.toml"),
+            events: HashMap::new(),
+            files: vec![
+                Entry {
+                    path: Pattern::new("server.properties").unwrap(),
+                    action: HotReloadAction::Reload,
+                }
+            ],
+        }
+    }
 }
 
 impl HotReloadConfig {

@@ -84,7 +84,7 @@ impl<'a> PackwizInterop<'a> {
                     self.0.warn(format!("unsupported metafile: {} - please open an issue at github", file.file))?;
                 }
             } else {
-                let output_path = self.0.server.path.join(&file.file);
+                let output_path = self.0.server.path.join("config").join(&file.file);
                 
                 match &source {
                     FileProvider::LocalFolder(folder) => {
@@ -116,11 +116,16 @@ impl<'a> PackwizInterop<'a> {
             }
         }
 
+        progress_bar.finish_and_clear();
+        self.0.success("Packwiz pack imported!")?;
+
         Ok(())
     }
 
     pub async fn from_mod(&self, m: &Mod) -> Result<Downloadable> {
-        if let Some(dl) = self.from_mod_update(&m.update)? {
+        if let Some(dl) = self.from_hash(&m.download).await? {
+            Ok(dl)
+        } else if let Some(dl) = self.from_mod_update(&m.update)? {
             Ok(dl)
         } else {
             self.0.dl_from_url(&m.download
@@ -128,6 +133,23 @@ impl<'a> PackwizInterop<'a> {
                 .clone()
                 .ok_or(anyhow!("download url not present"))?)
                 .await
+        }
+    }
+
+    pub async fn from_hash(&self, down: &ModDownload) -> Result<Option<Downloadable>> {
+        if !down.hash.is_empty() {
+            let fmt = match down.hash_format {
+                HashFormat::Sha512 => "sha512",
+                HashFormat::Sha1 => "sha1",
+                _ => return Ok(None),
+            };
+
+            Ok(match self.0.modrinth().version_from_hash(&down.hash, fmt).await {
+                Ok(ver) => Some(Downloadable::Modrinth { id: ver.project_id.clone(), version: ver.id.clone() }),
+                _ => None,
+            })
+        } else {
+            Ok(None)
         }
     }
 

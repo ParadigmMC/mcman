@@ -6,8 +6,12 @@ use serde::de::DeserializeOwned;
 pub struct Cache(pub PathBuf);
 
 impl Cache {
+    pub fn cache_root() -> Option<PathBuf> {
+        Some(dirs::cache_dir()?.join("mcman"))
+    }
+
     pub fn get_cache(namespace: &str) -> Option<Self> {
-        let dir = dirs::cache_dir()?.join("mcman").join(namespace);
+        let dir = Self::cache_root()?.join(namespace);
         Some(Self(dir))
     }
 

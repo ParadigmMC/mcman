@@ -35,6 +35,14 @@ impl App {
         ))?)
     }
 
+    pub fn dbg<S: std::fmt::Display>(&self, message: S) -> Result<()> {
+        Ok(self.multi_progress.println(format!(
+            "  {} {}",
+           style("[dbg]").dim(),
+           style(message).dim()
+        ))?)
+    }
+
     pub fn print_job(&self, job: &str) -> Result<()> {
         Ok(self.multi_progress.println(format!(
             "{} {}",
@@ -56,6 +64,16 @@ impl App {
             Input::with_theme(&ColorfulTheme::default())
                 .with_prompt(prompt)
                 .default(default.to_owned())
+                .interact_text()
+        })?)
+    }
+
+    pub fn prompt_string_filled(&self, prompt: &str, default: &str) -> Result<String> {
+        Ok(self.multi_progress.suspend(|| {
+            Input::with_theme(&ColorfulTheme::default())
+                .with_prompt(prompt)
+                .default(default.to_owned())
+                .with_initial_text(default.to_owned())
                 .interact_text()
         })?)
     }

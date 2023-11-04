@@ -30,7 +30,7 @@ pub struct BuildContext<'a> {
 }
 
 impl<'a> BuildContext<'a> {
-    pub async fn build_all(&'a mut self) -> Result<()> {
+    pub async fn build_all(&mut self) -> Result<String> {
         let server_name = self.app.server.name.clone();
         let banner = format!(
             "{} {}...",
@@ -83,7 +83,7 @@ impl<'a> BuildContext<'a> {
             style(FormattedDuration(progress_bar.elapsed())).blue(),
         ))?;
 
-        Ok(())
+        Ok(server_jar)
     }
 
     /// Load to self.lockfile and create a default one at self.new_lockfile

@@ -107,6 +107,8 @@ impl<'a> BuildContext<'a> {
                 true
             }
         } {
+            fs::create_dir_all(dest.parent().unwrap()).await?;
+
             if self.should_bootstrap_file(rel_path) {
                 let config_contents = fs::read_to_string(&source)
                     .await.context(format!("Reading from '{}' ; [{pretty_path}]", source.display()))?;

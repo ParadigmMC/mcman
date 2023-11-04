@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 use crate::sources::jenkins;
 use crate::app::{ResolvedFile, CacheStrategy, App, Resolvable};
 
-mod import_url;
 mod markdown;
 mod meta;
 

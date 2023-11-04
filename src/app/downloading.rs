@@ -11,6 +11,8 @@ use tokio::{fs::File, io::BufWriter};
 use digest::{Digest, DynDigest};
 use tokio_util::io::ReaderStream;
 
+use crate::util::SelectItem;
+
 use super::{App, Resolvable, CacheStrategy, ResolvedFile};
 
 struct Bomb<T: FnMut()>(pub bool, pub T);
@@ -61,11 +63,7 @@ impl App {
         let cached_file_path = match &resolved.cache {
             CacheStrategy::File { namespace, path } => {
                 if let Some(cache) = self.get_cache(namespace) {
-                    if cache.exists(path) {
-                        Some(cache.path(path))
-                    } else {
-                        None
-                    }
+                    Some((cache.path(path), cache.exists(path)))
                 } else {
                     None
                 }
@@ -118,26 +116,46 @@ impl App {
             let meta = file_path.metadata()
                 .context(format!("Getting metadata of file '{}'", file_path.to_string_lossy()))?;
             if meta.is_dir() {
-                bail!("'{}' is a directory and not a file", file_path.to_string_lossy());
-            }
+                let message = format!("'{}' is a directory and not a file", file_path.to_string_lossy());
 
-            let size_matches = if let Some(size) = resolved.size {
-                meta.len() == size
+                match self.select(&message, &[
+                    SelectItem(0, "Delete folder and download".to_owned()),
+                    SelectItem(1, "Skip file".to_owned()),
+                    SelectItem(2, "Bail".to_owned()),
+                ])? {
+                    0 => {
+                        tokio::fs::remove_dir_all(&file_path).await?;
+                    },
+                    1 => {
+                        self.log(format!(
+                            "  {} {}",
+                            style("! Skipped ").yellow(),
+                            progress_bar.message()
+                        ))?;
+                        return Ok(resolved)
+                    },
+                    2 => bail!(message),
+                    _ => unreachable!(),
+                }
             } else {
-                true
-            };
+                let size_matches = if let Some(size) = resolved.size {
+                    meta.len() == size
+                } else {
+                    true
+                };
 
-            // TODO: optionally check hashes for existing file
+                // TODO: optionally check hashes for existing file
 
-            if size_matches {
-                // file already there and is ok
-                self.log(format!(
-                    "  {} {}",
-                    style("Skipped   ").green(),
-                    progress_bar.message()
-                ))?;
+                if size_matches {
+                    // file already there and is ok
+                    self.log(format!(
+                        "  {} {}",
+                        style("Skipped   ").green(),
+                        progress_bar.message()
+                    ))?;
 
-                return Ok(resolved);
+                    return Ok(resolved);
+                }
             }
         }
 
@@ -150,17 +168,27 @@ impl App {
             let _ = std::fs::remove_file(&file_path);
         });
 
-        if let Some(cached) = cached_file_path {
-            let cached_size = cached.metadata()
-                .context(format!("Getting metadata of cached file at '{}'", cached.to_string_lossy()))?.len();
+        if let Some((cached, cached_size)) = match &cached_file_path {
+            Some((cached, true)) => {
+                let cached_size = cached.metadata()
+                    .context(format!("Getting metadata of cached file at '{}'", cached.to_string_lossy()))?.len();
 
-            if let Some(size) = resolved.size {
-                if cached_size != size {
-                    // TODO: un-bail, delete cached file, retry
-                    bail!("Cached file size is wrong! expected: {size}, actual: {cached_size}, path: {}", cached.to_string_lossy());
+                match resolved.size {
+                    Some(size) if size != cached_size => {
+                        self.warn(format!(
+                            "Cached file size is wrong!
+                            - expected: {size}
+                            - actual: {cached_size}
+                            - path: {}",
+                            cached.to_string_lossy()
+                        ))?;
+                        None
+                    }
+                    _ => Some((cached, cached_size)),
                 }
-            }
-
+            },
+            _ => None,
+        } {
             progress_bar.disable_steady_tick();
             progress_bar.set_style(ProgressStyle::with_template("{prefix:.green.bold} {msg} [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")?);
             progress_bar.set_length(cached_size);
@@ -228,21 +256,11 @@ impl App {
 
             // if file can be cached, BufWriter to the file in cache dir
             // otherwise BufWriter to output file
-            let mut file_writer = BufWriter::new(match &resolved.cache {
-                CacheStrategy::File { namespace, path } => {
-                    match self.get_cache(namespace) {
-                        Some(cache) => {
-                            let f = cache.path(path);
-                            tokio::fs::create_dir_all(f.parent().unwrap()).await?;
-                            File::create(&f)
-                                .await
-                                .context(format!("Creating cache file at '{path}'"))?
-                        },
-                        None => target_file,
-                    }
-                }
-                CacheStrategy::Indexed { .. } => todo!(),
-                CacheStrategy::None => target_file,
+            let mut file_writer = BufWriter::new(if let Some((path, _exists)) = cached_file_path {
+                tokio::fs::create_dir_all(path.parent().unwrap()).await?;
+                File::create(path).await?
+            } else {
+                target_file
             });
         
             let mut stream = response.bytes_stream();

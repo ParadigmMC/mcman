@@ -124,15 +124,26 @@ impl<'a> ModrinthAPI<'a> {
     }
 
     pub async fn fetch_version(&self, id: &str, version: &str) -> Result<ModrinthVersion> {
-        let versions = self.fetch_versions(id).await?;
+        let all_versions = self.fetch_all_versions(id).await?;
+        let versions = self.0.server.filter_modrinth_versions(&all_versions);
 
         let ver = version.replace("${mcver}", &self.0.mc_version());
         let ver = ver.replace("${mcversion}", &self.0.mc_version());
 
-        let version_data = match ver.as_str() {
+        let version_data = match match ver.as_str() {
             "latest" => versions.first(),
             ver =>  versions.iter().find(|v| v.id == ver || v.name == ver || v.version_number == ver)
-        }.ok_or(anyhow!("Couln't find version '{ver}' ('{version}') for Modrinth project '{id}'"))?.clone();
+        } {
+            Some(v) => v.clone(),
+            None => {
+                let v = match ver.as_str() {
+                    "latest" => all_versions.first(),
+                    ver =>  all_versions.iter().find(|v| v.id == ver || v.name == ver || v.version_number == ver)
+                }.ok_or(anyhow!("Couln't find version '{ver}' ('{version}') for Modrinth project '{id}'"))?.clone();
+                self.0.warn(format!("Filtering failed for modrinth.com/mod/{id}/version/{ver}"))?;
+                v
+            }
+        };
 
         Ok(version_data)
     }
@@ -142,7 +153,8 @@ impl<'a> ModrinthAPI<'a> {
 
         Ok((
             version.files.iter().find(|f| f.primary)
-                .ok_or(anyhow!("No primary file found on modrinth:{id}/{} ({})", version.id, version.name))?.clone(),
+                .or(version.files.first())
+                .ok_or(anyhow!("No file found on modrinth:{id}/{} ({})", version.id, version.name))?.clone(),
             version
         ))
     }
@@ -155,6 +167,14 @@ impl<'a> ModrinthAPI<'a> {
             .error_for_status()?
             .json()
             .await?)
+    }
+
+    pub async fn version_from_hash(&self, hash: &str, algo: &str) -> Result<ModrinthVersion> {
+        self.fetch_api(&format!("{API_URL}/version_file/{hash}{}", if algo == "" || algo == "sha1" {
+            "".to_owned()
+        } else {
+            format!("?algorithm={algo}")
+        })).await
     }
 
     pub async fn resolve_source(&self, id: &str, version: &str) -> Result<ResolvedFile> {

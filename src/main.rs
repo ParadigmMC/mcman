@@ -49,6 +49,14 @@ enum Commands {
     /// Update markdown files with server info
     #[command(visible_alias = "md")]
     Markdown,
+    /// Download a downloadable
+    #[command(visible_alias = "dl")]
+    Download(commands::download::Args),
+    /// Cache management commands
+    #[command(subcommand)]
+    Cache(commands::cache::Commands),
+    /// Start a dev session
+    Dev,
     /// Pull files from server/ to config/
     Pull(commands::pull::Args),
     /// Helpers for setting up the environment
@@ -83,6 +91,9 @@ async fn main() -> Result<()> {
         Commands::Add(commands) => commands::add::run(base_app.upgrade()?, commands).await,
         Commands::Import(subcommands) => commands::import::run(base_app.upgrade()?, subcommands).await,
         Commands::Markdown => commands::markdown::run(base_app.upgrade()?, ).await,
+        Commands::Download(args) => commands::download::run(base_app.upgrade()?, args).await,
+        Commands::Cache(subcommands) => commands::cache::run(subcommands).await,
+        Commands::Dev => commands::dev::run(base_app.upgrade()?).await,
         Commands::Pull(args) => commands::pull::run(base_app.upgrade()?, args),
         Commands::Env(commands) => commands::env::run(base_app.upgrade()?, commands),
         Commands::World(commands) => commands::world::run(base_app.upgrade()?, commands).await,

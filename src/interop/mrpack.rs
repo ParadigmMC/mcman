@@ -36,7 +36,16 @@ impl<'a> MRPackInterop<'a> {
         for file in index.files.iter().progress_with(progress_bar.clone()) {
             progress_bar.set_message(file.path.clone());
 
-            let dl = self.0.dl_from_url(&file.downloads[0].clone()).await?;
+            let dl = if let Some(hash) = file.hashes.get("sha512") {
+                if let Ok(ver) = self.0.modrinth().version_from_hash(hash, "sha512").await {
+                    Some(Downloadable::Modrinth { id: ver.project_id.clone(), version: ver.id.clone() })
+                } else { None }
+            } else { None };
+
+            let dl = match dl {
+                Some(dl) => dl,
+                _ => self.0.dl_from_url(&file.downloads[0].clone()).await?,
+            };
             
             self.0.server.mods.push(dl);
         }
@@ -58,9 +67,13 @@ impl<'a> MRPackInterop<'a> {
 
             let mut target_file = std::fs::File::create(&target_path)?;
             std::io::copy(&mut pb.wrap_read(zip_file), &mut target_file)?;
+
+            pb.finish_and_clear();
         }
 
-        progress_bar.finish();
+        progress_bar.finish_and_clear();
+
+        self.0.success("mrpack imported!")?;
         
         Ok(())
     }
@@ -130,6 +143,8 @@ impl<'a> MRPackInterop<'a> {
         pb.finish();
 
         mrpack.finish()?;
+
+        self.0.success("mrpack exported!")?;
 
         Ok(())
     }
