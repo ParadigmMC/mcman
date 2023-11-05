@@ -1,3 +1,7 @@
 [[files]]
 path = "server.properties"
-type = "Reload"
+action = "Reload"
+
+[[files]]
+path = "spigot.yml"
+action = "/say sussy"

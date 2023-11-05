@@ -22,10 +22,12 @@ impl App {
     }
 
     pub fn info<S: std::fmt::Display>(&self, message: S) -> Result<()> {
-        Ok(self.multi_progress.println(format!(
-            "  {} {message}",
-           style("🛈 Info").bold()
-        ))?)
+        Ok(self.multi_progress.suspend(||
+            println!(
+                "  {} {message}",
+                style("🛈 Info").bold()
+            )
+        ))
     }
 
     pub fn log<S: std::fmt::Display>(&self, message: S) -> Result<()> {

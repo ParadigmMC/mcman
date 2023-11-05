@@ -46,7 +46,7 @@ impl<'a> BuildContext<'a> {
 
                 spinner.finish_with_message(format!("Unzipped {name}.zip successfully"));
             } else if let Some(dl) = &world.download {
-                let (path, resolved) = self.downloadable(dl, ".mcman-cache", Some(progress_bar)).await?;
+                let (path, _resolved) = self.downloadable(dl, ".mcman-cache", Some(progress_bar)).await?;
 
                 let spinner = self.app.multi_progress.insert_after(progress_bar, ProgressBar::new_spinner()
                     .with_message("Unzipping world..."));

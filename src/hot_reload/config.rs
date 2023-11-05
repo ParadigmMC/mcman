@@ -1,16 +1,43 @@
 use std::{collections::HashMap, path::PathBuf, fs::File, io::Write};
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use glob::Pattern;
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
+#[serde(tag = "type", try_from = "String", into = "String")]
 pub enum HotReloadAction {
+    #[default]
     Reload,
     Restart,
     #[serde(alias = "run")]
     RunCommand(String),
+}
+
+impl TryFrom<String> for HotReloadAction {
+    type Error = anyhow::Error;
+
+    fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
+        if value.starts_with('/') {
+            Ok(Self::RunCommand(value.strip_prefix('/').unwrap().to_string()))
+        } else {
+            match value.to_lowercase().as_str() {
+                "reload" => Ok(Self::Reload),
+                "restart" => Ok(Self::Restart),
+                _ => Err(anyhow!("Cant parse HotReloadAction: {value}")),
+            }
+        }
+    }
+}
+
+impl Into<String> for HotReloadAction {
+    fn into(self) -> String {
+        match self {
+            HotReloadAction::Reload => String::from("reload"),
+            HotReloadAction::Restart => String::from("restart"),
+            HotReloadAction::RunCommand(cmd) => format!("/{cmd}"),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -47,15 +74,6 @@ impl HotReloadConfig {
         Ok(h)
     }
 
-    pub fn reload(&mut self) -> Result<()> {
-        let path = self.path.clone();
-        let data = std::fs::read_to_string(path)?;
-        let mut h: Self = toml::from_str(&data)?;
-        self.events = h.events;
-        self.files = h.files;
-        Ok(())
-    }
-
     pub fn save(&self) -> Result<()> {
         let cfg_str = toml::to_string_pretty(&self)?;
         let mut f = File::create(&self.path)?;
@@ -65,7 +83,7 @@ impl HotReloadConfig {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Entry {
     #[serde(with = "super::pattern_serde")]
     pub path: Pattern,

@@ -1,4 +1,4 @@
-use std::{process::Stdio, time::Duration, path::PathBuf};
+use std::{process::Stdio, time::Duration, path::PathBuf, sync::{RwLock, Mutex, Arc}};
 
 use anyhow::{Result, Context};
 use console::style;
@@ -46,6 +46,13 @@ async fn try_read_line(opt: &mut Option<tokio::io::Lines<BufReader<tokio::proces
     }
 }
 
+// TODO
+// [x] fix stdout nesting for some reason
+// [x] commands are not being sent properly
+// [ ] use debouncer for notify
+// [ ] reload server.toml properly
+// [ ] tests 
+
 impl<'a> DevSession<'a> {
     pub async fn spawn_child(&mut self) -> Result<Child> {
         let platform = if std::env::consts::FAMILY == "windows" {
@@ -82,12 +89,14 @@ impl<'a> DevSession<'a> {
 
         let mut is_stopping = false;
 
+        let mut stdin_lines = tokio::io::BufReader::new(tokio::io::stdin()).lines();
+
         loop {
             tokio::select! {
                 Some(cmd) = rx.recv() => {
                     match cmd {
                         Command::Start => {
-                            self.builder.app.info("Starting server...")?;
+                            self.builder.app.info("Starting server process...")?;
                             if child.is_none() {
                                 let mut spawned_child = self.spawn_child().await?;
                                 stdout_lines = Some(tokio::io::BufReader::new(spawned_child.stdout.take().expect("stdout None")).lines());
@@ -95,12 +104,15 @@ impl<'a> DevSession<'a> {
                             }
                         }
                         Command::Stop => {
-                            self.builder.app.info("Stopping server...")?;
+                            self.builder.app.info("Killing server process...")?;
                             if let Some(ref mut child) = &mut child {
                                 child.kill().await?;
                             }
+                            child = None;
+                            stdout_lines = None;
                         }
                         Command::SendCommand(command) => {
+                            self.builder.app.info(&format!("Sending command: {command}"))?;
                             if let Some(ref mut child) = &mut child {
                                 if let Some(ref mut stdin) = &mut child.stdin {
                                     let _ = stdin.write_all(command.as_bytes()).await;
@@ -108,16 +120,32 @@ impl<'a> DevSession<'a> {
                             }
                         }
                         Command::WaitUntilExit => {
-                            self.builder.app.info("Waiting exit...")?;
+                            self.builder.app.info("Waiting for process exit...")?;
                             is_stopping = true;
                             if let Some(ref mut child) = &mut child {
                                 let should_kill = tokio::select! {
+                                    _ = async {
+                                        loop {
+                                            if let Ok(Some(line)) = try_read_line(&mut stdout_lines).await {
+                                                mp.suspend(|| {
+                                                    println!(
+                                                        "{}{}",
+                                                        style("| ").bold(),
+                                                        line.trim()
+                                                    )
+                                                });
+                                            }
+                                        }
+                                    } => false, // should be unreachable..?
                                     _ = child.wait() => false,
                                     _ = tokio::time::sleep(Duration::from_secs(30)) => {
                                         self.builder.app.info("Timeout reached, killing...")?;
                                         true
                                     },
-                                    _ = tokio::signal::ctrl_c() => true,
+                                    _ = tokio::signal::ctrl_c() => {
+                                        self.builder.app.info("^C recieved, killing...")?;
+                                        true
+                                    },
                                 };
 
                                 if should_kill {
@@ -126,6 +154,7 @@ impl<'a> DevSession<'a> {
                             }
                             is_stopping = false;
                             child = None;
+                            stdout_lines = None;
                             self.builder.app.info("Server process ended")?;
                         }
                         Command::Rebuild => {
@@ -135,7 +164,7 @@ impl<'a> DevSession<'a> {
                         Command::Bootstrap(path) => {
                             let rel_path = diff_paths(&path, self.builder.app.server.path.join("config"))
                                 .expect("Cannot diff paths");
-                            self.builder.app.info(format!("Bootstrapping: {}", rel_path.to_string_lossy()))?;
+                            self.builder.app.info(format!("Bootstrapping: {}", rel_path.to_string_lossy().trim()))?;
                             match self.builder.bootstrap_file(&rel_path, None).await {
                                 Ok(_) => {},
                                 Err(e) => self.builder.app.warn(format!("Error while bootstrapping:
@@ -155,8 +184,19 @@ impl<'a> DevSession<'a> {
                         )
                     });
                 },
+                Ok(Some(line)) = stdin_lines.next_line() => {
+                    let mut cmd = line.trim();
+
+                    self.builder.app.info(&format!("Sending command: {cmd}"))?;
+                    if let Some(ref mut child) = &mut child {
+                        if let Some(ref mut stdin) = &mut child.stdin {
+                            let _ = stdin.write_all(format!("{cmd}\n").as_bytes()).await;
+                        }
+                    }
+                },
                 _ = tokio::signal::ctrl_c() => {
                     if !is_stopping {
+                        self.builder.app.info("Stopping development session...")?;
                         break;
                     }
                 }
@@ -171,41 +211,38 @@ impl<'a> DevSession<'a> {
         Ok(())
     }
 
-    async fn create_output_task(&mut self) -> Result<()> {
-        let mp = self.builder.app.multi_progress.clone();
 
-        let child = self.child.as_mut().expect("child None");
-        let mut stdout = child.stdout.take().expect("child stdout None");
-        
-        let reader = tokio::io::BufReader::new(stdout);
-        let mut lines = reader.lines();
-        while let Ok(Some(line)) = lines.next_line().await {
-            mp.println(format!(
-                "{}{line}",
-                style("| ").bold()
-            )).expect("stdout IO err");
-        }
+    pub fn create_hotreload_watcher(
+        config: Arc<Mutex<HotReloadConfig>>,
+        tx: mpsc::Sender<Command>,
+    ) -> Result<ReadDirectoryChangesWatcher> {
+        Ok(recommended_watcher(move |e: std::result::Result<notify::Event, notify::Error>| {
+            if let Ok(e) = e {
+                match e.kind {
+                    EventKind::Create(_) | EventKind::Modify(_) => {
+                        let mut guard = config.lock().unwrap();
 
-        Ok(())
-    }
-
-    async fn create_stdin_task(&mut self, tx: mpsc::Sender<Command>) -> Result<()> {
-        let theme = SimpleTheme {};
-
-        while let Ok(cmd) = Input::with_theme(&theme)
-            .report(false)
-            .interact_text() {
-            if let Err(e) = tx.blocking_send(Command::SendCommand(cmd)) {
-                eprintln!("{e}");
-                break;
+                        match HotReloadConfig::load_from(&guard.path) {
+                            Ok(updated) => {
+                                eprintln!("Updated hotreload.toml :3");
+                                *guard = updated;
+                            }
+                            Err(e) => {
+                                eprintln!("hotreload.toml error: {e}");
+                                eprintln!("cannot update hotreload.toml");
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            } else {
+                //idk
             }
-        }
-
-        Ok(())
+        })?)
     }
 
     pub fn create_config_watcher(
-        config: HotReloadConfig,
+        config: Arc<Mutex<HotReloadConfig>>,
         tx: mpsc::Sender<Command>,
     ) -> Result<ReadDirectoryChangesWatcher> {
         Ok(recommended_watcher(move |e: std::result::Result<notify::Event, notify::Error>| {
@@ -219,19 +256,21 @@ impl<'a> DevSession<'a> {
 
                             tx.blocking_send(Command::Bootstrap(path.clone())).unwrap();
 
-                            let Some(file) = config.files.iter().find(|f| {
+                            let guard = config.lock().unwrap();
+                            let Some(file) = guard.files.iter().find(|f| {
                                 f.path.matches_path(&path)
-                            }) else {
+                            }).cloned() else {
                                 return;
                             };
+                            drop(guard);
 
                             match &file.action {
                                 HotReloadAction::Reload => {
-                                    tx.blocking_send(Command::SendCommand("reload confirm".to_owned()))
+                                    tx.blocking_send(Command::SendCommand("reload confirm\n".to_owned()))
                                         .expect("tx send err");
                                 }
                                 HotReloadAction::Restart => {
-                                    tx.blocking_send(Command::SendCommand("stop\nend".to_owned()))
+                                    tx.blocking_send(Command::SendCommand("stop\nend\n".to_owned()))
                                         .expect("tx send err");
                                     tx.blocking_send(Command::WaitUntilExit)
                                         .expect("tx send err");
@@ -239,7 +278,7 @@ impl<'a> DevSession<'a> {
                                         .expect("tx send err");
                                 }
                                 HotReloadAction::RunCommand(cmd) => {
-                                    tx.blocking_send(Command::SendCommand(cmd.to_owned()))
+                                    tx.blocking_send(Command::SendCommand(format!("{cmd}\n")))
                                         .expect("tx send err");
                                 }
                             }
@@ -278,11 +317,15 @@ impl<'a> DevSession<'a> {
     pub async fn start(mut self, config: HotReloadConfig) -> Result<()> {
         let (tx, rx) = mpsc::channel(32);
 
-        let mut config_watcher = Self::create_config_watcher(config, tx.clone())?;
+        let cfg_mutex = Arc::new(Mutex::new(config));
+
+        let mut config_watcher = Self::create_config_watcher(cfg_mutex.clone(), tx.clone())?;
+        let mut hotreload_watcher = Self::create_hotreload_watcher(cfg_mutex.clone(), tx.clone())?;
         let mut servertoml_watcher = Self::create_servertoml_watcher(tx.clone())?;
 
         config_watcher.watch(self.builder.app.server.path.join("config").as_path(), RecursiveMode::Recursive)?;
         servertoml_watcher.watch(self.builder.app.server.path.join("server.toml").as_path(), RecursiveMode::NonRecursive)?;
+        hotreload_watcher.watch(self.builder.app.server.path.join("hotreload.toml").as_path(), RecursiveMode::NonRecursive)?;
 
         tx.send(Command::Rebuild).await?;
         tx.send(Command::Start).await?;
