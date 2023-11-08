@@ -35,9 +35,6 @@ pub async fn run(app: App) -> Result<()> {
 
     let mut dev_session = DevSession {
         builder,
-        child: None,
-        command_reciever: None,
-        command_sender: None,
         jar_name: None,
     };
 
