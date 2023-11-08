@@ -1,13 +1,12 @@
-use std::{process::Stdio, time::Duration, path::PathBuf, sync::{RwLock, Mutex, Arc}};
+use std::{process::Stdio, time::Duration, path::PathBuf, sync::{Mutex, Arc}};
 
-use anyhow::{Result, Context};
+use anyhow::Result;
 use console::style;
-use dialoguer::{Input, theme::{Theme, SimpleTheme}};
-use notify::{recommended_watcher, EventKind, Watcher, RecursiveMode, ReadDirectoryChangesWatcher};
+use notify_debouncer_mini::{new_debouncer, Debouncer, notify::{RecommendedWatcher, EventKind, RecursiveMode}};
 use pathdiff::diff_paths;
 use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, sync::mpsc, task::JoinHandle, process::Child};
 
-use crate::{core::BuildContext, model::Lockfile, app::App};
+use crate::core::BuildContext;
 
 use self::config::{HotReloadConfig, HotReloadAction};
 
@@ -49,7 +48,7 @@ async fn try_read_line(opt: &mut Option<tokio::io::Lines<BufReader<tokio::proces
 // TODO
 // [x] fix stdout nesting for some reason
 // [x] commands are not being sent properly
-// [ ] use debouncer for notify
+// [x] use debouncer for notify
 // [ ] reload server.toml properly
 // [ ] tests 
 
@@ -215,28 +214,27 @@ impl<'a> DevSession<'a> {
     pub fn create_hotreload_watcher(
         config: Arc<Mutex<HotReloadConfig>>,
         tx: mpsc::Sender<Command>,
-    ) -> Result<ReadDirectoryChangesWatcher> {
-        Ok(recommended_watcher(move |e: std::result::Result<notify::Event, notify::Error>| {
+    ) -> Result<Debouncer<RecommendedWatcher>> {
+        Ok(new_debouncer(Duration::from_secs(1), move |e| {
             if let Ok(e) = e {
-                match e.kind {
-                    EventKind::Create(_) | EventKind::Modify(_) => {
-                        let mut guard = config.lock().unwrap();
+                for e in e {
+                    if !matches!(e.kind, EventKind::Create(_) | EventKind::Modify(_)) {
+                        continue;
+                    };
+                    
+                    let mut guard = config.lock().unwrap();
 
-                        match HotReloadConfig::load_from(&guard.path) {
-                            Ok(updated) => {
-                                eprintln!("Updated hotreload.toml :3");
-                                *guard = updated;
-                            }
-                            Err(e) => {
-                                eprintln!("hotreload.toml error: {e}");
-                                eprintln!("cannot update hotreload.toml");
-                            }
+                    match HotReloadConfig::load_from(&guard.path) {
+                        Ok(updated) => {
+                            eprintln!("Updated hotreload.toml :3");
+                            *guard = updated;
+                        }
+                        Err(e) => {
+                            eprintln!("hotreload.toml error: {e}");
+                            eprintln!("cannot update hotreload.toml");
                         }
                     }
-                    _ => {}
                 }
-            } else {
-                //idk
             }
         })?)
     }
@@ -244,62 +242,61 @@ impl<'a> DevSession<'a> {
     pub fn create_config_watcher(
         config: Arc<Mutex<HotReloadConfig>>,
         tx: mpsc::Sender<Command>,
-    ) -> Result<ReadDirectoryChangesWatcher> {
-        Ok(recommended_watcher(move |e: std::result::Result<notify::Event, notify::Error>| {
+    ) -> Result<Debouncer<RecommendedWatcher>> {
+        Ok(new_debouncer(Duration::from_secs(1), move |e| {
             if let Ok(e) = e {
-                match e.kind {
-                    EventKind::Create(_) | EventKind::Modify(_) => {
-                        for path in e.paths {
-                            if path.is_dir() {
-                                return;
+                for e in e {
+                    if !matches!(e.kind, EventKind::Create(_) | EventKind::Modify(_)) {
+                        continue;
+                    };
+
+                    for path in e.paths {
+                        if path.is_dir() {
+                            return;
+                        }
+
+                        tx.blocking_send(Command::Bootstrap(path.clone())).unwrap();
+
+                        let guard = config.lock().unwrap();
+                        let Some(file) = guard.files.iter().find(|f| {
+                            f.path.matches_path(&path)
+                        }).cloned() else {
+                            return;
+                        };
+                        drop(guard);
+
+                        match &file.action {
+                            HotReloadAction::Reload => {
+                                tx.blocking_send(Command::SendCommand("reload confirm\n".to_owned()))
+                                    .expect("tx send err");
                             }
-
-                            tx.blocking_send(Command::Bootstrap(path.clone())).unwrap();
-
-                            let guard = config.lock().unwrap();
-                            let Some(file) = guard.files.iter().find(|f| {
-                                f.path.matches_path(&path)
-                            }).cloned() else {
-                                return;
-                            };
-                            drop(guard);
-
-                            match &file.action {
-                                HotReloadAction::Reload => {
-                                    tx.blocking_send(Command::SendCommand("reload confirm\n".to_owned()))
-                                        .expect("tx send err");
-                                }
-                                HotReloadAction::Restart => {
-                                    tx.blocking_send(Command::SendCommand("stop\nend\n".to_owned()))
-                                        .expect("tx send err");
-                                    tx.blocking_send(Command::WaitUntilExit)
-                                        .expect("tx send err");
-                                    tx.blocking_send(Command::Start)
-                                        .expect("tx send err");
-                                }
-                                HotReloadAction::RunCommand(cmd) => {
-                                    tx.blocking_send(Command::SendCommand(format!("{cmd}\n")))
-                                        .expect("tx send err");
-                                }
+                            HotReloadAction::Restart => {
+                                tx.blocking_send(Command::SendCommand("stop\nend\n".to_owned()))
+                                    .expect("tx send err");
+                                tx.blocking_send(Command::WaitUntilExit)
+                                    .expect("tx send err");
+                                tx.blocking_send(Command::Start)
+                                    .expect("tx send err");
+                            }
+                            HotReloadAction::RunCommand(cmd) => {
+                                tx.blocking_send(Command::SendCommand(format!("{cmd}\n")))
+                                    .expect("tx send err");
                             }
                         }
                     }
-                    _ => {}
                 }
-            } else {
-                //idk
             }
         })?)
     }
 
-    pub fn create_servertoml_watcher(tx: mpsc::Sender<Command>) -> Result<ReadDirectoryChangesWatcher> {
-        Ok(notify::recommended_watcher(move |e: std::result::Result<notify::Event, notify::Error>| {
-            let Ok(e) = e else {
-                return;
-            };
-
-            match e.kind {
-                EventKind::Modify(_) => {
+    pub fn create_servertoml_watcher(tx: mpsc::Sender<Command>) -> Result<Debouncer<RecommendedWatcher>> {
+        Ok(new_debouncer(Duration::from_secs(1), move |e| {
+            if let Ok(e) = e {
+                for e in e {
+                    if !matches!(e.kind, EventKind::Modify(_)) {
+                        continue;
+                    };
+                    
                     tx.blocking_send(Command::SendCommand("stop\nend".to_owned()))
                         .expect("tx send err");
                     tx.blocking_send(Command::WaitUntilExit)
@@ -309,7 +306,6 @@ impl<'a> DevSession<'a> {
                     tx.blocking_send(Command::Start)
                         .expect("tx send err");
                 }
-                _ => {}
             }
         })?)
     }
@@ -323,9 +319,9 @@ impl<'a> DevSession<'a> {
         let mut hotreload_watcher = Self::create_hotreload_watcher(cfg_mutex.clone(), tx.clone())?;
         let mut servertoml_watcher = Self::create_servertoml_watcher(tx.clone())?;
 
-        config_watcher.watch(self.builder.app.server.path.join("config").as_path(), RecursiveMode::Recursive)?;
-        servertoml_watcher.watch(self.builder.app.server.path.join("server.toml").as_path(), RecursiveMode::NonRecursive)?;
-        hotreload_watcher.watch(self.builder.app.server.path.join("hotreload.toml").as_path(), RecursiveMode::NonRecursive)?;
+        config_watcher.watcher().watch(self.builder.app.server.path.join("config").as_path(), RecursiveMode::Recursive)?;
+        servertoml_watcher.watcher().watch(self.builder.app.server.path.join("server.toml").as_path(), RecursiveMode::NonRecursive)?;
+        hotreload_watcher.watcher().watch(self.builder.app.server.path.join("hotreload.toml").as_path(), RecursiveMode::NonRecursive)?;
 
         tx.send(Command::Rebuild).await?;
         tx.send(Command::Start).await?;
