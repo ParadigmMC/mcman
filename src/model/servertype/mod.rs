@@ -115,6 +115,7 @@ impl ServerType {
         }
     }
 
+    // TODO: move this to somewhere else, like BuildContext
     pub async fn get_install_method(
         &self,
         app: &App,
@@ -196,6 +197,7 @@ impl ServerType {
         })
     }
 
+    // TODO: move this to somewhere else, like BuildContext
     pub async fn get_startup_method(
         &self,
         app: &App,
@@ -231,6 +233,7 @@ impl ServerType {
         })
     }
 
+    // TODO: move to ModrinthAPI
     pub fn get_modrinth_facets(&self, mcver: &str) -> Result<String> {
         let mut arr: Vec<Vec<String>> = vec![];
 
@@ -245,6 +248,7 @@ impl ServerType {
         Ok(serde_json::to_string(&arr)?)
     }
 
+    // TODO: move to ModrinthAPI
     pub fn get_modrinth_name(&self) -> Option<String> {
         match self {
             Self::Fabric { .. } => Some("fabric"),
@@ -262,6 +266,7 @@ impl ServerType {
         }.map(|o| o.to_owned())
     }
 
+    // TODO: move to HangarAPI
     pub fn get_hangar_platform(&self) -> Option<mcapi::hangar::Platform> {
         match self {
             Self::Waterfall {} => Some(mcapi::hangar::Platform::Waterfall),
@@ -274,6 +279,7 @@ impl ServerType {
         }
     }
 
+    // TODO: move to HangarAPI
     pub fn get_hangar_versions_filter(&self, mcver: &str) -> mcapi::hangar::VersionsFilter {
         let platform = self.get_hangar_platform();
         mcapi::hangar::VersionsFilter {
@@ -302,11 +308,11 @@ impl ToString for ServerType {
             ServerType::Vanilla {  } => String::from("Vanilla"),
             ServerType::PaperMC { project, build } => format!("{project} build {build}"),
             ServerType::Purpur { build } => format!("Purpur build {build}"),
-            ServerType::Fabric { loader, installer } => format!("Fabric v{loader}"),
-            ServerType::Quilt { loader, installer } => format!("Quilt v{loader}"),
+            ServerType::Fabric { loader, .. } => format!("Fabric v{loader}"),
+            ServerType::Quilt { loader, .. } => format!("Quilt v{loader}"),
             ServerType::NeoForge { loader } => format!("NeoForge v{loader}"),
             ServerType::Forge { loader } => format!("Forge v{loader}"),
-            ServerType::BuildTools { software, args } => format!("(BuildTools) {software}"),
+            ServerType::BuildTools { software, .. } => format!("(BuildTools) {software}"),
             ServerType::Paper {  } => format!("Paper"),
             ServerType::Velocity {  } => format!("Velocity"),
             ServerType::Waterfall {  } => format!("Waterfall"),
@@ -326,10 +332,10 @@ impl Resolvable for ServerType {
             ServerType::PaperMC { project, build } => app.papermc().resolve_source(project, version, build).await,
             ServerType::Purpur { build } => app.purpur().resolve_source(version, build).await,
             ServerType::Fabric { loader, installer } => app.fabric().resolve_source(loader, installer).await,
-            ServerType::Quilt { loader, installer } => app.quilt().resolve_installer(installer).await,
+            ServerType::Quilt { installer, .. } => app.quilt().resolve_installer(installer).await,
             ServerType::NeoForge { loader } => app.neoforge().resolve_source(loader).await,
             ServerType::Forge { loader } => app.forge().resolve_source(loader).await,
-            ServerType::BuildTools { software, args } => buildtools().resolve_source(app).await,
+            ServerType::BuildTools { .. } => buildtools().resolve_source(app).await,
             ServerType::Paper {  } => app.papermc().resolve_source("paper", version, "latest").await,
             ServerType::Velocity {  } => app.papermc().resolve_source("velocity", version, "latest").await,
             ServerType::Waterfall {  } => app.papermc().resolve_source("waterfall", version, "latest").await,

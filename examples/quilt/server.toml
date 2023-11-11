@@ -20,11 +20,9 @@ type = "modrinth"
 id = "create-fabric"
 version = "wKEEi1qX"
 
-[[mods]]
-type = "modrinth"
-id = "qsl"
-version = "BTCxVi75"
-
 [markdown]
 files = ["README.md"]
 auto_update = false
+
+[options]
+upload_to_mclogs = true

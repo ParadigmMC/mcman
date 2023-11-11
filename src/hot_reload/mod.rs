@@ -1,6 +1,6 @@
-use std::{process::Stdio, time::Duration, path::PathBuf, sync::{Mutex, Arc}};
+use std::{process::{Stdio, ExitStatus}, time::Duration, path::PathBuf, sync::{Mutex, Arc}};
 
-use anyhow::{Result, Context};
+use anyhow::{Result, Context, bail, anyhow};
 use console::style;
 use dialoguer::theme::ColorfulTheme;
 use indicatif::ProgressBar;
@@ -40,6 +40,20 @@ async fn try_read_line(opt: &mut Option<tokio::io::Lines<BufReader<tokio::proces
         Some(lines) => Ok(lines.next_line().await?),
         None => Ok(None),
     }
+}
+
+async fn try_wait_child(opt: &mut Option<Child>) -> Result<Option<ExitStatus>> {
+    match opt {
+        Some(c) => Ok(Some(c.wait().await?)),
+        None => Ok(None),
+    }
+}
+
+pub enum TestResult {
+    Ongoing,
+    Success,
+    Failed,
+    Crashed,
 }
 
 // TODO
@@ -86,11 +100,12 @@ impl<'a> DevSession<'a> {
 
         let mut is_stopping = false;
         let mut test_passed = false;
+        let mut test_result = TestResult::Ongoing;
         let mut exit_status = None;
 
         let mut stdin_lines = tokio::io::BufReader::new(tokio::io::stdin()).lines();
 
-        loop {
+        'l: loop {
             tokio::select! {
                 Some(cmd) = rx.recv() => {
                     match cmd {
@@ -112,7 +127,6 @@ impl<'a> DevSession<'a> {
                             exit_status = None;
                         }
                         Command::SendCommand(command) => {
-                            self.builder.app.info(&format!("Sending command: {command}"))?;
                             if let Some(ref mut child) = &mut child {
                                 if let Some(ref mut stdin) = &mut child.stdin {
                                     let _ = stdin.write_all(command.as_bytes()).await;
@@ -181,7 +195,7 @@ impl<'a> DevSession<'a> {
                         }
                         Command::EndSession => {
                             self.builder.app.info("Ending session...")?;
-                            break;
+                            break 'l;
                         }
                     }
                 },
@@ -190,16 +204,24 @@ impl<'a> DevSession<'a> {
 
                     if self.test_mode
                         && !is_stopping
-                        && !test_passed
-                        && s.contains("]: Done")
-                        && s.ends_with("For help, type \"help\"") {
-                        test_passed = true;
+                        && !test_passed {
 
-                        self.builder.app.success("Test passed!");
+                        if s.contains("]: Done") && s.ends_with("For help, type \"help\"") {
+                            test_passed = true;
+                            test_result = TestResult::Success;
 
-                        tx.send(Command::SendCommand("stop\nend\n".to_owned())).await?;
-                        tx.send(Command::WaitUntilExit).await?;
-                        tx.send(Command::EndSession).await?;
+                            self.builder.app.success("Test passed!")?;
+    
+                            tx.send(Command::SendCommand("stop\nend\n".to_owned())).await?;
+                            tx.send(Command::WaitUntilExit).await?;
+                            tx.send(Command::EndSession).await?;
+                        } else if s == "---- end of report ----" {
+                            self.builder.app.info("Server crashed!")?;
+                            test_result = TestResult::Crashed;
+
+                            tx.send(Command::WaitUntilExit).await?;
+                            tx.send(Command::EndSession).await?;
+                        }
                     }
 
                     mp.suspend(|| {
@@ -219,10 +241,20 @@ impl<'a> DevSession<'a> {
                         }
                     }
                 },
+                status = try_wait_child(&mut child) => {
+                    exit_status = status.unwrap_or(None);
+
+                    self.builder.app.info("Server process exited")?;
+
+                    if self.test_mode {
+                        tx.send(Command::WaitUntilExit).await?;
+                        tx.send(Command::EndSession).await?;
+                    }
+                },
                 _ = tokio::signal::ctrl_c() => {
                     if !is_stopping {
                         self.builder.app.info("Stopping development session...")?;
-                        break;
+                        break 'l;
                     }
                 }
             }
@@ -258,6 +290,15 @@ impl<'a> DevSession<'a> {
                         }
                     }
                 }
+
+                match test_result {
+                    TestResult::Crashed => {
+                        println!(
+                            "  - Server crashed"
+                        );
+                    }
+                    _ => {}
+                }
             });
 
             if self.builder.app.server.options.upload_to_mclogs {
@@ -266,7 +307,27 @@ impl<'a> DevSession<'a> {
 
                 pb.enable_steady_tick(Duration::from_millis(250));
 
-                let log_path = self.builder.output_dir.join("logs").join("latest.log");
+                let log_path = match test_result {
+                    TestResult::Crashed => {
+                        let folder = self.builder.output_dir.join("crash-reports");
+                        if !folder.exists() {
+                            bail!("crash-reports folder doesn't exist, cant upload to mclo.gs");
+                        }
+
+                        // get latest crash report
+                        let (report_path, _) = folder.read_dir()?
+                            .into_iter()
+                            .filter_map(|f| f.ok())
+                            .filter_map(|f| Some((f.path(), f.metadata().ok()?.modified().ok()?)))
+                            .max_by_key(|(_, t)| t.clone())
+                            .ok_or(anyhow!("can't find crash report"))?;
+
+                        report_path
+                    }
+                    _ => {
+                        self.builder.output_dir.join("logs").join("latest.log")
+                    }
+                };
 
                 if log_path.exists() {
                     let content = std::fs::read_to_string(&log_path)
@@ -276,7 +337,7 @@ impl<'a> DevSession<'a> {
                     drop(content);
 
                     pb.finish_and_clear();
-                    self.builder.app.success("Log uploaded to mclo.gs");
+                    self.builder.app.success("Log uploaded to mclo.gs")?;
                     mp.suspend(|| {
                         println!();
                         println!(" -- [ {} ] --", log.url);
