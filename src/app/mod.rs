@@ -89,10 +89,6 @@ pub struct App {
 }
 
 impl App {
-    pub fn new() -> Result<Self> {
-        BaseApp::new()?.upgrade()
-    }
-
     pub fn mc_version(&self) -> String {
         self.server.mc_version.clone()
     }
@@ -125,12 +121,6 @@ impl App {
     pub fn get_cache(&self, ns: &str) -> Option<Cache> {
         // TODO check if cache should be enabled to return None
         Cache::get_cache(ns)
-    }
-
-    pub fn has_in_cache(&self, ns: &str, path: &str) -> bool {
-        self.get_cache(ns)
-            .map(|c| c.exists(path))
-            .unwrap_or(false)
     }
 }
 

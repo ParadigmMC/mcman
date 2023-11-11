@@ -23,10 +23,10 @@ pub struct BuildArgs {
 impl<'a> BuildArgs {
     pub fn create_build_context(&self, app: &'a App) -> Result<BuildContext<'a>> {
         let default_output = app.server.path.join("server");
-        let output_dir = self.output.unwrap_or(default_output);
+        let output_dir = self.output.clone().unwrap_or(default_output);
 
         let force = self.force;
-        let skip_stages = self.skip;
+        let skip_stages = self.skip.clone();
 
         std::fs::create_dir_all(&output_dir).context("Failed to create output directory")?;
 

@@ -59,7 +59,9 @@ impl<'a> BuildContext<'a> {
             self.download_addons(AddonType::Mod).await?;
         }
 
-        // TODO worlds/datapacks
+        if !self.app.server.worlds.is_empty() {
+            self.process_worlds().await?;
+        }
 
         self.bootstrap_files().await?;
 
