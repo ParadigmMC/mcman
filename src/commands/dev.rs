@@ -1,44 +1,48 @@
-use anyhow::{Result, Context};
+use std::sync::{Arc, Mutex};
 
-use crate::{app::App, hot_reload::{DevSession, config::HotReloadConfig}, core::BuildContext, model::Lockfile};
+use anyhow::Result;
 
-pub async fn run(app: App) -> Result<()> {
-    let output_dir = app.server.path.join("server");
+use crate::{app::App, hot_reload::{DevSession, config::HotReloadConfig}};
 
-    std::fs::create_dir_all(&output_dir).context("Failed to create output directory")?;
+use super::run::RunArgs;
 
-    let config_path = app.server.path.join("hotreload.toml");
+#[derive(clap::Args)]
+pub struct DevArgs {
+    #[command(flatten)]
+    run_args: RunArgs,
+}
 
-    let config = if config_path.exists() {
-        HotReloadConfig::load_from(&config_path)?
-    } else {
-        app.info("Generated hotreload.toml")?;
+impl<'a> DevArgs {
+    pub fn create_dev_session(&self, app: &'a App) -> Result<DevSession<'a>> {
+        let config_path = app.server.path.join("hotreload.toml");
 
-        let cfg = HotReloadConfig {
-            path: config_path,
-            ..Default::default()
+        let config = if config_path.exists() {
+            HotReloadConfig::load_from(&config_path)?
+        } else {
+            app.info("Generated hotreload.toml")?;
+
+            let cfg = HotReloadConfig {
+                path: config_path,
+                ..Default::default()
+            };
+
+            cfg.save()?;
+            cfg
         };
 
-        cfg.save()?;
-        cfg
-    };
+        let mut dev_session = self.run_args.create_dev_session(app)?;
+        dev_session.hot_reload = Some(Arc::new(Mutex::new(config)));
+        // no.
+        dev_session.test_mode = false;
 
-    let mut builder = BuildContext {
-        app: &app,
-        force: false,
-        skip_stages: vec![],
-        output_dir,
-        lockfile: Lockfile::default(),
-        new_lockfile: Lockfile::default(),
-        server_process: None,
-    };
+        Ok(dev_session)
+    }
+}
 
-    let mut dev_session = DevSession {
-        builder,
-        jar_name: None,
-    };
+pub async fn run(app: App, args: DevArgs) -> Result<()> {
+    let mut dev_session = args.create_dev_session(&app)?;
 
-    dev_session.start(config).await?;
+    dev_session.start().await?;
 
     Ok(())
 }

@@ -6,16 +6,16 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, bail, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::{commands, sources::modrinth};
+use crate::sources::modrinth;
 
 use super::{ClientSideMod, Downloadable, ServerLauncher, ServerType, World, SoftwareType};
 
 pub mod interactive;
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(default)]
 pub struct MarkdownOptions {
     pub files: Vec<String>,
@@ -28,7 +28,7 @@ impl MarkdownOptions {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(default)]
 pub struct Server {
     #[serde(skip)]
@@ -51,6 +51,13 @@ pub struct Server {
     #[serde(default)]
     #[serde(skip_serializing_if = "MarkdownOptions::is_empty")]
     pub markdown: MarkdownOptions,
+    #[serde(default)]
+    pub options: ServerOptions,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq)]
+pub struct ServerOptions {
+    pub upload_to_mclogs: bool,
 }
 
 impl Server {
@@ -145,6 +152,7 @@ impl Default for Server {
             clientsidemods: vec![],
             worlds: HashMap::new(),
             markdown: MarkdownOptions::default(),
+            options: ServerOptions::default(),
         }
     }
 }

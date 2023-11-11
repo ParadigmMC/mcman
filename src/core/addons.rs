@@ -1,6 +1,6 @@
 use std::{collections::HashSet, time::Duration};
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use indicatif::{ProgressIterator, ProgressBar, ProgressStyle, FormattedDuration};
 use tokio::fs;
 

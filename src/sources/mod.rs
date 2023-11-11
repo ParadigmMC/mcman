@@ -12,3 +12,4 @@ pub mod quilt;
 pub mod spigot;
 pub mod vanilla;
 pub mod hangar;
+pub mod mclogs;

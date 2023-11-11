@@ -21,7 +21,7 @@ pub enum SoftwareType {
     Unknown,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum ServerType {
     Vanilla {},

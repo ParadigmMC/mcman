@@ -1,7 +1,9 @@
 use std::{process::Stdio, time::Duration, path::PathBuf, sync::{Mutex, Arc}};
 
-use anyhow::Result;
+use anyhow::{Result, Context};
 use console::style;
+use dialoguer::theme::ColorfulTheme;
+use indicatif::ProgressBar;
 use notify_debouncer_mini::{new_debouncer, Debouncer, notify::{RecommendedWatcher, RecursiveMode}, DebounceEventResult};
 use pathdiff::diff_paths;
 use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, sync::mpsc, process::Child};
@@ -17,11 +19,16 @@ pub mod pattern_serde;
 pub struct DevSession<'a> {
     pub builder: BuildContext<'a>,
     pub jar_name: Option<String>,
+    // None to disable hot reloading
+    pub hot_reload: Option<Arc<Mutex<HotReloadConfig>>>,
+    // true if in test mode (exit server after server fully starts, report/upload logs on fail)
+    pub test_mode: bool,
 }
 
 pub enum Command {
     Start,
     Stop,
+    EndSession,
     Rebuild,
     SendCommand(String),
     WaitUntilExit,
@@ -69,7 +76,7 @@ impl<'a> DevSession<'a> {
     }
 
     #[allow(unused_assignments)]
-    async fn handle_commands(mut self, mut rx: mpsc::Receiver<Command>) -> Result<()> {
+    async fn handle_commands(mut self, mut rx: mpsc::Receiver<Command>, mut tx: mpsc::Sender<Command>) -> Result<()> {
         let mp = self.builder.app.multi_progress.clone();
 
         let mut child: Option<Child> = None;
@@ -78,6 +85,8 @@ impl<'a> DevSession<'a> {
         let mut stdout_lines: Option<tokio::io::Lines<BufReader<tokio::process::ChildStdout>>> = None;
 
         let mut is_stopping = false;
+        let mut test_passed = false;
+        let mut exit_status = None;
 
         let mut stdin_lines = tokio::io::BufReader::new(tokio::io::stdin()).lines();
 
@@ -100,6 +109,7 @@ impl<'a> DevSession<'a> {
                             }
                             child = None;
                             stdout_lines = None;
+                            exit_status = None;
                         }
                         Command::SendCommand(command) => {
                             self.builder.app.info(&format!("Sending command: {command}"))?;
@@ -115,6 +125,7 @@ impl<'a> DevSession<'a> {
                             if let Some(ref mut child) = &mut child {
                                 let should_kill = tokio::select! {
                                     _ = async {
+                                        // future to keep printing logs
                                         loop {
                                             if let Ok(Some(line)) = try_read_line(&mut stdout_lines).await {
                                                 mp.suspend(|| {
@@ -126,8 +137,13 @@ impl<'a> DevSession<'a> {
                                                 });
                                             }
                                         }
-                                    } => false, // should be unreachable..?
-                                    _ = child.wait() => false,
+                                    // should be unreachable since infinite loop
+                                    // but still, return false, idk
+                                    } => false, 
+                                    status = child.wait() => {
+                                        exit_status = status.ok();
+                                        false
+                                    },
                                     _ = tokio::time::sleep(Duration::from_secs(30)) => {
                                         self.builder.app.info("Timeout reached, killing...")?;
                                         true
@@ -140,6 +156,7 @@ impl<'a> DevSession<'a> {
 
                                 if should_kill {
                                     child.kill().await?;
+                                    exit_status = None;
                                 }
                             }
                             is_stopping = false;
@@ -162,10 +179,28 @@ impl<'a> DevSession<'a> {
                                 - Err: {e}", rel_path.to_string_lossy()))?,
                             }
                         }
+                        Command::EndSession => {
+                            self.builder.app.info("Ending session...")?;
+                            break;
+                        }
                     }
                 },
                 Ok(Some(line)) = try_read_line(&mut stdout_lines) => {
                     let mut s = line.trim();
+
+                    if self.test_mode
+                        && !is_stopping
+                        && !test_passed
+                        && s.contains("]: Done")
+                        && s.ends_with("For help, type \"help\"") {
+                        test_passed = true;
+
+                        self.builder.app.success("Test passed!");
+
+                        tx.send(Command::SendCommand("stop\nend\n".to_owned())).await?;
+                        tx.send(Command::WaitUntilExit).await?;
+                        tx.send(Command::EndSession).await?;
+                    }
 
                     mp.suspend(|| {
                         println!(
@@ -196,6 +231,66 @@ impl<'a> DevSession<'a> {
         if let Some(ref mut child) = &mut child {
             self.builder.app.info("Killing undead child process...")?;
             child.kill().await?;
+        }
+
+        if self.test_mode && !test_passed {
+            mp.suspend(|| {
+                println!(
+                    "{} Test failed!",
+                    ColorfulTheme::default().error_prefix
+                );
+
+                if let Some(status) = &exit_status {
+                    if let Some(code) = status.code() {
+                        println!(
+                            "  - Process exited with code {}",
+                            if code == 0 {
+                                style(code).green()
+                            } else {
+                                style(code).red().bold()
+                            }
+                        );
+                    } else {
+                        if !status.success() {
+                            println!(
+                                "  - Process didn't exit successfully"
+                            );
+                        }
+                    }
+                }
+            });
+
+            if self.builder.app.server.options.upload_to_mclogs {
+                let pb = mp.add(ProgressBar::new_spinner()
+                    .with_message("Uploading to mclo.gs"));
+
+                pb.enable_steady_tick(Duration::from_millis(250));
+
+                let log_path = self.builder.output_dir.join("logs").join("latest.log");
+
+                if log_path.exists() {
+                    let content = std::fs::read_to_string(&log_path)
+                        .context("Reading log file")?;
+
+                    let log = self.builder.app.mclogs().paste_log(&content).await?;
+                    drop(content);
+
+                    pb.finish_and_clear();
+                    self.builder.app.success("Log uploaded to mclo.gs");
+                    mp.suspend(|| {
+                        println!();
+                        println!(" -- [ {} ] --", log.url);
+                        println!();
+                    });
+                } else {
+                    pb.finish_and_clear();
+                    mp.suspend(|| println!(
+                        "{} '{}' does not exist! Can't upload log.",
+                        ColorfulTheme::default().error_prefix,
+                        style(log_path.to_string_lossy()).dim()
+                    ));
+                }
+            }
         }
 
         Ok(())
@@ -287,23 +382,23 @@ impl<'a> DevSession<'a> {
         })?)
     }
 
-    pub async fn start(mut self, config: HotReloadConfig) -> Result<()> {
+    pub async fn start(mut self) -> Result<()> {
         let (tx, rx) = mpsc::channel(32);
 
-        let cfg_mutex = Arc::new(Mutex::new(config));
+        if let Some(cfg_mutex) = self.hot_reload.clone() {
+            let mut config_watcher = Self::create_config_watcher(cfg_mutex.clone(), tx.clone())?;
+            let mut hotreload_watcher = Self::create_hotreload_watcher(cfg_mutex.clone(), tx.clone())?;
+            let mut servertoml_watcher = Self::create_servertoml_watcher(tx.clone())?;
 
-        let mut config_watcher = Self::create_config_watcher(cfg_mutex.clone(), tx.clone())?;
-        let mut hotreload_watcher = Self::create_hotreload_watcher(cfg_mutex.clone(), tx.clone())?;
-        let mut servertoml_watcher = Self::create_servertoml_watcher(tx.clone())?;
-
-        config_watcher.watcher().watch(self.builder.app.server.path.join("config").as_path(), RecursiveMode::Recursive)?;
-        servertoml_watcher.watcher().watch(self.builder.app.server.path.join("server.toml").as_path(), RecursiveMode::NonRecursive)?;
-        hotreload_watcher.watcher().watch(self.builder.app.server.path.join("hotreload.toml").as_path(), RecursiveMode::NonRecursive)?;
+            config_watcher.watcher().watch(self.builder.app.server.path.join("config").as_path(), RecursiveMode::Recursive)?;
+            servertoml_watcher.watcher().watch(self.builder.app.server.path.join("server.toml").as_path(), RecursiveMode::NonRecursive)?;
+            hotreload_watcher.watcher().watch(self.builder.app.server.path.join("hotreload.toml").as_path(), RecursiveMode::NonRecursive)?;
+        }
 
         tx.send(Command::Rebuild).await?;
         tx.send(Command::Start).await?;
 
-        self.handle_commands(rx).await?;
+        self.handle_commands(rx, tx.clone()).await?;
 
         Ok(())
     }

@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[derive(clap::Args)]
-pub struct Args {
+pub struct BuildArgs {
     /// The output directory for the server
     #[arg(short, long, value_name = "file")]
     output: Option<PathBuf>,
@@ -20,25 +20,30 @@ pub struct Args {
     force: bool,
 }
 
-pub async fn run(app: App, args: Args) -> Result<()> {
-    let default_output = app.server.path.join("server");
-    let output_dir = args.output.unwrap_or(default_output);
+impl<'a> BuildArgs {
+    pub fn create_build_context(&self, app: &'a App) -> Result<BuildContext<'a>> {
+        let default_output = app.server.path.join("server");
+        let output_dir = self.output.unwrap_or(default_output);
 
-    let force = args.force;
+        let force = self.force;
+        let skip_stages = self.skip;
 
-    let skip_stages = args.skip;
+        std::fs::create_dir_all(&output_dir).context("Failed to create output directory")?;
 
-    std::fs::create_dir_all(&output_dir).context("Failed to create output directory")?;
+        Ok(BuildContext {
+            app: &app,
+            force,
+            skip_stages,
+            output_dir,
+            lockfile: Lockfile::default(),
+            new_lockfile: Lockfile::default(),
+            server_process: None,
+        })
+    }
+}
 
-    let mut ctx = BuildContext {
-        app: &app,
-        force,
-        skip_stages,
-        output_dir,
-        lockfile: Lockfile::default(),
-        new_lockfile: Lockfile::default(),
-        server_process: None,
-    };
+pub async fn run(app: App, args: BuildArgs) -> Result<()> {
+    let mut ctx = args.create_build_context(&app)?;
 
     ctx.build_all().await?;
 

@@ -1,7 +1,6 @@
 use std::{fs::OpenOptions, io::Write};
 
 use anyhow::Result;
-use console::style;
 use tokio::fs;
 
 use crate::model::StartupMethod;

@@ -161,6 +161,8 @@ impl<'a> App {
     api_methods!(purpur, PurpurAPI);
     api_methods!(spigot, SpigotAPI);
 
+    api_methods!(mclogs, MCLogsAPI);
+
     pub fn markdown(&'a self) -> crate::interop::markdown::MarkdownAPI<'a> {
         crate::interop::markdown::MarkdownAPI(&self)
     }

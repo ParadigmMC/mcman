@@ -37,9 +37,9 @@ enum Commands {
     /// Initialize a new mcman server
     Init(commands::init::Args),
     /// Build using server.toml configuration
-    Build(commands::build::Args),
+    Build(commands::build::BuildArgs),
     /// Test the server (stops it when it ends startup)
-    Run(commands::run::Args),
+    Run(commands::run::RunArgs),
     /// Add a plugin/mod/datapack
     #[command(subcommand)]
     Add(commands::add::Commands),

@@ -1,28 +1,35 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::Result;
 
-use crate::app::App;
+use crate::{app::App, hot_reload::DevSession};
+
+use super::build::BuildArgs;
 
 #[derive(clap::Args)]
-pub struct Args {
+pub struct RunArgs {
     #[command(flatten)]
-    build_args: crate::commands::build::Args,
+    build_args: BuildArgs,
     /// Test the server (stops it when it ends startup)
     #[arg(long)]
     test: bool,
 }
 
-pub async fn run(app: App, args: Args) -> Result<()> {
-    let mut ctx = super::build::run(app, args.build_args).await?;
+impl<'a> RunArgs {
+    pub fn create_dev_session(&self, app: &'a App) -> Result<DevSession<'a>> {
+        let builder = self.build_args.create_build_context(app)?;
 
-    let test_mode = args.test;
+        Ok(DevSession {
+            builder,
+            jar_name: None,
+            hot_reload: None,
+            test_mode: self.test,
+        })
+    }
+}
 
-    /*ctx.run(test_mode).context("Starting child process")?;
-    let status = ctx.pipe_child_process(test_mode).await?;
+pub async fn run(app: App, args: RunArgs) -> Result<()> {
+    let mut dev_session = args.create_dev_session(&app)?;
 
-    match status.code() {
-        Some(i) if i > 0 => Err(anyhow!("java exited with code {i}")),
-        _ => Ok(()),
-    }*/
+    dev_session.start().await?;
 
     Ok(())
 }

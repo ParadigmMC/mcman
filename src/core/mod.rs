@@ -11,7 +11,6 @@ use crate::{
 
 pub mod addons;
 pub mod bootstrap;
-pub mod runner;
 pub mod scripts;
 pub mod serverjar;
 pub mod worlds;

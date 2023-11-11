@@ -15,10 +15,10 @@ impl App {
     }
 
     pub fn success<S: std::fmt::Display>(&self, message: S) -> Result<()> {
-        Ok(self.multi_progress.println(format!(
+        Ok(self.multi_progress.suspend(|| println!(
             "  {} {message}",
             ColorfulTheme::default().success_prefix
-        ))?)
+        )))
     }
 
     pub fn info<S: std::fmt::Display>(&self, message: S) -> Result<()> {
@@ -31,26 +31,26 @@ impl App {
     }
 
     pub fn log<S: std::fmt::Display>(&self, message: S) -> Result<()> {
-        Ok(self.multi_progress.println(format!(
+        Ok(self.multi_progress.suspend(|| println!(
             "  {}",
            style(message).dim()
-        ))?)
+        )))
     }
 
     pub fn dbg<S: std::fmt::Display>(&self, message: S) -> Result<()> {
-        Ok(self.multi_progress.println(format!(
+        Ok(self.multi_progress.suspend(|| println!(
             "  {} {}",
            style("[dbg]").dim(),
            style(message).dim()
-        ))?)
+        )))
     }
 
     pub fn print_job(&self, job: &str) -> Result<()> {
-        Ok(self.multi_progress.println(format!(
+        Ok(self.multi_progress.suspend(|| println!(
             "{} {}",
             ColorfulTheme::default().active_item_prefix,
            style(job).cyan().bold()
-        ))?)
+        )))
     }
 
     pub fn prompt_string(&self, prompt: &str) -> Result<String> {
