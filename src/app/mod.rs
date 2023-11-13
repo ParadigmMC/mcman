@@ -141,7 +141,9 @@ impl App {
                 }
             },
 
+            // why not
             "TECHNOBLADE" => Some("Technoblade never dies".to_owned()),
+            "denizs_gf" => Some("ily may".to_owned()),
 
             k => if let Some(v) = std::env::var(k).ok() {
                 Some(v)

@@ -1,0 +1,9 @@
+name = "CoolNetwork"
+proxy = "proxy"
+port = 25565
+
+[servers.lobby]
+port = 25566
+groups = []
+
+[variables]

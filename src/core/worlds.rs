@@ -13,6 +13,8 @@ impl<'a> BuildContext<'a> {
             .with_style(ProgressStyle::with_template("{prefix:.bold} {msg} [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")?)
             .with_message("World:"));
 
+        self.app.ci("::group::Worlds");
+
         for (name, world) in self.app.server.worlds.iter().progress_with(progress_bar.clone()) {
             progress_bar.set_message(name.clone());
 
@@ -22,6 +24,8 @@ impl<'a> BuildContext<'a> {
                 world
             ).await.context(format!("Processing world: {name}"))?;
         }
+
+        self.app.ci("::endgroup::");
 
         Ok(())
     }

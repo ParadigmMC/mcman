@@ -15,17 +15,15 @@ pub struct MRPackInterop<'a>(pub &'a mut App);
 impl<'a> MRPackInterop<'a> {
     pub async fn import_all<R: Read + Seek>(
         &mut self,
-        reader: R,
+        mut mrpack: MRPackReader<R>,
         name: Option<String>
-    ) -> Result<()> {
+    ) -> Result<MRPackIndex> {
         let progress_bar = self.0.multi_progress.add(ProgressBar::new_spinner()
             .with_finish(ProgressFinish::WithMessage("Imported".into())));
         progress_bar.set_message(name.unwrap_or("mrpack".to_owned()).clone());
         progress_bar.set_style(ProgressStyle::with_template("{spinner:.blue} {prefix} {msg}")?);
         progress_bar.set_prefix("Reading zip file");
         progress_bar.enable_steady_tick(Duration::from_millis(250));
-
-        let mut mrpack = MRPackReader::from_reader(reader)?;
 
         progress_bar.set_prefix("Reading index of");
 
@@ -75,19 +73,17 @@ impl<'a> MRPackInterop<'a> {
 
         self.0.success("mrpack imported!")?;
         
-        Ok(())
+        Ok(index)
     }
 
     pub async fn export_all<W: Write + Seek>(
         &self,
-        writer: W,
+        mut mrpack: MRPackWriter<W>,
     ) -> Result<()> {
         let progress_bar = self.0.multi_progress.add(ProgressBar::new_spinner()
             .with_finish(ProgressFinish::WithMessage("Exported".into())));
         progress_bar.set_message("Exporting mrpack...");
         progress_bar.enable_steady_tick(Duration::from_millis(250));
-
-        let mut mrpack = MRPackWriter::from_writer(writer);
 
         let mut files = vec![];
 

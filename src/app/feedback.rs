@@ -53,6 +53,12 @@ impl App {
         )))
     }
 
+    pub fn ci(&self, cmd: &str) {
+        if std::env::var("CI").ok() == Some("true".to_owned()) {
+            self.multi_progress.suspend(|| println!("{cmd}"))
+        }
+    }
+
     pub fn prompt_string(&self, prompt: &str) -> Result<String> {
         Ok(self.multi_progress.suspend(|| {
             Input::with_theme(&ColorfulTheme::default())

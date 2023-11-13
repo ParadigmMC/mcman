@@ -1,4 +1,4 @@
-# {SERVER_NAME}
+# lobby
 
 [![mcman badge](https://img.shields.io/badge/uses-mcman-purple?logo=github)](https://github.com/ParadigmMC/mcman)
 
@@ -7,7 +7,7 @@
 <!--start:mcman-server-->
 <!--end:mcman-server-->
 
-## {ADDON_HEADER}
+## Plugins
 
 <!--start:mcman-addons-->
 <!--end:mcman-addons-->

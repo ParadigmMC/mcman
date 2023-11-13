@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 
-use crate::app::App;
+use crate::{app::App, interop::mrpack::MRPackWriter};
 
 #[derive(clap::Args)]
 pub struct Args {
@@ -33,7 +33,7 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
     let output_file =
         std::fs::File::create(output_filename).context("Creating mrpack output file")?;
 
-    app.mrpack().export_all(output_file).await?;
+    app.mrpack().export_all(MRPackWriter::from_writer(output_file)).await?;
 
     Ok(())
 }

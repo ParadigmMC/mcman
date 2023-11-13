@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{time::Duration, fs::File, io::Write};
 
 use anyhow::Result;
 use indexmap::IndexMap;
@@ -16,6 +16,36 @@ pub struct MarkdownTemplate {
 pub struct MarkdownAPI<'a>(pub &'a App);
 
 impl<'a> MarkdownAPI<'a> {
+    pub fn init_server(&self) -> Result<()> {
+        let mut f = File::create(self.0.server.path.join("README.md"))?;
+        let readme_content = include_str!("../../res/default_readme");
+        let readme_content = readme_content
+            .replace("{SERVER_NAME}", &self.0.server.name)
+            .replace(
+                "{ADDON_HEADER}",
+                if self.0.server.jar.is_modded() {
+                    "Mods"
+                } else {
+                    "Plugins"
+                },
+            );
+    
+        f.write_all(readme_content.as_bytes())?;
+    
+        Ok(())
+    }
+
+    pub fn init_network(&self) -> Result<()> {
+        let mut f = File::create(self.0.network.as_ref().unwrap().path.join("README.md"))?;
+        let readme_content = include_str!("../../res/default_readme_network");
+        let readme_content = readme_content
+            .replace("{NETWORK_NAME}", &self.0.network.as_ref().unwrap().name);
+    
+        f.write_all(readme_content.as_bytes())?;
+    
+        Ok(())
+    }
+
     pub async fn update_files(&self) -> Result<()> {
         let templates = self.get_templates().await?;
 
@@ -23,13 +53,23 @@ impl<'a> MarkdownAPI<'a> {
             .with_style(ProgressStyle::with_template("{prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}")?)
             .with_prefix("Writing to");
 
-        for file in self.0.server.markdown.files.iter().progress_with(pb.clone()) {
-            pb.set_message(file.clone());
+        let mut files = self.0.server.markdown.files
+            .iter()
+            .map(|f| (false, self.0.server.path.join(f)))
+            .collect::<Vec<_>>();
+        if let Some(nw) = &self.0.network {
+            files.extend(nw.markdown.files
+                .iter()
+                .map(|f| (true, nw.path.join(f))));
+        }
 
-            let path = self.0.server.path.join(file);
+        for (_is_nw, path) in files.iter().progress_with(pb.clone()) {
+            let filename = path.file_name().unwrap().to_string_lossy();
+
+            pb.set_message(filename.to_string());
 
             if !path.exists() {
-                self.0.warn(format!("{file} does not exist! Skipping"))?;
+                self.0.warn(format!("{filename} does not exist! Skipping"))?;
                 continue;
             }
 

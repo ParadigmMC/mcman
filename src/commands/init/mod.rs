@@ -1,26 +1,21 @@
 use console::style;
-use dialoguer::Confirm;
 use dialoguer::{theme::ColorfulTheme, Input};
-use indicatif::{MultiProgress, ProgressBar};
+use indicatif::ProgressBar;
+use rpackwiz::model::Pack;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use tempfile::Builder;
 
-use crate::commands::init::init::init_normal;
-use crate::commands::init::network::init_network;
-use crate::commands::markdown;
-use crate::app::{BaseApp, App};
-use crate::model::Network;
-use crate::util::env::{get_docker_version, write_dockerfile, write_dockerignore, write_gitignore};
+use crate::app::BaseApp;
+use crate::interop::mrpack::MRPackReader;
+use crate::interop::packwiz::FileProvider;
+use crate::model::{Network, ServerType, SoftwareType, PresetFlags, ServerEntry};
+use crate::util::SelectItem;
+use crate::util::env::{get_docker_version, write_dockerfile, write_dockerignore, write_gitignore, write_gitattributes, write_git};
 use crate::model::Server;
 use anyhow::{bail, Context, Result};
-
-pub mod init;
-pub mod network;
-pub mod packwiz;
-pub mod mrpack;
 
 #[derive(clap::Args)]
 pub struct Args {
@@ -38,27 +33,16 @@ pub struct Args {
     network: bool,
 }
 
-#[allow(dead_code)]
+#[derive(Debug, Clone)]
 pub enum InitType {
     Normal,
     MRPack(String),
-    Packwiz(String),
+    Packwiz(FileProvider),
     Network,
 }
 
 #[allow(clippy::too_many_lines)]
 pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
-    println!(" > {}", style("Initializing new server...").cyan());
-
-    let res = std::fs::metadata("server.toml");
-    if let Err(err) = res {
-        if err.kind() != std::io::ErrorKind::NotFound {
-            Err(err)?;
-        }
-    } else {
-        bail!("server.toml already exists");
-    }
-
     let current_dir = std::env::current_dir()?;
     let name = if let Some(name) = args.name {
         name.clone()
@@ -70,44 +54,104 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
             .to_owned()
     };
 
-    let theme = ColorfulTheme::default();
+    let mut app = base_app.upgrade_with_default_server()?;
 
-    if args.network {
-        let name = Input::<String>::with_theme(&theme)
-            .with_prompt("Network name?")
-            .default(name.clone())
-            .with_initial_text(&name)
-            .interact_text()?;
-
-        let mut app = App {
-            http_client: base_app.http_client,
-            network: Some(Network {
-                name,
-                ..Default::default()
-            }),
-            server: Server::default(),
-            multi_progress: MultiProgress::new(),
-        };
-
-        init_network(&mut app).await?;
+    let ty = if args.network {
+        InitType::Network
     } else {
-        let name = Input::<String>::with_theme(&theme)
-            .with_prompt("Server name?")
-            .default(name.clone())
-            .with_initial_text(&name)
-            .interact_text()?;
-
-        let mut app = App {
-            http_client: base_app.http_client,
-            network: None,
-            server: Server {
-                name: name.clone(),
-                ..Default::default()
-            },
-            multi_progress: MultiProgress::new(),
-        };
-
         if let Some(src) = args.mrpack {
+            InitType::MRPack(src.clone())
+        } else if let Some(src) = args.packwiz {
+            InitType::Packwiz(app.packwiz().get_file_provider(&src)?)
+        } else {
+            InitType::Normal
+        }
+    };
+
+    // toml checks and init
+    match ty {
+        InitType::Network => {
+            if let Some(_nw) = Network::load()? {
+                bail!("network.toml already exists");
+            }
+
+            app.network = Some(Network::default());
+            app.network.as_mut().unwrap().name = name.clone();
+        }
+        _ => {
+            if let Some(serv) = Server::load().ok() {
+                bail!("server.toml already exists: server with name '{}'", serv.name);
+            }
+
+            if let Some(nw) = Network::load()? {
+                app.info(format!("Creating a server inside the '{}' network", nw.name))?;
+                app.network = Some(nw);
+            }
+
+            app.server.name = name.clone();
+        }
+    }
+
+    // Name
+    match &ty {
+        InitType::Normal | InitType::MRPack(_) => {
+            app.server.name = app.prompt_string_filled("Server name?", &app.server.name)?;
+        }
+        InitType::Packwiz(source) => {
+            let pack = source.parse_toml::<Pack>("pack.toml")
+                .await
+                .context("Reading pack.toml - does it exist?")?;
+
+            app.server.name = app.prompt_string_filled("Server name?", &pack.name)?;
+        }
+        InitType::Network => {
+            app.network.as_mut().unwrap().name = app.prompt_string_filled("Network name?", &app.network.as_ref().unwrap().name)?;
+        }
+    }
+
+    match &ty {
+        InitType::Normal => {
+            let serv_type = app.select("Type of server?", &[
+                SelectItem(SoftwareType::Normal, "Normal Server (vanilla, spigot, paper etc.)".to_owned()),
+                SelectItem(SoftwareType::Modded, "Modded Server (forge, fabric, quilt etc.)".to_owned()),
+                SelectItem(SoftwareType::Proxy, "Proxy Server (velocity, bungeecord, waterfall etc.)".to_owned()),
+            ])?;
+
+            app.server.mc_version = if serv_type == SoftwareType::Proxy {
+                "latest".to_owned()
+            } else {
+                let latest_ver = app.vanilla().fetch_latest_mcver()
+                    .await
+                    .context("Fetching latest version")?;
+
+                app.prompt_string_default("Server version?", &latest_ver)?
+            };
+
+            app.server.launcher.nogui = serv_type != SoftwareType::Proxy;
+            app.server.launcher.preset_flags = match serv_type {
+                SoftwareType::Proxy => PresetFlags::Proxy,
+                _ => PresetFlags::Aikars,
+            };
+
+            app.server.jar = match serv_type {
+                SoftwareType::Normal => ServerType::select_jar_interactive(),
+                SoftwareType::Modded => ServerType::select_modded_jar_interactive(),
+                SoftwareType::Proxy => ServerType::select_proxy_jar_interactive(),
+                _ => unreachable!(),
+            }?;
+        }
+
+        InitType::Network => {
+            let nw = app.network.as_mut().unwrap();
+
+            let port = Input::with_theme(&ColorfulTheme::default())
+                .with_prompt("Which port should the network be on?")
+                .default(25565 as u16)
+                .interact_text()?;
+
+            nw.port = port;
+        }
+        InitType::MRPack(src) => {
             let tmp_dir = Builder::new().prefix("mcman-mrpack-import").tempdir()?;
 
             let f = if Path::new(&src).exists() {
@@ -118,77 +162,131 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                 let path = tmp_dir.path().join(&resolved.filename);
                 std::fs::File::open(path)?
             };
-            app.mrpack().import_all(f, Some(name)).await?;
-        } else if let Some(src) = args.packwiz {
-            app.packwiz().import_all(&src).await?;
-        } else {
-            init_normal(&mut app).await?;
+
+            app.mrpack().import_all(MRPackReader::from_reader(f)?, None).await?;
+        }
+        InitType::Packwiz(src) => {
+            app.packwiz().import_from_source(src.clone()).await?;
+        }
+    }
+
+    match ty {
+        InitType::Network => app.network.as_ref().unwrap().save().context("Saving network.toml")?,
+        _ => app.server.save().context("Saving server.toml")?,
+    }
+
+    match ty {
+        InitType::Network => {}
+        _ => if let Some(ref mut nw) = app.network {
+            if nw.servers.contains_key(&app.server.name) {
+                app.warn("Server with that name already exists in network.toml, please add entry manually")?;
+            } else {
+                nw.servers.insert(app.server.name.clone(), ServerEntry {
+                    port: nw.next_port(),
+                    ..Default::default()
+                });
+                nw.save()?;
+                drop(nw);
+                app.info("Added server entry to network.toml")?;
+            }
+        }
+    }
+
+    //env
+    match ty {
+        InitType::Network => {
+            std::fs::create_dir_all("./servers")?;
+        }
+        _ => {
+            std::fs::create_dir_all("./config")?;
+
+            if app.server.jar.get_software_type() != SoftwareType::Proxy {
+                let mut f = File::create("./config/server.properties")?;
+                f.write_all(include_bytes!("../../../res/server.properties"))?;
+            }
+        }
+    }
+
+    let write_readme = if Path::new("./README.md").exists() {
+        app.confirm("Overwrite README.md?")?
+    } else { true };
+
+    if write_readme {
+        match ty {
+            InitType::Network => app.markdown().init_network()?,
+            _ => app.markdown().init_server()?,
+        }
+
+        // TODO
+        //app.server.markdown.files = vec!["README.md".to_owned()];
+        //app.server.save()?;
+
+        match ty {
+            InitType::MRPack(_) | InitType::Packwiz(_) => {
+                if app.confirm("Render markdown now?")? {
+                    app.markdown().update_files().await?;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    initialize_environment()?;
+
+    match ty {
+        InitType::Network => {
+            println!(
+                " > {} {} {}",
+                style("Network").green(),
+                style(&app.network.unwrap().name).bold(),
+                style("has been created!").green()
+            );
+
+            println!(
+                " > {}",
+                style("Initialize servers in this network using").cyan()
+            );
+            println!(
+                "   {}\n   {}\n   {}",
+                style("cd servers").bold(),
+                style("mkdir myserver").bold(),
+                style("mcman init").bold(),
+            );
+        }
+        _ => {
+            println!(
+                " > {} {}",
+                style(&app.server.name).bold(),
+                style("has been initialized!").green()
+            );
+        
+            println!(
+                " > {} {}",
+                style("Build using").cyan(),
+                style("mcman build").bold()
+            );
         }
     }
 
     Ok(())
 }
 
-pub async fn init_final(
-    app: &App,
-    server: &mut Server,
-    is_proxy: bool,
-) -> Result<()> {
-    app.server.save()?;
-
-    initialize_environment(is_proxy).context("Initializing environment")?;
-
-    let write_readme = if Path::new("./README.md").exists() {
-        Confirm::with_theme(&ColorfulTheme::default())
-            .default(true)
-            .with_prompt("Overwrite README.md?")
-            .interact()?
-    } else {
-        true
-    };
-
-    if write_readme {
-        markdown::initialize_readme(server).context("Initializing readme")?;
-
-        server.markdown.files = vec!["README.md".to_owned()];
-        server.save()?;
-
-        app.markdown().update_files().await?;
-    }
-
-    println!(
-        " > {} {}",
-        style(&server.name).bold(),
-        style("has been initialized!").green()
-    );
-
-    println!(
-        " > {} {}",
-        style("Build using").cyan(),
-        style("mcman build").bold()
-    );
-
-    Ok(())
-}
-
-pub fn initialize_environment(is_proxy: bool) -> Result<()> {
-    std::fs::create_dir_all("./config")?;
-
+pub fn initialize_environment() -> Result<()> {
     let theme = ColorfulTheme::default();
 
-    if write_gitignore().is_err() {
+    if write_git().is_err() {
         println!(
             "{} {}{}{}",
             theme.prompt_prefix,
             style("Didn't find a git repo, use '").dim(),
             style("mcman env gitignore").bold(),
-            style("' to generate .gitignore").dim(),
+            style("' to generate .gitignore/attributes").dim(),
         );
     } else {
         println!(
             "{} {}",
             theme.success_prefix,
-            style("Touched up .gitignore").dim(),
+            style("Touched up .gitignore/.gitattributes").dim(),
         );
     }
 
@@ -204,15 +302,10 @@ pub fn initialize_environment(is_proxy: bool) -> Result<()> {
         println!(
             "{} {}{}{}",
             theme.prompt_prefix,
-            style("Docker wasn't found, you can use '").dim(),
+            style("Docker wasn't found, use '").dim(),
             style("mcman env docker").bold(),
             style("' to generate docker files").dim(),
         );
-    }
-
-    if !is_proxy {
-        let mut f = File::create("./config/server.properties")?;
-        f.write_all(include_bytes!("../../../res/server.properties"))?;
     }
 
     Ok(())

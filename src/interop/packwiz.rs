@@ -1,4 +1,4 @@
-use std::{path::PathBuf, time::Duration, collections::HashMap};
+use std::{path::PathBuf, time::Duration, collections::HashMap, str::FromStr};
 
 use anyhow::{anyhow, Result};
 use indicatif::{ProgressBar, ProgressFinish, ProgressStyle, ProgressIterator};
@@ -7,6 +7,7 @@ use serde::de::DeserializeOwned;
 
 use crate::{app::{App, Resolvable, ResolvedFile, CacheStrategy}, model::Downloadable};
 
+#[derive(Debug, Clone)]
 pub enum FileProvider {
     LocalFolder(PathBuf),
     RemoteURL(reqwest::Client, reqwest::Url),
@@ -37,15 +38,19 @@ impl FileProvider {
 pub struct PackwizInterop<'a>(pub &'a mut App);
 
 impl<'a> PackwizInterop<'a> {
+    pub fn get_file_provider(&self, s: &str) -> Result<FileProvider> {
+        Ok(if s.starts_with("http") {
+            FileProvider::RemoteURL(self.0.http_client.clone(), s.try_into()?)
+        } else {
+            FileProvider::LocalFolder(s.into())
+        })
+    }
+
     pub async fn import_all(
         &mut self,
         from: &str,
     ) -> Result<()> {
-        self.import_from_source(if from.starts_with("http") {
-            FileProvider::RemoteURL(self.0.http_client.clone(), from.try_into()?)
-        } else {
-            FileProvider::LocalFolder(from.into())
-        }).await
+        self.import_from_source(self.get_file_provider(from)?).await
     }
 
     pub async fn import_from_source(

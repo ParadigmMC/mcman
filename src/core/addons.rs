@@ -25,6 +25,8 @@ impl<'a> BuildContext<'a> {
             if server_list.len() < 200 { "" } else { " may god help you" },
         ))?;
 
+        self.app.ci(&format!("::group::{addon_type}s"));
+
         let mut files_list = HashSet::new();
 
         let pb = ProgressBar::new(server_list.len() as u64)
@@ -64,6 +66,8 @@ impl<'a> BuildContext<'a> {
                 FormattedDuration(pb.elapsed())
             ))?;
         }
+
+        self.app.ci("::endgroup::");
 
         Ok(())
     }

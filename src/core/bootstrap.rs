@@ -14,6 +14,8 @@ impl<'a> BuildContext<'a> {
     pub async fn bootstrap_files(&mut self) -> Result<()> {
         self.app.print_job("Bootstrapping...")?;
 
+        self.app.ci("::group::Bootstrapping");
+
         let pb = self.app.multi_progress.add(ProgressBar::new_spinner()
             .with_style(ProgressStyle::with_template("{spinner:.blue} {prefix} {msg}")?)
             .with_prefix("Bootstrapping"));
@@ -61,6 +63,8 @@ impl<'a> BuildContext<'a> {
         pb.disable_steady_tick();
         pb.finish_and_clear();
         self.app.success("Bootstrapping complete")?;
+
+        self.app.ci("::endgroup::");
 
         Ok(())
     }

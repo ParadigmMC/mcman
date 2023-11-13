@@ -49,8 +49,8 @@ async fn try_wait_child(opt: &mut Option<Child>) -> Result<Option<ExitStatus>> {
     }
 }
 
+#[derive(Debug, PartialEq, Clone)]
 pub enum TestResult {
-    Ongoing,
     Success,
     Failed,
     Crashed,
@@ -93,14 +93,14 @@ impl<'a> DevSession<'a> {
     async fn handle_commands(mut self, mut rx: mpsc::Receiver<Command>, mut tx: mpsc::Sender<Command>) -> Result<()> {
         let mp = self.builder.app.multi_progress.clone();
 
-        let mut child: Option<Child> = None;
-        //let mut child_stdout = None;
+        self.builder.app.ci("::group::Starting server process");
 
+        let mut child: Option<Child> = None;
         let mut stdout_lines: Option<tokio::io::Lines<BufReader<tokio::process::ChildStdout>>> = None;
 
         let mut is_stopping = false;
-        let mut test_passed = false;
-        let mut test_result = TestResult::Ongoing;
+        let mut is_session_ending = false;
+        let mut test_result = TestResult::Failed;
         let mut exit_status = None;
 
         let mut stdin_lines = tokio::io::BufReader::new(tokio::io::stdin()).lines();
@@ -129,6 +129,7 @@ impl<'a> DevSession<'a> {
                         Command::SendCommand(command) => {
                             if let Some(ref mut child) = &mut child {
                                 if let Some(ref mut stdin) = &mut child.stdin {
+                                    eprintln!("checkpoint 2");
                                     let _ = stdin.write_all(command.as_bytes()).await;
                                 }
                             }
@@ -204,10 +205,8 @@ impl<'a> DevSession<'a> {
 
                     if self.test_mode
                         && !is_stopping
-                        && !test_passed {
-
+                        && test_result == TestResult::Failed {
                         if s.contains("]: Done") && s.ends_with("For help, type \"help\"") {
-                            test_passed = true;
                             test_result = TestResult::Success;
 
                             self.builder.app.success("Test passed!")?;
@@ -234,16 +233,16 @@ impl<'a> DevSession<'a> {
                 Ok(Some(line)) = stdin_lines.next_line() => {
                     let mut cmd = line.trim();
 
-                    self.builder.app.info(&format!("Sending command: {cmd}"))?;
+                    //self.builder.app.info(&format!("Sending command: {cmd}"))?;
                     if let Some(ref mut child) = &mut child {
                         if let Some(ref mut stdin) = &mut child.stdin {
+                            eprintln!("checkpoint 1");
                             let _ = stdin.write_all(format!("{cmd}\n").as_bytes()).await;
                         }
                     }
                 },
-                status = try_wait_child(&mut child) => {
-                    exit_status = status.unwrap_or(None);
-
+                Ok(Some(status)) = try_wait_child(&mut child) => {
+                    exit_status = Some(status);
                     self.builder.app.info("Server process exited")?;
 
                     is_stopping = false;
@@ -255,9 +254,15 @@ impl<'a> DevSession<'a> {
                     }
                 },
                 _ = tokio::signal::ctrl_c() => {
-                    if !is_stopping {
-                        self.builder.app.info("Stopping development session...")?;
+                    if is_session_ending {
+                        self.builder.app.info("Force-stopping development session...")?;
                         break 'l;
+                    } else if !is_stopping {
+                        self.builder.app.info("Stopping development session...")?;
+                        
+                        tx.send(Command::SendCommand("stop\nend\n".to_owned())).await?;
+                        tx.send(Command::WaitUntilExit).await?;
+                        tx.send(Command::EndSession).await?;
                     }
                 }
             }
@@ -270,91 +275,103 @@ impl<'a> DevSession<'a> {
             child.kill().await?;
         }
 
-        if self.test_mode && !test_passed {
-            mp.suspend(|| {
-                println!(
-                    "{} Test failed!",
-                    ColorfulTheme::default().error_prefix
-                );
+        self.builder.app.ci("::endgroup::");
 
-                if let Some(status) = &exit_status {
-                    if let Some(code) = status.code() {
-                        println!(
-                            "  - Process exited with code {}",
-                            if code == 0 {
-                                style(code).green()
-                            } else {
-                                style(code).red().bold()
-                            }
-                        );
-                    } else {
-                        if !status.success() {
-                            println!(
-                                "  - Process didn't exit successfully"
-                            );
-                        }
-                    }
+        if self.test_mode {
+            match test_result {
+                TestResult::Success => {
+                    self.builder.app.success("Test passed")?;
+                    std::process::exit(0);
                 }
-
-                match test_result {
-                    TestResult::Crashed => {
-                        println!(
-                            "  - Server crashed"
-                        );
-                    }
-                    _ => {}
-                }
-            });
-
-            if self.builder.app.server.options.upload_to_mclogs {
-                let pb = mp.add(ProgressBar::new_spinner()
-                    .with_message("Uploading to mclo.gs"));
-
-                pb.enable_steady_tick(Duration::from_millis(250));
-
-                let log_path = match test_result {
-                    TestResult::Crashed => {
-                        let folder = self.builder.output_dir.join("crash-reports");
-                        if !folder.exists() {
-                            bail!("crash-reports folder doesn't exist, cant upload to mclo.gs");
-                        }
-
-                        // get latest crash report
-                        let (report_path, _) = folder.read_dir()?
-                            .into_iter()
-                            .filter_map(|f| f.ok())
-                            .filter_map(|f| Some((f.path(), f.metadata().ok()?.modified().ok()?)))
-                            .max_by_key(|(_, t)| t.clone())
-                            .ok_or(anyhow!("can't find crash report"))?;
-
-                        report_path
-                    }
-                    _ => {
-                        self.builder.output_dir.join("logs").join("latest.log")
-                    }
-                };
-
-                if log_path.exists() {
-                    let content = std::fs::read_to_string(&log_path)
-                        .context("Reading log file")?;
-
-                    let log = self.builder.app.mclogs().paste_log(&content).await?;
-                    drop(content);
-
-                    pb.finish_and_clear();
-                    self.builder.app.log("  - Log uploaded to mclo.gs")?;
+                TestResult::Crashed | TestResult::Failed => {
                     mp.suspend(|| {
-                        println!();
-                        println!(" -- [ {} ] --", log.url);
-                        println!();
+                        println!(
+                            "{} Test failed!",
+                            ColorfulTheme::default().error_prefix
+                        );
+    
+                        if let Some(status) = &exit_status {
+                            if let Some(code) = status.code() {
+                                println!(
+                                    "  - Process exited with code {}",
+                                    if code == 0 {
+                                        style(code).green()
+                                    } else {
+                                        style(code).red().bold()
+                                    }
+                                );
+                            } else {
+                                if !status.success() {
+                                    println!(
+                                        "  - Process didn't exit successfully"
+                                    );
+                                }
+                            }
+                        }
+    
+                        match test_result {
+                            TestResult::Crashed => {
+                                println!(
+                                    "  - Server crashed"
+                                );
+                            }
+                            _ => {}
+                        }
                     });
-                } else {
-                    pb.finish_and_clear();
-                    mp.suspend(|| println!(
-                        "{} '{}' does not exist! Can't upload log.",
-                        ColorfulTheme::default().error_prefix,
-                        style(log_path.to_string_lossy()).dim()
-                    ));
+
+                    if self.builder.app.server.options.upload_to_mclogs {
+                        let pb = mp.add(ProgressBar::new_spinner()
+                            .with_message("Uploading to mclo.gs"));
+    
+                        pb.enable_steady_tick(Duration::from_millis(250));
+    
+                        let log_path = match test_result {
+                            TestResult::Crashed => {
+                                let folder = self.builder.output_dir.join("crash-reports");
+                                if !folder.exists() {
+                                    bail!("crash-reports folder doesn't exist, cant upload to mclo.gs");
+                                }
+    
+                                // get latest crash report
+                                let (report_path, _) = folder.read_dir()?
+                                    .into_iter()
+                                    .filter_map(|f| f.ok())
+                                    .filter_map(|f| Some((f.path(), f.metadata().ok()?.modified().ok()?)))
+                                    .max_by_key(|(_, t)| t.clone())
+                                    .ok_or(anyhow!("can't find crash report"))?;
+    
+                                report_path
+                            }
+                            _ => {
+                                self.builder.output_dir.join("logs").join("latest.log")
+                            }
+                        };
+    
+                        if log_path.exists() {
+                            let content = std::fs::read_to_string(&log_path)
+                                .context("Reading log file")?;
+    
+                            let log = self.builder.app.mclogs().paste_log(&content).await?;
+                            drop(content);
+    
+                            pb.finish_and_clear();
+                            self.builder.app.log("  - Log uploaded to mclo.gs")?;
+                            mp.suspend(|| {
+                                println!();
+                                println!(" -- [ {} ] --", log.url);
+                                println!();
+                            });
+                        } else {
+                            pb.finish_and_clear();
+                            mp.suspend(|| println!(
+                                "{} '{}' does not exist! Can't upload log.",
+                                ColorfulTheme::default().error_prefix,
+                                style(log_path.to_string_lossy()).dim()
+                            ));
+                        }
+                    }
+    
+                    std::process::exit(1);
                 }
             }
         }

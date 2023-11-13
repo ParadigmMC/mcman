@@ -13,11 +13,12 @@ pub mod interactive;
 pub mod meta;
 pub mod parse;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Default, Serialize, Deserialize)]
 pub enum SoftwareType {
     Normal,
     Modded,
     Proxy,
+    #[default]
     Unknown,
 }
 

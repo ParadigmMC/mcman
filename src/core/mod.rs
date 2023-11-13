@@ -49,7 +49,9 @@ impl<'a> BuildContext<'a> {
 
         // actual stages contained here
 
+        self.app.ci("::group::Server Jar");
         let server_jar = self.download_server_jar().await?;
+        self.app.ci("::endgroup::");
 
         if !self.app.server.plugins.is_empty() {
             self.download_addons(AddonType::Plugin).await?;
