@@ -246,8 +246,11 @@ impl<'a> DevSession<'a> {
 
                     self.builder.app.info("Server process exited")?;
 
+                    is_stopping = false;
+                    child = None;
+                    stdout_lines = None;
+
                     if self.test_mode {
-                        tx.send(Command::WaitUntilExit).await?;
                         tx.send(Command::EndSession).await?;
                     }
                 },
@@ -259,6 +262,8 @@ impl<'a> DevSession<'a> {
                 }
             }
         }
+
+        // end of loop > tokio::select!
 
         if let Some(ref mut child) = &mut child {
             self.builder.app.info("Killing undead child process...")?;
@@ -337,7 +342,7 @@ impl<'a> DevSession<'a> {
                     drop(content);
 
                     pb.finish_and_clear();
-                    self.builder.app.success("Log uploaded to mclo.gs")?;
+                    self.builder.app.log("  - Log uploaded to mclo.gs")?;
                     mp.suspend(|| {
                         println!();
                         println!(" -- [ {} ] --", log.url);

@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use anyhow::Result;
 use regex::Regex;
 
@@ -25,12 +27,38 @@ pub fn is_default_str(s: &str) -> bool {
 pub fn get_latest_semver(list: &[String]) -> Option<String> {
     let mut list = list
         .iter()
-        .filter_map(|s| semver::Version::parse(s).ok())
-        .collect::<Vec<_>>();
+        .map(|s| s.split('.').collect())
+        .collect::<Vec<Vec<_>>>();
 
-    list.sort_by(semver::Version::cmp);
+    list.sort_by(|a, b| {
+        let mut ia = a.iter();
+        let mut ib = b.iter();
+        loop {
+            break match (ia.next(), ib.next()) {
+                (Some(a), Some(b)) => {
+                    let a = a.parse::<i32>();
+                    let b = b.parse::<i32>();
 
-    list.last().map(ToString::to_string)
+                    match (a, b) {
+                        (Ok(a), Ok(b)) => {
+                            match a.cmp(&b) {
+                                Ordering::Equal => continue,
+                                ord => ord,
+                            }
+                        }
+                        (Err(_), Ok(_)) => Ordering::Less,
+                        (Ok(_), Err(_)) => Ordering::Greater,
+                        _ => Ordering::Equal,
+                    }
+                }
+                (Some(_), None) => Ordering::Greater,
+                (None, Some(_)) => Ordering::Less,
+                _ => Ordering::Equal,
+            }
+        }
+    });
+
+    list.last().map(|v| v.join("."))
 }
 
 /// ci.luckto.me => ci-lucko-me
