@@ -23,6 +23,7 @@ impl<'a> PurpurAPI<'a> {
         Ok(response)
     }
 
+    #[allow(unused)]
     pub async fn fetch_versions(&self) -> Result<Vec<String>> {
         Ok(self.fetch_api::<PurpurMCResponse>(API_URL).await?.versions)
     }
@@ -61,26 +62,26 @@ impl<'a> PurpurAPI<'a> {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-struct PurpurMCResponse {
+pub struct PurpurMCResponse {
     pub project: String,
     pub versions: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-struct PurpurMCVersion {
+pub struct PurpurMCVersion {
     pub builds: PurpurMCBuilds,
     pub project: String,
     pub version: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-struct PurpurMCBuilds {
+pub struct PurpurMCBuilds {
     pub latest: PurpurMCBuild,
     pub all: Vec<PurpurMCBuild>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-struct PurpurMCBuild {
+pub struct PurpurMCBuild {
     pub project: String,
     pub version: String,
     pub build: String,

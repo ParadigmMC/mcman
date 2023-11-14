@@ -116,182 +116,21 @@ impl ServerType {
         }
     }
 
-    // TODO: move this to somewhere else, like BuildContext
-    pub async fn get_install_method(
-        &self,
-        app: &App,
-    ) -> Result<InstallMethod> {
-        let mcver = &app.server.mc_version;
-        Ok(match self.clone() {
-            Self::Quilt { loader, .. } => {
-                let mut args = vec!["install", "server", mcver];
-
-                if loader != "latest" {
-                    args.push(&loader);
-                }
-
-                args.push("--install-dir=.");
-                args.push("--download-server");
-
-                InstallMethod::Installer {
-                    name: "Quilt Server Installer".to_owned(),
-                    label: "qsi".to_owned(),
-                    args: args.into_iter().map(ToOwned::to_owned).collect(),
-                    rename_from: Some("quilt-server-launch.jar".to_owned()),
-                    jar_name: format!(
-                        "quilt-server-launch-{mcver}-{}.jar",
-                        quilt::map_quilt_loader_version(&app.http_client, &loader)
-                            .await
-                            .context("resolving quilt loader version id (latest/latest-beta)")?
-                    ),
-                }
-            }
-            Self::NeoForge { loader } => InstallMethod::Installer {
-                name: "NeoForged Installer".to_owned(),
-                label: "nfi".to_owned(),
-                args: vec!["--installServer".to_owned(), ".".to_owned()],
-                rename_from: None,
-                jar_name: format!(
-                    "libraries/net/neoforged/forge/{mcver}-{0}/forge-{mcver}-{0}-server.jar",
-                    app.neoforge().resolve_version(&loader).await?
-                )
-            },
-            Self::Forge { loader } => InstallMethod::Installer {
-                name: "Forge Installer".to_owned(),
-                label: "fi".to_owned(),
-                args: vec!["--installServer".to_owned(), ".".to_owned()],
-                rename_from: None,
-                jar_name: format!(
-                    "libraries/net/minecraftforge/forge/{mcver}-{0}/forge-{mcver}-{0}-server.jar",
-                    app.forge().resolve_version(&loader).await?
-                )
-            },
-            Self::BuildTools { args, software } => {
-                let mut buildtools_args = vec![
-                    "--compile",
-                    &software,
-                    "--compile-if-changed",
-                    "--rev",
-                    mcver,
-                ];
-
-                for arg in &args {
-                    buildtools_args.push(arg);
-                }
-
-                InstallMethod::Installer {
-                    name: "BuildTools".to_owned(),
-                    label: "bt".to_owned(),
-                    args: buildtools_args.into_iter().map(ToOwned::to_owned).collect(),
-                    rename_from: Some("server.jar".to_owned()),
-                    jar_name: format!(
-                        "{}-{mcver}.jar",
-                        if software == "craftbukkit" {
-                            "craftbukkit"
-                        } else {
-                            "spigot"
-                        }
-                    ),
-                }
-            }
-            _ => InstallMethod::SingleJar,
-        })
-    }
-
-    // TODO: move this to somewhere else, like BuildContext
-    pub async fn get_startup_method(
-        &self,
-        app: &App,
-        serverjar_name: &str,
-    ) -> Result<StartupMethod> {
-        let mcver = &app.server.mc_version;
-        Ok(match self {
-            Self::NeoForge { loader } => {
-                let l = app.neoforge().resolve_version(loader).await?;
-
-                StartupMethod::Custom {
-                    windows: vec![format!(
-                        "@libraries/net/neoforged/forge/{mcver}-{l}/win_args.txt"
-                    )],
-                    linux: vec![format!(
-                        "@libraries/net/neoforged/forge/{mcver}-{l}/unix_args.txt"
-                    )],
-                }
-            }
-            Self::Forge { loader } => {
-                let l = app.forge().resolve_version(loader).await?;
-
-                StartupMethod::Custom {
-                    windows: vec![format!(
-                        "@libraries/net/minecraftforge/forge/{mcver}-{l}/win_args.txt"
-                    )],
-                    linux: vec![format!(
-                        "@libraries/net/minecraftforge/forge/{mcver}-{l}/unix_args.txt"
-                    )],
-                }
-            }
-            _ => StartupMethod::Jar(serverjar_name.to_owned()),
-        })
-    }
-
-    // TODO: move to ModrinthAPI
-    pub fn get_modrinth_facets(&self, mcver: &str) -> Result<String> {
-        let mut arr: Vec<Vec<String>> = vec![];
-
-        if self.get_software_type() != SoftwareType::Proxy {
-            arr.push(vec![format!("versions:{}", mcver.to_owned())]);
-        }
-
-        if let Some(n) = self.get_modrinth_name() {
-            arr.push(vec![format!("categories:{n}")]);
-        }
-
-        Ok(serde_json::to_string(&arr)?)
-    }
-
-    // TODO: move to ModrinthAPI
     pub fn get_modrinth_name(&self) -> Option<String> {
         match self {
-            Self::Fabric { .. } => Some("fabric"),
-            Self::Quilt { .. } => Some("quilt"),
-            Self::Forge { .. } => Some("forge"),
-            Self::NeoForge { .. } => Some("neoforge"),
-            Self::Paper {  } => Some("paper"),
-            Self::BuildTools { .. } => Some("spigot"),
-            Self::Purpur { .. } => Some("purpur"),
-            Self::BungeeCord {  } => Some("bungeecord"),
-            Self::Velocity {  } => Some("velocity"),
-            Self::Waterfall {  } => Some("waterfall"),
-            Self::PaperMC { project, .. } => Some(project.as_str()),
+            ServerType::Fabric { .. } => Some("fabric"),
+            ServerType::Quilt { .. } => Some("quilt"),
+            ServerType::Forge { .. } => Some("forge"),
+            ServerType::NeoForge { .. } => Some("neoforge"),
+            ServerType::Paper {  } => Some("paper"),
+            ServerType::BuildTools { .. } => Some("spigot"),
+            ServerType::Purpur { .. } => Some("purpur"),
+            ServerType::BungeeCord {  } => Some("bungeecord"),
+            ServerType::Velocity {  } => Some("velocity"),
+            ServerType::Waterfall {  } => Some("waterfall"),
+            ServerType::PaperMC { project, .. } => Some(project.as_str()),
             _ => None,
         }.map(|o| o.to_owned())
-    }
-
-    // TODO: move to HangarAPI
-    pub fn get_hangar_platform(&self) -> Option<mcapi::hangar::Platform> {
-        match self {
-            Self::Waterfall {} => Some(mcapi::hangar::Platform::Waterfall),
-            Self::Velocity {} => Some(mcapi::hangar::Platform::Velocity),
-            Self::PaperMC { project, .. } if project == "waterfall" => Some(mcapi::hangar::Platform::Waterfall),
-            Self::PaperMC { project, .. } if project == "velocity" => Some(mcapi::hangar::Platform::Velocity),
-            Self::PaperMC { project, .. } if project == "paper" => Some(mcapi::hangar::Platform::Paper),
-            Self::Paper {  } | Self::Purpur { .. } => Some(mcapi::hangar::Platform::Paper),
-            _ => None
-        }
-    }
-
-    // TODO: move to HangarAPI
-    pub fn get_hangar_versions_filter(&self, mcver: &str) -> mcapi::hangar::VersionsFilter {
-        let platform = self.get_hangar_platform();
-        mcapi::hangar::VersionsFilter {
-            platform_version: if platform.is_some() {
-                Some(mcver.to_owned())
-            } else {
-                None
-            },
-            platform,
-            ..Default::default()
-        }
     }
 
     pub fn is_modded(&self) -> bool {

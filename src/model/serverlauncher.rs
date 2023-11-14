@@ -62,10 +62,10 @@ pub enum StartupMethod {
 
 impl ServerLauncher {
     pub fn get_java(&self) -> String {
-        if let Some(Some(path)) = self.java_version.as_ref().map(|v| std::env::var(format!("JAVA_{v}")).ok()) {
+        if let Some(Some(path)) = self.java_version.as_ref().map(|v| std::env::var(format!("JAVA_{v}_BIN")).ok()) {
             path
         } else {
-            String::from("java")
+            std::env::var("JAVA_BIN").unwrap_or(String::from("java"))
         }
     }
 

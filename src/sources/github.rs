@@ -52,7 +52,7 @@ impl GithubWaitRatelimit<reqwest::Response> for reqwest::Response {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct CachedData<T: Serialize> {
     pub data: T,
-    pub last_modified: String,
+    pub etag: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -100,7 +100,7 @@ impl<'a> GithubAPI<'a> {
             .with_token(None) // TODO: token via App
             .headers(if let Some(cached_data) = &cached_data {
                 let mut map = HeaderMap::new();
-                map.insert("If-Modified-Since", HeaderValue::from_str(&cached_data.last_modified)?);
+                map.insert("if-none-match", HeaderValue::from_str(&cached_data.etag)?);
                 map
             } else {
                 HeaderMap::new()
@@ -109,10 +109,9 @@ impl<'a> GithubAPI<'a> {
             .await?;
         
         if response.status() == StatusCode::NOT_MODIFIED {
-            self.0.dbg(format!("GithubAPI: Cache hit: {cache_path}"))?;
             Ok(cached_data.unwrap().data)
         } else {
-            let last_modified = response.headers().get("Last-Modified").cloned();
+            let etag = response.headers().get("etag").cloned();
 
             let json: T = response
                 .error_for_status()?
@@ -121,13 +120,12 @@ impl<'a> GithubAPI<'a> {
                 .json()
                 .await?;
 
-            if let Some(last_modified) = last_modified {
+            if let Some(etag) = etag {
                 if let Some(cache) = self.0.get_cache(CACHE_DIR) {
                     cache.write_json(&cache_path, &CachedData {
-                        last_modified: last_modified.to_str()?.to_owned(),
+                        etag: etag.to_str()?.to_owned(),
                         data: json.clone(),
                     }).context("Saving github api response to cache")?;
-                    self.0.dbg(format!("GithubAPI: Saved: {cache_path}"))?;
                 }
             }
 

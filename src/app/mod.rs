@@ -98,6 +98,24 @@ impl App {
         match k {
             "SERVER_NAME" => Some(self.server.name.clone()),
             "SERVER_VERSION" | "mcver" | "mcversion" => Some(self.server.mc_version.clone()),
+
+            "SERVER_PORT" => {
+                std::env::var(format!("PORT_{}", self.server.name))
+                    .ok()
+                    .or(self.network
+                        .as_ref()
+                        .and_then(|nw| nw.servers.get(&self.server.name))
+                        .map(|s| s.port.to_string()))
+            },
+            "SERVER_IP" => {
+                std::env::var(format!("IP_{}", self.server.name))
+                    .ok()
+                    .or(self.network
+                        .as_ref()
+                        .and_then(|nw| nw.servers.get(&self.server.name))
+                        .and_then(|s| s.ip_address.clone()))
+            },
+
             "PLUGIN_COUNT" => Some(self.server.plugins.len().to_string()),
             "MOD_COUNT" => Some(self.server.mods.len().to_string()),
             "WORLD_COUNT" => Some(self.server.worlds.len().to_string()),
@@ -105,6 +123,7 @@ impl App {
 
             "NETWORK_NAME" => Some(self.network.as_ref()?.name.clone()),
             "NETWORK_PORT" => Some(self.network.as_ref()?.port.to_string()),
+            "NETWORK_SERVERS_COUNT" => Some(self.network.as_ref()?.servers.len().to_string()),
 
             "NETWORK_VELOCITY_SERVERS" => {
                 if let Some(nw) = &self.network {

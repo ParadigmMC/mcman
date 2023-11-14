@@ -68,7 +68,7 @@ impl<'a> BuildContext<'a> {
         self.bootstrap_files().await?;
 
         if !self.app.server.launcher.disable {
-            let startup = self.app.server.jar.get_startup_method(&self.app, &server_jar).await?;
+            let startup = self.get_startup_method(&server_jar).await?;
 
             self.create_scripts(startup).await?;
 

@@ -1,6 +1,6 @@
 use std::{collections::HashSet, time::Duration};
 
-use anyhow::Result;
+use anyhow::{Result, bail};
 use indicatif::{ProgressIterator, ProgressBar, ProgressStyle, FormattedDuration};
 use tokio::fs;
 
@@ -34,7 +34,23 @@ impl<'a> BuildContext<'a> {
             .with_message(format!("Processing {addon_type}s"));
         let pb = self.app.multi_progress.add(pb);
         for addon in server_list.iter().progress_with(pb.clone()) {
-            let (_path, resolved) = self.downloadable(addon, &addon_type.folder(), Some(&pb)).await?;
+            let mut attempt = 0;
+            let max_tries = std::env::var("MAX_TRIES")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(3);
+            let (_path, resolved) = loop {
+                match self.downloadable(addon, &addon_type.folder(), Some(&pb)).await {
+                    Ok(d) => break d,
+                    Err(e) => {
+                        self.app.error(e)?;
+                        if max_tries > attempt {
+                            bail!("Max attempts reached");
+                        }
+                        attempt += 1;
+                    }
+                }
+            };
 
             files_list.insert(resolved.filename.clone());
 

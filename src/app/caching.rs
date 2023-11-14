@@ -1,6 +1,6 @@
 use std::{path::{PathBuf, Path}, fs::{self, File}, io::Write};
 
-use anyhow::Result;
+use anyhow::{Result, Context};
 use serde::de::DeserializeOwned;
 
 pub struct Cache(pub PathBuf);
@@ -37,9 +37,11 @@ impl Cache {
     }
 
     pub fn write_json<T: serde::Serialize>(&self, path: &str, data: &T) -> Result<()> {
-        fs::create_dir_all(PathBuf::from(path).parent().unwrap_or(Path::new(path)))?;
+        fs::create_dir_all(self.path(path).parent().unwrap())
+            .context(format!("Creating parent directory for: {path}"))?;
         let content = serde_json::to_string(data)?;
-        let mut f = File::create(self.0.join(path))?;
+        let mut f = File::create(self.path(path))
+            .context(format!("Creating cache file at: {path}"))?;
         f.write_all(content.as_bytes())?;
 
         Ok(())

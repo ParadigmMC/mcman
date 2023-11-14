@@ -70,12 +70,16 @@ impl<'a> CurserinthAPI<'a> {
         self.fetch_api(format!("{CURSERINTH_API}/project/{id}/version")).await
     }
 
+    pub fn get_modrinth_name(&self) -> Option<String> {
+        self.0.server.jar.get_modrinth_name()
+    }
+
     /// Result<(filtered, unfiltered)>
     pub async fn fetch_versions(&self, id: &str) -> Result<(Vec<CurseRinthVersion>, Vec<CurseRinthVersion>)> {
         let versions = self.fetch_all_versions(id).await?;
 
         Ok((
-            versions.iter().filter(|v| if let Some(loader) = self.0.server.jar.get_modrinth_name() {
+            versions.iter().filter(|v| if let Some(loader) = self.get_modrinth_name() {
                 v.loaders.contains(&loader)
             } else {
             true

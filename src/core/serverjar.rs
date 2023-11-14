@@ -12,19 +12,93 @@ use tokio::{
     io::AsyncWriteExt,
 };
 
-use crate::model::InstallMethod;
+use crate::{model::{InstallMethod, ServerType}, sources::quilt};
 
 use super::BuildContext;
 
 impl<'a> BuildContext<'a> {
+    pub async fn get_install_method(
+        &self
+    ) -> Result<InstallMethod> {
+        let mcver = &self.app.mc_version();
+        Ok(match self.app.server.jar.clone() {
+            ServerType::Quilt { loader, .. } => {
+                let mut args = vec!["install", "server", mcver];
+
+                if loader != "latest" {
+                    args.push(&loader);
+                }
+
+                args.push("--install-dir=.");
+                args.push("--download-server");
+
+                InstallMethod::Installer {
+                    name: "Quilt Server Installer".to_owned(),
+                    label: "qsi".to_owned(),
+                    args: args.into_iter().map(ToOwned::to_owned).collect(),
+                    rename_from: Some("quilt-server-launch.jar".to_owned()),
+                    jar_name: format!(
+                        "quilt-server-launch-{mcver}-{}.jar",
+                        quilt::map_quilt_loader_version(&self.app.http_client, &loader)
+                            .await
+                            .context("resolving quilt loader version id (latest/latest-beta)")?
+                    ),
+                }
+            }
+            ServerType::NeoForge { loader } => InstallMethod::Installer {
+                name: "NeoForged Installer".to_owned(),
+                label: "nfi".to_owned(),
+                args: vec!["--installServer".to_owned(), ".".to_owned()],
+                rename_from: None,
+                jar_name: format!(
+                    "libraries/net/neoforged/forge/{mcver}-{0}/forge-{mcver}-{0}-server.jar",
+                    self.app.neoforge().resolve_version(&loader).await?
+                )
+            },
+            ServerType::Forge { loader } => InstallMethod::Installer {
+                name: "Forge Installer".to_owned(),
+                label: "fi".to_owned(),
+                args: vec!["--installServer".to_owned(), ".".to_owned()],
+                rename_from: None,
+                jar_name: format!(
+                    "libraries/net/minecraftforge/forge/{mcver}-{0}/forge-{mcver}-{0}-server.jar",
+                    self.app.forge().resolve_version(&loader).await?
+                )
+            },
+            ServerType::BuildTools { args, software } => {
+                let mut buildtools_args = vec![
+                    "--compile",
+                    &software,
+                    "--compile-if-changed",
+                    "--rev",
+                    mcver,
+                ];
+
+                for arg in &args {
+                    buildtools_args.push(arg);
+                }
+
+                InstallMethod::Installer {
+                    name: "BuildTools".to_owned(),
+                    label: "bt".to_owned(),
+                    args: buildtools_args.into_iter().map(ToOwned::to_owned).collect(),
+                    rename_from: Some("server.jar".to_owned()),
+                    jar_name: format!(
+                        "{}-{mcver}.jar",
+                        if software == "craftbukkit" {
+                            "craftbukkit"
+                        } else {
+                            "spigot"
+                        }
+                    ),
+                }
+            }
+            _ => InstallMethod::SingleJar,
+        })
+    }
+
     pub async fn download_server_jar(&'a self) -> Result<String> {
-        let serverjar_name = match self
-            .app
-            .server
-            .jar
-            .get_install_method(&self.app)
-            .await?
-        {
+        let serverjar_name = match self.get_install_method().await? {
             InstallMethod::Installer {
                 name,
                 label,
@@ -72,20 +146,32 @@ impl<'a> BuildContext<'a> {
                         cmd_args.push(arg);
                     }
 
-                    self.execute_child(("java", cmd_args.clone()), &name, &label)
+                    let java = std::env::var("JAVA_BIN").unwrap_or("java".to_owned());
+
+                    self.execute_child((&java, cmd_args.clone()), &name, &label)
                         .await
                         .context(format!("Executing command: 'java {}'", cmd_args.join(" ")))
                         .context(format!("Running installer: {name}"))?;
 
                     if let Some(from) = &rename_from {
-                        pb.set_message(format!(
-                            "Renaming... ({})",
-                            style(format!("{from} => {jar_name}")).dim()
-                        ));
-
-                        fs::rename(self.output_dir.join(from), self.output_dir.join(&jar_name))
-                            .await
-                            .context(format!("Renaming: {from} => {jar_name}"))?;
+                        let from_path = self.output_dir.join(from);
+                        let to_path = self.output_dir.join(&jar_name);
+                        if from_path.exists() {
+                            pb.set_message(format!(
+                                "Renaming... ({})",
+                                style(format!("{from} => {jar_name}")).dim()
+                            ));
+    
+                            fs::rename(from_path, &to_path)
+                                .await
+                                .context(format!("Renaming: {from} => {jar_name}"))?;
+                        } {
+                            if to_path.exists() {
+                                self.app.log(format!("  Rename skipped ({from} doesn't exist)"))?;
+                            } else {
+                                bail!("Installer did not output '{from}', can't rename to '{jar_name}'");
+                            }
+                        }
                     }
 
                     self.app.log(

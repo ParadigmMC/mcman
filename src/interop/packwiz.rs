@@ -1,6 +1,7 @@
 use std::{path::PathBuf, time::Duration, collections::HashMap, str::FromStr};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Result, Context};
+use console::style;
 use indicatif::{ProgressBar, ProgressFinish, ProgressStyle, ProgressIterator};
 use rpackwiz::model::{Mod, ModUpdate, ModDownload, HashFormat, DownloadMode, Pack, PackIndex};
 use serde::de::DeserializeOwned;
@@ -64,6 +65,8 @@ impl<'a> PackwizInterop<'a> {
         progress_bar.enable_steady_tick(Duration::from_millis(250));
         
         let pack: Pack = source.parse_toml("pack.toml").await?;
+
+        self.0.server.fill_from_map(&pack.versions);
         
         progress_bar.set_message("Reading pack index...");
         
@@ -82,6 +85,11 @@ impl<'a> PackwizInterop<'a> {
                     let modpw: Mod = source.parse_toml(&file.file).await?;
 
                     let dl = self.from_mod(&modpw).await?;
+                    self.0.println(format!(
+                        "{} {}",
+                        style("      Imported").green().bold(),
+                        dl.to_short_string()
+                    ))?;
 
                     self.0.server.mods.push(dl);
                 } else {
@@ -133,11 +141,12 @@ impl<'a> PackwizInterop<'a> {
         } else if let Some(dl) = self.from_mod_update(&m.update)? {
             Ok(dl)
         } else {
-            self.0.dl_from_url(&m.download
+            self.0.dl_from_string(&m.download
                 .url
                 .clone()
-                .ok_or(anyhow!("download url not present"))?)
+                .ok_or(anyhow!("Download URL not present for mod: {m:#?}"))?)
                 .await
+                .context(format!("Importing mod: {m:#?}"))
         }
     }
 

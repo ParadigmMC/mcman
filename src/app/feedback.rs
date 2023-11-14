@@ -14,6 +14,13 @@ impl App {
         ))?)
     }
 
+    pub fn error<S: std::fmt::Display>(&self, message: S) -> Result<()> {
+        Ok(self.multi_progress.println(format!(
+            "  {} {message}",
+            style("⚠ Error").red().bold()
+        ))?)
+    }
+
     pub fn success<S: std::fmt::Display>(&self, message: S) -> Result<()> {
         Ok(self.multi_progress.suspend(|| println!(
             "  {} {message}",
@@ -35,6 +42,10 @@ impl App {
             "  {}",
            style(message).dim()
         )))
+    }
+
+    pub fn println<S: std::fmt::Display>(&self, message: S) -> Result<()> {
+        Ok(self.multi_progress.suspend(|| println!("{message}")))
     }
 
     pub fn dbg<S: std::fmt::Display>(&self, message: S) -> Result<()> {
@@ -101,6 +112,18 @@ impl App {
                 .items(items)
                 .with_prompt(prompt)
                 .default(0)
+                .interact()
+        })?];
+
+        Ok(item.0.clone())
+    }
+
+    pub fn select_with_default<T: Clone>(&self, prompt: &str, items: &[SelectItem<T>], def: usize) -> Result<T> {
+        let item = &items[self.multi_progress.suspend(|| {
+            Select::with_theme(&ColorfulTheme::default())
+                .items(items)
+                .with_prompt(prompt)
+                .default(def)
                 .interact()
         })?];
 

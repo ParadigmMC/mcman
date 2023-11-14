@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-use crate::app::{App, ResolvedFile, CacheStrategy};
+use crate::{app::{App, ResolvedFile, CacheStrategy}, model::{ServerType, SoftwareType}};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ModrinthProject {
@@ -159,9 +159,27 @@ impl<'a> ModrinthAPI<'a> {
         ))
     }
 
+    pub fn get_modrinth_name(&self) -> Option<String> {
+        self.0.server.jar.get_modrinth_name()
+    }
+
+    pub fn get_modrinth_facets(&self) -> String {
+        let mut arr: Vec<Vec<String>> = vec![];
+
+        if self.0.server.jar.get_software_type() != SoftwareType::Proxy {
+            arr.push(vec![format!("versions:{}", self.0.mc_version())]);
+        }
+
+        if let Some(n) = self.get_modrinth_name() {
+            arr.push(vec![format!("categories:{n}")]);
+        }
+
+        serde_json::to_string(&arr).unwrap()
+    }
+
     pub async fn search(&self, query: &str) -> Result<Vec<ModrinthProject>> {
         Ok(self.0.http_client.get(format!("{API_URL}/search"))
-            .query(&[("query", query), ("facets", &self.0.server.jar.get_modrinth_facets(&self.0.mc_version())?)])
+            .query(&[("query", query), ("facets", &self.get_modrinth_facets())])
             .send()
             .await?
             .error_for_status()?

@@ -29,6 +29,8 @@ impl<'a> MRPackInterop<'a> {
 
         let index = mrpack.read_index()?;
 
+        self.0.server.fill_from_map(&index.dependencies);
+
         progress_bar.set_style(ProgressStyle::with_template("{prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}")?);
         progress_bar.set_prefix("Importing mod");
         for file in index.files.iter().progress_with(progress_bar.clone()) {
@@ -59,7 +61,7 @@ impl<'a> MRPackInterop<'a> {
 
             std::fs::create_dir_all(target_path.parent().unwrap())?;
             
-            // TODO is target_path exists prompt
+            // TODO mrpack import: is target_path exists prompt
             
             let pb = self.0.multi_progress.insert_after(&progress_bar, ProgressBar::new(zip_file.size()));
 
@@ -135,7 +137,7 @@ impl<'a> MRPackInterop<'a> {
         mrpack.write_index(&index)?;
 
         pb.set_prefix("Overrides");
-        // TODO
+        // TODO: mrpack export overrides
         pb.finish();
 
         mrpack.finish()?;
@@ -154,7 +156,7 @@ impl<'a> MRPackInterop<'a> {
         Ok(MRPackFile {
             path: format!("mods/{}", resolved.filename),
             hashes: resolved.hashes,
-            // TODO: EnvSupport
+            // TODO: mrpack export EnvSupport
             env: None,
             downloads: vec![resolved.url]
         })

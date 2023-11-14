@@ -61,7 +61,7 @@ pub enum TestResult {
 // [x] commands are not being sent properly
 // [x] use debouncer for notify
 // [ ] reload server.toml properly
-// [ ] tests 
+// [x] tests 
 
 impl<'a> DevSession<'a> {
     pub async fn spawn_child(&mut self) -> Result<Child> {
@@ -76,8 +76,7 @@ impl<'a> DevSession<'a> {
             .args(
                 self.builder.app.server
                     .launcher
-                    .get_arguments(&self.builder.app.server.jar.get_startup_method(
-                        &self.builder.app,
+                    .get_arguments(&self.builder.get_startup_method(
                         &self.jar_name.as_ref().unwrap().clone()
                     ).await?, platform),
             )

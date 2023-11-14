@@ -86,5 +86,9 @@ pub fn run(app: App, args: Args) -> Result<()> {
         style("config/").bold(),
     ));
 
+    if skipped != 0 {
+        app.warn(format!("Skipped {skipped} files"))?;
+    }
+
     Ok(())
 }

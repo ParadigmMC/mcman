@@ -107,6 +107,29 @@ impl Server {
         })
     }
 
+    pub fn fill_from_map(&mut self, map: &HashMap<String, String>) {
+        if let Some(v) = map.get("minecraft") {
+            self.mc_version = v.clone();
+        }
+
+        if let Some(v) = map.get("forge") {
+            self.jar = ServerType::Forge { loader: v.clone() }
+        }
+
+        if let Some(v) = map.get("neoforge") {
+            self.jar = ServerType::NeoForge { loader: v.clone() }
+        }
+
+        if let Some(v) = map.get("fabric-loader").or(map.get("fabric")) {
+            self.jar = ServerType::Fabric { loader: v.clone(), installer: "latest".to_owned() }
+        }
+
+        if let Some(v) = map.get("quilt-loader").or(map.get("quilt")) {
+            self.jar = ServerType::Quilt { loader: v.clone(), installer: "latest".to_owned() }
+        }
+    }
+
+    // TODO: move to ModrinthAPI
     pub fn filter_modrinth_versions(&self, list: &[modrinth::ModrinthVersion]) -> Vec<modrinth::ModrinthVersion> {
         let is_proxy = self.jar.get_software_type() == SoftwareType::Proxy;
         let is_vanilla = matches!(self.jar, ServerType::Vanilla {});

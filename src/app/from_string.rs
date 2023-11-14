@@ -1,4 +1,4 @@
-use anyhow::{Result, bail};
+use anyhow::{Result, bail, Context};
 
 use crate::{model::Downloadable, util::SelectItem};
 
@@ -10,7 +10,7 @@ impl App {
         s: &str
     ) -> Result<Downloadable> {
         if s.starts_with("http") {
-            Ok(self.dl_from_url(s).await?)
+            Ok(self.dl_from_url(s).await.context(format!("Importing URL: {s}"))?)
         } else if s.contains(':') {
             match s.split_once(':').unwrap() {
                 ("mr" | "modrinth", id) => {
@@ -61,6 +61,21 @@ impl App {
         &self,
         urlstr: &str
     ) -> Result<Downloadable> {
+        let urlstring = if urlstr.starts_with("https://blanketcon.b-cdn.net") {
+            let mut path = urlstr.strip_prefix("https://blanketcon.b-cdn.net/").unwrap().split('/');
+            match path.next() {
+                Some("devos") => format!("https://mvn.devos.one/{}", path.collect::<Vec<_>>().join("/")),
+                Some("jared") => format!("https://ci.blamejared.com/{}", path.collect::<Vec<_>>().join("/")),
+                Some("jaskarth") => format!("https://jaskarth.com/{}", path.collect::<Vec<_>>().join("/")),
+                Some("ithundxr") => format!("https://maven.ithundxr.dev/{}", path.collect::<Vec<_>>().join("/")),
+                Some("pub") => urlstr.to_owned(),
+                _ => format!("https://github.com/{}", urlstr.strip_prefix("https://blanketcon.b-cdn.net/").unwrap()),
+            }
+        } else {
+            urlstr.to_owned()
+        };
+
+        let urlstr = &urlstring;
         let url = reqwest::Url::parse(urlstr)?;
 
         match (url.domain(), url.path_segments().map(|x| x.collect::<Vec<_>>()).unwrap_or_default().as_slice()) {
@@ -238,11 +253,24 @@ impl App {
                 Ok(Downloadable::GithubRelease { repo, tag: tag.to_string(), asset })
             }
             
-            _ => {
-                let selection = self.select(&urlstr, &vec![
+            (domain, path) => {
+                let def = match domain {
+                    Some(d) if d.starts_with("ci.") => 1,
+                    Some(d) if d.starts_with("maven.") || d.starts_with("mvn") => 2,
+                    _ => {
+                        if path.ends_with(&["maven-metadata.xml"]) {
+                            2
+                        } else {
+                            0
+                        }
+                    }
+                };
+
+                let selection = self.select_with_default(&urlstr, &vec![
                     SelectItem(0, "Add as Custom URL".to_owned()),
                     SelectItem(1, "Add as Jenkins".to_owned()),
-                ])?;
+                    SelectItem(2, "Add as Maven".to_owned()),
+                ], def)?;
 
                 match selection {
                     0 => {
@@ -305,6 +333,84 @@ impl App {
                             job,
                             build,
                             artifact,
+                        })
+                    }
+                    2 => {
+                        let mut repo = None;
+                        let mut group_id = None;
+                        let mut artifact_id = None;
+                        let mut ver = None;
+
+                        if let Ok(meta) = self.maven().find_maven_artifact(urlstr).await {
+                            if let Some((inferred_repo, rest)) = meta.find_url(urlstr) {
+                                if self.confirm(&format!("Is '{inferred_repo}' the maven repository url?"))? {
+                                    repo = Some(inferred_repo);
+                                }
+
+                                ver = if !rest.is_empty() {
+                                    rest.split('/').next()
+                                } else { None }
+                            }
+                            group_id = meta.group_id;
+                            artifact_id = meta.artifact_id;
+                        }
+
+                        let repo = match repo {
+                            Some(r) => r,
+                            None => self.prompt_string_filled("Maven repository url?", urlstr)?,
+                        };
+
+                        let group = match group_id {
+                            Some(r) => r,
+                            None => {
+                                let inferred = if urlstr.starts_with(&repo) {
+                                    let p = urlstr.strip_prefix(&repo).unwrap();
+                                    if p.ends_with(".jar") {
+                                        let mut li = p.rsplit('/').skip(2).collect::<Vec<_>>();
+                                        li.reverse();
+                                        li
+                                    } else {
+                                        p.split('/').collect::<Vec<_>>()
+                                    }.into_iter().filter(|x| !x.is_empty()).collect::<Vec<_>>().join(".")
+                                } else {
+                                    "".to_string()
+                                };
+
+                                self.prompt_string_filled("Group (split by .)?", &inferred)?
+                            },
+                        };
+
+                        let suggest = format!("{repo}/{}", group.replace('.', "/"));
+
+                        let artifact = match artifact_id {
+                            Some(r) => r,
+                            None => self.prompt_string_filled("Artifact?", if urlstr.starts_with(&suggest) {
+                                urlstr.strip_prefix(&suggest).unwrap().split('/').filter(|x| !x.is_empty()).next().unwrap_or("")
+                            } else {
+                                ""
+                            })?,
+                        };
+
+                        let mut versions = vec![SelectItem("latest".to_owned(), "Always use latest".to_owned())];
+
+                        for v in self.maven().fetch_metadata(&repo, &group, &artifact).await?.versions {
+                            versions.push(SelectItem(v.clone(), v.clone()));
+                        }
+
+                        let version = self.select("Which version?", &versions)?;
+
+                        let filename = if urlstr.ends_with(".jar") {
+                            urlstr.rsplit('/').next().unwrap().to_owned()
+                        } else {
+                            self.prompt_string_default("Filename?", "${artifact}-${version}.jar")?
+                        };
+
+                        Ok(Downloadable::Maven {
+                            url: repo,
+                            group,
+                            artifact,
+                            version,
+                            filename
                         })
                     }
                     _ => unreachable!(),

@@ -3,11 +3,45 @@ use std::{fs::OpenOptions, io::Write};
 use anyhow::Result;
 use tokio::fs;
 
-use crate::model::StartupMethod;
+use crate::model::{StartupMethod, ServerType};
 
 use super::BuildContext;
 
 impl<'a> BuildContext<'a> {
+    pub async fn get_startup_method(
+        &self,
+        serverjar_name: &str,
+    ) -> Result<StartupMethod> {
+        let mcver = &self.app.mc_version();
+        Ok(match &self.app.server.jar {
+            ServerType::NeoForge { loader } => {
+                let l = self.app.neoforge().resolve_version(loader).await?;
+
+                StartupMethod::Custom {
+                    windows: vec![format!(
+                        "@libraries/net/neoforged/forge/{mcver}-{l}/win_args.txt"
+                    )],
+                    linux: vec![format!(
+                        "@libraries/net/neoforged/forge/{mcver}-{l}/unix_args.txt"
+                    )],
+                }
+            }
+            ServerType::Forge { loader } => {
+                let l = self.app.forge().resolve_version(loader).await?;
+
+                StartupMethod::Custom {
+                    windows: vec![format!(
+                        "@libraries/net/minecraftforge/forge/{mcver}-{l}/win_args.txt"
+                    )],
+                    linux: vec![format!(
+                        "@libraries/net/minecraftforge/forge/{mcver}-{l}/unix_args.txt"
+                    )],
+                }
+            }
+            _ => StartupMethod::Jar(serverjar_name.to_owned()),
+        })
+    }
+
     pub async fn create_scripts(&self, startup: StartupMethod) -> Result<()> {
         fs::write(
             self.output_dir.join("start.bat"),

@@ -150,7 +150,7 @@ impl App {
                     // file already there and is ok
                     self.log(format!(
                         "  {} {}",
-                        style("Skipped   ").green(),
+                        style("   Skipped").green(),
                         progress_bar.message()
                     ))?;
 
@@ -218,7 +218,7 @@ impl App {
             validate_hash(hasher)?;
         
             progress_bar.set_style(ProgressStyle::with_template("{prefix:.green.bold} {msg}")?);
-            progress_bar.set_prefix("Copied    ");
+            progress_bar.set_prefix("    Copied");
             progress_bar.set_message(resolved.filename.clone());
             self.log(format!(
                 "  {} {}",
