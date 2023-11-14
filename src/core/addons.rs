@@ -25,7 +25,7 @@ impl<'a> BuildContext<'a> {
             if server_list.len() < 200 { "" } else { " may god help you" },
         ))?;
 
-        self.app.ci(&format!("::group::{addon_type}s"));
+        self.app.ci(&format!("::group::Processing {addon_type}s"));
 
         let mut files_list = HashSet::new();
 

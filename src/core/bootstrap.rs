@@ -102,16 +102,19 @@ impl<'a> BuildContext<'a> {
         let source = self.app.server.path.join("config").join(rel_path);
         let dest = self.output_dir.join(rel_path);
 
-        let source_time = fs::metadata(&source).await?.modified()?;
+        let metadata = fs::metadata(&source).await?;
 
         if self.force || {
             if let Some(time) = cache {
-                &source_time > time
+                if let Ok(source_time) = metadata.modified() {
+                    &source_time > time
+                } else { true }
             } else {
                 true
             }
         } {
-            fs::create_dir_all(dest.parent().unwrap()).await?;
+            fs::create_dir_all(dest.parent().unwrap()).await
+                .context("Creating parent directory")?;
 
             if self.should_bootstrap_file(rel_path) {
                 let config_contents = fs::read_to_string(&source)
@@ -132,10 +135,14 @@ impl<'a> BuildContext<'a> {
             self.app.log(format!("  unchanged: {pretty_path}"))?;
         }
 
-        self.new_lockfile.files.push(BootstrappedFile {
-            path: rel_path.clone(),
-            date: source_time
-        });
+        if let Ok(source_time) = metadata.modified() {
+            self.new_lockfile.files.push(BootstrappedFile {
+                path: rel_path.clone(),
+                date: source_time
+            });
+        } else {
+            self.app.warn("File metadata not supported")?;
+        }
 
         Ok(())
     }
