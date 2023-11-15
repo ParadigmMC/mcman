@@ -92,8 +92,6 @@ impl<'a> DevSession<'a> {
     async fn handle_commands(mut self, mut rx: mpsc::Receiver<Command>, mut tx: mpsc::Sender<Command>) -> Result<()> {
         let mp = self.builder.app.multi_progress.clone();
 
-        self.builder.app.ci("::group::Starting server process");
-
         let mut child: Option<Child> = None;
         let mut stdout_lines: Option<tokio::io::Lines<BufReader<tokio::process::ChildStdout>>> = None;
 
@@ -109,6 +107,7 @@ impl<'a> DevSession<'a> {
                 Some(cmd) = rx.recv() => {
                     match cmd {
                         Command::Start => {
+                            self.builder.app.ci("::group::Starting server process");
                             self.builder.app.info("Starting server process...")?;
                             if child.is_none() {
                                 let mut spawned_child = self.spawn_child().await?;
@@ -117,6 +116,7 @@ impl<'a> DevSession<'a> {
                             }
                         }
                         Command::Stop => {
+                            self.builder.app.ci("::endgroup::");
                             self.builder.app.info("Killing server process...")?;
                             if let Some(ref mut child) = &mut child {
                                 child.kill().await?;
@@ -195,6 +195,7 @@ impl<'a> DevSession<'a> {
                         }
                         Command::EndSession => {
                             self.builder.app.info("Ending session...")?;
+                            self.builder.app.ci("::endgroup::");
                             break 'l;
                         }
                     }
@@ -242,6 +243,7 @@ impl<'a> DevSession<'a> {
                 },
                 Ok(Some(status)) = try_wait_child(&mut child) => {
                     exit_status = Some(status);
+                    self.builder.app.ci("::endgroup::");
                     self.builder.app.info("Server process exited")?;
 
                     is_stopping = false;
@@ -377,7 +379,6 @@ impl<'a> DevSession<'a> {
 
         Ok(())
     }
-
 
     pub fn create_hotreload_watcher(
         config: Arc<Mutex<HotReloadConfig>>,

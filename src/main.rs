@@ -85,6 +85,9 @@ enum Commands {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    if std::env::var("CI") == Ok("true".to_owned()) {
+        println!("::endgroup::");
+    }
     let args = CLI::parse();
 
     let mut base_app = BaseApp::new()?;

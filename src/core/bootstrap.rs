@@ -47,8 +47,13 @@ impl<'a> BuildContext<'a> {
             pb.set_message(diffed_paths.to_string_lossy().to_string());
     
             self.bootstrap_file(&diffed_paths, lockfile_entries.get(&diffed_paths)).await.context(format!(
-                "Bootstrapping file: {}",
-                entry.path().display()
+                "Bootstrapping file:
+                - Entry: {}
+                - Destination: {}
+                - Relative: {}",
+                entry.path().display(),
+                dest.display(),
+                diffed_paths.display()
             ))?;
         }
 
@@ -89,7 +94,7 @@ impl<'a> BuildContext<'a> {
             "properties", "txt", "yaml", "yml", "conf", "config", "toml", "json", "json5", "secret"
         ];
 
-        bootstrap_exts.contains(&ext)
+        bootstrap_exts.contains(&ext) || self.app.server.options.bootstrap_exts.contains(&ext.to_string())
     }
 
     pub async fn bootstrap_file(
@@ -102,7 +107,15 @@ impl<'a> BuildContext<'a> {
         let source = self.app.server.path.join("config").join(rel_path);
         let dest = self.output_dir.join(rel_path);
 
-        let metadata = fs::metadata(&source).await?;
+        let metadata = fs::metadata(&source).await
+            .context(format!(
+                "Getting metadata
+                - File: {}
+                - Relative path: {pretty_path}
+                - Destination: {}",
+                source.display(),
+                dest.display(),
+            ))?;
 
         if self.force || {
             if let Some(time) = cache {

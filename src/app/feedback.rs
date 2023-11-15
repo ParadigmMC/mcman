@@ -64,8 +64,12 @@ impl App {
         )))
     }
 
+    pub fn is_ci(&self) -> bool {
+        std::env::var("CI").ok() == Some("true".to_owned())
+    }
+
     pub fn ci(&self, cmd: &str) {
-        if std::env::var("CI").ok() == Some("true".to_owned()) {
+        if self.is_ci() {
             self.multi_progress.suspend(|| println!("{cmd}"))
         }
     }
