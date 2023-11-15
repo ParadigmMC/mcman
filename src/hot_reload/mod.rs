@@ -63,6 +63,8 @@ pub enum TestResult {
 // [ ] reload server.toml properly
 // [x] tests 
 
+pub const LINE_CRASHED: &str = "]: Crashed! The full crash report has been saved to";
+
 impl<'a> DevSession<'a> {
     pub async fn spawn_child(&mut self) -> Result<Child> {
         let platform = if std::env::consts::FAMILY == "windows" {
@@ -214,7 +216,7 @@ impl<'a> DevSession<'a> {
                             tx.send(Command::SendCommand("stop\nend\n".to_owned())).await?;
                             tx.send(Command::WaitUntilExit).await?;
                             tx.send(Command::EndSession).await?;
-                        } else if s == "---- end of report ----" {
+                        } else if s.contains(LINE_CRASHED) || s == "---- end of report ----" {
                             self.builder.app.info("Server crashed!")?;
                             test_result = TestResult::Crashed;
 
@@ -320,14 +322,25 @@ impl<'a> DevSession<'a> {
                         }
                     });
 
-                    if self.builder.app.server.options.upload_to_mclogs {
+                    if std::env::var("upload_to_mclogs") == Ok("true".to_string()) || self.builder.app.server.options.upload_to_mclogs {
                         let pb = mp.add(ProgressBar::new_spinner()
                             .with_message("Uploading to mclo.gs"));
     
                         pb.enable_steady_tick(Duration::from_millis(250));
-    
-                        let log_path = match test_result {
-                            TestResult::Crashed => {
+
+                        let latest_log_path = self.builder.output_dir.join("logs").join("latest.log");
+
+                        if latest_log_path.exists() {
+                            let content = std::fs::read_to_string(&latest_log_path)
+                                .context("Reading latest.log file")?;
+
+                            let is_crash = if test_result == TestResult::Crashed {
+                                true
+                            } else {
+                                content.contains(LINE_CRASHED)
+                            };
+
+                            let crash_log_path = if is_crash {
                                 let folder = self.builder.output_dir.join("crash-reports");
                                 if !folder.exists() {
                                     bail!("crash-reports folder doesn't exist, cant upload to mclo.gs");
@@ -341,25 +354,31 @@ impl<'a> DevSession<'a> {
                                     .max_by_key(|(_, t)| t.clone())
                                     .ok_or(anyhow!("can't find crash report"))?;
     
-                                report_path
-                            }
-                            _ => {
-                                self.builder.output_dir.join("logs").join("latest.log")
-                            }
-                        };
-    
-                        if log_path.exists() {
-                            let content = std::fs::read_to_string(&log_path)
-                                .context("Reading log file")?;
+                                Some(report_path)
+                            } else {
+                                None
+                            };
     
                             let log = self.builder.app.mclogs().paste_log(&content).await?;
                             drop(content);
+
+                            let crash_log = if let Some(log_path) = crash_log_path {
+                                let content = std::fs::read_to_string(&log_path)
+                                    .context(format!("Reading crash log file: {}", log_path.display()))?;
+
+                                Some(self.builder.app.mclogs().paste_log(&content).await?)
+                            } else {
+                                None
+                            };
     
                             pb.finish_and_clear();
-                            self.builder.app.log("  - Log uploaded to mclo.gs")?;
+                            self.builder.app.log("  - Logs uploaded to mclo.gs")?;
                             mp.suspend(|| {
                                 println!();
-                                println!(" -- [ {} ] --", log.url);
+                                println!(" latest.log [ {} ]", log.url);
+                                if let Some(log) = crash_log {
+                                    println!(" crash report [ {} ]", log.url);
+                                }
                                 println!();
                             });
                         } else {
@@ -367,7 +386,7 @@ impl<'a> DevSession<'a> {
                             mp.suspend(|| println!(
                                 "{} '{}' does not exist! Can't upload log.",
                                 ColorfulTheme::default().error_prefix,
-                                style(log_path.to_string_lossy()).dim()
+                                style(latest_log_path.to_string_lossy()).dim()
                             ));
                         }
                     }

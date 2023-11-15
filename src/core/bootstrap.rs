@@ -41,7 +41,7 @@ impl<'a> BuildContext<'a> {
 
             let source = entry.path();
             let dest = self.map_config_path(source);
-            let diffed_paths = diff_paths(&dest, self.app.server.path.join("config"))
+            let diffed_paths = diff_paths(&source, self.app.server.path.join("config"))
                 .ok_or(anyhow!("Cannot diff paths"))?;
 
             pb.set_message(diffed_paths.to_string_lossy().to_string());
@@ -117,9 +117,11 @@ impl<'a> BuildContext<'a> {
                 dest.display(),
             ))?;
 
+        let modified = metadata.modified();
+
         if self.force || {
             if let Some(time) = cache {
-                if let Ok(source_time) = metadata.modified() {
+                if let Ok(source_time) = modified {
                     &source_time > time
                 } else { true }
             } else {
@@ -148,7 +150,7 @@ impl<'a> BuildContext<'a> {
             self.app.log(format!("  unchanged: {pretty_path}"))?;
         }
 
-        if let Ok(source_time) = metadata.modified() {
+        if let Ok(source_time) = modified {
             self.new_lockfile.files.push(BootstrappedFile {
                 path: rel_path.clone(),
                 date: source_time
