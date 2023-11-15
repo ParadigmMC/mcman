@@ -1,4 +1,4 @@
-use std::{process::{Stdio, ExitStatus}, time::Duration, path::PathBuf, sync::{Mutex, Arc}};
+use std::{process::{Stdio, ExitStatus}, time::Duration, path::{PathBuf, Path}, sync::{Mutex, Arc}};
 
 use anyhow::{Result, Context, bail, anyhow};
 use console::style;
@@ -79,12 +79,20 @@ impl<'a> DevSession<'a> {
         let java = launcher.get_java();
         let args = launcher.get_arguments(&startup, platform);
 
-        self.builder.app.ci(&format!("Running: {java} {}", args.join(" ")));
+        self.builder.app.info(&format!("Running: {java} {}", args.join(" ")))?;
+
+        let cwd = std::env::current_dir()?.canonicalize()?;
+        // because jre is stupid
+        let dir = diff_paths(&self.builder.output_dir, &cwd).unwrap();
+
+        //self.builder.app.info(&format!("Output: {}", self.builder.output_dir.display()))?;
+        //self.builder.app.info(&format!("Cwd: {}", cwd.display()))?;
+        //self.builder.app.info(&format!("Working directory: {}", dir.display()))?;
 
         Ok(
             tokio::process::Command::new(java)
             .args(args)
-            .current_dir(&self.builder.output_dir)
+            .current_dir(&dir)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())

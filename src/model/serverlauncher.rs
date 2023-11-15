@@ -18,6 +18,7 @@ impl PresetFlags {
             Self::Proxy => include_str!("../../res/proxy_flags"),
             Self::None => "",
         }.split(char::is_whitespace)
+            .filter(|s| !s.is_empty())
             .map(ToOwned::to_owned)
             .collect()
     }
