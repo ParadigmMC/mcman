@@ -44,7 +44,7 @@ impl<'a> BuildContext<'a> {
         self.reload()?;
 
         if !self.skip_stages.is_empty() {
-            //println!(" => skipping stages: {}", self.skip_stages.join(", "));
+            self.app.info(format!("Skipping stages: {}", self.skip_stages.join(", ")));
         }
 
         // actual stages contained here
@@ -53,19 +53,21 @@ impl<'a> BuildContext<'a> {
         let server_jar = self.download_server_jar().await?;
         self.app.ci("::endgroup::");
 
-        if !self.app.server.plugins.is_empty() {
+        if !self.app.server.plugins.is_empty() && !self.skip_stages.contains(&"plugins".to_owned()) {
             self.download_addons(AddonType::Plugin).await?;
         }
 
-        if !self.app.server.mods.is_empty() {
+        if !self.app.server.mods.is_empty() && !self.skip_stages.contains(&"mods".to_owned()) {
             self.download_addons(AddonType::Mod).await?;
         }
 
-        if !self.app.server.worlds.is_empty() {
+        if !self.app.server.worlds.is_empty() && !self.skip_stages.contains(&"worlds".to_owned()) {
             self.process_worlds().await?;
         }
 
-        self.bootstrap_files().await?;
+        if  !self.skip_stages.contains(&"bootstrap".to_owned()) {
+            self.bootstrap_files().await?;
+        }
 
         if !self.app.server.launcher.disable {
             let startup = self.get_startup_method(&server_jar).await?;

@@ -73,15 +73,17 @@ impl<'a> DevSession<'a> {
             "linux"
         };
 
+        let server_jar = self.jar_name.as_ref().unwrap().clone();
+        let startup = self.builder.get_startup_method(&server_jar).await?;
+        let launcher = &self.builder.app.server.launcher;
+        let java = launcher.get_java();
+        let args = launcher.get_arguments(&startup, platform);
+
+        self.builder.app.ci(&format!("Running: {java} {}", args.join(" ")));
+
         Ok(
-            tokio::process::Command::new("java")
-            .args(
-                self.builder.app.server
-                    .launcher
-                    .get_arguments(&self.builder.get_startup_method(
-                        &self.jar_name.as_ref().unwrap().clone()
-                    ).await?, platform),
-            )
+            tokio::process::Command::new(java)
+            .args(args)
             .current_dir(&self.builder.output_dir)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
