@@ -1,43 +1,37 @@
 # Using Worlds
 
-Worlds are an experimental feature added in `0.4.0`
+mcman can help you manage your server's worlds. You can make mcman [download](#downloading-worlds) a world or keep the world under the [`worlds/`]() directory.
 
-This feature allows you to save, load or download worlds while building.
+Worlds are defined in [`server.toml`](../reference/server.toml.md) under the `worlds` table. The key of the table is the world name. For example, the world with name 'city' would be `worlds.city`.
 
 ## Downloading Worlds
 
-In [`server.toml`](../reference/server.toml.md) under `worlds` you can use the [`World`](../reference/world.md) type to specify a download.
+If you set the `download` field to a [Downloadable](../reference/downloadable/index.md) mcman will download the world zip file and unzip it if the world does not exist in the output directory.
 
-!!! example
-    ```toml
-    [worlds.lobby.download]
-    type = "url"
-    url = "..."
-    ```
+```toml
+[worlds.earth.download]
+type = "url"
+url = "https://example.com/cdn/worlds/earth.zip"
+```
 
-As you can see, the `download` property is just a [`Downloadable`](../reference/downloadable/index.md), so you can go crazy and use... github [releases](https://github.com/ModFest/bc23-pack/releases/tag/world)? Im not the one to judge.
+## The `worlds/` Folder
 
-## Packing a world
+Optionally, you can store your worlds under the `worlds/` folder.
 
-'Packing' is used to refer to zipping the world contents into a zip file and putting it under the `worlds/` directory.
+```yaml
+worlds
+├─ lobby.zip
+└─ arena.zip
+```
 
-Since this is an experimental feature, you unfortunately need to do this manually.
+When building, if the world does not exist in the output directory, mcman will unzip the world file located in the `worlds/` folder.
 
 !!! note
-    The world files shouldnt be inside a folder inside the zip file, rather, be directly inside the zip archive.
+    For your world to be unpacked, there needs to be a world entry in `server.toml` for it:
 
-## Unpacking a world
-
-When building, if the [world](../reference/world.md) is in `worlds` inside [`server.toml`](../reference/server.toml.md) **and** the world does not exist in `server/`, mcman will automatically unpack it.
-
-!!! example
     ```toml
-    [worlds.'my-world']
-    # just the key existing is enough
+    [worlds.city]
+    # just the entry is enough
     ```
 
-To manually unpack the world to `server/`, use:
-
-```
-mcman world unpack <name>
-```
+You can also manually unpack a world using the [`mcman unpack <world>`](../commands/world.md) command.

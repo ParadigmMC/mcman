@@ -7,17 +7,22 @@ nav:
   - Tutorials:
     - tutorials/getting-started.md
     - tutorials/importing-modpacks.md
-    - tutorials/folder-structure.md
     - tutorials/building.md
     - tutorials/variables.md
     - tutorials/using-worlds.md
+    - tutorials/network.md
+    - tutorials/caching.md
+    - tutorials/options.md
   - Commands:
     - commands/index.md
     - init: commands/init.md
     - build: commands/build.md
     - run: commands/run.md
-    - import <url/mrpack/packwiz>: commands/import.md
-    - export <mrpack/packwiz>: commands/export.md
+    - dev: commands/dev.md
+    - world pack|unpack: commands/world.md
+    - cache: commands/cache.md
+    - import url|mrpack|packwiz: commands/import.md
+    - export mrpack|packwiz: commands/export.md
     - info: commands/info.md
     - pull: commands/pull.md
     - markdown: commands/markdown.md
@@ -51,6 +56,7 @@ nav:
       - reference/downloadable/jenkins.md
       - reference/downloadable/maven.md
       - reference/downloadable/custom-url.md
+    - Lockfile: reference/lockfile.md
 theme:
   name: material
   icon:

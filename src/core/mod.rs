@@ -1,8 +1,9 @@
 use std::{path::PathBuf, process::Child, time::Duration, fmt::Debug};
 
-use anyhow::Result;
+use anyhow::{Result, Context};
 use console::style;
 use indicatif::{ProgressBar, FormattedDuration};
+use tokio::io::AsyncWriteExt;
 
 use crate::{
     model::Lockfile,
@@ -41,10 +42,15 @@ impl<'a> BuildContext<'a> {
             .with_message(banner);
         progress_bar.enable_steady_tick(Duration::from_millis(250));
 
-        self.reload()?;
+        tokio::fs::create_dir_all(&self.output_dir)
+            .await
+            .context("Creating output directory")?;
+
+        self.reload()
+            .context("Reloading .mcman.lock")?;
 
         if !self.skip_stages.is_empty() {
-            self.app.info(format!("Skipping stages: {}", self.skip_stages.join(", ")));
+            self.app.info(format!("Skipping stages: {}", self.skip_stages.join(", ")))?;
         }
 
         // actual stages contained here
@@ -65,7 +71,7 @@ impl<'a> BuildContext<'a> {
             self.process_worlds().await?;
         }
 
-        if  !self.skip_stages.contains(&"bootstrap".to_owned()) {
+        if self.app.server.path.join("config").exists() && !self.skip_stages.contains(&"bootstrap".to_owned()) {
             self.bootstrap_files().await?;
         }
 
@@ -75,6 +81,14 @@ impl<'a> BuildContext<'a> {
             self.create_scripts(startup).await?;
 
             self.app.log("start.bat and start.sh created")?;
+        }
+
+        if self.app.server.launcher.eula_args && !self.app.server.jar.supports_eula_args() {
+            tokio::fs::File::create(self.output_dir.join("eula.txt"))
+                .await?
+                .write_all(b"eula=true\n")
+                .await?;
+            self.app.log("eula.txt written")?;
         }
 
         self.write_lockfile()?;
@@ -112,9 +126,10 @@ impl<'a> BuildContext<'a> {
 
     /// Save new_lockfile
     pub fn write_lockfile(&mut self) -> Result<()> {
-        self.new_lockfile.save()?;
-
-        self.app.log("updated lockfile")?;
+        if std::env::var("MCMAN_DISABLE_LOCKFILE") != Ok("true".to_owned()) {
+            self.new_lockfile.save()?;
+            self.app.log("updated lockfile")?;
+        }
 
         Ok(())
     }

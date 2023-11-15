@@ -21,10 +21,6 @@ impl<'a> BuildContext<'a> {
             .with_prefix("Bootstrapping"));
         pb.enable_steady_tick(Duration::from_millis(250));
 
-        fs::create_dir_all(&self.output_dir)
-            .await
-            .context("Creating output directory (server/)")?;
-
         let lockfile_entries: HashMap<PathBuf, SystemTime> = HashMap::from_iter(self.lockfile.files.iter()
             .map(|e| (e.path.clone(), e.date.clone())));
 
@@ -55,14 +51,6 @@ impl<'a> BuildContext<'a> {
                 dest.display(),
                 diffed_paths.display()
             ))?;
-        }
-
-        if self.app.server.launcher.eula_args && !self.app.server.jar.supports_eula_args() {
-            self.app.log("=> eula.txt [eula_args unsupported]")?;
-            fs::File::create(self.output_dir.join("eula.txt"))
-                .await?
-                .write_all(b"eula=true\n")
-                .await?;
         }
 
         pb.disable_steady_tick();

@@ -13,7 +13,7 @@ pub struct BuildArgs {
     #[arg(short, long, value_name = "file")]
     output: Option<PathBuf>,
     /// Skip some stages
-    #[arg(long, value_name = "stages")]
+    #[arg(short, long, value_name = "stages")]
     skip: Vec<String>,
     #[arg(long)]
     /// Don't skip downloading already downloaded jars
