@@ -86,7 +86,7 @@ impl Server {
         serv.path = path
             .parent()
             .ok_or(anyhow!("Couldnt get parent dir"))?
-            .to_path_buf();
+            .canonicalize()?;
         Ok(serv)
     }
 
