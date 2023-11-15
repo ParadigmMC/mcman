@@ -37,7 +37,7 @@ impl GithubWaitRatelimit<reqwest::Response> for reqwest::Response {
                     String::from_utf8_lossy(self.headers()["x-ratelimit-reset"].as_bytes())
                         .parse::<u64>()?;
                 let amount = ratelimit_reset - now;
-                println!(" (!) Github ratelimit exceeded. sleeping for {amount} seconds...");
+                println!(" (!) Ratelimit exceeded. sleeping for {amount} seconds...");
                 sleep(Duration::from_secs(amount)).await;
             }
             self

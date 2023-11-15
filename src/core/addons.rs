@@ -43,9 +43,9 @@ impl<'a> BuildContext<'a> {
                 match self.downloadable(addon, &addon_type.folder(), Some(&pb)).await {
                     Ok(d) => break d,
                     Err(e) => {
-                        self.app.error(e)?;
+                        self.app.error(e.to_string())?;
                         if max_tries > attempt {
-                            bail!("Max attempts reached");
+                            bail!("Max attempts reached while processing {}", addon.to_short_string());
                         }
                         attempt += 1;
                     }

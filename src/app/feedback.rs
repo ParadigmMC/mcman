@@ -8,17 +8,17 @@ use super::App;
 
 impl App {
     pub fn warn<S: std::fmt::Display>(&self, message: S) -> Result<()> {
-        Ok(self.multi_progress.println(format!(
+        Ok(self.multi_progress.suspend(|| println!(
             "  {} {message}",
             style("⚠ Warn").yellow().bold()
-        ))?)
+        )))
     }
 
     pub fn error<S: std::fmt::Display>(&self, message: S) -> Result<()> {
-        Ok(self.multi_progress.println(format!(
+        Ok(self.multi_progress.suspend(|| println!(
             "  {} {message}",
             style("⚠ Error").red().bold()
-        ))?)
+        )))
     }
 
     pub fn success<S: std::fmt::Display>(&self, message: S) -> Result<()> {

@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::{app::{App, ResolvedFile, CacheStrategy}, model::{ServerType, SoftwareType}};
 
+use super::github::GithubWaitRatelimit;
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ModrinthProject {
     pub slug: String,
@@ -104,7 +106,15 @@ static API_URL: &str = "https://api.modrinth.com/v2";
 
 impl<'a> ModrinthAPI<'a> {
     pub async fn fetch_api<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
-        let json: T = self.0.http_client.get(url).send().await?.error_for_status()?.json().await?;
+        let json: T = self.0.http_client
+            .get(url)
+            .send()
+            .await?
+            .error_for_status()?
+            .wait_ratelimit()
+            .await?
+            .json()
+            .await?;
         
         Ok(json)
     }
