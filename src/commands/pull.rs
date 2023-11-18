@@ -51,7 +51,7 @@ pub fn run(app: App, args: Args) -> Result<()> {
                 "File '{}' already exists, overwrite?",
                 destination.display()
             ))? {
-                app.info(format!("Skipped {}", destination.display()))?;
+                app.info(format!("Skipped {}", destination.display()));
                 skipped += 1;
             } else {
                 continue;
@@ -87,7 +87,7 @@ pub fn run(app: App, args: Args) -> Result<()> {
     ));
 
     if skipped != 0 {
-        app.warn(format!("Skipped {skipped} files"))?;
+        app.warn(format!("Skipped {skipped} files"));
     }
 
     Ok(())

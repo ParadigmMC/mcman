@@ -27,7 +27,7 @@ impl App {
                         version: version.to_owned(),
                     })
                 }
-                ("hangar", id) => {
+                ("hangar" | "h", id) => {
                     let (id, version) = id.split_once(',').unwrap_or((id, "latest"));
                     Ok(Downloadable::Hangar {
                         id: id.to_owned(),
@@ -339,17 +339,17 @@ impl App {
                         let mut repo = None;
                         let mut group_id = None;
                         let mut artifact_id = None;
-                        let mut ver = None;
+                        //let mut ver = None;
 
                         if let Ok(meta) = self.maven().find_maven_artifact(urlstr).await {
-                            if let Some((inferred_repo, rest)) = meta.find_url(urlstr) {
+                            if let Some((inferred_repo, _rest)) = meta.find_url(urlstr) {
                                 if self.confirm(&format!("Is '{inferred_repo}' the maven repository url?"))? {
                                     repo = Some(inferred_repo);
                                 }
 
-                                ver = if !rest.is_empty() {
+                                /* ver = if !rest.is_empty() {
                                     rest.split('/').next()
-                                } else { None }
+                                } else { None } */
                             }
                             group_id = meta.group_id;
                             artifact_id = meta.artifact_id;

@@ -26,6 +26,7 @@ impl<'a> MCLogsAPI<'a> {
         json.into()
     }
 
+    #[allow(unused)]
     pub async fn fetch_insights(&self, id: &str) -> Result<LogInsights> {
         let json = self.0.http_client.post(format!("{API_V1}/insights/{id}"))
             .send()

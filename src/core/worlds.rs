@@ -10,8 +10,8 @@ use super::BuildContext;
 impl<'a> BuildContext<'a> {
     pub async fn process_worlds(&self) -> Result<()> {
         let progress_bar = self.app.multi_progress.add(ProgressBar::new(self.app.server.worlds.len() as u64)
-            .with_style(ProgressStyle::with_template("{prefix:.bold} {msg} [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")?)
-            .with_message("World:"));
+            .with_style(ProgressStyle::with_template("{prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}")?)
+            .with_prefix("World"));
 
         self.app.ci("::group::Worlds");
 

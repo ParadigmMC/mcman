@@ -1,8 +1,6 @@
 use anyhow::{Context, Result};
-use console::style;
 
 use crate::{
-    model::Server,
     util::env::{write_dockerfile, write_dockerignore}, app::App,
 };
 
@@ -10,7 +8,7 @@ pub fn run(app: App) -> Result<()> {
     write_dockerfile(&app.server.path).context("writing Dockerfile")?;
     write_dockerignore(&app.server.path).context("writing .dockerignore")?;
 
-    app.success("Default docker files were written successfully")?;
+    app.success("Default docker files were written successfully");
 
     Ok(())
 }

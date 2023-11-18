@@ -1,10 +1,6 @@
-use anyhow::{Context, Result};
-use console::style;
-use dialoguer::Input;
+use anyhow::Result;
 
-use crate::{
-    model::{Downloadable, Server}, app::App,
-};
+use crate::app::App;
 
 #[derive(clap::Args)]
 pub struct Args {

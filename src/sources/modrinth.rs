@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-use crate::{app::{App, ResolvedFile, CacheStrategy}, model::{ServerType, SoftwareType}};
+use crate::{app::{App, ResolvedFile, CacheStrategy}, model::SoftwareType};
 
 use super::github::GithubWaitRatelimit;
 
@@ -150,7 +150,7 @@ impl<'a> ModrinthAPI<'a> {
                     "latest" => all_versions.first(),
                     ver =>  all_versions.iter().find(|v| v.id == ver || v.name == ver || v.version_number == ver)
                 }.ok_or(anyhow!("Couln't find version '{ver}' ('{version}') for Modrinth project '{id}'"))?.clone();
-                self.0.warn(format!("Filtering failed for modrinth.com/mod/{id}/version/{ver}"))?;
+                self.0.warn(format!("Filtering failed for modrinth.com/mod/{id}/version/{ver}"));
                 v
             }
         };

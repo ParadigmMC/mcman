@@ -1,4 +1,4 @@
-use std::{path::{PathBuf, Path}, fs::{self, File}, io::Write};
+use std::{path::PathBuf, fs::{self, File}, io::Write};
 
 use anyhow::{Result, Context};
 use serde::de::DeserializeOwned;

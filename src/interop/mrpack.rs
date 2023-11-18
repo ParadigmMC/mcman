@@ -8,7 +8,7 @@ use std::{
 };
 use serde::{Serialize, Deserialize};
 
-use crate::{app::{App, Resolvable}, model::{ServerType, Downloadable}};
+use crate::{app::{App, Resolvable}, model::Downloadable};
 
 pub struct MRPackInterop<'a>(pub &'a mut App);
 
@@ -73,7 +73,7 @@ impl<'a> MRPackInterop<'a> {
 
         progress_bar.finish_and_clear();
 
-        self.0.success("mrpack imported!")?;
+        self.0.success("mrpack imported!");
         
         Ok(index)
     }
@@ -111,23 +111,7 @@ impl<'a> MRPackInterop<'a> {
 
         let index = MRPackIndex {
             files,
-            dependencies: {
-                let mut map = HashMap::from([
-                    ("minecraft".to_owned(), self.0.mc_version()),
-                ]);
-
-                if let Some((k, v)) = match &self.0.server.jar {
-                    ServerType::Quilt { loader, .. } => Some(("quilt-loader".to_owned(), loader.clone())),
-                    ServerType::Fabric { loader, .. } => Some(("fabric-loader".to_owned(), loader.clone())),
-                    ServerType::Forge { loader, .. } => Some(("forge".to_owned(), loader.clone())),
-                    ServerType::NeoForge { loader, .. } => Some(("neoforge".to_owned(), loader.clone())),
-                    _ => None
-                } {
-                    map.insert(k, v);
-                }
-
-                map
-            },
+            dependencies: self.0.server.to_map(true),
             name: self.0.var("MODPACK_NAME").unwrap_or(self.0.server.name.clone()),
             summary: self.0.var("MODPACK_SUMMARY"),
             version_id: self.0.var("MODPACK_VERSION").unwrap_or_default(),
@@ -142,7 +126,7 @@ impl<'a> MRPackInterop<'a> {
 
         mrpack.finish()?;
 
-        self.0.success("mrpack exported!")?;
+        self.0.success("mrpack exported!");
 
         Ok(())
     }

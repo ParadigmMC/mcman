@@ -3,7 +3,7 @@ use std::{path::{Path, PathBuf}, collections::HashMap, time::{SystemTime, Durati
 use anyhow::{Result, Context, anyhow};
 use indicatif::{ProgressBar, ProgressStyle};
 use pathdiff::diff_paths;
-use tokio::{fs, io::AsyncWriteExt};
+use tokio::fs;
 use walkdir::WalkDir;
 
 use crate::model::BootstrappedFile;
@@ -12,7 +12,7 @@ use super::BuildContext;
 
 impl<'a> BuildContext<'a> {
     pub async fn bootstrap_files(&mut self) -> Result<()> {
-        self.app.print_job("Bootstrapping...")?;
+        self.app.print_job("Bootstrapping...");
 
         self.app.ci("::group::Bootstrapping");
 
@@ -36,7 +36,6 @@ impl<'a> BuildContext<'a> {
             }
 
             let source = entry.path();
-            let dest = self.map_config_path(source);
             let diffed_paths = diff_paths(&source, self.app.server.path.join("config"))
                 .ok_or(anyhow!("Cannot diff paths"))?;
 
@@ -45,34 +44,19 @@ impl<'a> BuildContext<'a> {
             self.bootstrap_file(&diffed_paths, lockfile_entries.get(&diffed_paths)).await.context(format!(
                 "Bootstrapping file:
                 - Entry: {}
-                - Destination: {}
                 - Relative: {}",
                 entry.path().display(),
-                dest.display(),
                 diffed_paths.display()
             ))?;
         }
 
         pb.disable_steady_tick();
         pb.finish_and_clear();
-        self.app.success("Bootstrapping complete")?;
+        self.app.success("Bootstrapping complete");
 
         self.app.ci("::endgroup::");
 
         Ok(())
-    }
-
-    pub fn map_config_path(&self, path: &Path) -> PathBuf {
-        let mut path_buf = PathBuf::new();
-        let mut iter = path.components();
-
-        iter.next().expect("Path to have atleast 1 component");
-
-        path_buf.push(self.output_dir.as_os_str());
-
-        path_buf.extend(iter);
-
-        path_buf
     }
 
     pub fn should_bootstrap_file(&self, path: &Path) -> bool {
@@ -133,9 +117,9 @@ impl<'a> BuildContext<'a> {
                     .await.context(format!("Copying '{}' to '{}' ; [{pretty_path}]", source.display(), dest.display()))?;
             }
     
-            self.app.log(format!("  -> {pretty_path}"))?;
+            self.app.log(format!("  -> {pretty_path}"));
         } else {
-            self.app.log(format!("  unchanged: {pretty_path}"))?;
+            self.app.log(format!("  unchanged: {pretty_path}"));
         }
 
         if let Ok(source_time) = modified {
@@ -144,7 +128,7 @@ impl<'a> BuildContext<'a> {
                 date: source_time
             });
         } else {
-            self.app.warn("File metadata not supported")?;
+            self.app.warn("File metadata not supported");
         }
 
         Ok(())

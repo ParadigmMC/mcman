@@ -24,7 +24,7 @@ impl XMLExt for roxmltree::Document<'_> {
     fn get_text_all(&self, k: &str) -> Vec<String> {
         self.descendants()
             .filter_map(|t| {
-                if t.tag_name().name() == "version" {
+                if t.tag_name().name() == k {
                     Some(t.text()?.to_owned())
                 } else {
                     None

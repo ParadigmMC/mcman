@@ -131,6 +131,30 @@ impl Server {
         }
     }
 
+    pub fn to_map(&self, include_loader: bool) -> HashMap<String, String> {
+        let mut map = HashMap::from([
+            ("minecraft".to_owned(), self.mc_version.clone()),
+        ]);
+
+        let l = if include_loader {
+            "-loader"
+        } else {
+            ""
+        };
+
+        if let Some((k, v)) = match &self.jar {
+            ServerType::Quilt { loader, .. } => Some((format!("quilt{l}"), loader.clone())),
+            ServerType::Fabric { loader, .. } => Some((format!("fabric{l}"), loader.clone())),
+            ServerType::Forge { loader, .. } => Some(("forge".to_owned(), loader.clone())),
+            ServerType::NeoForge { loader, .. } => Some(("neoforge".to_owned(), loader.clone())),
+            _ => None
+        } {
+            map.insert(k, v);
+        }
+
+        map
+    }
+
     // TODO: move to ModrinthAPI
     pub fn filter_modrinth_versions(&self, list: &[modrinth::ModrinthVersion]) -> Vec<modrinth::ModrinthVersion> {
         let is_proxy = self.jar.get_software_type() == SoftwareType::Proxy;

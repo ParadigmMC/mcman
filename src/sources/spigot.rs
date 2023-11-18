@@ -50,6 +50,7 @@ impl<'a> SpigotAPI<'a> {
         ))
     }
 
+    #[allow(unused)]
     pub async fn fetch_versions(&self, id: &str) -> Result<Vec<SpigotVersion>> {
         self.fetch_api(&format!("{API_URL}/resources/{}/versions", Self::get_resource_id(id))).await
     }

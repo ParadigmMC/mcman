@@ -27,6 +27,8 @@ impl PresetFlags {
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(default)]
 pub struct ServerLauncher {
+    pub eula_args: bool,
+    
     #[serde(skip_serializing_if = "crate::util::is_default")]
     pub nogui: bool,
     #[serde(skip_serializing_if = "crate::util::is_default")]
@@ -37,8 +39,6 @@ pub struct ServerLauncher {
     pub jvm_args: String,
     #[serde(skip_serializing_if = "crate::util::is_default")]
     pub game_args: String,
-    #[serde(skip_serializing_if = "crate::util::is_default")]
-    pub eula_args: bool,
     #[serde(skip_serializing_if = "crate::util::is_default")]
     pub memory: String,
     #[serde(skip_serializing_if = "crate::util::is_default")]

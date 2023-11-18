@@ -56,20 +56,25 @@ See [Variables aka Bootstrapping](./variables.md)
 
 Some last touches include:
 
-- Generating `start.sh`/`start.bat` scripts (can be disabled with `launcher.disable`)
+- Generating `start.sh`/`start.bat` scripts
 - Creating an `eula.txt` if `launcher.eula_args` is set to true and the server doesn't support the argument
+
+These can be [disabled or configured](../reference/server-launcher.md) further in `server.toml` 
 
 ## Running
 
+The recommended approach is running the server on your own using something like Docker. But there is a way to make mcman run the server. The `mcman run` command first builds the server, then runs it.
+
+!!! tip
+    The `mcman run` command accepts the options of `mcman build` too.
+
+!!! note "Testing the server"
+    You can use the `--test` option to test if your server works. mcman will build and run the server and see if it fully starts up. If it crashes, stops, or doesnt succeed, mcman will report the issue and exit with code `1`.
+
+    If `options.upload_to_mclogs` is `true` in `server.toml`, mcman will upload `latest.log` and the crash log (if it crashed) to [mclo.gs](https://mclo.gs/) and print the URL to the console.
+
+    You can use CI/CD to test if your server works. For example, [this](https://github.com/ParadigmMC/mcman-bc23/blob/1938a567a2324607d816f17481e49c922af1ed87/.github/workflows/bc23test.yml) is a github workflow that tests if the BlanketCon 23 server boots up successfully.
+
 ## Developing
 
-
-## 4. Configurations (Bootstrapping)
-
-In this stage, mcman will 'bootstrap' your configuration files - which is a fancy synonim for "copy, paste, find and replace"
-
-You can check the [variables](./variables.md) section for more info
-
-## 5. Scripts
-
-Finally, mcman generates `start.bat` and `start.sh` scripts. These can be disabled and configured further under `server.toml` [(docs here)](../reference/server-launcher.md)
+Please see [Development Sessions](./dev.md)

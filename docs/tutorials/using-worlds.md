@@ -1,6 +1,6 @@
 # Using Worlds
 
-mcman can help you manage your server's worlds. You can make mcman [download](#downloading-worlds) a world or keep the world under the [`worlds/`]() directory.
+mcman can help you manage your server's worlds. You can make mcman [download](#downloading-worlds) a world or keep the world under the [`worlds/`](#the-worlds-folder) directory.
 
 Worlds are defined in [`server.toml`](../reference/server.toml.md) under the `worlds` table. The key of the table is the world name. For example, the world with name 'city' would be `worlds.city`.
 

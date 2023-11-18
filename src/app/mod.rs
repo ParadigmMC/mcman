@@ -11,6 +11,7 @@ use anyhow::{Result, Context};
 use indicatif::MultiProgress;
 pub use resolvable::*;
 pub use caching::*;
+pub use feedback::*;
 
 use crate::sources;
 use crate::model::{Network, Server};

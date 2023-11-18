@@ -29,27 +29,6 @@ pub struct BootstrappedFile {
     pub date: SystemTime,
 }
 
-#[derive(Debug)]
-pub enum Change<T> {
-    Added(T),
-    Removed(T),
-}
-
-impl<T> Change<T> {
-    pub fn inner(&self) -> &T {
-        match self {
-            Self::Added(t) | Self::Removed(t) => t
-        }
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct Changes {
-    pub plugins: Vec<Change<(Downloadable, ResolvedFile)>>,
-    pub mods: Vec<Change<(Downloadable, ResolvedFile)>>,
-    // datapacks, etc...
-}
-
 impl Lockfile {
     pub fn get_lockfile(output_dir: &PathBuf) -> Result<Self> {
         if output_dir.join(".mcman.lock").exists() {

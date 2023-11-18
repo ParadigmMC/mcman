@@ -23,7 +23,7 @@ impl<'a> BuildContext<'a> {
             server_list.len(),
             if server_list.len() == 1 { "" } else { "s" },
             if server_list.len() < 200 { "" } else { " may god help you" },
-        ))?;
+        ));
 
         self.app.ci(&format!("::group::Processing {addon_type}s"));
 
@@ -43,7 +43,7 @@ impl<'a> BuildContext<'a> {
                 match self.downloadable(addon, &addon_type.folder(), Some(&pb)).await {
                     Ok(d) => break d,
                     Err(e) => {
-                        self.app.error(e.to_string())?;
+                        self.app.error(e.to_string());
                         if max_tries > attempt {
                             bail!("Max attempts reached while processing {}", addon.to_short_string());
                         }
@@ -80,7 +80,7 @@ impl<'a> BuildContext<'a> {
                 files_list.len(),
                 if files_list.len() == 1 { "" } else { "s" },
                 FormattedDuration(pb.elapsed())
-            ))?;
+            ));
         }
 
         self.app.ci("::endgroup::");

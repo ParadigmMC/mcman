@@ -150,19 +150,6 @@ pub async fn get_jenkins_filename(
     ))
 }
 
-pub async fn get_jenkins_download_url(
-    client: &reqwest::Client,
-    url: &str,
-    job: &str,
-    build: &str,
-    artifact: &str,
-) -> Result<String> {
-    let (build_url, _, relative_path, _build_number, _md5) =
-        get_jenkins_filename(client, url, job, build, artifact).await?;
-
-    Ok(build_url + "artifact/" + &relative_path)
-}
-
 pub async fn fetch_jenkins_description(
     client: &reqwest::Client,
     url: &str,

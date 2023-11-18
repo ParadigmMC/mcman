@@ -31,9 +31,16 @@ If you are a Windows user, we recommend **Scoop**.
     sudo chmod +x /usr/bin/mcman
     ```
 
-=== "Cargo/Rust (compile from source)"
-    If you have rust installed:
+=== "Cargo/Rust"
+    If you have rust installed, you can compile mcman from source:
 
     ```sh
     cargo install --git https://github.com/ParadigmMC/mcman.git
+    ```
+
+=== "AUR: mcman-bin"
+    `mcman` is [available](https://aur.archlinux.org/packages/mcman-bin) in AUR as `mcman-bin`
+
+    ```sh
+    https://aur.archlinux.org/mcman-bin.git
     ```

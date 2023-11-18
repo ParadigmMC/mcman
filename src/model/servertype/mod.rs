@@ -1,13 +1,10 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use crate::app::{Resolvable, App, ResolvedFile};
 
 use crate::model::Downloadable;
-use crate::sources::quilt;
-
-use super::StartupMethod;
 
 pub mod interactive;
 pub mod meta;

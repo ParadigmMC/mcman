@@ -1,7 +1,6 @@
 use std::{path::PathBuf, time::Duration, fmt::Debug};
 
 use anyhow::{Result, bail, Context};
-use console::style;
 use futures::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
 use md5::Md5;
@@ -13,7 +12,7 @@ use tokio_util::io::ReaderStream;
 
 use crate::util::SelectItem;
 
-use super::{App, Resolvable, CacheStrategy, ResolvedFile};
+use super::{App, Resolvable, CacheStrategy, ResolvedFile, Prefix, ProgressPrefix};
 
 struct Bomb<T: FnMut()>(pub bool, pub T);
 
@@ -39,7 +38,7 @@ impl App {
         progress_bar: ProgressBar,
     ) -> Result<ResolvedFile> {
         progress_bar.set_style(ProgressStyle::with_template("{spinner:.blue} {prefix} {msg}...")?);
-        progress_bar.set_prefix("Resolving");
+        progress_bar.set_prefix(ProgressPrefix::Resolving);
         progress_bar.set_message(resolvable.to_string());
         progress_bar.enable_steady_tick(Duration::from_millis(250));
 
@@ -49,18 +48,8 @@ impl App {
         self.download_resolved(resolved, destination, progress_bar).await
     }
 
-    pub async fn download_resolved(
-        &self,
-        resolved: ResolvedFile,
-        destination: PathBuf,
-        progress_bar: ProgressBar,
-    ) -> Result<ResolvedFile> {
-        progress_bar.set_style(ProgressStyle::with_template("{spinner:.blue} {prefix} {msg}...")?);
-        progress_bar.set_prefix("Checking");
-        progress_bar.enable_steady_tick(Duration::from_millis(250));
-
-        // Some(Path) if file exists in cache
-        let cached_file_path = match &resolved.cache {
+    pub fn resolve_cached_file(&self, cache: &CacheStrategy) -> Option<(PathBuf, bool)> {
+        match cache {
             CacheStrategy::File { namespace, path } => {
                 if let Some(cache) = self.get_cache(namespace) {
                     Some((cache.path(path), cache.exists(path)))
@@ -70,19 +59,39 @@ impl App {
             }
             CacheStrategy::Indexed { .. } => todo!(),
             CacheStrategy::None => None,
+        }
+    }
+
+    pub fn create_hasher(name: &str) -> Box<dyn DynDigest> {
+        let digester: Box<dyn DynDigest> = match name {
+            "sha256" => Box::new(Sha256::new()),
+            "sha512" => Box::new(Sha512::new()),
+            "sha1" => Box::new(Sha1::new()),
+            "md5" => Box::new(Md5::new()),
+            _ => unreachable!(),
         };
+
+        digester
+    }
+
+    pub async fn download_resolved(
+        &self,
+        resolved: ResolvedFile,
+        destination: PathBuf,
+        progress_bar: ProgressBar,
+    ) -> Result<ResolvedFile> {
+        progress_bar.set_style(ProgressStyle::with_template("{spinner:.blue} {prefix} {msg}...")?);
+        progress_bar.set_prefix(ProgressPrefix::Checking);
+        progress_bar.enable_steady_tick(Duration::from_millis(250));
+
+        // Some(Path) if file exists in cache
+        let cached_file_path = self.resolve_cached_file(&resolved.cache);
 
         let hasher = Self::get_best_hash(&resolved.hashes);
 
         // if resolved has hashes, Some((hash name, dyndigest, hash value))
         let mut hasher = if let Some((name, hash)) = hasher {
-            let digester: Box<dyn DynDigest> = match name.as_str() {
-                "sha256" => Box::new(Sha256::new()),
-                "sha512" => Box::new(Sha512::new()),
-                "sha1" => Box::new(Sha1::new()),
-                "md5" => Box::new(Md5::new()),
-                _ => unreachable!(),
-            };
+            let digester: Box<dyn DynDigest> = App::create_hasher(&name);
 
             Some((name, digester, hash))
         } else {
@@ -93,7 +102,9 @@ impl App {
             if let Some((hash_name, digest, resolved_hash)) = hasher {
                 let stream_hash = base16ct::lower::encode_string(&digest.finalize());
 
-                if resolved_hash != stream_hash {
+                if resolved_hash == stream_hash {
+                    self.dbg("hash check success");
+                } else {
                     // TODO: skipping checks etc
                     // also pretty msg
                     bail!("Mismatched hash!
@@ -127,11 +138,7 @@ impl App {
                         tokio::fs::remove_dir_all(&file_path).await?;
                     },
                     1 => {
-                        self.log(format!(
-                            "  {} {}",
-                            style("! Skipped ").yellow(),
-                            progress_bar.message()
-                        ))?;
+                        self.notify(Prefix::SkippedWarning, progress_bar.message());
                         return Ok(resolved)
                     },
                     2 => bail!(message),
@@ -148,11 +155,7 @@ impl App {
 
                 if size_matches {
                     // file already there and is ok
-                    self.log(format!(
-                        "  {} {}",
-                        style("   Skipped").green(),
-                        progress_bar.message()
-                    ))?;
+                    self.notify(Prefix::Skipped, progress_bar.message());
 
                     return Ok(resolved);
                 }
@@ -177,11 +180,11 @@ impl App {
                     Some(size) if size != cached_size => {
                         self.warn(format!(
                             "Cached file size is wrong!
-                            - expected: {size}
-                            - actual: {cached_size}
-                            - path: {}",
+- expected: {size}
+- actual: {cached_size}
+- path: {}",
                             cached.to_string_lossy()
-                        ))?;
+                        ));
                         None
                     }
                     _ => Some((cached, cached_size)),
@@ -190,9 +193,9 @@ impl App {
             _ => None,
         } {
             progress_bar.disable_steady_tick();
-            progress_bar.set_style(ProgressStyle::with_template("{prefix:.green.bold} {msg} [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")?);
+            progress_bar.set_style(ProgressStyle::with_template("{prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")?);
             progress_bar.set_length(cached_size);
-            progress_bar.set_prefix("Copying from cache");
+            progress_bar.set_prefix(ProgressPrefix::Copying);
 
             let mut cache_file = File::open(&cached).await
                 .context(format!("Opening file '{}' from cache dir", cached.to_string_lossy()))?;
@@ -217,17 +220,10 @@ impl App {
             // TODO: retry downloading if fails
             validate_hash(hasher)?;
         
-            progress_bar.set_style(ProgressStyle::with_template("{prefix:.green.bold} {msg}")?);
-            progress_bar.set_prefix("    Copied");
-            progress_bar.set_message(resolved.filename.clone());
-            self.log(format!(
-                "  {} {}",
-                style(progress_bar.prefix()).green().bold(),
-                progress_bar.message()
-            ))?;
+            self.notify(Prefix::Copied, resolved.filename.clone());
             progress_bar.finish_and_clear();
         } else {
-            progress_bar.set_prefix("Fetching");
+            progress_bar.set_prefix(ProgressPrefix::Fetching);
             progress_bar.set_message(resolved.filename.clone());
 
             let response = self.http_client.get(&resolved.url)
@@ -241,7 +237,7 @@ impl App {
                 (Some(size), Some(len)) => {
                     if size != len {
                         // TODO: pretty msg
-                        self.warn(format!("content length is wrong! expected: {size}, actual: {len}"))?;
+                        self.warn(format!("content length is wrong! expected: {size}, actual: {len}"));
                     }
 
                     progress_bar.set_length(len);
@@ -251,8 +247,8 @@ impl App {
             }
 
             progress_bar.disable_steady_tick();
-            progress_bar.set_style(ProgressStyle::with_template("{prefix:.green.bold} {msg} [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")?);
-            progress_bar.set_prefix("Downloading");
+            progress_bar.set_style(ProgressStyle::with_template("{prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")?);
+            progress_bar.set_prefix(ProgressPrefix::Downloading);
 
             // if file can be cached, BufWriter to the file in cache dir
             // otherwise BufWriter to output file
@@ -287,18 +283,12 @@ impl App {
                 CacheStrategy::None => None,
             } {
                 progress_bar.set_style(ProgressStyle::with_template("{spinner:.blue} {prefix} {msg}...")?);
-                progress_bar.set_prefix("Copying from cache");
+                progress_bar.set_prefix(ProgressPrefix::Copying);
 
                 tokio::fs::copy(cached_file_path, &file_path).await?;
             }
         
-            progress_bar.set_style(ProgressStyle::with_template("{prefix:.green.bold} {msg}")?);
-            progress_bar.set_prefix("Downloaded");
-            self.log(format!(
-                "  {} {}",
-                style(progress_bar.prefix()).green().bold(),
-                progress_bar.message()
-            ))?;
+            self.notify(Prefix::Downloaded, resolved.filename.clone());
             progress_bar.finish_and_clear();
         }
 

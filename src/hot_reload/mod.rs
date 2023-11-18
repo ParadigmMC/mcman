@@ -1,4 +1,4 @@
-use std::{process::{Stdio, ExitStatus}, time::Duration, path::{PathBuf, Path}, sync::{Mutex, Arc}};
+use std::{process::{Stdio, ExitStatus}, time::Duration, path::PathBuf, sync::{Mutex, Arc}};
 
 use anyhow::{Result, Context, bail, anyhow};
 use console::style;
@@ -27,7 +27,6 @@ pub struct DevSession<'a> {
 
 pub enum Command {
     Start,
-    Stop,
     EndSession,
     Rebuild,
     SendCommand(String),
@@ -79,7 +78,7 @@ impl<'a> DevSession<'a> {
         let java = launcher.get_java();
         let args = launcher.get_arguments(&startup, platform);
 
-        self.builder.app.info(&format!("Running: {java} {}", args.join(" ")))?;
+        self.builder.app.dbg(format!("Running: {java} {}", args.join(" ")));
 
         let cwd = std::env::current_dir()?.canonicalize()?;
         // because jre is stupid
@@ -120,22 +119,12 @@ impl<'a> DevSession<'a> {
                     match cmd {
                         Command::Start => {
                             self.builder.app.ci("::group::Starting server process");
-                            self.builder.app.info("Starting server process...")?;
+                            self.builder.app.info("Starting server process...");
                             if child.is_none() {
                                 let mut spawned_child = self.spawn_child().await?;
                                 stdout_lines = Some(tokio::io::BufReader::new(spawned_child.stdout.take().expect("stdout None")).lines());
                                 child = Some(spawned_child);
                             }
-                        }
-                        Command::Stop => {
-                            self.builder.app.ci("::endgroup::");
-                            self.builder.app.info("Killing server process...")?;
-                            if let Some(ref mut child) = &mut child {
-                                child.kill().await?;
-                            }
-                            child = None;
-                            stdout_lines = None;
-                            exit_status = None;
                         }
                         Command::SendCommand(command) => {
                             if let Some(ref mut child) = &mut child {
@@ -146,7 +135,7 @@ impl<'a> DevSession<'a> {
                             }
                         }
                         Command::WaitUntilExit => {
-                            self.builder.app.info("Waiting for process exit...")?;
+                            self.builder.app.info("Waiting for process exit...");
                             is_stopping = true;
                             if let Some(ref mut child) = &mut child {
                                 let should_kill = tokio::select! {
@@ -171,11 +160,11 @@ impl<'a> DevSession<'a> {
                                         false
                                     },
                                     _ = tokio::time::sleep(Duration::from_secs(30)) => {
-                                        self.builder.app.info("Timeout reached, killing...")?;
+                                        self.builder.app.info("Timeout reached, killing...");
                                         true
                                     },
                                     _ = tokio::signal::ctrl_c() => {
-                                        self.builder.app.info("^C recieved, killing...")?;
+                                        self.builder.app.info("^C recieved, killing...");
                                         true
                                     },
                                 };
@@ -188,25 +177,25 @@ impl<'a> DevSession<'a> {
                             is_stopping = false;
                             child = None;
                             stdout_lines = None;
-                            self.builder.app.info("Server process ended")?;
+                            self.builder.app.info("Server process ended");
                         }
                         Command::Rebuild => {
-                            self.builder.app.info("Building...")?;
+                            self.builder.app.info("Building...");
                             self.jar_name = Some(self.builder.build_all().await?);
                         }
                         Command::Bootstrap(path) => {
                             let rel_path = diff_paths(&path, self.builder.app.server.path.join("config"))
                                 .expect("Cannot diff paths");
-                            self.builder.app.info(format!("Bootstrapping: {}", rel_path.to_string_lossy().trim()))?;
+                            self.builder.app.info(format!("Bootstrapping: {}", rel_path.to_string_lossy().trim()));
                             match self.builder.bootstrap_file(&rel_path, None).await {
                                 Ok(_) => {},
                                 Err(e) => self.builder.app.warn(format!("Error while bootstrapping:
                                 - Path: {}
-                                - Err: {e}", rel_path.to_string_lossy()))?,
+                                - Err: {e}", rel_path.to_string_lossy())),
                             }
                         }
                         Command::EndSession => {
-                            self.builder.app.info("Ending session...")?;
+                            self.builder.app.info("Ending session...");
                             self.builder.app.ci("::endgroup::");
                             break 'l;
                         }
@@ -221,13 +210,13 @@ impl<'a> DevSession<'a> {
                         if s.contains("]: Done") && s.ends_with("For help, type \"help\"") {
                             test_result = TestResult::Success;
 
-                            self.builder.app.success("Test passed!")?;
+                            self.builder.app.success("Test passed!");
     
                             tx.send(Command::SendCommand("stop\nend\n".to_owned())).await?;
                             tx.send(Command::WaitUntilExit).await?;
                             tx.send(Command::EndSession).await?;
                         } else if s.contains(LINE_CRASHED) || s == "---- end of report ----" {
-                            self.builder.app.info("Server crashed!")?;
+                            self.builder.app.warn("Server crashed!");
                             test_result = TestResult::Crashed;
 
                             tx.send(Command::WaitUntilExit).await?;
@@ -256,7 +245,7 @@ impl<'a> DevSession<'a> {
                 Ok(Some(status)) = try_wait_child(&mut child) => {
                     exit_status = Some(status);
                     self.builder.app.ci("::endgroup::");
-                    self.builder.app.info("Server process exited")?;
+                    self.builder.app.info("Server process exited");
 
                     is_stopping = false;
                     child = None;
@@ -268,10 +257,10 @@ impl<'a> DevSession<'a> {
                 },
                 _ = tokio::signal::ctrl_c() => {
                     if is_session_ending {
-                        self.builder.app.info("Force-stopping development session...")?;
+                        self.builder.app.info("Force-stopping development session...");
                         break 'l;
                     } else if !is_stopping {
-                        self.builder.app.info("Stopping development session...")?;
+                        self.builder.app.info("Stopping development session...");
                         
                         tx.send(Command::SendCommand("stop\nend\n".to_owned())).await?;
                         tx.send(Command::WaitUntilExit).await?;
@@ -284,7 +273,7 @@ impl<'a> DevSession<'a> {
         // end of loop > tokio::select!
 
         if let Some(ref mut child) = &mut child {
-            self.builder.app.info("Killing undead child process...")?;
+            self.builder.app.info("Killing undead child process...");
             child.kill().await?;
         }
 
@@ -293,7 +282,7 @@ impl<'a> DevSession<'a> {
         if self.test_mode {
             match test_result {
                 TestResult::Success => {
-                    self.builder.app.success("Test passed")?;
+                    self.builder.app.success("Test passed");
                     std::process::exit(0);
                 }
                 TestResult::Crashed | TestResult::Failed => {
@@ -382,7 +371,7 @@ impl<'a> DevSession<'a> {
                             };
     
                             pb.finish_and_clear();
-                            self.builder.app.log("  - Logs uploaded to mclo.gs")?;
+                            self.builder.app.log("  - Logs uploaded to mclo.gs");
                             mp.suspend(|| {
                                 println!();
                                 println!(" latest.log [ {} ]", log.url);

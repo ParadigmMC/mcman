@@ -9,6 +9,7 @@ nav:
     - tutorials/importing-modpacks.md
     - tutorials/building.md
     - tutorials/variables.md
+    - tutorials/dev.md
     - tutorials/using-worlds.md
     - tutorials/network.md
     - tutorials/caching.md
@@ -19,8 +20,8 @@ nav:
     - build: commands/build.md
     - run: commands/run.md
     - dev: commands/dev.md
-    - world pack|unpack: commands/world.md
     - cache: commands/cache.md
+    - world pack|unpack: commands/world.md
     - import url|mrpack|packwiz: commands/import.md
     - export mrpack|packwiz: commands/export.md
     - info: commands/info.md
@@ -81,6 +82,7 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - def_list
   - attr_list
   - md_in_html
   - pymdownx.emoji:

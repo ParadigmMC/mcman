@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::app::App;
+use crate::app::{App, Prefix};
 
 #[derive(clap::Args)]
 pub struct Args {
@@ -20,7 +20,7 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
     app.save_changes()?;
     app.refresh_markdown().await?;
 
-    app.success(format!("Added {}", addon.to_short_string()))?;
+    app.notify(Prefix::Imported, addon.to_short_string());
 
     Ok(())
 }

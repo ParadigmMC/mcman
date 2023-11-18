@@ -13,7 +13,7 @@ use crate::interop::mrpack::MRPackReader;
 use crate::interop::packwiz::FileProvider;
 use crate::model::{Network, ServerType, SoftwareType, PresetFlags, ServerEntry};
 use crate::util::SelectItem;
-use crate::util::env::{get_docker_version, write_dockerfile, write_dockerignore, write_gitignore, write_gitattributes, write_git};
+use crate::util::env::{get_docker_version, write_dockerfile, write_dockerignore, write_git};
 use crate::model::Server;
 use anyhow::{bail, Context, Result};
 
@@ -84,7 +84,7 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
             }
 
             if let Some(nw) = Network::load()? {
-                app.info(format!("Creating a server inside the '{}' network", nw.name))?;
+                app.info(format!("Creating a server inside the '{}' network", nw.name));
                 app.network = Some(nw);
             }
 
@@ -179,15 +179,14 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
         InitType::Network => {}
         _ => if let Some(ref mut nw) = app.network {
             if nw.servers.contains_key(&app.server.name) {
-                app.warn("Server with that name already exists in network.toml, please add entry manually")?;
+                app.warn("Server with that name already exists in network.toml, please add entry manually");
             } else {
                 nw.servers.insert(app.server.name.clone(), ServerEntry {
                     port: nw.next_port(),
                     ..Default::default()
                 });
                 nw.save()?;
-                drop(nw);
-                app.info("Added server entry to network.toml")?;
+                app.info("Added server entry to network.toml");
             }
         }
     }

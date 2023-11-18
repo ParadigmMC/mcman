@@ -6,7 +6,7 @@ use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
 use regex::Regex;
 use tokio::io::AsyncWriteExt;
 
-use crate::{app::App, model::{Downloadable, World}, util::{md::MarkdownTable, sanitize}};
+use crate::{app::{App, Prefix}, model::{Downloadable, World}, util::{md::MarkdownTable, sanitize}};
 
 pub struct MarkdownTemplate {
     pub id: String,
@@ -69,7 +69,7 @@ impl<'a> MarkdownAPI<'a> {
             pb.set_message(filename.to_string());
 
             if !path.exists() {
-                self.0.warn(format!("{filename} does not exist! Skipping"))?;
+                self.0.warn(format!("{filename} does not exist! Skipping"));
                 continue;
             }
 
@@ -85,6 +85,8 @@ impl<'a> MarkdownAPI<'a> {
 
             let mut f = tokio::fs::File::create(&path).await?;
             f.write_all(content.as_bytes()).await?;
+
+            self.0.notify(Prefix::Rendered, filename.to_string());
         }
 
         Ok(())

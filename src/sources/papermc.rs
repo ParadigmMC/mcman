@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
+use mcapi::papermc::{PaperProject, PaperBuildsResponse};
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::app::{App, ResolvedFile, CacheStrategy};
@@ -28,17 +29,19 @@ impl<'a> PaperMCAPI<'a> {
         Ok(json)
     }
 
+    #[allow(unused)]
     pub async fn fetch_versions(&self, project: &str) -> Result<Vec<String>> {
-        Ok(mcapi::papermc::fetch_papermc_project(&self.0.http_client, project).await?.versions)
+        let proj = self.fetch_api::<PaperProject>(format!("{PAPERMC_URL}/projects/{project}"))
+            .await?;
+
+        Ok(proj.versions)
     }
 
-    pub async fn fetch_builds(&self, project: &str, version: &str) -> Result<mcapi::papermc::PaperBuildsResponse> {
-        Ok(mcapi::papermc::fetch_papermc_builds(
-            &self.0.http_client,
-            project,
-            version
-        )
-        .await?)
+    pub async fn fetch_builds(&self, project: &str, version: &str) -> Result<PaperBuildsResponse> {
+        let resp = self.fetch_api(format!("{PAPERMC_URL}/projects/{project}/versions/{version}/builds"))
+            .await?;
+        
+        Ok(resp)
     }
 
     pub async fn fetch_build(&self, project: &str, version: &str, build: &str) -> Result<mcapi::papermc::PaperVersionBuild> {

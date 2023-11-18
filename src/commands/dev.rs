@@ -19,7 +19,7 @@ impl<'a> DevArgs {
         let config = if config_path.exists() {
             HotReloadConfig::load_from(&config_path)?
         } else {
-            app.info("Generated hotreload.toml")?;
+            app.info("Generated hotreload.toml");
 
             let cfg = HotReloadConfig {
                 path: config_path,

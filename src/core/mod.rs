@@ -37,7 +37,7 @@ impl<'a> BuildContext<'a> {
             style("Building").bold(),
             style(&server_name).green().bold()
         );
-        self.app.print_job(&banner)?;
+        self.app.print_job(&banner);
         let progress_bar = self.app.multi_progress.add(ProgressBar::new_spinner())
             .with_message(banner);
         progress_bar.enable_steady_tick(Duration::from_millis(250));
@@ -50,7 +50,7 @@ impl<'a> BuildContext<'a> {
             .context("Reloading .mcman.lock")?;
 
         if !self.skip_stages.is_empty() {
-            self.app.info(format!("Skipping stages: {}", self.skip_stages.join(", ")))?;
+            self.app.info(format!("Skipping stages: {}", self.skip_stages.join(", ")));
         }
 
         // actual stages contained here
@@ -80,7 +80,7 @@ impl<'a> BuildContext<'a> {
 
             self.create_scripts(startup).await?;
 
-            self.app.log("start.bat and start.sh created")?;
+            self.app.log("start.bat and start.sh created");
         }
 
         if self.app.server.launcher.eula_args && !self.app.server.jar.supports_eula_args() {
@@ -88,7 +88,7 @@ impl<'a> BuildContext<'a> {
                 .await?
                 .write_all(b"eula=true\n")
                 .await?;
-            self.app.log("eula.txt written")?;
+            self.app.log("eula.txt written");
         }
 
         self.write_lockfile()?;
@@ -100,7 +100,7 @@ impl<'a> BuildContext<'a> {
             "Successfully built {} in {}",
             style(&server_name).green().bold(),
             style(FormattedDuration(progress_bar.elapsed())).blue(),
-        ))?;
+        ));
 
         Ok(server_jar)
     }
@@ -110,7 +110,7 @@ impl<'a> BuildContext<'a> {
         self.lockfile = match Lockfile::get_lockfile(&self.output_dir) {
             Ok(f) => f,
             Err(_) => {
-                self.app.warn("Lockfile error, using default")?;
+                self.app.warn("Lockfile error, using default");
                 Lockfile {
                     path: self.output_dir.join(".mcman.lock"),
                     ..Default::default()
@@ -128,7 +128,9 @@ impl<'a> BuildContext<'a> {
     pub fn write_lockfile(&mut self) -> Result<()> {
         if std::env::var("MCMAN_DISABLE_LOCKFILE") != Ok("true".to_owned()) {
             self.new_lockfile.save()?;
-            self.app.log("updated lockfile")?;
+            self.app.log("updated lockfile");
+        } else {
+            self.app.dbg("lockfile disabled");
         }
 
         Ok(())

@@ -1,10 +1,19 @@
-# Downloadables
+# Downloadable
 
 A `Downloadable` is a plugin, mod, datapack or any other thing that is, downloadable.
 
 Downloadable types are used for downloading custom server jars, plugins, mods, client-side mods, datapacks and worlds.
 
-For the server jar, see [Server Type](../servertype/index.md)
+## Shortcode Syntax
+
+For some arguments, you can also use the "shortcode syntax": `source:id[,version]`
+
+Sources:
+
+- Modrinth: `modrinth`, `mr`
+- Curserinth: `curserinth`, `cr`, `cf`, `curseforge`
+- Hangar: `hangar`, `h`
+- Github: `gh`, `ghrel`, `github`
 
 ## Sources
 

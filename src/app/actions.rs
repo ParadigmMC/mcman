@@ -2,14 +2,16 @@ use anyhow::{Result, anyhow};
 
 use crate::{model::{Downloadable, SoftwareType, World}, util::SelectItem};
 
-use super::{App, AddonType};
+use super::{App, AddonType, Prefix};
 
 impl App {
     pub fn save_changes(&self) -> Result<()> {
         self.server.save()?;
+        self.dbg("server.toml saved");
 
         if let Some(nw) = &self.network {
             nw.save()?;
+            self.dbg("network.toml saved");
         }
 
         Ok(())
@@ -52,8 +54,6 @@ impl App {
             AddonType::Plugin => &mut self.server.plugins,
             AddonType::Mod => &mut self.server.mods,
         }.push(addon.clone());
-
-        self.success(format!("Added {addon_type}: {}", addon.to_short_string()))?;
 
         Ok(())
     }
@@ -98,7 +98,7 @@ impl App {
             .datapacks
             .push(dp.clone());
 
-        self.success(format!("Added datapack {} to {world}", dp.to_short_string()))?;
+        self.notify(Prefix::Imported, format!("datapack {} to {world}", dp.to_short_string()));
 
         Ok(())
     }

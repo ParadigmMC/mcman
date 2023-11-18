@@ -1,11 +1,8 @@
-use anyhow::{bail, Context, Result};
-use console::style;
-use dialoguer::{theme::ColorfulTheme, Input, Select};
+use anyhow::{bail, Result};
 
 use crate::{
-    model::{Downloadable, Server, SoftwareType},
-    sources::modrinth,
-    util::SelectItem, app::App,
+    model::Downloadable,
+    util::SelectItem, app::{App, Prefix},
 };
 
 #[derive(clap::Args)]
@@ -14,91 +11,65 @@ pub struct Args {
 }
 
 pub async fn run(mut app: App, args: Args) -> Result<()> {
+    let search_type = app.select("Which project type?", &[
+        SelectItem("mod", "Mods".to_owned()),
+        SelectItem("datapack", "Datapacks".to_owned()),
+        SelectItem("modpack", "Modpacks".to_owned()),
+    ])?;
+
     let query = if let Some(s) = args.search {
         s.to_owned()
     } else {
         app.prompt_string("Search on Modrinth")?
     };
 
-    todo!();
-
-    /* 
-
-    let facets = server.jar.get_modrinth_facets(&server.mc_version)?;
-
-    let projects = modrinth::search_modrinth(&http_client, &query, &facets).await?;
+    let projects = app.modrinth().search(&query).await?;
 
     if projects.is_empty() {
         bail!("No modrinth projects found for query '{query}'");
     }
 
     let items = projects
-        .iter()
+        .into_iter()
+        .filter(|p| p.project_type == search_type)
         .map(|p| {
+            let str = format!(
+                "{} [{}]\n{s:w$}{}",
+                p.title,
+                p.slug,
+                p.description,
+                s = " ",
+                w = 10
+            );
+
             SelectItem(
                 p,
-                format!(
-                    "{} {} [{}]\n{s:w$}{}",
-                    match p.project_type.as_str() {
-                        "mod" => "(mod)",
-                        "datapack" => "( dp)",
-                        "modpack" => "(mrp)",
-                        _ => "( ? )",
-                    },
-                    p.title,
-                    p.slug,
-                    p.description,
-                    s = " ",
-                    w = 10
-                ),
+                str,
             )
         })
         .collect::<Vec<_>>();
 
-    let idx = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("Which project?")
-        .items(&items)
-        .default(0)
-        .interact()?;
+    let project = app.select("Which project?", &items)?;
 
-    let project = items[idx].0.clone();
+    let versions = app.modrinth().fetch_versions(&project.slug).await?;
 
-    let versions = modrinth::fetch_modrinth_versions(&http_client, &project.slug, None).await?;
-
-    let versions = server.filter_modrinth_versions(&versions);
-
-    let selection = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("  Which version?")
-        .default(0)
-        .items(
-            &versions
-                .iter()
-                .map(|v| {
-                    let num = &v.version_number;
-                    let name = &v.name;
-                    let compat = v.loaders.join(",");
-                    let vers = v.game_versions.join(",");
-                    format!("[{num}]: {name} ({compat} ; {vers})")
-                })
-                .collect::<Vec<String>>(),
-        )
-        .interact()
-        .unwrap();
-
-    let version = versions[selection].clone();
+    let version = app.select("Which version?", &versions
+        .into_iter()
+        .map(|v| {
+            let str = format!(
+                "[{}]: {}",
+                v.version_number,
+                v.name,
+            );
+            SelectItem(v, str)
+        }).collect::<Vec<_>>())?;
 
     match if version.loaders.contains(&"datapack".to_owned()) {
         if version.loaders.len() > 1 {
-            match Select::with_theme(&ColorfulTheme::default())
-                .with_prompt("Import as...")
-                .default(0)
-                .items(&["Datapack", "Mod/Plugin"])
-                .interact()?
-            {
-                0 => "datapack",
-                1 => "mod",
-                _ => unreachable!(),
-            }
+            app.select("Import as...", &[
+                SelectItem("datapack", "Datapack".to_owned()),
+                SelectItem("mod", "Mod/Plugin".to_owned()),
+            ])?
         } else {
             "datapack"
         }
@@ -114,53 +85,26 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
                 version: version.id.clone(),
             };
 
-            let is_plugin = match server.jar.get_software_type() {
-                SoftwareType::Modded => false,
-                SoftwareType::Normal | SoftwareType::Proxy => true,
-                SoftwareType::Unknown => {
-                    Select::with_theme(&ColorfulTheme::default())
-                        .with_prompt("Import as...")
-                        .default(0)
-                        .items(&["Plugin", "Mod"])
-                        .interact()?
-                        == 0
-                }
-            };
+            app.add_addon_inferred(&addon)?;
 
-            if is_plugin {
-                server.plugins.push(addon);
-            } else {
-                server.mods.push(addon);
-            }
+            app.save_changes()?;
+            app.refresh_markdown().await?;
 
-            server.save()?;
-
-            server.refresh_markdown(&http_client).await?;
-
-            println!(" > Added {} from modrinth", project.title);
+            app.notify(Prefix::Imported, format!("{} from modrinth", project.title));
         }
         "datapack" => {
-            let addon = Downloadable::Modrinth {
+            let dp = Downloadable::Modrinth {
                 id: project.slug.clone(),
                 version: version.id.clone(),
             };
 
-            let world_name = server.add_datapack(addon)?;
+            app.add_datapack(&dp)?;
 
-            server.save()?;
-
-            server.refresh_markdown(&http_client).await?;
-
-            println!(
-                " > {} {} {} {world_name}{}",
-                style("Datapack ").green(),
-                project.title,
-                style("added to").green(),
-                style("!").green()
-            );
+            app.save_changes()?;
+            app.refresh_markdown().await?;
         }
         ty => bail!("Unsupported modrinth project type: '{ty}'"),
-    } */
+    }
 
     Ok(())
 }

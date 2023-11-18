@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 
 use crate::app::App;
 
@@ -9,18 +9,13 @@ pub struct Args {
     #[arg(long, short)]
     /// The output directory for the packwiz files
     output: Option<PathBuf>,
-    #[arg(long)]
-    /// Use edge.forgecdn.net instead of metadata:curseforge
-    cfcdn: bool,
 }
 
-pub async fn run(app: App, args: Args) -> Result<()> {
+pub async fn run(mut app: App, args: Args) -> Result<()> {
     let default_output = app.server.path.join("pack");
     let output_dir = args.output.unwrap_or(default_output);
 
-    let cf_usecdn = args.cfcdn;
-
-    todo!();
+    app.packwiz().export_all(output_dir).await?;
 
     Ok(())
 }
