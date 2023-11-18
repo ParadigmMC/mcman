@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use console::style;
 use indexmap::IndexMap;
 
-pub fn run(app: App) -> Result<()> {
+pub fn run(app: &App) -> Result<()> {
     let server = Server::load().context("Failed to load server.toml")?;
 
     let table = app.markdown().table_server();

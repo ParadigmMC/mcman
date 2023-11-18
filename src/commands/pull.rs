@@ -16,7 +16,7 @@ pub struct Args {
     file: String,
 }
 
-pub fn run(app: App, args: Args) -> Result<()> {
+pub fn run(app: &App, args: Args) -> Result<()> {
     let files = args.file;
 
     let pb = app.multi_progress.add(ProgressBar::new_spinner())

@@ -85,7 +85,7 @@ impl<'a> PackwizInterop<'a> {
                 if file.file.starts_with("mods") {
                     let modpw: Mod = source.parse_toml(&file.file).await?;
 
-                    let dl = self.from_mod(&modpw).await?;
+                    let dl = self.dl_from_mod(&modpw).await?;
 
                     self.0.add_addon(AddonType::Mod, &dl)?;
 
@@ -133,10 +133,10 @@ impl<'a> PackwizInterop<'a> {
         Ok(())
     }
 
-    pub async fn from_mod(&self, m: &Mod) -> Result<Downloadable> {
-        if let Some(dl) = self.from_hash(&m.download).await? {
+    pub async fn dl_from_mod(&self, m: &Mod) -> Result<Downloadable> {
+        if let Some(dl) = self.dl_from_hash(&m.download).await? {
             Ok(dl)
-        } else if let Some(dl) = self.from_mod_update(&m.update)? {
+        } else if let Some(dl) = self.dl_from_mod_update(&m.update) {
             Ok(dl)
         } else {
             self.0.dl_from_string(&m.download
@@ -148,8 +148,10 @@ impl<'a> PackwizInterop<'a> {
         }
     }
 
-    pub async fn from_hash(&self, down: &ModDownload) -> Result<Option<Downloadable>> {
-        if !down.hash.is_empty() {
+    pub async fn dl_from_hash(&self, down: &ModDownload) -> Result<Option<Downloadable>> {
+        if down.hash.is_empty() {
+            Ok(None)
+        } else {
             let fmt = match down.hash_format {
                 HashFormat::Sha512 => "sha512",
                 HashFormat::Sha1 => "sha1",
@@ -160,30 +162,28 @@ impl<'a> PackwizInterop<'a> {
                 Ok(ver) => Some(Downloadable::Modrinth { id: ver.project_id.clone(), version: ver.id.clone() }),
                 _ => None,
             })
-        } else {
-            Ok(None)
         }
     }
 
-    pub fn from_mod_update(&self, mod_update: &Option<ModUpdate>) -> Result<Option<Downloadable>> {
+    pub fn dl_from_mod_update(&self, mod_update: &Option<ModUpdate>) -> Option<Downloadable> {
         if let Some(upd) = mod_update {
             if let Some(mr) = &upd.modrinth {
-                Ok(Some(Downloadable::Modrinth {
+                Some(Downloadable::Modrinth {
                     id: mr.mod_id.clone(),
                     version: mr.version.clone(),
-                }))
+                })
             } else if let Some(cf) = &upd.curseforge {
-                Ok(Some(Downloadable::CurseRinth {
+                Some(Downloadable::CurseRinth {
                     id: cf.project_id.to_string(),
                     version: cf.file_id.to_string(),
-                }))
+                })
             } else {
                 // TODO clarify
-                self.0.warn(format!("Unknown mod update"));
-                Ok(None)
+                self.0.warn("Unknown mod update".to_owned());
+                None
             }
         } else {
-            Ok(None)
+            None
         }
     }
 
@@ -258,7 +258,7 @@ impl<'a> PackwizInterop<'a> {
     pub async fn export_mods(
         &self,
         files_list: &mut Vec<PackFile>,
-        output_dir: &PathBuf,
+        output_dir: &Path,
     ) -> Result<()> {
         let pb = self.0.multi_progress.add(ProgressBar::new_spinner())
             .with_style(ProgressStyle::with_template("{prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}")?)
@@ -297,7 +297,7 @@ impl<'a> PackwizInterop<'a> {
     pub async fn export_configs(
         &self,
         files_list: &mut Vec<PackFile>,
-        output_dir: &PathBuf
+        output_dir: &Path
     ) -> Result<()> {
         let pb = self.0.multi_progress.add(ProgressBar::new_spinner()
             .with_style(ProgressStyle::with_template("{spinner:.blue} {prefix} {msg}")?)
@@ -316,7 +316,7 @@ impl<'a> PackwizInterop<'a> {
             }
 
             let source = entry.path();
-            let rel_path = diff_paths(&source, self.0.server.path.join("config"))
+            let rel_path = diff_paths(source, self.0.server.path.join("config"))
                 .ok_or(anyhow!("Cannot diff paths"))?;
 
             pb.set_message(rel_path.to_string_lossy().to_string());
@@ -354,15 +354,15 @@ impl<'a> PackwizInterop<'a> {
     }
 
     pub async fn to_mod(&self, dl: &Downloadable) -> Result<Mod> {
-        let resolved = dl.resolve_source(&self.0).await?;
+        let resolved = dl.resolve_source(self.0).await?;
 
         let mut m = self.resolved_to_mod(&resolved).await?;
-        m.update = self.get_mod_update(dl);
+        m.update = Self::get_mod_update(dl);
 
         Ok(m)
     }
 
-    pub fn get_mod_update(&self, dl: &Downloadable) -> Option<ModUpdate> {
+    pub fn get_mod_update(dl: &Downloadable) -> Option<ModUpdate> {
         match dl {
             Downloadable::Modrinth { id, version } => {
                 Some(ModUpdate {
@@ -390,7 +390,6 @@ impl<'a> PackwizInterop<'a> {
                     "sha1" => HashFormat::Sha1,
                     "sha256" => HashFormat::Sha256,
                     "sha512" => HashFormat::Sha512,
-                    "md5" => HashFormat::Md5,
                     "murmur2" => HashFormat::Curseforge,
                     _ => HashFormat::Md5,
                 },

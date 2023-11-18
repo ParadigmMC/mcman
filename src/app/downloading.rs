@@ -25,7 +25,7 @@ impl<T: FnMut()> Bomb<T> {
 impl<T: FnMut()> Drop for Bomb<T> {
     fn drop(&mut self) {
         if self.0 {
-            self.1()
+            self.1();
         }
     }
 }
@@ -42,7 +42,7 @@ impl App {
         progress_bar.set_message(resolvable.to_string());
         progress_bar.enable_steady_tick(Duration::from_millis(250));
 
-        let resolved = resolvable.resolve_source(&self).await
+        let resolved = resolvable.resolve_source(self).await
             .context(format!("Resolving {resolvable:#?}"))?;
 
         self.download_resolved(resolved, destination, progress_bar).await
@@ -51,11 +51,7 @@ impl App {
     pub fn resolve_cached_file(&self, cache: &CacheStrategy) -> Option<(PathBuf, bool)> {
         match cache {
             CacheStrategy::File { namespace, path } => {
-                if let Some(cache) = self.get_cache(namespace) {
-                    Some((cache.path(path), cache.exists(path)))
-                } else {
-                    None
-                }
+                self.get_cache(namespace).map(|cache| (cache.path(path), cache.exists(path)))
             }
             CacheStrategy::Indexed { .. } => todo!(),
             CacheStrategy::None => None,
@@ -74,6 +70,7 @@ impl App {
         digester
     }
 
+    #[allow(clippy::too_many_lines)]
     pub async fn download_resolved(
         &self,
         resolved: ResolvedFile,

@@ -6,7 +6,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::app::Cache;
 
-#[derive(clap::Subcommand)]
+#[derive(clap::Subcommand, Clone, Copy)]
 pub enum Commands {
     /// Print cache root
     Path,
@@ -22,7 +22,7 @@ pub enum Commands {
     Clear,
 }
 
-pub async fn run(commands: Commands) -> Result<()> {
+pub fn run(commands: Commands) -> Result<()> {
     let Some(cache_folder) = Cache::cache_root() else {
         bail!("Cache directory was missing, maybe it's disabled?");
     };

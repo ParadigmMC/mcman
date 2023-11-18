@@ -58,38 +58,33 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
 
     let ty = if args.network {
         InitType::Network
+    } else if let Some(src) = args.mrpack {
+        InitType::MRPack(src.clone())
+    } else if let Some(src) = args.packwiz {
+        InitType::Packwiz(app.packwiz().get_file_provider(&src)?)
     } else {
-        if let Some(src) = args.mrpack {
-            InitType::MRPack(src.clone())
-        } else if let Some(src) = args.packwiz {
-            InitType::Packwiz(app.packwiz().get_file_provider(&src)?)
-        } else {
-            InitType::Normal
-        }
+        InitType::Normal
     };
 
     // toml checks and init
-    match ty {
-        InitType::Network => {
-            if let Some(_nw) = Network::load()? {
-                bail!("network.toml already exists");
-            }
-
-            app.network = Some(Network::default());
-            app.network.as_mut().unwrap().name = name.clone();
+    if let InitType::Network = ty {
+        if let Some(_nw) = Network::load()? {
+            bail!("network.toml already exists");
         }
-        _ => {
-            if let Some(serv) = Server::load().ok() {
-                bail!("server.toml already exists: server with name '{}'", serv.name);
-            }
 
-            if let Some(nw) = Network::load()? {
-                app.info(format!("Creating a server inside the '{}' network", nw.name));
-                app.network = Some(nw);
-            }
-
-            app.server.name = name.clone();
+        app.network = Some(Network::default());
+        app.network.as_mut().unwrap().name = name.clone();
+    } else {
+        if let Ok(serv) = Server::load() {
+            bail!("server.toml already exists: server with name '{}'", serv.name);
         }
+
+        if let Some(nw) = Network::load()? {
+            app.info(format!("Creating a server inside the '{}' network", nw.name));
+            app.network = Some(nw);
+        }
+
+        app.server.name = name.clone();
     }
 
     // Name
@@ -137,7 +132,7 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                 SoftwareType::Normal => ServerType::select_jar_interactive(),
                 SoftwareType::Modded => ServerType::select_modded_jar_interactive(),
                 SoftwareType::Proxy => ServerType::select_proxy_jar_interactive(),
-                _ => unreachable!(),
+                SoftwareType::Unknown => unreachable!(),
             }?;
         }
 
@@ -146,7 +141,7 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
 
             let port = Input::with_theme(&ColorfulTheme::default())
                 .with_prompt("Which port should the network be on?")
-                .default(25565 as u16)
+                .default(25565_u16)
                 .interact_text()?;
 
             nw.port = port;
@@ -155,11 +150,11 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
             let tmp_dir = Builder::new().prefix("mcman-mrpack-import").tempdir()?;
 
             let f = if Path::new(&src).exists() {
-                std::fs::File::open(&src)?
+                std::fs::File::open(src)?
             } else {
-                let dl = app.dl_from_string(&src).await?;
+                let dl = app.dl_from_string(src).await?;
                 let resolved = app.download(&dl, tmp_dir.path().to_path_buf(), ProgressBar::new_spinner()).await?;
-                let path = tmp_dir.path().join(&resolved.filename);
+                let path = tmp_dir.path().join(resolved.filename);
                 std::fs::File::open(path)?
             };
 
@@ -192,17 +187,14 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
     }
 
     //env
-    match ty {
-        InitType::Network => {
-            std::fs::create_dir_all("./servers")?;
-        }
-        _ => {
-            std::fs::create_dir_all("./config")?;
+    if let InitType::Network = ty {
+        std::fs::create_dir_all("./servers")?;
+    } else {
+        std::fs::create_dir_all("./config")?;
 
-            if app.server.jar.get_software_type() != SoftwareType::Proxy {
-                let mut f = File::create("./config/server.properties")?;
-                f.write_all(include_bytes!("../../../res/server.properties"))?;
-            }
+        if app.server.jar.get_software_type() != SoftwareType::Proxy {
+            let mut f = File::create("./config/server.properties")?;
+            f.write_all(include_bytes!("../../../res/server.properties"))?;
         }
     }
 
@@ -232,39 +224,36 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
 
     initialize_environment()?;
 
-    match ty {
-        InitType::Network => {
-            println!(
-                " > {} {} {}",
-                style("Network").green(),
-                style(&app.network.unwrap().name).bold(),
-                style("has been created!").green()
-            );
+    if let InitType::Network = ty {
+        println!(
+            " > {} {} {}",
+            style("Network").green(),
+            style(&app.network.unwrap().name).bold(),
+            style("has been created!").green()
+        );
 
-            println!(
-                " > {}",
-                style("Initialize servers in this network using").cyan()
-            );
-            println!(
-                "   {}\n   {}\n   {}",
-                style("cd servers").bold(),
-                style("mkdir myserver").bold(),
-                style("mcman init").bold(),
-            );
-        }
-        _ => {
-            println!(
-                " > {} {}",
-                style(&app.server.name).bold(),
-                style("has been initialized!").green()
-            );
-        
-            println!(
-                " > {} {}",
-                style("Build using").cyan(),
-                style("mcman build").bold()
-            );
-        }
+        println!(
+            " > {}",
+            style("Initialize servers in this network using").cyan()
+        );
+        println!(
+            "   {}\n   {}\n   {}",
+            style("cd servers").bold(),
+            style("mkdir myserver").bold(),
+            style("mcman init").bold(),
+        );
+    } else {
+        println!(
+            " > {} {}",
+            style(&app.server.name).bold(),
+            style("has been initialized!").green()
+        );
+
+        println!(
+            " > {} {}",
+            style("Build using").cyan(),
+            style("mcman build").bold()
+        );
     }
 
     Ok(())

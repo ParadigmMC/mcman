@@ -1,7 +1,7 @@
 use std::{
     fs::{read_to_string, File},
     io::Write,
-    path::PathBuf, time::SystemTime
+    path::{PathBuf, Path}, time::SystemTime
 };
 
 use anyhow::Result;
@@ -30,7 +30,7 @@ pub struct BootstrappedFile {
 }
 
 impl Lockfile {
-    pub fn get_lockfile(output_dir: &PathBuf) -> Result<Self> {
+    pub fn get_lockfile(output_dir: &Path) -> Result<Self> {
         if output_dir.join(".mcman.lock").exists() {
             Ok(Self::load_from(&output_dir.join(".mcman.lock"))?)
         } else {

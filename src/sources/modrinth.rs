@@ -25,7 +25,7 @@ pub struct ModrinthProject {
 }
 
 fn empty() -> String {
-    String::from("")
+    String::new()
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -140,19 +140,18 @@ impl<'a> ModrinthAPI<'a> {
         let ver = version.replace("${mcver}", &self.0.mc_version());
         let ver = ver.replace("${mcversion}", &self.0.mc_version());
 
-        let version_data = match match ver.as_str() {
+        let version_data = if let Some(v) = match ver.as_str() {
             "latest" => versions.first(),
             ver =>  versions.iter().find(|v| v.id == ver || v.name == ver || v.version_number == ver)
         } {
-            Some(v) => v.clone(),
-            None => {
-                let v = match ver.as_str() {
-                    "latest" => all_versions.first(),
-                    ver =>  all_versions.iter().find(|v| v.id == ver || v.name == ver || v.version_number == ver)
-                }.ok_or(anyhow!("Couln't find version '{ver}' ('{version}') for Modrinth project '{id}'"))?.clone();
-                self.0.warn(format!("Filtering failed for modrinth.com/mod/{id}/version/{ver}"));
-                v
-            }
+            v.clone()
+        } else {
+            let v = match ver.as_str() {
+                "latest" => all_versions.first(),
+                ver =>  all_versions.iter().find(|v| v.id == ver || v.name == ver || v.version_number == ver)
+            }.ok_or(anyhow!("Couln't find version '{ver}' ('{version}') for Modrinth project '{id}'"))?.clone();
+            self.0.warn(format!("Filtering failed for modrinth.com/mod/{id}/version/{ver}"));
+            v
         };
 
         Ok(version_data)
@@ -198,8 +197,8 @@ impl<'a> ModrinthAPI<'a> {
     }
 
     pub async fn version_from_hash(&self, hash: &str, algo: &str) -> Result<ModrinthVersion> {
-        self.fetch_api(&format!("{API_URL}/version_file/{hash}{}", if algo == "" || algo == "sha1" {
-            "".to_owned()
+        self.fetch_api(&format!("{API_URL}/version_file/{hash}{}", if algo.is_empty() || algo == "sha1" {
+            String::new()
         } else {
             format!("?algorithm={algo}")
         })).await

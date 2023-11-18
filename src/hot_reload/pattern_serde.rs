@@ -6,6 +6,6 @@ pub fn serialize<S: Serializer>(pat: &Pattern, ser: S) -> Result<S::Ok, S::Error
 }
 
 pub fn deserialize<'de, D: Deserializer<'de>>(de: D) -> Result<Pattern, D::Error> {
-    Ok(Pattern::new(&String::deserialize(de)?)
-    .map_err(serde::de::Error::custom)?)
+    Pattern::new(&String::deserialize(de)?)
+        .map_err(serde::de::Error::custom)
 }

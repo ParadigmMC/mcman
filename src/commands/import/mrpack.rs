@@ -21,7 +21,7 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
     } else {
         let dl = app.dl_from_string(&src).await?;
         let resolved = app.download(&dl, tmp_dir.path().to_path_buf(), ProgressBar::new_spinner()).await?;
-        let path = tmp_dir.path().join(&resolved.filename);
+        let path = tmp_dir.path().join(resolved.filename);
         std::fs::File::open(path)?
     };
 

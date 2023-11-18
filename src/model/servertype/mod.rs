@@ -127,7 +127,7 @@ impl ServerType {
             ServerType::Waterfall {  } => Some("waterfall"),
             ServerType::PaperMC { project, .. } => Some(project.as_str()),
             _ => None,
-        }.map(|o| o.to_owned())
+        }.map(ToOwned::to_owned)
     }
 
     pub fn is_modded(&self) -> bool {
@@ -150,10 +150,10 @@ impl ToString for ServerType {
             ServerType::NeoForge { loader } => format!("NeoForge v{loader}"),
             ServerType::Forge { loader } => format!("Forge v{loader}"),
             ServerType::BuildTools { software, .. } => format!("(BuildTools) {software}"),
-            ServerType::Paper {  } => format!("Paper"),
-            ServerType::Velocity {  } => format!("Velocity"),
-            ServerType::Waterfall {  } => format!("Waterfall"),
-            ServerType::BungeeCord {  } => format!("BungeeCord"),
+            ServerType::Paper {  } => "Paper".to_owned(),
+            ServerType::Velocity {  } => "Velocity".to_owned(),
+            ServerType::Waterfall {  } => "Waterfall".to_owned(),
+            ServerType::BungeeCord {  } => "BungeeCord".to_owned(),
             ServerType::Downloadable { inner } => inner.to_string(),
         }
     }

@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{time::Duration, path::Path};
 
 use anyhow::{bail, Result};
 use dialoguer::{theme::ColorfulTheme, Select};
@@ -12,9 +12,11 @@ pub struct Args {
     world: Option<String>,
 }
 
-pub async fn run(app: App, args: Args) -> Result<()> {
+pub fn run(app: &App, args: Args) -> Result<()> {
     let zipfile = if let Some(s) = args.world {
-        app.server.path.join("worlds").join(if s.ends_with(".zip") {
+        app.server.path.join("worlds").join(if Path::new(&s)
+            .extension()
+            .map_or(false, |ext| ext.eq_ignore_ascii_case("zip")) {
             s.clone()
         } else {
             format!("{s}.zip")
@@ -54,8 +56,7 @@ pub async fn run(app: App, args: Args) -> Result<()> {
 
     let world_name = zipfile
         .file_name()
-        .map(|o| o.to_string_lossy().into_owned())
-        .unwrap_or("world".to_owned());
+        .map_or("world".to_owned(), |o| o.to_string_lossy().into_owned());
     let world_name = world_name.strip_suffix(".zip").unwrap_or(&world_name);
 
     let spinner = ProgressBar::new_spinner()

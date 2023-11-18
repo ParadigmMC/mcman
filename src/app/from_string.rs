@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use anyhow::{Result, bail, Context};
 
 use crate::{model::Downloadable, util::SelectItem};
@@ -57,6 +59,7 @@ impl App {
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     pub async fn dl_from_url(
         &self,
         urlstr: &str
@@ -78,7 +81,7 @@ impl App {
         let urlstr = &urlstring;
         let url = reqwest::Url::parse(urlstr)?;
 
-        match (url.domain(), url.path_segments().map(|x| x.collect::<Vec<_>>()).unwrap_or_default().as_slice()) {
+        match (url.domain(), url.path_segments().map(Iterator::collect::<Vec<_>>).unwrap_or_default().as_slice()) {
             // https://cdn.modrinth.com/data/{ID}/versions/{VERSION}/{FILENAME}
             (Some("cdn.modrinth.com"), ["data", id, "versions", version, _filename]) => {
                 Ok(Downloadable::Modrinth {
@@ -88,66 +91,64 @@ impl App {
             }
 
             (Some("modrinth.com"), ["mod" | "plugin" | "datapack", id, rest @ ..]) => {
-                let version = match rest {
-                    ["version", v] => v.to_string(),
-                    _ => {
-                        let versions = self.modrinth().fetch_versions(id).await?;
+                let version = if let ["version", v] = rest {
+                    (*v).to_string()
+                } else {
+                    let versions = self.modrinth().fetch_versions(id).await?;
 
-                        if versions.is_empty() {
-                            bail!("No compatible versions found");
-                        }
-
-                        let version = self.select("Select a version", &versions.iter().map(|v| {
-                            SelectItem(v.clone(), if v.version_number == v.name {
-                                v.version_number.clone()
-                            } else {
-                                format!(
-                                    "[{}] {}",
-                                    v.version_number,
-                                    v.name,
-                                )
-                            })
-                        }).collect::<Vec<_>>())?;
-
-                        version.id.clone()
+                    if versions.is_empty() {
+                        bail!("No compatible versions found");
                     }
+
+                    let version = self.select("Select a version", &versions.iter().map(|v| {
+                        SelectItem(v.clone(), if v.version_number == v.name {
+                            v.version_number.clone()
+                        } else {
+                            format!(
+                                "[{}] {}",
+                                v.version_number,
+                                v.name,
+                            )
+                        })
+                    }).collect::<Vec<_>>())?;
+
+                    version.id.clone()
                 };
 
                 Ok(Downloadable::Modrinth {
                     id: id.to_owned().to_owned(),
-                    version: version.to_owned().to_owned(),
+                    version: version.clone(),
                 })
             }
 
             (Some("curserinth.kuylar.dev"), ["mod", id, rest @ ..]) => {
-                let version = match rest {
-                    ["version", v] => v.to_string(),
-                    _ => {
-                        let (versions, _) = self.curserinth().fetch_versions(id).await?;
+                let version = if let ["version", v] = rest {
+                    (*v).to_string()
+                } else {
+                    let (versions, _) = self.curserinth().fetch_versions(id).await?;
 
-                        if versions.is_empty() {
-                            bail!("No compatible versions found");
-                        }
-
-                        let version = self.select("Select a version", &versions.iter().map(|v| {
-                            SelectItem(v.clone(), if v.version_number == v.name {
-                                v.version_number.clone()
-                            } else {
-                                format!(
-                                    "[{}] {}",
-                                    v.version_number,
-                                    v.name,
-                                )
-                            })
-                        }).collect::<Vec<_>>())?;
-
-                        version.id.clone()
+                    if versions.is_empty() {
+                        bail!("No compatible versions found");
                     }
+
+                    let version = self.select("Select a version", &versions.iter().map(|v| {
+                        SelectItem(v.clone(), if v.version_number == v.name {
+                            v.version_number.clone()
+                        } else {
+                            format!(
+                                "[{}] {}",
+                                v.version_number,
+                                v.name,
+                            )
+                        })
+                    }).collect::<Vec<_>>())?;
+
+                    version.id.clone()
                 };
 
                 Ok(Downloadable::CurseRinth {
-                    id: id.to_owned().to_owned(),
-                    version: version.to_owned().to_owned(),
+                    id: (*id).to_string(),
+                    version,
                 })
             }
 
@@ -155,97 +156,88 @@ impl App {
             (Some("www.curseforge.com"), ["minecraft", "mc-mods", id, rest @ ..]) => {
                 let id = format!("mod__{id}");
 
-                let version = match rest {
-                    [_, ver] => ver.to_string(),
-                    _ => {
-                        let (versions, _) = self.curserinth().fetch_versions(&id).await?;
+                let version = if let [_, ver] = rest {
+                    (*ver).to_string()
+                } else {
+                    let (versions, _) = self.curserinth().fetch_versions(&id).await?;
 
-                        if versions.is_empty() {
-                            bail!("No compatible versions found");
-                        }
-
-                        let version = self.select("Select a version", &versions.iter().map(|v| {
-                            SelectItem(v.clone(), if v.version_number == v.name {
-                                v.version_number.clone()
-                            } else {
-                                format!(
-                                    "[{}] {}",
-                                    v.version_number,
-                                    v.name,
-                                )
-                            })
-                        }).collect::<Vec<_>>())?;
-
-                        version.id.clone()
+                    if versions.is_empty() {
+                        bail!("No compatible versions found");
                     }
+
+                    let version = self.select("Select a version", &versions.iter().map(|v| {
+                        SelectItem(v.clone(), if v.version_number == v.name {
+                            v.version_number.clone()
+                        } else {
+                            format!(
+                                "[{}] {}",
+                                v.version_number,
+                                v.name,
+                            )
+                        })
+                    }).collect::<Vec<_>>())?;
+
+                    version.id.clone()
                 };
 
                 Ok(Downloadable::CurseRinth {
-                    id: id.to_owned().to_owned(),
-                    version: version.to_owned().to_owned(),
+                    id,
+                    version,
                 })
             }
 
             // https://www.spigotmc.org/resources/http-requests.101253/
             (Some("www.spigotmc.org"), ["resources", id]) => {
-                Ok(Downloadable::Spigot { id: id.to_string(), version: "latest".to_owned() })
+                Ok(Downloadable::Spigot { id: (*id).to_string(), version: "latest".to_owned() })
             }
 
             // https://github.com/{owner}/{repo}/releases/{'tag'|'download'}/{tag}/{filename}
             (Some("github.com"), [owner, repo_name, rest @ ..]) => {
                 let repo = format!("{owner}/{repo_name}");
 
-                let (tag, asset) = match rest {
-                    ["releases", "tag" | "download", tag, filename @ ..] => {
+                let (tag, asset) = if let ["releases", "tag" | "download", tag, filename @ ..] = rest {
+                    ((*tag).to_string(), match filename {
+                        [f] => Some(f.replace(tag, "${tag}")),
+                        _ => None,
+                    })
+                } else {
+                    let releases = self.github().fetch_releases(&repo).await?;
 
-                        (tag.to_string(), match filename {
-                            [f] => Some(f.replace(tag, "${tag}")),
-                            _ => None,
+                    let version = self.select("Select a release", &vec![
+                        SelectItem("latest".to_owned(), "Always use latest release".to_owned())
+                    ].into_iter().chain(releases.iter().map(|r| {
+                        SelectItem(r.tag_name.clone(), if r.tag_name == r.name {
+                            r.name.clone()
+                        } else {
+                            format!(
+                                "[{}] {}",
+                                r.tag_name,
+                                r.name
+                            )
                         })
-                    }
+                    })).collect::<Vec<_>>())?;
 
-                    _ => {
-                        let releases = self.github().fetch_releases(&repo).await?;
-
-                        let version = self.select("Select a release", &vec![
-                            SelectItem("latest".to_owned(), "Always use latest release".to_owned())
-                        ].into_iter().chain(releases.iter().map(|r| {
-                            SelectItem(r.tag_name.clone(), if r.tag_name == r.name {
-                                r.name.clone()
-                            } else {
-                                format!(
-                                    "[{}] {}",
-                                    r.tag_name,
-                                    r.name
-                                )
-                            })
-                        })).collect::<Vec<_>>())?;
-
-                        (version, None)
-                    }
+                    (version, None)
                 };
 
-                let asset = match asset {
-                    Some(a) => a,
-                    None => {
-                        let rel = self.github().fetch_release(&repo, &tag).await?;
+                let asset = if let Some(a) = asset { a } else {
+                    let rel = self.github().fetch_release(&repo, &tag).await?;
 
-                        if rel.assets.len() <= 1 {
-                            "first".to_owned()
-                        } else {
-                            match self.select("Which asset to use?", &vec![
-                                SelectItem(Some("first".to_owned()), format!(
-                                    "Use the first asset ('{}' for '{}')",
-                                    rel.assets[0].name, rel.tag_name
-                                ))
-                            ].into_iter().chain(rel.assets.iter().map(|a| {
-                                SelectItem(Some(a.name.clone()), a.name.to_owned())
-                            })).chain(vec![
-                                SelectItem(None, "Set manually".to_string())
-                            ]).collect::<Vec<_>>())? {
-                                Some(a) => a,
-                                None => self.prompt_string("Enter asset name")?,
-                            }
+                    if rel.assets.len() <= 1 {
+                        "first".to_owned()
+                    } else {
+                        match self.select("Which asset to use?", &vec![
+                            SelectItem(Some("first".to_owned()), format!(
+                                "Use the first asset ('{}' for '{}')",
+                                rel.assets[0].name, rel.tag_name
+                            ))
+                        ].into_iter().chain(rel.assets.iter().map(|a| {
+                            SelectItem(Some(a.name.clone()), a.name.clone())
+                        })).chain(vec![
+                            SelectItem(None, "Set manually".to_string())
+                        ]).collect::<Vec<_>>())? {
+                            Some(a) => a,
+                            None => self.prompt_string("Enter asset name")?,
                         }
                     }
                 };
@@ -266,7 +258,7 @@ impl App {
                     }
                 };
 
-                let selection = self.select_with_default(&urlstr, &vec![
+                let selection = self.select_with_default(urlstr, &[
                     SelectItem(0, "Add as Custom URL".to_owned()),
                     SelectItem(1, "Add as Jenkins".to_owned()),
                     SelectItem(2, "Add as Maven".to_owned()),
@@ -360,24 +352,21 @@ impl App {
                             None => self.prompt_string_filled("Maven repository url?", urlstr)?,
                         };
 
-                        let group = match group_id {
-                            Some(r) => r,
-                            None => {
-                                let inferred = if urlstr.starts_with(&repo) {
-                                    let p = urlstr.strip_prefix(&repo).unwrap();
-                                    if p.ends_with(".jar") {
-                                        let mut li = p.rsplit('/').skip(2).collect::<Vec<_>>();
-                                        li.reverse();
-                                        li
-                                    } else {
-                                        p.split('/').collect::<Vec<_>>()
-                                    }.into_iter().filter(|x| !x.is_empty()).collect::<Vec<_>>().join(".")
+                        let group = if let Some(r) = group_id { r } else {
+                            let inferred = if urlstr.starts_with(&repo) {
+                                let p = urlstr.strip_prefix(&repo).unwrap();
+                                if Path::new(p).extension().map_or(false, |ext| ext.eq_ignore_ascii_case("jar")) {
+                                    let mut li = p.rsplit('/').skip(2).collect::<Vec<_>>();
+                                    li.reverse();
+                                    li
                                 } else {
-                                    "".to_string()
-                                };
+                                    p.split('/').collect::<Vec<_>>()
+                                }.into_iter().filter(|x| !x.is_empty()).collect::<Vec<_>>().join(".")
+                            } else {
+                                String::new()
+                            };
 
-                                self.prompt_string_filled("Group (split by .)?", &inferred)?
-                            },
+                            self.prompt_string_filled("Group (split by .)?", &inferred)?
                         };
 
                         let suggest = format!("{repo}/{}", group.replace('.', "/"));
@@ -385,7 +374,7 @@ impl App {
                         let artifact = match artifact_id {
                             Some(r) => r,
                             None => self.prompt_string_filled("Artifact?", if urlstr.starts_with(&suggest) {
-                                urlstr.strip_prefix(&suggest).unwrap().split('/').filter(|x| !x.is_empty()).next().unwrap_or("")
+                                urlstr.strip_prefix(&suggest).unwrap().split('/').find(|x| !x.is_empty()).unwrap_or("")
                             } else {
                                 ""
                             })?,
@@ -399,7 +388,9 @@ impl App {
 
                         let version = self.select("Which version?", &versions)?;
 
-                        let filename = if urlstr.ends_with(".jar") {
+                        let filename = if Path::new(urlstr)
+                            .extension()
+                            .map_or(false, |ext| ext.eq_ignore_ascii_case("jar")) {
                             urlstr.rsplit('/').next().unwrap().to_owned()
                         } else {
                             self.prompt_string_default("Filename?", "${artifact}-${version}.jar")?

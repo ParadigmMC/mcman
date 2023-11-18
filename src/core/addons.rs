@@ -60,10 +60,10 @@ impl<'a> BuildContext<'a> {
             }.push((addon.clone(), resolved));
         }
 
-        let existing_files = HashSet::from_iter(match addon_type {
+        let existing_files = match addon_type {
             AddonType::Plugin => self.lockfile.plugins.iter(),
             AddonType::Mod => self.lockfile.mods.iter(),
-        }.map(|(_, res)| res.filename.clone()));
+        }.map(|(_, res)| res.filename.clone()).collect::<HashSet<_>>();
 
         pb.set_style(ProgressStyle::with_template("{spinner:.blue} {prefix:.yellow} {msg}")?);
         pb.set_prefix("Deleting");

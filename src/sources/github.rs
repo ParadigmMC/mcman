@@ -86,11 +86,7 @@ impl<'a> GithubAPI<'a> {
         cache_path: String
     ) -> Result<T> {
         let cached_data = if let Some(cache) = self.0.get_cache(CACHE_DIR) {
-            if let Some(json) = cache.try_get_json::<CachedData<T>>(&cache_path)? {
-                Some(json)
-            } else {
-                None
-            }
+            cache.try_get_json::<CachedData<T>>(&cache_path)?
         } else {
             None
         };
@@ -143,12 +139,10 @@ impl<'a> GithubAPI<'a> {
     }
 
     pub async fn fetch_releases(&self, repo: &str) -> Result<Vec<GithubRelease>> {
-        Ok(
-            self.fetch_api::<Vec<GithubRelease>>(
-                format!("{API_URL}/repos/{repo}/releases"),
-                format!("{repo}/releases.json")
-            ).await?
-        )
+        self.fetch_api::<Vec<GithubRelease>>(
+            format!("{API_URL}/repos/{repo}/releases"),
+            format!("{repo}/releases.json")
+        ).await
     }
 
     pub async fn fetch_release(&self, repo: &str, release_tag: &str) -> Result<GithubRelease> {

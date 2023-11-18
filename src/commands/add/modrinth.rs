@@ -18,7 +18,7 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
     ])?;
 
     let query = if let Some(s) = args.search {
-        s.to_owned()
+        s.clone()
     } else {
         app.prompt_string("Search on Modrinth")?
     };

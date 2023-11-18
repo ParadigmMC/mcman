@@ -22,12 +22,13 @@ pub async fn resolve_source(
     let (build_url, filename, relative_path, build_number, md5hash) =
         get_jenkins_filename(&app.http_client, url, job, build, artifact).await?;
 
+        // TODO: use utils
     // ci.luckto.me => ci-lucko-me
     let folder = url.replace("https://", "");
     let folder = folder.replace("http://", "");
-    let folder = folder.replace("/", " ");
+    let folder = folder.replace('/', " ");
     let folder = folder.trim();
-    let folder = folder.replace(" ", "-");
+    let folder = folder.replace(' ', "-");
 
     let cached_file_path = format!("{folder}/{job}/{build_number}/{filename}");
 

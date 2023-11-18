@@ -76,12 +76,10 @@ impl Downloadable {
                 map.insert("Asset/File".to_owned(), asset.clone());
             }
 
-            Self::Modrinth { id, version } | Self::CurseRinth { id, version } | Self::Hangar { id, version } => {
-                map.insert("Project/URL".to_owned(), id.clone());
-                map.insert("Version/Release".to_owned(), version.clone());
-            }
-
-            Self::Spigot { id, version } => {
+            Self::Modrinth { id, version }
+            | Self::CurseRinth { id, version }
+            | Self::Hangar { id, version }
+            | Self::Spigot { id, version } => {
                 map.insert("Project/URL".to_owned(), id.clone());
                 map.insert("Version/Release".to_owned(), version.clone());
             }

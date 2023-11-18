@@ -46,8 +46,7 @@ impl<'a> BuildContext<'a> {
             .await
             .context("Creating output directory")?;
 
-        self.reload()
-            .context("Reloading .mcman.lock")?;
+        self.reload();
 
         if !self.skip_stages.is_empty() {
             self.app.info(format!("Skipping stages: {}", self.skip_stages.join(", ")));
@@ -105,32 +104,31 @@ impl<'a> BuildContext<'a> {
         Ok(server_jar)
     }
 
-    /// Load to self.lockfile and create a default one at self.new_lockfile
-    pub fn reload(&mut self) -> Result<()> {
-        self.lockfile = match Lockfile::get_lockfile(&self.output_dir) {
-            Ok(f) => f,
-            Err(_) => {
-                self.app.warn("Lockfile error, using default");
-                Lockfile {
-                    path: self.output_dir.join(".mcman.lock"),
-                    ..Default::default()
-                }
-            },
+    /// Load to `self.lockfile` and create a default one at `self.new_lockfile`
+    pub fn reload(&mut self) {
+        self.lockfile = if let Ok(f) = Lockfile::get_lockfile(&self.output_dir) {
+            f
+        } else {
+            self.app.warn("Lockfile error, using default");
+            Lockfile {
+                path: self.output_dir.join(".mcman.lock"),
+                ..Default::default()
+            }
         };
+
         self.new_lockfile = Lockfile {
             path: self.output_dir.join(".mcman.lock"),
             ..Default::default()
         };
-        Ok(())
     }
 
-    /// Save new_lockfile
+    /// Save `new_lockfile`
     pub fn write_lockfile(&mut self) -> Result<()> {
-        if std::env::var("MCMAN_DISABLE_LOCKFILE") != Ok("true".to_owned()) {
+        if std::env::var("MCMAN_DISABLE_LOCKFILE") == Ok("true".to_owned()) {
+            self.app.dbg("lockfile disabled");
+        } else {
             self.new_lockfile.save()?;
             self.app.log("updated lockfile");
-        } else {
-            self.app.dbg("lockfile disabled");
         }
 
         Ok(())
@@ -150,7 +148,7 @@ impl<'a> BuildContext<'a> {
 
         let result = self.app.download(
             resolvable,
-            self.output_dir.join(&folder_path),
+            self.output_dir.join(folder_path),
             progress_bar
         ).await?;
 

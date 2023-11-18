@@ -18,8 +18,7 @@ impl<'a> HangarAPI<'a> {
 
             versions
                 .result
-                .iter()
-                .next()
+                .first()
                 .ok_or(anyhow!("No compatible versions for Hangar project '{id}'"))?
                 .clone()
         } else if version.contains('$') {
@@ -34,7 +33,7 @@ impl<'a> HangarAPI<'a> {
             versions
                 .result
                 .iter()
-                .find(|v| &v.name == &version)
+                .find(|v| v.name == version)
                 .cloned()
                 .or(versions
                     .result
@@ -76,6 +75,7 @@ impl<'a> HangarAPI<'a> {
         }
     }
 
+    #[allow(clippy::cast_sign_loss)]
     pub async fn resolve_source(&self, id: &str, version: &str) -> Result<ResolvedFile> {
         let version = self
             .fetch_hangar_version(id, version)

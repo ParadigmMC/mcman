@@ -21,8 +21,8 @@ impl<'a> BuildContext<'a> {
             .with_prefix("Bootstrapping"));
         pb.enable_steady_tick(Duration::from_millis(250));
 
-        let lockfile_entries: HashMap<PathBuf, SystemTime> = HashMap::from_iter(self.lockfile.files.iter()
-            .map(|e| (e.path.clone(), e.date.clone())));
+        let lockfile_entries = self.lockfile.files.iter()
+            .map(|e| (e.path.clone(), e.date)).collect::<HashMap<_, _>>();
 
         for entry in WalkDir::new(self.app.server.path.join("config")) {
             let entry = entry
@@ -36,7 +36,7 @@ impl<'a> BuildContext<'a> {
             }
 
             let source = entry.path();
-            let diffed_paths = diff_paths(&source, self.app.server.path.join("config"))
+            let diffed_paths = diff_paths(source, self.app.server.path.join("config"))
                 .ok_or(anyhow!("Cannot diff paths"))?;
 
             pb.set_message(diffed_paths.to_string_lossy().to_string());
@@ -62,7 +62,7 @@ impl<'a> BuildContext<'a> {
     pub fn should_bootstrap_file(&self, path: &Path) -> bool {
         let ext = path.extension().unwrap_or_default().to_str().unwrap_or_default();
 
-        let bootstrap_exts = vec![
+        let bootstrap_exts = [
             "properties", "txt", "yaml", "yml", "conf", "config", "toml", "json", "json5", "secret"
         ];
 

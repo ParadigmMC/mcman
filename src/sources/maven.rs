@@ -11,14 +11,13 @@ pub trait XMLExt {
 
 impl XMLExt for roxmltree::Document<'_> {
     fn get_text(&self, k: &str) -> Result<String> {
-        Ok(self
+        self
             .descendants()
             .find_map(|elem| if elem.tag_name().name() == k {
                 Some(elem.text()?.to_owned())
             } else {
                 None
-            }).ok_or(anyhow!("XML element not found: {}", k))?
-        )
+            }).ok_or(anyhow!("XML element not found: {}", k))
     }
 
     fn get_text_all(&self, k: &str) -> Vec<String> {
@@ -67,14 +66,14 @@ impl<'a> MavenAPI<'a> {
         let metadata_url = if url.ends_with("/maven-metadata.xml") {
             url.to_string()
         } else {
-            self.guess_metadata_url(url)?
+            Self::guess_metadata_url(url)?
         };
 
         self.fetch_metadata_url(&metadata_url).await
     }
 
     // @author ChatGPT
-    pub fn guess_metadata_url(&self, url: &str) -> Result<String> {
+    pub fn guess_metadata_url(url: &str) -> Result<String> {
         // Attempt to construct the Maven metadata URL based on the provided URL
         let segments: Vec<&str> = url.trim_end_matches('/').rsplit('/').collect();
 
@@ -213,7 +212,7 @@ impl<'a> MavenAPI<'a> {
         let cached_file_path = format!(
             "{}/{}/{artifact_id}/{version}/{file}",
             crate::util::url_to_folder(url),
-            group_id.replace(".", "/"),
+            group_id.replace('.', "/"),
         );
 
         Ok(ResolvedFile {

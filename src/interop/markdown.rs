@@ -80,7 +80,7 @@ impl<'a> MarkdownAPI<'a> {
                     .unwrap();
                 content = re.replace_all(&content, |_caps: &regex::Captures| {
                     format!("<!--start:mcman-{id}-->\n{}\n<!--end:mcman-{id}-->", table.render())
-                }).to_string()
+                }).to_string();
             }
 
             let mut f = tokio::fs::File::create(&path).await?;

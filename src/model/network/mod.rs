@@ -73,7 +73,7 @@ impl Network {
         let mut port = 25565;
 
         let mut taken = vec![self.port];
-        for (_, serv) in &self.servers {
+        for serv in self.servers.values() {
             taken.push(serv.port);
         }
 

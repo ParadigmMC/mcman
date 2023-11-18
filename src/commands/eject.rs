@@ -7,7 +7,7 @@ use dialoguer::{theme::ColorfulTheme, Input};
 use crate::app::App;
 
 #[allow(unused_must_use)]
-pub fn run(app: App) -> Result<()> {
+pub fn run(app: &App) -> Result<()> {
     if Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Are you sure you want to delete everything? This is irreversible. Type this server's name to confirm.")
         .default(String::new())

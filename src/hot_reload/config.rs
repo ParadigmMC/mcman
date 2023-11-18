@@ -30,9 +30,9 @@ impl TryFrom<String> for HotReloadAction {
     }
 }
 
-impl Into<String> for HotReloadAction {
-    fn into(self) -> String {
-        match self {
+impl From<HotReloadAction> for String {
+    fn from(val: HotReloadAction) -> Self {
+        match val {
             HotReloadAction::Reload => String::from("reload"),
             HotReloadAction::Restart => String::from("restart"),
             HotReloadAction::RunCommand(cmd) => format!("/{cmd}"),

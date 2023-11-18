@@ -165,12 +165,10 @@ impl<'a> BuildContext<'a> {
                             fs::rename(from_path, &to_path)
                                 .await
                                 .context(format!("Renaming: {from} => {jar_name}"))?;
+                        } else if to_path.exists() {
+                            self.app.log(format!("  Rename skipped ({from} doesn't exist)"));
                         } else {
-                            if to_path.exists() {
-                                self.app.log(format!("  Rename skipped ({from} doesn't exist)"));
-                            } else {
-                                bail!("Installer did not output '{from}', can't rename to '{jar_name}'");
-                            }
+                            bail!("Installer did not output '{from}', can't rename to '{jar_name}'");
                         }
                     }
 

@@ -82,7 +82,7 @@ impl<'a> DevSession<'a> {
 
         let cwd = std::env::current_dir()?.canonicalize()?;
         // because jre is stupid
-        let dir = diff_paths(&self.builder.output_dir, &cwd).unwrap();
+        let dir = diff_paths(&self.builder.output_dir, cwd).unwrap();
 
         //self.builder.app.info(&format!("Output: {}", self.builder.output_dir.display()))?;
         //self.builder.app.info(&format!("Cwd: {}", cwd.display()))?;
@@ -100,6 +100,7 @@ impl<'a> DevSession<'a> {
     }
 
     #[allow(unused_assignments)]
+    #[allow(clippy::too_many_lines)]
     async fn handle_commands(mut self, mut rx: mpsc::Receiver<Command>, mut tx: mpsc::Sender<Command>) -> Result<()> {
         let mp = self.builder.app.multi_progress.clone();
 
@@ -139,7 +140,7 @@ impl<'a> DevSession<'a> {
                             is_stopping = true;
                             if let Some(ref mut child) = &mut child {
                                 let should_kill = tokio::select! {
-                                    _ = async {
+                                    () = async {
                                         // future to keep printing logs
                                         loop {
                                             if let Ok(Some(line)) = try_read_line(&mut stdout_lines).await {
@@ -148,7 +149,7 @@ impl<'a> DevSession<'a> {
                                                         "{}{}",
                                                         style("| ").bold(),
                                                         line.trim()
-                                                    )
+                                                    );
                                                 });
                                             }
                                         }
@@ -159,7 +160,7 @@ impl<'a> DevSession<'a> {
                                         exit_status = status.ok();
                                         false
                                     },
-                                    _ = tokio::time::sleep(Duration::from_secs(30)) => {
+                                    () = tokio::time::sleep(Duration::from_secs(30)) => {
                                         self.builder.app.info("Timeout reached, killing...");
                                         true
                                     },
@@ -187,11 +188,10 @@ impl<'a> DevSession<'a> {
                             let rel_path = diff_paths(&path, self.builder.app.server.path.join("config"))
                                 .expect("Cannot diff paths");
                             self.builder.app.info(format!("Bootstrapping: {}", rel_path.to_string_lossy().trim()));
-                            match self.builder.bootstrap_file(&rel_path, None).await {
-                                Ok(_) => {},
-                                Err(e) => self.builder.app.warn(format!("Error while bootstrapping:
+                            if let Err(e) = self.builder.bootstrap_file(&rel_path, None).await {
+                                self.builder.app.warn(format!("Error while bootstrapping:
                                 - Path: {}
-                                - Err: {e}", rel_path.to_string_lossy())),
+                                - Err: {e}", rel_path.to_string_lossy()));
                             }
                         }
                         Command::EndSession => {
@@ -228,7 +228,7 @@ impl<'a> DevSession<'a> {
                         println!(
                             "{}{s}",
                             style("| ").bold()
-                        )
+                        );
                     });
                 },
                 Ok(Some(line)) = stdin_lines.next_line() => {
@@ -302,22 +302,17 @@ impl<'a> DevSession<'a> {
                                         style(code).red().bold()
                                     }
                                 );
-                            } else {
-                                if !status.success() {
-                                    println!(
-                                        "  - Process didn't exit successfully"
-                                    );
-                                }
+                            } else if !status.success() {
+                                println!(
+                                    "  - Process didn't exit successfully"
+                                );
                             }
                         }
     
-                        match test_result {
-                            TestResult::Crashed => {
-                                println!(
-                                    "  - Server crashed"
-                                );
-                            }
-                            _ => {}
+                        if let TestResult::Crashed = test_result {
+                            println!(
+                                "  - Server crashed"
+                            );
                         }
                     });
 
@@ -347,10 +342,9 @@ impl<'a> DevSession<'a> {
     
                                 // get latest crash report
                                 let (report_path, _) = folder.read_dir()?
-                                    .into_iter()
-                                    .filter_map(|f| f.ok())
+                                    .filter_map(Result::ok)
                                     .filter_map(|f| Some((f.path(), f.metadata().ok()?.modified().ok()?)))
-                                    .max_by_key(|(_, t)| t.clone())
+                                    .max_by_key(|(_, t)| *t)
                                     .ok_or(anyhow!("can't find crash report"))?;
     
                                 Some(report_path)
@@ -400,7 +394,6 @@ impl<'a> DevSession<'a> {
 
     pub fn create_hotreload_watcher(
         config: Arc<Mutex<HotReloadConfig>>,
-        _tx: mpsc::Sender<Command>,
     ) -> Result<Debouncer<RecommendedWatcher>> {
         Ok(new_debouncer(Duration::from_secs(1), move |e: DebounceEventResult| {
             if let Ok(_e) = e {
@@ -488,7 +481,7 @@ impl<'a> DevSession<'a> {
 
         if let Some(cfg_mutex) = self.hot_reload.clone() {
             let mut config_watcher = Self::create_config_watcher(cfg_mutex.clone(), tx.clone())?;
-            let mut hotreload_watcher = Self::create_hotreload_watcher(cfg_mutex.clone(), tx.clone())?;
+            let mut hotreload_watcher = Self::create_hotreload_watcher(cfg_mutex.clone())?;
             let mut servertoml_watcher = Self::create_servertoml_watcher(tx.clone())?;
 
             config_watcher.watcher().watch(self.builder.app.server.path.join("config").as_path(), RecursiveMode::Recursive)?;

@@ -31,7 +31,7 @@ impl<'a> BuildArgs {
         std::fs::create_dir_all(&output_dir).context("Failed to create output directory")?;
 
         Ok(BuildContext {
-            app: &app,
+            app,
             force,
             skip_stages,
             output_dir,

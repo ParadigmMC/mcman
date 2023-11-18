@@ -52,7 +52,7 @@ pub fn write_gitignore() -> Result<PathBuf> {
 
     let gitignore_path = Path::new(&root).join(".gitignore");
 
-    let contents = fs::read_to_string(&gitignore_path).unwrap_or(String::new());
+    let contents = fs::read_to_string(&gitignore_path).unwrap_or_default();
 
     let has_r = contents.contains('\r');
 
@@ -85,7 +85,7 @@ pub fn write_gitattributes() -> Result<PathBuf> {
 
     let gitattributes_path = Path::new(&root).join(".gitattibutes");
 
-    let contents = fs::read_to_string(&gitattributes_path).unwrap_or(String::new());
+    let contents = fs::read_to_string(&gitattributes_path).unwrap_or_default();
 
     let has_r = contents.contains('\r');
 

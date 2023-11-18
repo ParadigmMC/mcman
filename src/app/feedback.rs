@@ -18,9 +18,9 @@ pub enum ProgressPrefix {
     Exporting,
 }
 
-impl Into<Cow<'static, str>> for ProgressPrefix {
-    fn into(self) -> Cow<'static, str> {
-        Cow::Borrowed(match self {
+impl From<ProgressPrefix> for Cow<'static, str> {
+    fn from(val: ProgressPrefix) -> Self {
+        Cow::Borrowed(match val {
             ProgressPrefix::Resolving => "Resolving",
             ProgressPrefix::Checking => "Checking",
             ProgressPrefix::Downloading => "Downloading",
@@ -80,9 +80,9 @@ impl Prefix {
     }
 }
 
-impl Into<Cow<'static, str>> for Prefix {
-    fn into(self) -> Cow<'static, str> {
-        Cow::Borrowed(self.as_str().trim())
+impl From<Prefix> for Cow<'static, str> {
+    fn from(val: Prefix) -> Self {
+        Cow::Borrowed(val.as_str().trim())
     }
 }
 
@@ -135,6 +135,7 @@ impl App {
         }
     }
 
+    #[allow(clippy::unused_self)]
     pub fn is_ci(&self) -> bool {
         std::env::var("CI").ok() == Some("true".to_owned())
     }

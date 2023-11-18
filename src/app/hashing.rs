@@ -29,18 +29,13 @@ impl App {
         } else {
             // calculate hash manually
 
-            let (file_path, is_temp) = match self.resolve_cached_file(&resolved.cache) {
-                Some((path, true)) => {
-                    // file exists in cache dir
-                    (path, false)
-                }
-                
-                _ => {
-                    // either can't cache or isnt in cache dir
-                    // download it
-                    self.download_resolved(resolved.clone(), PathBuf::from("."), ProgressBar::new_spinner()).await?;
-                    (PathBuf::from(".").join(&resolved.filename), true)
-                }
+            let (file_path, is_temp) = if let Some((path, true)) = self.resolve_cached_file(&resolved.cache) {
+                // file exists in cache dir
+                (path, false)
+            } else {
+                // either can't cache or isnt in cache dir
+                self.download_resolved(resolved.clone(), PathBuf::from("."), ProgressBar::new_spinner()).await?;
+                (PathBuf::from(".").join(&resolved.filename), true)
             };
 
             let preferred_hash = "sha256";

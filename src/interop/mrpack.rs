@@ -53,7 +53,7 @@ impl<'a> MRPackInterop<'a> {
         self.0.server.save()?;
 
         progress_bar.set_prefix("Unzipping");
-        for (relative_path, zip_path) in mrpack.get_files()?.iter().progress_with(progress_bar.clone()) {
+        for (relative_path, zip_path) in mrpack.get_files().iter().progress_with(progress_bar.clone()) {
             progress_bar.set_message(relative_path.clone());
 
             let zip_file = mrpack.get_file(zip_path)?;
@@ -201,7 +201,7 @@ impl<R: Read + Seek> MRPackReader<R> {
         Ok(pack)
     }
 
-    pub fn get_files(&self) -> Result<HashMap<String, String>> {
+    pub fn get_files(&self) -> HashMap<String, String> {
         let mut map = HashMap::new();
 
         for filename in self.0.file_names() {
@@ -224,7 +224,7 @@ impl<R: Read + Seek> MRPackReader<R> {
             };
         }
 
-        Ok(map)
+        map
     }
 
     pub fn get_file<'a>(&'a mut self, filename: &str) -> Result<ZipFile<'a>> {

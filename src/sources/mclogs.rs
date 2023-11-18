@@ -51,9 +51,9 @@ pub enum MaybeSuccess<T> {
     },
 }
 
-impl<T> Into<Result<T>> for MaybeSuccess<T> {
-    fn into(self) -> Result<T> {
-        match self {
+impl<T> From<MaybeSuccess<T>> for Result<T> {
+    fn from(val: MaybeSuccess<T>) -> Self {
+        match val {
             MaybeSuccess::Success { value } => Ok(value),
             MaybeSuccess::Error { error } => Err(anyhow!(error)),
         }

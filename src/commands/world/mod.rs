@@ -10,8 +10,8 @@ pub enum Commands {
     Unpack(unpack::Args),
 }
 
-pub async fn run(app: App, commands: Commands) -> Result<()> {
+pub fn run(app: &App, commands: Commands) -> Result<()> {
     match commands {
-        Commands::Unpack(args) => unpack::run(app, args).await,
+        Commands::Unpack(args) => unpack::run(app, args),
     }
 }
