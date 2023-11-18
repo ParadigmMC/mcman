@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::{util::env::write_git, app::App};
+use crate::{app::App, util::env::write_git};
 
 pub fn run(app: &App) -> Result<()> {
     write_git()?;

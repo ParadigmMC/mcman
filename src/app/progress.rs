@@ -1,8 +1,5 @@
 use indicatif::ProgressBar;
 
-pub trait ProgressBarExt {
-}
+pub trait ProgressBarExt {}
 
-impl ProgressBarExt for ProgressBar {
-
-}
+impl ProgressBarExt for ProgressBar {}

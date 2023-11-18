@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use anyhow::Result;
 use console::{style, StyledObject};
-use dialoguer::{theme::ColorfulTheme, Input, Confirm, Select};
+use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
 
 use crate::util::SelectItem;
 
@@ -56,7 +56,7 @@ impl Prefix {
             Prefix::Skipped => "     Skipped",
             Prefix::SkippedWarning => "   ! Skipped",
             Prefix::Downloaded => "  Downloaded",
-            
+
             Prefix::Imported => "    Imported",
             Prefix::Exported => "    Exported",
             Prefix::Rendered => "    Rendered",
@@ -70,7 +70,9 @@ impl Prefix {
 
     pub fn styled(self) -> StyledObject<&'static str> {
         match self {
-            Prefix::Downloaded | Prefix::Imported | Prefix::Exported | Prefix::Rendered => style(self.as_str()).green().bold(),
+            Prefix::Downloaded | Prefix::Imported | Prefix::Exported | Prefix::Rendered => {
+                style(self.as_str()).green().bold()
+            }
             Prefix::Copied | Prefix::Skipped => style(self.as_str()).green(),
             Prefix::Error => style(self.as_str()).red().bold(),
             Prefix::Warning | Prefix::SkippedWarning => style(self.as_str()).yellow().bold(),
@@ -117,7 +119,6 @@ impl App {
     pub fn info<S: std::fmt::Display>(&self, message: S) {
         self.notify(Prefix::Info, message);
     }
-    
 
     pub fn dbg<S: std::fmt::Display>(&self, message: S) {
         if std::env::var("MCMAN_DEBUG") == Ok("true".to_owned()) {
@@ -194,7 +195,12 @@ impl App {
         Ok(item.0.clone())
     }
 
-    pub fn select_with_default<T: Clone>(&self, prompt: &str, items: &[SelectItem<T>], def: usize) -> Result<T> {
+    pub fn select_with_default<T: Clone>(
+        &self,
+        prompt: &str,
+        items: &[SelectItem<T>],
+        def: usize,
+    ) -> Result<T> {
         let item = &items[self.multi_progress.suspend(|| {
             Select::with_theme(&ColorfulTheme::default())
                 .items(items)

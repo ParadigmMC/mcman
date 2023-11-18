@@ -14,7 +14,8 @@ pub struct Args {
 }
 
 pub async fn run(mut app: App, args: Args) -> Result<()> {
-    let s = app.server
+    let s = app
+        .server
         .name
         .clone()
         .replace(|c: char| !c.is_alphanumeric(), "");
@@ -33,7 +34,9 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
     let output_file =
         std::fs::File::create(output_filename).context("Creating mrpack output file")?;
 
-    app.mrpack().export_all(MRPackWriter::from_writer(output_file)).await?;
+    app.mrpack()
+        .export_all(MRPackWriter::from_writer(output_file))
+        .await?;
 
     Ok(())
 }

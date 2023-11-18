@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 
-use crate::app::{App, ResolvedFile, CacheStrategy};
+use crate::app::{App, CacheStrategy, ResolvedFile};
 
 pub trait XMLExt {
     fn get_text(&self, k: &str) -> Result<String>;
@@ -11,13 +11,15 @@ pub trait XMLExt {
 
 impl XMLExt for roxmltree::Document<'_> {
     fn get_text(&self, k: &str) -> Result<String> {
-        self
-            .descendants()
-            .find_map(|elem| if elem.tag_name().name() == k {
-                Some(elem.text()?.to_owned())
-            } else {
-                None
-            }).ok_or(anyhow!("XML element not found: {}", k))
+        self.descendants()
+            .find_map(|elem| {
+                if elem.tag_name().name() == k {
+                    Some(elem.text()?.to_owned())
+                } else {
+                    None
+                }
+            })
+            .ok_or(anyhow!("XML element not found: {}", k))
     }
 
     fn get_text_all(&self, k: &str) -> Vec<String> {
@@ -87,7 +89,10 @@ impl<'a> MavenAPI<'a> {
 
         if segments.len() >= 2 {
             // Construct the Maven metadata URL by going up one level
-            let metadata_url = format!("{}/maven-metadata.xml", url.trim_end_matches(segments[0]).trim_end_matches('/'));
+            let metadata_url = format!(
+                "{}/maven-metadata.xml",
+                url.trim_end_matches(segments[0]).trim_end_matches('/')
+            );
             Ok(metadata_url)
         } else {
             Err(anyhow!("Invalid URL format"))
@@ -100,19 +105,12 @@ impl<'a> MavenAPI<'a> {
         group_id: &str,
         artifact_id: &str,
     ) -> Result<MavenMetadata> {
-        self.fetch_metadata_url(&Self::get_metadata_url(url, group_id, artifact_id)).await
+        self.fetch_metadata_url(&Self::get_metadata_url(url, group_id, artifact_id))
+            .await
     }
 
-    pub async fn fetch_metadata_url(
-        &self,
-        url: &str,
-    ) -> Result<MavenMetadata> {
-        let xml = self.0.http_client
-            .get(url)
-            .send()
-            .await?
-            .text()
-            .await?;
+    pub async fn fetch_metadata_url(&self, url: &str) -> Result<MavenMetadata> {
+        let xml = self.0.http_client.get(url).send().await?.text().await?;
 
         let doc = roxmltree::Document::parse(&xml)?;
 
@@ -130,7 +128,9 @@ impl<'a> MavenAPI<'a> {
         group_id: &str,
         artifact_id: &str,
     ) -> Result<(String, Vec<String>)> {
-        let xml = self.0.http_client
+        let xml = self
+            .0
+            .http_client
             .get(Self::get_metadata_url(url, group_id, artifact_id))
             .send()
             .await?
@@ -178,7 +178,7 @@ impl<'a> MavenAPI<'a> {
                 }
             }
         };
-    
+
         Ok(version)
     }
 
@@ -190,7 +190,9 @@ impl<'a> MavenAPI<'a> {
         version: &str,
         file: &str,
     ) -> Result<ResolvedFile> {
-        let version = self.fetch_version(url, group_id, artifact_id, version).await?;
+        let version = self
+            .fetch_version(url, group_id, artifact_id, version)
+            .await?;
 
         let file = file
             .replace("${artifact}", artifact_id)
@@ -218,9 +220,10 @@ impl<'a> MavenAPI<'a> {
         Ok(ResolvedFile {
             url: download_url,
             filename: file,
-            cache: CacheStrategy::File { 
+            cache: CacheStrategy::File {
                 namespace: String::from("maven"),
-                path: cached_file_path },
+                path: cached_file_path,
+            },
             size: None,
             hashes: HashMap::new(),
         })

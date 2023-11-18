@@ -1,14 +1,24 @@
-use std::{path::{PathBuf, Path}, time::Duration, collections::HashMap};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+    time::Duration,
+};
 
-use anyhow::{anyhow, Result, Context};
-use indicatif::{ProgressBar, ProgressStyle, ProgressIterator};
+use anyhow::{anyhow, Context, Result};
+use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
 use pathdiff::diff_paths;
-use rpackwiz::model::{Mod, ModUpdate, ModDownload, HashFormat, DownloadMode, Pack, PackIndex, PackFile};
+use rpackwiz::model::{
+    DownloadMode, HashFormat, Mod, ModDownload, ModUpdate, Pack, PackFile, PackIndex,
+};
 use serde::de::DeserializeOwned;
 use tokio::{fs::File, io::AsyncWriteExt};
 use walkdir::WalkDir;
 
-use crate::{app::{App, Resolvable, ResolvedFile, CacheStrategy, AddonType, Prefix, ProgressPrefix}, model::Downloadable, util::env::try_get_url};
+use crate::{
+    app::{AddonType, App, CacheStrategy, Prefix, ProgressPrefix, Resolvable, ResolvedFile},
+    model::Downloadable,
+    util::env::try_get_url,
+};
 
 #[derive(Debug, Clone)]
 pub enum FileProvider {
@@ -31,7 +41,7 @@ impl FileProvider {
                     .error_for_status()?
                     .text()
                     .await?;
-            
+
                 Ok(toml::from_str(&contents)?)
             }
         }
@@ -49,34 +59,33 @@ impl<'a> PackwizInterop<'a> {
         })
     }
 
-    pub async fn import_all(
-        &mut self,
-        from: &str,
-    ) -> Result<()> {
+    pub async fn import_all(&mut self, from: &str) -> Result<()> {
         self.import_from_source(self.get_file_provider(from)?).await
     }
 
-    pub async fn import_from_source(
-        &mut self,
-        source: FileProvider,
-    ) -> Result<()> {
+    pub async fn import_from_source(&mut self, source: FileProvider) -> Result<()> {
         let progress_bar = self.0.multi_progress.add(ProgressBar::new_spinner());
         progress_bar.set_style(ProgressStyle::with_template("{spinner:.blue} {msg}")?);
         progress_bar.set_message("Reading pack.toml...");
         progress_bar.enable_steady_tick(Duration::from_millis(250));
-        
+
         let pack: Pack = source.parse_toml("pack.toml").await?;
 
         self.0.server.fill_from_map(&pack.versions);
-        
+
         progress_bar.set_message("Reading pack index...");
-        
+
         let index: PackIndex = source.parse_toml(&pack.index.file).await?;
 
         progress_bar.set_message(format!("Importing {} files...", index.files.len()));
 
-        let pb = self.0.multi_progress.insert_after(&progress_bar, ProgressBar::new(index.files.len() as u64))
-            .with_style(ProgressStyle::with_template("  {prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}")?)
+        let pb = self
+            .0
+            .multi_progress
+            .insert_after(&progress_bar, ProgressBar::new(index.files.len() as u64))
+            .with_style(ProgressStyle::with_template(
+                "  {prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}",
+            )?)
             .with_prefix("Importing");
 
         for file in index.files.iter().progress_with(pb.clone()) {
@@ -92,36 +101,45 @@ impl<'a> PackwizInterop<'a> {
                     self.0.notify(Prefix::Imported, dl.to_short_string());
                 } else {
                     // TODO: ???
-                    self.0.warn(format!("unsupported metafile: {} - please open an issue at github", file.file));
+                    self.0.warn(format!(
+                        "unsupported metafile: {} - please open an issue at github",
+                        file.file
+                    ));
                 }
             } else {
                 let output_path = self.0.server.path.join("config").join(&file.file);
-                
+
                 match &source {
                     FileProvider::LocalFolder(folder) => {
                         tokio::fs::copy(folder.join(&file.file), output_path).await?;
                     }
                     FileProvider::RemoteURL(_, url) => {
-                        self.0.download_resolved(
-                            ResolvedFile {
-                                url: url.join(&file.file)?.as_str().to_owned(),
-                                filename: file.file.split('/').last().unwrap().to_owned(),
-                                cache: CacheStrategy::None,
-                                size: None,
-                                hashes: HashMap::from([
-                                    (match index.hash_format {
-                                        HashFormat::Md5 => "md5",
-                                        HashFormat::Sha1 => "sha1",
-                                        HashFormat::Sha256 => "sha256",
-                                        HashFormat::Sha512 => "sha512",
-                                        HashFormat::Curseforge => "murmur2",
-                                        _ => unreachable!(),
-                                    }.to_owned(), file.hash.clone())
-                                ]),
-                            },
-                            output_path.parent().unwrap().to_path_buf(),
-                            self.0.multi_progress.insert_after(&pb, ProgressBar::new_spinner())
-                        ).await?;
+                        self.0
+                            .download_resolved(
+                                ResolvedFile {
+                                    url: url.join(&file.file)?.as_str().to_owned(),
+                                    filename: file.file.split('/').last().unwrap().to_owned(),
+                                    cache: CacheStrategy::None,
+                                    size: None,
+                                    hashes: HashMap::from([(
+                                        match index.hash_format {
+                                            HashFormat::Md5 => "md5",
+                                            HashFormat::Sha1 => "sha1",
+                                            HashFormat::Sha256 => "sha256",
+                                            HashFormat::Sha512 => "sha512",
+                                            HashFormat::Curseforge => "murmur2",
+                                            _ => unreachable!(),
+                                        }
+                                        .to_owned(),
+                                        file.hash.clone(),
+                                    )]),
+                                },
+                                output_path.parent().unwrap().to_path_buf(),
+                                self.0
+                                    .multi_progress
+                                    .insert_after(&pb, ProgressBar::new_spinner()),
+                            )
+                            .await?;
                     }
                 }
             }
@@ -139,10 +157,13 @@ impl<'a> PackwizInterop<'a> {
         } else if let Some(dl) = self.dl_from_mod_update(&m.update) {
             Ok(dl)
         } else {
-            self.0.dl_from_string(&m.download
-                .url
-                .clone()
-                .ok_or(anyhow!("Download URL not present for mod: {m:#?}"))?)
+            self.0
+                .dl_from_string(
+                    &m.download
+                        .url
+                        .clone()
+                        .ok_or(anyhow!("Download URL not present for mod: {m:#?}"))?,
+                )
                 .await
                 .context(format!("Importing mod: {m:#?}"))
         }
@@ -158,10 +179,15 @@ impl<'a> PackwizInterop<'a> {
                 _ => return Ok(None),
             };
 
-            Ok(match self.0.modrinth().version_from_hash(&down.hash, fmt).await {
-                Ok(ver) => Some(Downloadable::Modrinth { id: ver.project_id.clone(), version: ver.id.clone() }),
-                _ => None,
-            })
+            Ok(
+                match self.0.modrinth().version_from_hash(&down.hash, fmt).await {
+                    Ok(ver) => Some(Downloadable::Modrinth {
+                        id: ver.project_id.clone(),
+                        version: ver.id.clone(),
+                    }),
+                    _ => None,
+                },
+            )
         }
     }
 
@@ -187,10 +213,7 @@ impl<'a> PackwizInterop<'a> {
         }
     }
 
-    pub async fn export_all(
-        &self,
-        output_dir: PathBuf,
-    ) -> Result<()> {
+    pub async fn export_all(&self, output_dir: PathBuf) -> Result<()> {
         let progress_bar = self.0.multi_progress.add(ProgressBar::new_spinner());
         progress_bar.set_style(ProgressStyle::with_template("{spinner:.blue} {msg}")?);
         progress_bar.set_message("Converting mods...");
@@ -218,13 +241,16 @@ impl<'a> PackwizInterop<'a> {
 
         let pack = Pack {
             pack_format: "packwiz:1.1.0".to_owned(),
-            name: self.0.var("MODPACK_NAME").unwrap_or(self.0.server.name.clone()),
+            name: self
+                .0
+                .var("MODPACK_NAME")
+                .unwrap_or(self.0.server.name.clone()),
             versions: self.0.server.to_map(false),
 
             author: self.0.var("MODPACK_AUTHOR"),
             description: self.0.var("MODPACK_DESCRIPTION"),
             version: self.0.var("MODPACK_VERSION"),
-            
+
             index: PackFile {
                 file: "index.toml".to_owned(),
                 hash: index_hash,
@@ -232,20 +258,20 @@ impl<'a> PackwizInterop<'a> {
                 metafile: false,
                 preserve: false,
                 alias: None,
-            }
+            },
         };
 
         let mut f = File::create(output_dir.join("pack.toml")).await?;
-        f.write_all(toml::to_string_pretty(&pack)?.as_bytes()).await?;
+        f.write_all(toml::to_string_pretty(&pack)?.as_bytes())
+            .await?;
 
         progress_bar.finish_and_clear();
         self.0.success("Exported to packwiz successfully");
 
         if let Ok(u) = try_get_url(&output_dir.join("pack.toml")) {
             self.0.info("Exported pack URL:");
-            self.0.log(format!(
-                "             https://raw.githack.com/{u}",
-            ));
+            self.0
+                .log(format!("             https://raw.githack.com/{u}",));
             self.0.info("MultiMC prelaunch command:");
             self.0.log(format!(
                 "  $INST_JAVA -jar packwiz-installer-bootstrap.jar https://raw.githack.com/{u}",
@@ -260,8 +286,13 @@ impl<'a> PackwizInterop<'a> {
         files_list: &mut Vec<PackFile>,
         output_dir: &Path,
     ) -> Result<()> {
-        let pb = self.0.multi_progress.add(ProgressBar::new_spinner())
-            .with_style(ProgressStyle::with_template("{prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}")?)
+        let pb = self
+            .0
+            .multi_progress
+            .add(ProgressBar::new_spinner())
+            .with_style(ProgressStyle::with_template(
+                "{prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}",
+            )?)
             .with_prefix(ProgressPrefix::Exporting);
 
         for dl in self.0.server.mods.iter().progress_with(pb.clone()) {
@@ -297,20 +328,25 @@ impl<'a> PackwizInterop<'a> {
     pub async fn export_configs(
         &self,
         files_list: &mut Vec<PackFile>,
-        output_dir: &Path
+        output_dir: &Path,
     ) -> Result<()> {
-        let pb = self.0.multi_progress.add(ProgressBar::new_spinner()
-            .with_style(ProgressStyle::with_template("{spinner:.blue} {prefix} {msg}")?)
-            .with_prefix(ProgressPrefix::Exporting));
+        let pb = self.0.multi_progress.add(
+            ProgressBar::new_spinner()
+                .with_style(ProgressStyle::with_template(
+                    "{spinner:.blue} {prefix} {msg}",
+                )?)
+                .with_prefix(ProgressPrefix::Exporting),
+        );
         pb.enable_steady_tick(Duration::from_millis(250));
 
         for entry in WalkDir::new(self.0.server.path.join("config")) {
-            let entry = entry
-                .map_err(|e| anyhow!(
+            let entry = entry.map_err(|e| {
+                anyhow!(
                     "Can't walk directory/file: {}",
-                    &e.path().unwrap_or(Path::new("<unknown>")
-                ).display()))?;
-    
+                    &e.path().unwrap_or(Path::new("<unknown>")).display()
+                )
+            })?;
+
             if entry.file_type().is_dir() {
                 continue;
             }
@@ -324,19 +360,19 @@ impl<'a> PackwizInterop<'a> {
             let source = self.0.server.path.join("config").join(&rel_path);
             let dest = output_dir.join(&rel_path);
 
-            tokio::fs::create_dir_all(dest.parent().unwrap()).await
+            tokio::fs::create_dir_all(dest.parent().unwrap())
+                .await
                 .context("Creating parent directory")?;
 
-            let mut source_file = File::open(&source)
-                .await?;
-            let mut dest_file = File::create(&dest)
-                .await?;
+            let mut source_file = File::open(&source).await?;
+            let mut dest_file = File::create(&dest).await?;
 
             let hash = App::copy_with_hashing(
                 &mut source_file,
                 &mut dest_file,
-                App::create_hasher("sha256")
-            ).await?;
+                App::create_hasher("sha256"),
+            )
+            .await?;
 
             files_list.push(PackFile {
                 file: rel_path.to_string_lossy().into_owned(),
@@ -364,12 +400,13 @@ impl<'a> PackwizInterop<'a> {
 
     pub fn get_mod_update(dl: &Downloadable) -> Option<ModUpdate> {
         match dl {
-            Downloadable::Modrinth { id, version } => {
-                Some(ModUpdate {
-                    modrinth: Some(rpackwiz::model::ModrinthModUpdate { mod_id: id.clone(), version: version.clone() }),
-                    curseforge: None
-                })
-            }
+            Downloadable::Modrinth { id, version } => Some(ModUpdate {
+                modrinth: Some(rpackwiz::model::ModrinthModUpdate {
+                    mod_id: id.clone(),
+                    version: version.clone(),
+                }),
+                curseforge: None,
+            }),
             // too much work, not worth it
             // id is u64 in toml, idk why
             //Downloadable::CurseRinth
@@ -382,7 +419,11 @@ impl<'a> PackwizInterop<'a> {
 
         Ok(Mod {
             filename: resolved_file.filename.clone(),
-            name: resolved_file.filename.strip_suffix(".jar").unwrap_or(&resolved_file.filename).to_string(),
+            name: resolved_file
+                .filename
+                .strip_suffix(".jar")
+                .unwrap_or(&resolved_file.filename)
+                .to_string(),
             download: ModDownload {
                 url: Some(resolved_file.url.clone()),
                 hash,

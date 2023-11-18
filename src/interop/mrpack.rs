@@ -1,14 +1,17 @@
-use anyhow::{Result, Context};
-use indicatif::{ProgressBar, ProgressIterator, ProgressStyle, ProgressFinish};
-use zip::{ZipArchive, read::ZipFile, ZipWriter, write::FileOptions};
+use anyhow::{Context, Result};
+use indicatif::{ProgressBar, ProgressFinish, ProgressIterator, ProgressStyle};
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     io::{Read, Seek, Write},
     time::Duration,
 };
-use serde::{Serialize, Deserialize};
+use zip::{read::ZipFile, write::FileOptions, ZipArchive, ZipWriter};
 
-use crate::{app::{App, Resolvable}, model::Downloadable};
+use crate::{
+    app::{App, Resolvable},
+    model::Downloadable,
+};
 
 pub struct MRPackInterop<'a>(pub &'a mut App);
 
@@ -16,12 +19,15 @@ impl<'a> MRPackInterop<'a> {
     pub async fn import_all<R: Read + Seek>(
         &mut self,
         mut mrpack: MRPackReader<R>,
-        name: Option<String>
+        name: Option<String>,
     ) -> Result<MRPackIndex> {
-        let progress_bar = self.0.multi_progress.add(ProgressBar::new_spinner()
-            .with_finish(ProgressFinish::WithMessage("Imported".into())));
+        let progress_bar = self.0.multi_progress.add(
+            ProgressBar::new_spinner().with_finish(ProgressFinish::WithMessage("Imported".into())),
+        );
         progress_bar.set_message(name.unwrap_or("mrpack".to_owned()).clone());
-        progress_bar.set_style(ProgressStyle::with_template("{spinner:.blue} {prefix} {msg}")?);
+        progress_bar.set_style(ProgressStyle::with_template(
+            "{spinner:.blue} {prefix} {msg}",
+        )?);
         progress_bar.set_prefix("Reading zip file");
         progress_bar.enable_steady_tick(Duration::from_millis(250));
 
@@ -31,39 +37,55 @@ impl<'a> MRPackInterop<'a> {
 
         self.0.server.fill_from_map(&index.dependencies);
 
-        progress_bar.set_style(ProgressStyle::with_template("{prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}")?);
+        progress_bar.set_style(ProgressStyle::with_template(
+            "{prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}",
+        )?);
         progress_bar.set_prefix("Importing mod");
         for file in index.files.iter().progress_with(progress_bar.clone()) {
             progress_bar.set_message(file.path.clone());
 
             let dl = if let Some(hash) = file.hashes.get("sha512") {
                 if let Ok(ver) = self.0.modrinth().version_from_hash(hash, "sha512").await {
-                    Some(Downloadable::Modrinth { id: ver.project_id.clone(), version: ver.id.clone() })
-                } else { None }
-            } else { None };
+                    Some(Downloadable::Modrinth {
+                        id: ver.project_id.clone(),
+                        version: ver.id.clone(),
+                    })
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
 
             let dl = match dl {
                 Some(dl) => dl,
                 _ => self.0.dl_from_url(&file.downloads[0].clone()).await?,
             };
-            
+
             self.0.server.mods.push(dl);
         }
 
         self.0.server.save()?;
 
         progress_bar.set_prefix("Unzipping");
-        for (relative_path, zip_path) in mrpack.get_files().iter().progress_with(progress_bar.clone()) {
+        for (relative_path, zip_path) in mrpack
+            .get_files()
+            .iter()
+            .progress_with(progress_bar.clone())
+        {
             progress_bar.set_message(relative_path.clone());
 
             let zip_file = mrpack.get_file(zip_path)?;
             let target_path = self.0.server.path.join("config").join(relative_path);
 
             std::fs::create_dir_all(target_path.parent().unwrap())?;
-            
+
             // TODO mrpack import: is target_path exists prompt
-            
-            let pb = self.0.multi_progress.insert_after(&progress_bar, ProgressBar::new(zip_file.size()));
+
+            let pb = self
+                .0
+                .multi_progress
+                .insert_after(&progress_bar, ProgressBar::new(zip_file.size()));
 
             let mut target_file = std::fs::File::create(&target_path)?;
             std::io::copy(&mut pb.wrap_read(zip_file), &mut target_file)?;
@@ -74,23 +96,28 @@ impl<'a> MRPackInterop<'a> {
         progress_bar.finish_and_clear();
 
         self.0.success("mrpack imported!");
-        
+
         Ok(index)
     }
 
-    pub async fn export_all<W: Write + Seek>(
-        &self,
-        mut mrpack: MRPackWriter<W>,
-    ) -> Result<()> {
-        let progress_bar = self.0.multi_progress.add(ProgressBar::new_spinner()
-            .with_finish(ProgressFinish::WithMessage("Exported".into())));
+    pub async fn export_all<W: Write + Seek>(&self, mut mrpack: MRPackWriter<W>) -> Result<()> {
+        let progress_bar = self.0.multi_progress.add(
+            ProgressBar::new_spinner().with_finish(ProgressFinish::WithMessage("Exported".into())),
+        );
         progress_bar.set_message("Exporting mrpack...");
         progress_bar.enable_steady_tick(Duration::from_millis(250));
 
         let mut files = vec![];
 
-        let pb = self.0.multi_progress.insert_after(&progress_bar, ProgressBar::new_spinner()
-            .with_style(ProgressStyle::with_template("{prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}")?))
+        let pb = self
+            .0
+            .multi_progress
+            .insert_after(
+                &progress_bar,
+                ProgressBar::new_spinner().with_style(ProgressStyle::with_template(
+                    "{prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}",
+                )?),
+            )
             .with_prefix("Mod");
         for server_mod in self.0.server.mods.iter().progress_with(pb.clone()) {
             pb.set_message(server_mod.to_short_string());
@@ -99,7 +126,13 @@ impl<'a> MRPackInterop<'a> {
         pb.reset();
 
         pb.set_prefix("Client Mod");
-        for client_mod in self.0.server.clientsidemods.iter().progress_with(pb.clone()) {
+        for client_mod in self
+            .0
+            .server
+            .clientsidemods
+            .iter()
+            .progress_with(pb.clone())
+        {
             pb.set_message(if client_mod.desc.is_empty() {
                 client_mod.dl.to_short_string()
             } else {
@@ -112,7 +145,10 @@ impl<'a> MRPackInterop<'a> {
         let index = MRPackIndex {
             files,
             dependencies: self.0.server.to_map(true),
-            name: self.0.var("MODPACK_NAME").unwrap_or(self.0.server.name.clone()),
+            name: self
+                .0
+                .var("MODPACK_NAME")
+                .unwrap_or(self.0.server.name.clone()),
             summary: self.0.var("MODPACK_SUMMARY"),
             version_id: self.0.var("MODPACK_VERSION").unwrap_or_default(),
             game: "minecraft".to_owned(),
@@ -131,10 +167,7 @@ impl<'a> MRPackInterop<'a> {
         Ok(())
     }
 
-    pub async fn to_mrpack_file(
-        &self,
-        dl: &Downloadable,
-    ) -> Result<MRPackFile> {
+    pub async fn to_mrpack_file(&self, dl: &Downloadable) -> Result<MRPackFile> {
         let resolved = dl.resolve_source(self.0).await?;
 
         Ok(MRPackFile {
@@ -142,7 +175,7 @@ impl<'a> MRPackInterop<'a> {
             hashes: resolved.hashes,
             // TODO: mrpack export EnvSupport
             env: None,
-            downloads: vec![resolved.url]
+            downloads: vec![resolved.url],
         })
     }
 }
@@ -186,7 +219,9 @@ pub struct MRPackReader<R: Read + Seek>(pub ZipArchive<R>);
 
 impl<R: Read + Seek> MRPackReader<R> {
     pub fn from_reader(reader: R) -> Result<Self> {
-        Ok(Self(ZipArchive::new(reader).context("Reading mrpack zip archive")?))
+        Ok(Self(
+            ZipArchive::new(reader).context("Reading mrpack zip archive")?,
+        ))
     }
 
     pub fn read_index(&mut self) -> Result<MRPackIndex> {
@@ -218,7 +253,13 @@ impl<R: Read + Seek> MRPackReader<R> {
 
                 map.insert(relative.to_owned(), filename.to_owned());
             } else if filename.starts_with("server-overrides") {
-                map.insert(filename.strip_prefix("server-overrides").unwrap().to_owned(), filename.to_owned());
+                map.insert(
+                    filename
+                        .strip_prefix("server-overrides")
+                        .unwrap()
+                        .to_owned(),
+                    filename.to_owned(),
+                );
             } else {
                 continue;
             };
@@ -248,7 +289,10 @@ impl<W: Write + Seek> MRPackWriter<W> {
     }
 
     pub fn write_index(&mut self, index: &MRPackIndex) -> Result<()> {
-        self.write_file(MRPACK_INDEX_FILE, serde_json::to_string_pretty(index)?.as_bytes())
+        self.write_file(
+            MRPACK_INDEX_FILE,
+            serde_json::to_string_pretty(index)?.as_bytes(),
+        )
     }
 
     pub fn finish(&mut self) -> Result<()> {

@@ -1,8 +1,11 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 
-use crate::{model::{Downloadable, SoftwareType, World}, util::SelectItem};
+use crate::{
+    model::{Downloadable, SoftwareType, World},
+    util::SelectItem,
+};
 
-use super::{App, AddonType, Prefix};
+use super::{AddonType, App, Prefix};
 
 impl App {
     pub fn save_changes(&self) -> Result<()> {
@@ -29,10 +32,13 @@ impl App {
         let addon_type = match self.server.jar.get_software_type() {
             SoftwareType::Modded => AddonType::Mod,
             SoftwareType::Normal | SoftwareType::Proxy => AddonType::Plugin,
-            SoftwareType::Unknown => self.select("Import as?", &[
-                SelectItem(AddonType::Mod, "Mod".to_owned()),
-                SelectItem(AddonType::Plugin, "Plugin".to_owned()),
-            ])?
+            SoftwareType::Unknown => self.select(
+                "Import as?",
+                &[
+                    SelectItem(AddonType::Mod, "Mod".to_owned()),
+                    SelectItem(AddonType::Plugin, "Plugin".to_owned()),
+                ],
+            )?,
         };
 
         self.add_addon(addon_type, addon)
@@ -42,18 +48,24 @@ impl App {
         let existing = match addon_type {
             AddonType::Plugin => self.server.plugins.iter(),
             AddonType::Mod => self.server.mods.iter(),
-        }.filter(|o| addon.is_same_as(o)).collect::<Vec<_>>();
+        }
+        .filter(|o| addon.is_same_as(o))
+        .collect::<Vec<_>>();
 
-        if !existing.is_empty() && self.confirm(
-            &format!("{} matching {addon_type}(s) found in server.toml, continue?", existing.len())
-        )? {
+        if !existing.is_empty()
+            && self.confirm(&format!(
+                "{} matching {addon_type}(s) found in server.toml, continue?",
+                existing.len()
+            ))?
+        {
             return Ok(());
         }
 
         match addon_type {
             AddonType::Plugin => &mut self.server.plugins,
             AddonType::Mod => &mut self.server.mods,
-        }.push(addon.clone());
+        }
+        .push(addon.clone());
 
         Ok(())
     }
@@ -68,37 +80,41 @@ impl App {
                 .keys()
                 .map(|k| SelectItem(k.clone(), k.clone()))
                 .collect();
-    
+
             items.push(SelectItem("+".to_owned(), "+ New world entry".to_owned()));
-    
+
             self.select("Add datapack to...", &items)?
         };
-    
+
         let world_name = if selected_world_name == "+" {
             self.prompt_string_default("World Name", "world")?
         } else {
             selected_world_name
         };
-    
+
         if !self.server.worlds.contains_key(&world_name) {
-            self.server.worlds.insert(world_name.clone(), World::default());
+            self.server
+                .worlds
+                .insert(world_name.clone(), World::default());
         }
-    
+
         self.add_datapack_to(&world_name, dp)?;
 
         Ok(())
     }
 
     pub fn add_datapack_to(&mut self, world: &str, dp: &Downloadable) -> Result<()> {
-        self
-            .server
+        self.server
             .worlds
             .get_mut(world)
             .ok_or(anyhow!("World entry did not exist"))?
             .datapacks
             .push(dp.clone());
 
-        self.notify(Prefix::Imported, format!("datapack {} to {world}", dp.to_short_string()));
+        self.notify(
+            Prefix::Imported,
+            format!("datapack {} to {world}", dp.to_short_string()),
+        );
 
         Ok(())
     }

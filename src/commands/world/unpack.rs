@@ -1,10 +1,10 @@
-use std::{time::Duration, path::Path};
+use std::{path::Path, time::Duration};
 
 use anyhow::{bail, Result};
 use dialoguer::{theme::ColorfulTheme, Select};
 use indicatif::{ProgressBar, ProgressStyle};
 
-use crate::{util::SelectItem, app::App};
+use crate::{app::App, util::SelectItem};
 
 #[derive(clap::Args)]
 pub struct Args {
@@ -14,13 +14,16 @@ pub struct Args {
 
 pub fn run(app: &App, args: Args) -> Result<()> {
     let zipfile = if let Some(s) = args.world {
-        app.server.path.join("worlds").join(if Path::new(&s)
-            .extension()
-            .map_or(false, |ext| ext.eq_ignore_ascii_case("zip")) {
-            s.clone()
-        } else {
-            format!("{s}.zip")
-        })
+        app.server.path.join("worlds").join(
+            if Path::new(&s)
+                .extension()
+                .map_or(false, |ext| ext.eq_ignore_ascii_case("zip"))
+            {
+                s.clone()
+            } else {
+                format!("{s}.zip")
+            },
+        )
     } else {
         let worlds = app
             .server

@@ -1,17 +1,15 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-use crate::app::{App, ResolvedFile, CacheStrategy};
+use crate::app::{App, CacheStrategy, ResolvedFile};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct SpigotResourceVersion {
     pub name: String,
     pub id: i32,
 }
-
-
 
 pub struct SpigotAPI<'a>(pub &'a App);
 
@@ -20,7 +18,9 @@ pub const CACHE_DIR: &str = "spiget";
 
 impl<'a> SpigotAPI<'a> {
     pub async fn fetch_api<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
-        let response: T = self.0.http_client
+        let response: T = self
+            .0
+            .http_client
             .get(url)
             .send()
             .await?
@@ -37,12 +37,17 @@ impl<'a> SpigotAPI<'a> {
                 return res.split_at(i + 1).1;
             }
         }
-    
+
         res
     }
 
     pub async fn fetch_info(&self, id: &str) -> Result<(String, String)> {
-        let json = self.fetch_api::<serde_json::Value>(&format!("{API_URL}/resources/{}", Self::get_resource_id(id))).await?;
+        let json = self
+            .fetch_api::<serde_json::Value>(&format!(
+                "{API_URL}/resources/{}",
+                Self::get_resource_id(id)
+            ))
+            .await?;
 
         Ok((
             json["name"].as_str().unwrap().to_owned(),
@@ -52,11 +57,19 @@ impl<'a> SpigotAPI<'a> {
 
     #[allow(unused)]
     pub async fn fetch_versions(&self, id: &str) -> Result<Vec<SpigotVersion>> {
-        self.fetch_api(&format!("{API_URL}/resources/{}/versions", Self::get_resource_id(id))).await
+        self.fetch_api(&format!(
+            "{API_URL}/resources/{}/versions",
+            Self::get_resource_id(id)
+        ))
+        .await
     }
 
     pub async fn fetch_version(&self, id: &str, version: &str) -> Result<SpigotVersion> {
-        self.fetch_api(&format!("{API_URL}/resources/{}/versions/{version}", Self::get_resource_id(id))).await
+        self.fetch_api(&format!(
+            "{API_URL}/resources/{}/versions/{version}",
+            Self::get_resource_id(id)
+        ))
+        .await
     }
 
     pub async fn resolve_source(&self, id: &str, version: &str) -> Result<ResolvedFile> {
@@ -71,7 +84,10 @@ impl<'a> SpigotAPI<'a> {
                 Self::get_resource_id(id)
             ),
             filename,
-            cache: CacheStrategy::File { namespace: CACHE_DIR.to_owned(), path: cached_file_path },
+            cache: CacheStrategy::File {
+                namespace: CACHE_DIR.to_owned(),
+                path: cached_file_path,
+            },
             size: None,
             hashes: HashMap::new(),
         })

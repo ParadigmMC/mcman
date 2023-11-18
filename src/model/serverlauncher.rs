@@ -17,10 +17,11 @@ impl PresetFlags {
             Self::Aikars => include_str!("../../res/aikars_flags"),
             Self::Proxy => include_str!("../../res/proxy_flags"),
             Self::None => "",
-        }.split(char::is_whitespace)
-            .filter(|s| !s.is_empty())
-            .map(ToOwned::to_owned)
-            .collect()
+        }
+        .split(char::is_whitespace)
+        .filter(|s| !s.is_empty())
+        .map(ToOwned::to_owned)
+        .collect()
     }
 }
 
@@ -28,7 +29,7 @@ impl PresetFlags {
 #[serde(default)]
 pub struct ServerLauncher {
     pub eula_args: bool,
-    
+
     #[serde(skip_serializing_if = "crate::util::is_default")]
     pub nogui: bool,
     #[serde(skip_serializing_if = "crate::util::is_default")]
@@ -63,7 +64,11 @@ pub enum StartupMethod {
 
 impl ServerLauncher {
     pub fn get_java(&self) -> String {
-        if let Some(Some(path)) = self.java_version.as_ref().map(|v| std::env::var(format!("JAVA_{v}_BIN")).ok()) {
+        if let Some(Some(path)) = self
+            .java_version
+            .as_ref()
+            .map(|v| std::env::var(format!("JAVA_{v}_BIN")).ok())
+        {
             path
         } else {
             std::env::var("JAVA_BIN").unwrap_or(String::from("java"))
@@ -99,9 +104,7 @@ impl ServerLauncher {
             args.push(format!("-Xmx{m}"));
         }
 
-        args.append(
-            &mut self.preset_flags.get_flags(),
-        );
+        args.append(&mut self.preset_flags.get_flags());
 
         if self.eula_args {
             args.push(String::from("-Dcom.mojang.eula.agree=true"));

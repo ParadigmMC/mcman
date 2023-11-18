@@ -14,7 +14,7 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
     };
 
     let addon = app.dl_from_string(&urlstr).await?;
-    
+
     app.add_addon_inferred(&addon)?;
 
     app.save_changes()?;

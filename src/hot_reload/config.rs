@@ -1,8 +1,8 @@
-use std::{collections::HashMap, path::PathBuf, fs::File, io::Write};
+use std::{collections::HashMap, fs::File, io::Write, path::PathBuf};
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use glob::Pattern;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
 #[serde(tag = "type", try_from = "String", into = "String")]
@@ -19,7 +19,9 @@ impl TryFrom<String> for HotReloadAction {
 
     fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
         if value.starts_with('/') {
-            Ok(Self::RunCommand(value.strip_prefix('/').unwrap().to_string()))
+            Ok(Self::RunCommand(
+                value.strip_prefix('/').unwrap().to_string(),
+            ))
         } else {
             match value.to_lowercase().as_str() {
                 "reload" => Ok(Self::Reload),
@@ -56,12 +58,10 @@ impl Default for HotReloadConfig {
         Self {
             path: PathBuf::from("./hotreload.toml"),
             events: HashMap::new(),
-            files: vec![
-                Entry {
-                    path: Pattern::new("server.properties").unwrap(),
-                    action: HotReloadAction::Reload,
-                }
-            ],
+            files: vec![Entry {
+                path: Pattern::new("server.properties").unwrap(),
+                action: HotReloadAction::Reload,
+            }],
         }
     }
 }

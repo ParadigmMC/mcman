@@ -1,4 +1,4 @@
-use std::{time::Duration, fs::File, io::Write};
+use std::{fs::File, io::Write, time::Duration};
 
 use anyhow::Result;
 use indexmap::IndexMap;
@@ -6,7 +6,11 @@ use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
 use regex::Regex;
 use tokio::io::AsyncWriteExt;
 
-use crate::{app::{App, Prefix}, model::{Downloadable, World}, util::{md::MarkdownTable, sanitize}};
+use crate::{
+    app::{App, Prefix},
+    model::{Downloadable, World},
+    util::{md::MarkdownTable, sanitize},
+};
 
 pub struct MarkdownTemplate {
     pub id: String,
@@ -29,38 +33,45 @@ impl<'a> MarkdownAPI<'a> {
                     "Plugins"
                 },
             );
-    
+
         f.write_all(readme_content.as_bytes())?;
-    
+
         Ok(())
     }
 
     pub fn init_network(&self) -> Result<()> {
         let mut f = File::create(self.0.network.as_ref().unwrap().path.join("README.md"))?;
         let readme_content = include_str!("../../res/default_readme_network");
-        let readme_content = readme_content
-            .replace("{NETWORK_NAME}", &self.0.network.as_ref().unwrap().name);
-    
+        let readme_content =
+            readme_content.replace("{NETWORK_NAME}", &self.0.network.as_ref().unwrap().name);
+
         f.write_all(readme_content.as_bytes())?;
-    
+
         Ok(())
     }
 
     pub async fn update_files(&self) -> Result<()> {
         let templates = self.get_templates().await?;
 
-        let pb = self.0.multi_progress.add(ProgressBar::new(self.0.server.markdown.files.len() as u64))
-            .with_style(ProgressStyle::with_template("{prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}")?)
+        let pb = self
+            .0
+            .multi_progress
+            .add(ProgressBar::new(self.0.server.markdown.files.len() as u64))
+            .with_style(ProgressStyle::with_template(
+                "{prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}",
+            )?)
             .with_prefix("Writing to");
 
-        let mut files = self.0.server.markdown.files
+        let mut files = self
+            .0
+            .server
+            .markdown
+            .files
             .iter()
             .map(|f| (false, self.0.server.path.join(f)))
             .collect::<Vec<_>>();
         if let Some(nw) = &self.0.network {
-            files.extend(nw.markdown.files
-                .iter()
-                .map(|f| (true, nw.path.join(f))));
+            files.extend(nw.markdown.files.iter().map(|f| (true, nw.path.join(f))));
         }
 
         for (_is_nw, path) in files.iter().progress_with(pb.clone()) {
@@ -76,11 +87,18 @@ impl<'a> MarkdownAPI<'a> {
             let mut content = tokio::fs::read_to_string(&path).await?;
 
             for MarkdownTemplate { id, table } in &templates {
-                let re = Regex::new(&format!(r"(<!--start:mcman-{id}-->)([\w\W]*)(<!--end:mcman-{id}-->)"))
-                    .unwrap();
-                content = re.replace_all(&content, |_caps: &regex::Captures| {
-                    format!("<!--start:mcman-{id}-->\n{}\n<!--end:mcman-{id}-->", table.render())
-                }).to_string();
+                let re = Regex::new(&format!(
+                    r"(<!--start:mcman-{id}-->)([\w\W]*)(<!--end:mcman-{id}-->)"
+                ))
+                .unwrap();
+                content = re
+                    .replace_all(&content, |_caps: &regex::Captures| {
+                        format!(
+                            "<!--start:mcman-{id}-->\n{}\n<!--end:mcman-{id}-->",
+                            table.render()
+                        )
+                    })
+                    .to_string();
             }
 
             let mut f = tokio::fs::File::create(&path).await?;
@@ -93,31 +111,43 @@ impl<'a> MarkdownAPI<'a> {
     }
 
     pub async fn get_templates(&self) -> Result<Vec<MarkdownTemplate>> {
-        let progress_bar = self.0.multi_progress.add(ProgressBar::new_spinner())
+        let progress_bar = self
+            .0
+            .multi_progress
+            .add(ProgressBar::new_spinner())
             .with_message("Rendering markdown...");
         progress_bar.enable_steady_tick(Duration::from_millis(250));
 
-        let mut templates = vec![
-            MarkdownTemplate {
-                id: String::from("server"),
-                table: self.table_server(),
-            }
-        ];
+        let mut templates = vec![MarkdownTemplate {
+            id: String::from("server"),
+            table: self.table_server(),
+        }];
 
         if !self.0.server.mods.is_empty() || !self.0.server.plugins.is_empty() {
-            templates.push(MarkdownTemplate { id: String::from("addons"), table: self.table_addons().await? });
+            templates.push(MarkdownTemplate {
+                id: String::from("addons"),
+                table: self.table_addons().await?,
+            });
         }
 
         if !self.0.server.worlds.is_empty() {
-            let pb = self.0.multi_progress.insert_after(&progress_bar, ProgressBar::new(self.0.server.worlds.len() as u64))
-                .with_style(ProgressStyle::with_template("  {prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}")?)
+            let pb = self
+                .0
+                .multi_progress
+                .insert_after(
+                    &progress_bar,
+                    ProgressBar::new(self.0.server.worlds.len() as u64),
+                )
+                .with_style(ProgressStyle::with_template(
+                    "  {prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}",
+                )?)
                 .with_prefix("World");
-            
+
             for (world_name, world) in self.0.server.worlds.iter().progress_with(pb.clone()) {
                 pb.set_message(world_name.clone());
                 templates.push(MarkdownTemplate {
                     id: format!("world-{world_name}"),
-                    table: self.table_world(world).await?
+                    table: self.table_world(world).await?,
                 });
             }
         }
@@ -138,18 +168,28 @@ impl<'a> MarkdownAPI<'a> {
         MarkdownTable::from_map(&map)
     }
 
-    pub async fn table_addons(
-        &self
-    ) -> Result<MarkdownTable> {
+    pub async fn table_addons(&self) -> Result<MarkdownTable> {
         let mut table = MarkdownTable::new();
 
-        let pb = self.0.multi_progress.add(ProgressBar::new(
-            (self.0.server.plugins.len() + self.0.server.mods.len()) as u64
-        ))
-            .with_style(ProgressStyle::with_template("  {prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}")?)
+        let pb = self
+            .0
+            .multi_progress
+            .add(ProgressBar::new(
+                (self.0.server.plugins.len() + self.0.server.mods.len()) as u64,
+            ))
+            .with_style(ProgressStyle::with_template(
+                "  {prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}",
+            )?)
             .with_prefix("Rendering addon");
 
-        for addon in self.0.server.plugins.iter().chain(&self.0.server.mods).progress_with(pb.clone()) {
+        for addon in self
+            .0
+            .server
+            .plugins
+            .iter()
+            .chain(&self.0.server.mods)
+            .progress_with(pb.clone())
+        {
             pb.set_message(addon.to_string());
             table.add_from_map(&self.fetch_downloadable_info(addon).await?);
         }
@@ -157,22 +197,25 @@ impl<'a> MarkdownAPI<'a> {
         Ok(table)
     }
 
-    pub async fn table_world(
-        &self,
-        world: &World
-    ) -> Result<MarkdownTable> {
+    pub async fn table_world(&self, world: &World) -> Result<MarkdownTable> {
         let mut table = MarkdownTable::new();
-        
+
         if let Some(dl) = &world.download {
             let mut map = self.fetch_downloadable_info(dl).await?;
-            map.insert("Name".to_owned(), format!("**(World Download)** {}", map["Name"]));
+            map.insert(
+                "Name".to_owned(),
+                format!("**(World Download)** {}", map["Name"]),
+            );
             table.add_from_map(&map);
         }
 
-        let pb = self.0.multi_progress.add(ProgressBar::new(
-            world.datapacks.len() as u64
-        ))
-            .with_style(ProgressStyle::with_template("    {prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}")?)
+        let pb = self
+            .0
+            .multi_progress
+            .add(ProgressBar::new(world.datapacks.len() as u64))
+            .with_style(ProgressStyle::with_template(
+                "    {prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}",
+            )?)
             .with_prefix("Rendering datapack");
 
         for datapack in world.datapacks.iter().progress_with(pb.clone()) {
@@ -258,7 +301,12 @@ impl<'a> MarkdownAPI<'a> {
                 build,
                 artifact,
             } => {
-                let desc = crate::sources::jenkins::fetch_jenkins_description(&self.0.http_client, url, job).await?;
+                let desc = crate::sources::jenkins::fetch_jenkins_description(
+                    &self.0.http_client,
+                    url,
+                    job,
+                )
+                .await?;
 
                 IndexMap::from([
                     ("Name".to_owned(), dl.get_md_link()),

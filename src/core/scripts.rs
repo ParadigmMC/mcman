@@ -3,15 +3,12 @@ use std::{fs::OpenOptions, io::Write};
 use anyhow::Result;
 use tokio::fs;
 
-use crate::model::{StartupMethod, ServerType};
+use crate::model::{ServerType, StartupMethod};
 
 use super::BuildContext;
 
 impl<'a> BuildContext<'a> {
-    pub async fn get_startup_method(
-        &self,
-        serverjar_name: &str,
-    ) -> Result<StartupMethod> {
+    pub async fn get_startup_method(&self, serverjar_name: &str) -> Result<StartupMethod> {
         let mcver = &self.app.mc_version();
         Ok(match &self.app.server.jar {
             ServerType::NeoForge { loader } => {
@@ -45,7 +42,8 @@ impl<'a> BuildContext<'a> {
     pub async fn create_scripts(&self, startup: StartupMethod) -> Result<()> {
         fs::write(
             self.output_dir.join("start.bat"),
-            self.app.server
+            self.app
+                .server
                 .launcher
                 .generate_script_win(&self.app.server.name, &startup),
         )
@@ -70,7 +68,8 @@ impl<'a> BuildContext<'a> {
         }
 
         file.write_all(
-            self.app.server
+            self.app
+                .server
                 .launcher
                 .generate_script_linux(&self.app.server.name, &startup)
                 .as_bytes(),

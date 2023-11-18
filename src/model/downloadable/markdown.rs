@@ -1,9 +1,6 @@
 use indexmap::IndexMap;
 
-use crate::{
-    model::Downloadable,
-    sources::jenkins::str_process_job
-};
+use crate::{model::Downloadable, sources::jenkins::str_process_job};
 
 impl Downloadable {
     pub fn get_md_link(&self) -> String {
@@ -121,7 +118,7 @@ impl Downloadable {
             Self::CurseRinth { id, .. } => format!("CurseRinth:{id}"),
             Self::Spigot { id, .. } => format!("Spigot:{id}"),
             Self::GithubRelease { repo, .. } => format!("Github:{repo}"),
-            Self::Jenkins { job,  .. } => format!("Jenkins:{job}"),
+            Self::Jenkins { job, .. } => format!("Jenkins:{job}"),
             Self::Url { filename, .. } => {
                 if let Some(f) = filename {
                     format!("URL:{f}")

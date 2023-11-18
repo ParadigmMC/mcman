@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 
-use anyhow::{Result, anyhow};
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use anyhow::{anyhow, Result};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-use crate::{app::{App, ResolvedFile, CacheStrategy}, model::SoftwareType};
+use crate::{
+    app::{App, CacheStrategy, ResolvedFile},
+    model::SoftwareType,
+};
 
 use super::github::GithubWaitRatelimit;
 
@@ -106,7 +109,9 @@ static API_URL: &str = "https://api.modrinth.com/v2";
 
 impl<'a> ModrinthAPI<'a> {
     pub async fn fetch_api<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
-        let json: T = self.0.http_client
+        let json: T = self
+            .0
+            .http_client
             .get(url)
             .send()
             .await?
@@ -115,7 +120,7 @@ impl<'a> ModrinthAPI<'a> {
             .await?
             .json()
             .await?;
-        
+
         Ok(json)
     }
 
@@ -124,7 +129,8 @@ impl<'a> ModrinthAPI<'a> {
     }
 
     pub async fn fetch_all_versions(&self, id: &str) -> Result<Vec<ModrinthVersion>> {
-        self.fetch_api(&format!("{API_URL}/project/{id}/version")).await
+        self.fetch_api(&format!("{API_URL}/project/{id}/version"))
+            .await
     }
 
     pub async fn fetch_versions(&self, id: &str) -> Result<Vec<ModrinthVersion>> {
@@ -142,29 +148,51 @@ impl<'a> ModrinthAPI<'a> {
 
         let version_data = if let Some(v) = match ver.as_str() {
             "latest" => versions.first(),
-            ver =>  versions.iter().find(|v| v.id == ver || v.name == ver || v.version_number == ver)
+            ver => versions
+                .iter()
+                .find(|v| v.id == ver || v.name == ver || v.version_number == ver),
         } {
             v.clone()
         } else {
             let v = match ver.as_str() {
                 "latest" => all_versions.first(),
-                ver =>  all_versions.iter().find(|v| v.id == ver || v.name == ver || v.version_number == ver)
-            }.ok_or(anyhow!("Couln't find version '{ver}' ('{version}') for Modrinth project '{id}'"))?.clone();
-            self.0.warn(format!("Filtering failed for modrinth.com/mod/{id}/version/{ver}"));
+                ver => all_versions
+                    .iter()
+                    .find(|v| v.id == ver || v.name == ver || v.version_number == ver),
+            }
+            .ok_or(anyhow!(
+                "Couln't find version '{ver}' ('{version}') for Modrinth project '{id}'"
+            ))?
+            .clone();
+            self.0.warn(format!(
+                "Filtering failed for modrinth.com/mod/{id}/version/{ver}"
+            ));
             v
         };
 
         Ok(version_data)
     }
 
-    pub async fn fetch_file(&self, id: &str, version: &str) -> Result<(ModrinthFile, ModrinthVersion)> {
+    pub async fn fetch_file(
+        &self,
+        id: &str,
+        version: &str,
+    ) -> Result<(ModrinthFile, ModrinthVersion)> {
         let version = self.fetch_version(id, version).await?;
 
         Ok((
-            version.files.iter().find(|f| f.primary)
-                .or(version.files.first())
-                .ok_or(anyhow!("No file found on modrinth:{id}/{} ({})", version.id, version.name))?.clone(),
             version
+                .files
+                .iter()
+                .find(|f| f.primary)
+                .or(version.files.first())
+                .ok_or(anyhow!(
+                    "No file found on modrinth:{id}/{} ({})",
+                    version.id,
+                    version.name
+                ))?
+                .clone(),
+            version,
         ))
     }
 
@@ -187,7 +215,10 @@ impl<'a> ModrinthAPI<'a> {
     }
 
     pub async fn search(&self, query: &str) -> Result<Vec<ModrinthProject>> {
-        Ok(self.0.http_client.get(format!("{API_URL}/search"))
+        Ok(self
+            .0
+            .http_client
+            .get(format!("{API_URL}/search"))
             .query(&[("query", query), ("facets", &self.get_modrinth_facets())])
             .send()
             .await?
@@ -197,11 +228,15 @@ impl<'a> ModrinthAPI<'a> {
     }
 
     pub async fn version_from_hash(&self, hash: &str, algo: &str) -> Result<ModrinthVersion> {
-        self.fetch_api(&format!("{API_URL}/version_file/{hash}{}", if algo.is_empty() || algo == "sha1" {
-            String::new()
-        } else {
-            format!("?algorithm={algo}")
-        })).await
+        self.fetch_api(&format!(
+            "{API_URL}/version_file/{hash}{}",
+            if algo.is_empty() || algo == "sha1" {
+                String::new()
+            } else {
+                format!("?algorithm={algo}")
+            }
+        ))
+        .await
     }
 
     pub async fn resolve_source(&self, id: &str, version: &str) -> Result<ResolvedFile> {

@@ -93,9 +93,10 @@ pub fn write_gitattributes() -> Result<PathBuf> {
 
     let mut list = contents.split('\n').collect::<Vec<_>>();
 
-    for (attr, comment) in [
-        ("**/worlds/*.zip filter=lfs diff=lfs merge=lfs -text", "# mcman: use lfs for worlds"),
-    ] {
+    for (attr, comment) in [(
+        "**/worlds/*.zip filter=lfs diff=lfs merge=lfs -text",
+        "# mcman: use lfs for worlds",
+    )] {
         if !list.contains(&attr) {
             if !comment.is_empty() {
                 list.push(comment);

@@ -11,10 +11,10 @@ use tempfile::Builder;
 use crate::app::BaseApp;
 use crate::interop::mrpack::MRPackReader;
 use crate::interop::packwiz::FileProvider;
-use crate::model::{Network, ServerType, SoftwareType, PresetFlags, ServerEntry};
-use crate::util::SelectItem;
-use crate::util::env::{get_docker_version, write_dockerfile, write_dockerignore, write_git};
 use crate::model::Server;
+use crate::model::{Network, PresetFlags, ServerEntry, ServerType, SoftwareType};
+use crate::util::env::{get_docker_version, write_dockerfile, write_dockerignore, write_git};
+use crate::util::SelectItem;
 use anyhow::{bail, Context, Result};
 
 #[derive(clap::Args)]
@@ -76,11 +76,17 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
         app.network.as_mut().unwrap().name = name.clone();
     } else {
         if let Ok(serv) = Server::load() {
-            bail!("server.toml already exists: server with name '{}'", serv.name);
+            bail!(
+                "server.toml already exists: server with name '{}'",
+                serv.name
+            );
         }
 
         if let Some(nw) = Network::load()? {
-            app.info(format!("Creating a server inside the '{}' network", nw.name));
+            app.info(format!(
+                "Creating a server inside the '{}' network",
+                nw.name
+            ));
             app.network = Some(nw);
         }
 
@@ -93,29 +99,45 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
             app.server.name = app.prompt_string_filled("Server name?", &app.server.name)?;
         }
         InitType::Packwiz(source) => {
-            let pack = source.parse_toml::<Pack>("pack.toml")
+            let pack = source
+                .parse_toml::<Pack>("pack.toml")
                 .await
                 .context("Reading pack.toml - does it exist?")?;
 
             app.server.name = app.prompt_string_filled("Server name?", &pack.name)?;
         }
         InitType::Network => {
-            app.network.as_mut().unwrap().name = app.prompt_string_filled("Network name?", &app.network.as_ref().unwrap().name)?;
+            app.network.as_mut().unwrap().name =
+                app.prompt_string_filled("Network name?", &app.network.as_ref().unwrap().name)?;
         }
     }
 
     match &ty {
         InitType::Normal => {
-            let serv_type = app.select("Type of server?", &[
-                SelectItem(SoftwareType::Normal, "Normal Server (vanilla, spigot, paper etc.)".to_owned()),
-                SelectItem(SoftwareType::Modded, "Modded Server (forge, fabric, quilt etc.)".to_owned()),
-                SelectItem(SoftwareType::Proxy, "Proxy Server (velocity, bungeecord, waterfall etc.)".to_owned()),
-            ])?;
+            let serv_type = app.select(
+                "Type of server?",
+                &[
+                    SelectItem(
+                        SoftwareType::Normal,
+                        "Normal Server (vanilla, spigot, paper etc.)".to_owned(),
+                    ),
+                    SelectItem(
+                        SoftwareType::Modded,
+                        "Modded Server (forge, fabric, quilt etc.)".to_owned(),
+                    ),
+                    SelectItem(
+                        SoftwareType::Proxy,
+                        "Proxy Server (velocity, bungeecord, waterfall etc.)".to_owned(),
+                    ),
+                ],
+            )?;
 
             app.server.mc_version = if serv_type == SoftwareType::Proxy {
                 "latest".to_owned()
             } else {
-                let latest_ver = app.vanilla().fetch_latest_mcver()
+                let latest_ver = app
+                    .vanilla()
+                    .fetch_latest_mcver()
                     .await
                     .context("Fetching latest version")?;
 
@@ -153,12 +175,20 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                 std::fs::File::open(src)?
             } else {
                 let dl = app.dl_from_string(src).await?;
-                let resolved = app.download(&dl, tmp_dir.path().to_path_buf(), ProgressBar::new_spinner()).await?;
+                let resolved = app
+                    .download(
+                        &dl,
+                        tmp_dir.path().to_path_buf(),
+                        ProgressBar::new_spinner(),
+                    )
+                    .await?;
                 let path = tmp_dir.path().join(resolved.filename);
                 std::fs::File::open(path)?
             };
 
-            app.mrpack().import_all(MRPackReader::from_reader(f)?, None).await?;
+            app.mrpack()
+                .import_all(MRPackReader::from_reader(f)?, None)
+                .await?;
         }
         InitType::Packwiz(src) => {
             app.packwiz().import_from_source(src.clone()).await?;
@@ -166,22 +196,32 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
     }
 
     match ty {
-        InitType::Network => app.network.as_ref().unwrap().save().context("Saving network.toml")?,
+        InitType::Network => app
+            .network
+            .as_ref()
+            .unwrap()
+            .save()
+            .context("Saving network.toml")?,
         _ => app.server.save().context("Saving server.toml")?,
     }
 
     match ty {
         InitType::Network => {}
-        _ => if let Some(ref mut nw) = app.network {
-            if nw.servers.contains_key(&app.server.name) {
-                app.warn("Server with that name already exists in network.toml, please add entry manually");
-            } else {
-                nw.servers.insert(app.server.name.clone(), ServerEntry {
-                    port: nw.next_port(),
-                    ..Default::default()
-                });
-                nw.save()?;
-                app.info("Added server entry to network.toml");
+        _ => {
+            if let Some(ref mut nw) = app.network {
+                if nw.servers.contains_key(&app.server.name) {
+                    app.warn("Server with that name already exists in network.toml, please add entry manually");
+                } else {
+                    nw.servers.insert(
+                        app.server.name.clone(),
+                        ServerEntry {
+                            port: nw.next_port(),
+                            ..Default::default()
+                        },
+                    );
+                    nw.save()?;
+                    app.info("Added server entry to network.toml");
+                }
             }
         }
     }
@@ -200,7 +240,9 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
 
     let write_readme = if Path::new("./README.md").exists() {
         app.confirm("Overwrite README.md?")?
-    } else { true };
+    } else {
+        true
+    };
 
     if write_readme {
         match ty {

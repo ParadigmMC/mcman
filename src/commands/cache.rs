@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use anyhow::{Result, bail, Context};
+use anyhow::{bail, Context, Result};
 use console::style;
 use indicatif::{ProgressBar, ProgressStyle};
 
@@ -30,7 +30,7 @@ pub fn run(commands: Commands) -> Result<()> {
     match commands {
         Commands::Path => {
             println!("{}", cache_folder.to_string_lossy());
-        },
+        }
 
         Commands::List { detailed } => {
             println!(" Listing cache...");
@@ -66,25 +66,24 @@ pub fn run(commands: Commands) -> Result<()> {
                 all += count;
             }
 
-            println!(
-                " {all} entries in {namespaces} namespaces in total"
-            );
-        },
+            println!(" {all} entries in {namespaces} namespaces in total");
+        }
 
         Commands::Open => {
-            opener::open(cache_folder)
-                .context("Opening cache folder")?;
-        },
+            opener::open(cache_folder).context("Opening cache folder")?;
+        }
 
         Commands::Clear => {
             let pb = ProgressBar::new_spinner()
-                .with_style(ProgressStyle::with_template("{spinner:.cyan.bold} {prefix:.green} {message}")?)
+                .with_style(ProgressStyle::with_template(
+                    "{spinner:.cyan.bold} {prefix:.green} {message}",
+                )?)
                 .with_prefix("Deleting");
             pb.enable_steady_tick(Duration::from_millis(250));
 
             for entry in std::fs::read_dir(&cache_folder)? {
                 let entry = entry?;
-                
+
                 pb.set_message(entry.file_name().to_string_lossy().to_string());
 
                 std::fs::remove_dir_all(entry.path())?;
@@ -92,7 +91,7 @@ pub fn run(commands: Commands) -> Result<()> {
 
             pb.finish_and_clear();
             println!(" Cache has been cleared");
-        },
+        }
     }
 
     Ok(())

@@ -4,14 +4,9 @@
 pub enum Logger {
     Main,
 
-    Task {
-        indent: usize,
-    },
+    Task { indent: usize },
 
-    List {
-        indent: usize,
-        len: usize,
-    }
+    List { indent: usize, len: usize },
 }
 
 impl Logger {
@@ -23,9 +18,7 @@ impl Logger {
         let space = " ";
         let indent = self.get_indent();
 
-        println!(
-            "{space:indent$}{text}",
-        );
+        println!("{space:indent$}{text}",);
     }
 
     pub fn item(&self, idx: usize, text: &str) {
@@ -39,7 +32,7 @@ impl Logger {
                 );
             }
 
-            _ => unimplemented!()
+            _ => unimplemented!(),
         }
     }
 
@@ -53,7 +46,9 @@ impl Logger {
     pub fn task(&self, name: &str, indent: usize) -> Logger {
         self.log(name);
 
-        Logger::Task { indent: self.get_indent() + indent }
+        Logger::Task {
+            indent: self.get_indent() + indent,
+        }
     }
 
     pub fn get_indent(&self) -> usize {

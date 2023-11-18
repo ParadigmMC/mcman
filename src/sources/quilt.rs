@@ -15,13 +15,16 @@ pub const QUILT_MAVEN_FILE: &str = "${artifact}-${version}.jar";
 
 impl<'a> QuiltAPI<'a> {
     pub async fn resolve_installer(&self, version: &str) -> Result<ResolvedFile> {
-        self.0.maven().resolve_source(
-            QUILT_MAVEN_URL,
-            QUILT_MAVEN_GROUP,
-            QUILT_MAVEN_ARTIFACT,
-            version,
-            QUILT_MAVEN_FILE
-        ).await
+        self.0
+            .maven()
+            .resolve_source(
+                QUILT_MAVEN_URL,
+                QUILT_MAVEN_GROUP,
+                QUILT_MAVEN_ARTIFACT,
+                version,
+                QUILT_MAVEN_FILE,
+            )
+            .await
     }
 }
 

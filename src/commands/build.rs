@@ -2,10 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 
-use crate::{
-    core::BuildContext,
-    model::Lockfile, app::App,
-};
+use crate::{app::App, core::BuildContext, model::Lockfile};
 
 #[derive(clap::Args)]
 pub struct BuildArgs {

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use serde::{Serialize, Deserialize};
 use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
 
 use crate::app::App;
 
@@ -11,24 +11,28 @@ pub struct MCLogsAPI<'a>(pub &'a App);
 
 impl<'a> MCLogsAPI<'a> {
     pub async fn paste_log(&self, content: &str) -> Result<LogFileMetadata> {
-        let params = HashMap::from([
-            ("content", content)
-        ]);
-    
-        let json = self.0.http_client.post(format!("{API_V1}/log"))
+        let params = HashMap::from([("content", content)]);
+
+        let json = self
+            .0
+            .http_client
+            .post(format!("{API_V1}/log"))
             .form(&params)
             .send()
             .await?
             .error_for_status()?
             .json::<MaybeSuccess<LogFileMetadata>>()
             .await?;
-    
+
         json.into()
     }
 
     #[allow(unused)]
     pub async fn fetch_insights(&self, id: &str) -> Result<LogInsights> {
-        let json = self.0.http_client.post(format!("{API_V1}/insights/{id}"))
+        let json = self
+            .0
+            .http_client
+            .post(format!("{API_V1}/insights/{id}"))
             .send()
             .await?
             .error_for_status()?
@@ -119,5 +123,3 @@ pub struct AnalysisLine {
 pub struct Solution {
     pub message: String,
 }
-
-

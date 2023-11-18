@@ -22,7 +22,7 @@ pub async fn resolve_source(
     let (build_url, filename, relative_path, build_number, md5hash) =
         get_jenkins_filename(&app.http_client, url, job, build, artifact).await?;
 
-        // TODO: use utils
+    // TODO: use utils
     // ci.luckto.me => ci-lucko-me
     let folder = url.replace("https://", "");
     let folder = folder.replace("http://", "");
@@ -123,11 +123,15 @@ pub async fn get_jenkins_filename(
     let artifact = match artifact_id {
         "first" => artifacts_iter.next(),
         id => {
-            let id = id.replace("${build}", &matched_build["number"].as_i64().unwrap().to_string());
+            let id = id.replace(
+                "${build}",
+                &matched_build["number"].as_i64().unwrap().to_string(),
+            );
 
-            artifacts_iter.find(|a| a["fileName"].as_str().unwrap() == id)
+            artifacts_iter
+                .find(|a| a["fileName"].as_str().unwrap() == id)
                 .or(artifacts_iter.find(|a| id.contains(a["fileName"].as_str().unwrap())))
-        },
+        }
     }
     .ok_or(anyhow!(
         "artifact for jenkins build artifact not found ({url};{job};{build};{artifact_id})"

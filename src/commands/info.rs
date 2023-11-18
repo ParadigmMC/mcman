@@ -1,5 +1,5 @@
-use crate::{model::Server, app::App};
 use crate::util::md::MarkdownTable;
+use crate::{app::App, model::Server};
 use anyhow::{Context, Result};
 use console::style;
 use indexmap::IndexMap;

@@ -20,12 +20,20 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
         std::fs::File::open(&src)?
     } else {
         let dl = app.dl_from_string(&src).await?;
-        let resolved = app.download(&dl, tmp_dir.path().to_path_buf(), ProgressBar::new_spinner()).await?;
+        let resolved = app
+            .download(
+                &dl,
+                tmp_dir.path().to_path_buf(),
+                ProgressBar::new_spinner(),
+            )
+            .await?;
         let path = tmp_dir.path().join(resolved.filename);
         std::fs::File::open(path)?
     };
 
-    app.mrpack().import_all(MRPackReader::from_reader(f)?, None).await?;
+    app.mrpack()
+        .import_all(MRPackReader::from_reader(f)?, None)
+        .await?;
 
     app.save_changes()?;
     app.refresh_markdown().await?;

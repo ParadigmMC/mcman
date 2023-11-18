@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use anyhow::{anyhow, Context, Result};
 use mcapi::hangar::{Platform, ProjectVersion};
 
-use crate::{app::{App, CacheStrategy, ResolvedFile}, model::ServerType};
+use crate::{
+    app::{App, CacheStrategy, ResolvedFile},
+    model::ServerType,
+};
 
 pub struct HangarAPI<'a>(pub &'a App);
 
@@ -54,11 +57,19 @@ impl<'a> HangarAPI<'a> {
         match &self.0.server.jar {
             ServerType::Waterfall {} => Some(mcapi::hangar::Platform::Waterfall),
             ServerType::Velocity {} => Some(mcapi::hangar::Platform::Velocity),
-            ServerType::PaperMC { project, .. } if project == "waterfall" => Some(mcapi::hangar::Platform::Waterfall),
-            ServerType::PaperMC { project, .. } if project == "velocity" => Some(mcapi::hangar::Platform::Velocity),
-            ServerType::PaperMC { project, .. } if project == "paper" => Some(mcapi::hangar::Platform::Paper),
-            ServerType::Paper {  } | ServerType::Purpur { .. } => Some(mcapi::hangar::Platform::Paper),
-            _ => None
+            ServerType::PaperMC { project, .. } if project == "waterfall" => {
+                Some(mcapi::hangar::Platform::Waterfall)
+            }
+            ServerType::PaperMC { project, .. } if project == "velocity" => {
+                Some(mcapi::hangar::Platform::Velocity)
+            }
+            ServerType::PaperMC { project, .. } if project == "paper" => {
+                Some(mcapi::hangar::Platform::Paper)
+            }
+            ServerType::Paper {} | ServerType::Purpur { .. } => {
+                Some(mcapi::hangar::Platform::Paper)
+            }
+            _ => None,
         }
     }
 
@@ -84,10 +95,7 @@ impl<'a> HangarAPI<'a> {
 
         let download = version
             .downloads
-            .get(
-                &self.get_platform()
-                    .unwrap_or(Platform::Paper),
-            )
+            .get(&self.get_platform().unwrap_or(Platform::Paper))
             .ok_or(anyhow!(
                 "Platform unsupported for Hangar project '{id}' version '{}'",
                 version.name
@@ -103,10 +111,7 @@ impl<'a> HangarAPI<'a> {
                 path: cached_file_path,
             },
             size: Some(download.get_file_info().size_bytes as u64),
-            hashes: HashMap::from([(
-                "sha256".to_owned(),
-                download.get_file_info().sha256_hash,
-            )]),
+            hashes: HashMap::from([("sha256".to_owned(), download.get_file_info().sha256_hash)]),
         })
     }
 }

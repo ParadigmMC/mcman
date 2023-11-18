@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::sources::modrinth;
 
-use super::{ClientSideMod, Downloadable, ServerLauncher, ServerType, World, SoftwareType};
+use super::{ClientSideMod, Downloadable, ServerLauncher, ServerType, SoftwareType, World};
 
 #[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(default)]
@@ -100,12 +100,10 @@ impl Server {
 
     #[allow(dead_code)]
     pub fn format(&self, str: &str) -> String {
-        mcapi::dollar_repl(str, |key| {
-            match key {
-                "mcver" | "mcversion" | "SERVER_VERSION" => Some(self.mc_version.clone()),
-                "SERVER_NAME" => Some(self.name.clone()),
-                k => self.variables.get(k).cloned()
-            }
+        mcapi::dollar_repl(str, |key| match key {
+            "mcver" | "mcversion" | "SERVER_VERSION" => Some(self.mc_version.clone()),
+            "SERVER_NAME" => Some(self.name.clone()),
+            k => self.variables.get(k).cloned(),
         })
     }
 
@@ -123,31 +121,31 @@ impl Server {
         }
 
         if let Some(v) = map.get("fabric-loader").or(map.get("fabric")) {
-            self.jar = ServerType::Fabric { loader: v.clone(), installer: "latest".to_owned() }
+            self.jar = ServerType::Fabric {
+                loader: v.clone(),
+                installer: "latest".to_owned(),
+            }
         }
 
         if let Some(v) = map.get("quilt-loader").or(map.get("quilt")) {
-            self.jar = ServerType::Quilt { loader: v.clone(), installer: "latest".to_owned() }
+            self.jar = ServerType::Quilt {
+                loader: v.clone(),
+                installer: "latest".to_owned(),
+            }
         }
     }
 
     pub fn to_map(&self, include_loader: bool) -> HashMap<String, String> {
-        let mut map = HashMap::from([
-            ("minecraft".to_owned(), self.mc_version.clone()),
-        ]);
+        let mut map = HashMap::from([("minecraft".to_owned(), self.mc_version.clone())]);
 
-        let l = if include_loader {
-            "-loader"
-        } else {
-            ""
-        };
+        let l = if include_loader { "-loader" } else { "" };
 
         if let Some((k, v)) = match &self.jar {
             ServerType::Quilt { loader, .. } => Some((format!("quilt{l}"), loader.clone())),
             ServerType::Fabric { loader, .. } => Some((format!("fabric{l}"), loader.clone())),
             ServerType::Forge { loader, .. } => Some(("forge".to_owned(), loader.clone())),
             ServerType::NeoForge { loader, .. } => Some(("neoforge".to_owned(), loader.clone())),
-            _ => None
+            _ => None,
         } {
             map.insert(k, v);
         }
@@ -156,7 +154,10 @@ impl Server {
     }
 
     // TODO: move to ModrinthAPI
-    pub fn filter_modrinth_versions(&self, list: &[modrinth::ModrinthVersion]) -> Vec<modrinth::ModrinthVersion> {
+    pub fn filter_modrinth_versions(
+        &self,
+        list: &[modrinth::ModrinthVersion],
+    ) -> Vec<modrinth::ModrinthVersion> {
         let is_proxy = self.jar.get_software_type() == SoftwareType::Proxy;
         let is_vanilla = matches!(self.jar, ServerType::Vanilla {});
 
@@ -164,20 +165,20 @@ impl Server {
         let loader = self.jar.get_modrinth_name();
 
         list.iter()
-        .filter(|v| {
-            is_proxy || v.game_versions.contains(mcver)
-        })
-        .filter(|v| {
-            if let Some(n) = &loader {
-                v.loaders.iter().any(|l| l == "datapack" || l == n || (l == "fabric" && n == "quilt"))
-            } else if is_vanilla {
-                v.loaders.contains(&"datapack".to_owned())
-            } else {
-                true
-            }
-        })
-        .cloned()
-        .collect()
+            .filter(|v| is_proxy || v.game_versions.contains(mcver))
+            .filter(|v| {
+                if let Some(n) = &loader {
+                    v.loaders
+                        .iter()
+                        .any(|l| l == "datapack" || l == n || (l == "fabric" && n == "quilt"))
+                } else if is_vanilla {
+                    v.loaders.contains(&"datapack".to_owned())
+                } else {
+                    true
+                }
+            })
+            .cloned()
+            .collect()
     }
 }
 

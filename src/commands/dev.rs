@@ -2,7 +2,10 @@ use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 
-use crate::{app::App, hot_reload::{DevSession, config::HotReloadConfig}};
+use crate::{
+    app::App,
+    hot_reload::{config::HotReloadConfig, DevSession},
+};
 
 use super::run::RunArgs;
 

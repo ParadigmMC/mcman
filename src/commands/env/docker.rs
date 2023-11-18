@@ -1,7 +1,8 @@
 use anyhow::{Context, Result};
 
 use crate::{
-    util::env::{write_dockerfile, write_dockerignore}, app::App,
+    app::App,
+    util::env::{write_dockerfile, write_dockerignore},
 };
 
 pub fn run(app: &App) -> Result<()> {

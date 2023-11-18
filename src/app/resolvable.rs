@@ -2,16 +2,13 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::App;
 
 #[async_trait]
 pub trait Resolvable {
-    async fn resolve_source(
-        &self,
-        app: &App,
-    ) -> Result<ResolvedFile>;
+    async fn resolve_source(&self, app: &App) -> Result<ResolvedFile>;
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

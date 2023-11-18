@@ -1,7 +1,7 @@
 use std::{collections::HashSet, time::Duration};
 
-use anyhow::{Result, bail};
-use indicatif::{ProgressIterator, ProgressBar, ProgressStyle, FormattedDuration};
+use anyhow::{bail, Result};
+use indicatif::{FormattedDuration, ProgressBar, ProgressIterator, ProgressStyle};
 use tokio::fs;
 
 use crate::app::AddonType;
@@ -9,10 +9,7 @@ use crate::app::AddonType;
 use super::BuildContext;
 
 impl<'a> BuildContext<'a> {
-    pub async fn download_addons(
-        &mut self,
-        addon_type: AddonType,
-    ) -> Result<()> {
+    pub async fn download_addons(&mut self, addon_type: AddonType) -> Result<()> {
         let server_list = match addon_type {
             AddonType::Plugin => &self.app.server.plugins,
             AddonType::Mod => &self.app.server.mods,
@@ -22,7 +19,11 @@ impl<'a> BuildContext<'a> {
             "Processing {} {addon_type}{}...{}",
             server_list.len(),
             if server_list.len() == 1 { "" } else { "s" },
-            if server_list.len() < 200 { "" } else { " may god help you" },
+            if server_list.len() < 200 {
+                ""
+            } else {
+                " may god help you"
+            },
         ));
 
         self.app.ci(&format!("::group::Processing {addon_type}s"));
@@ -30,7 +31,9 @@ impl<'a> BuildContext<'a> {
         let mut files_list = HashSet::new();
 
         let pb = ProgressBar::new(server_list.len() as u64)
-            .with_style(ProgressStyle::with_template("{msg} [{wide_bar:.cyan/blue}] {pos}/{len}")?)
+            .with_style(ProgressStyle::with_template(
+                "{msg} [{wide_bar:.cyan/blue}] {pos}/{len}",
+            )?)
             .with_message(format!("Processing {addon_type}s"));
         let pb = self.app.multi_progress.add(pb);
         for addon in server_list.iter().progress_with(pb.clone()) {
@@ -40,12 +43,18 @@ impl<'a> BuildContext<'a> {
                 .and_then(|s| s.parse().ok())
                 .unwrap_or(3);
             let (_path, resolved) = loop {
-                match self.downloadable(addon, &addon_type.folder(), Some(&pb)).await {
+                match self
+                    .downloadable(addon, &addon_type.folder(), Some(&pb))
+                    .await
+                {
                     Ok(d) => break d,
                     Err(e) => {
                         self.app.error(e.to_string());
                         if max_tries > attempt {
-                            bail!("Max attempts reached while processing {}", addon.to_short_string());
+                            bail!(
+                                "Max attempts reached while processing {}",
+                                addon.to_short_string()
+                            );
                         }
                         attempt += 1;
                     }
@@ -57,15 +66,20 @@ impl<'a> BuildContext<'a> {
             match addon_type {
                 AddonType::Plugin => &mut self.new_lockfile.plugins,
                 AddonType::Mod => &mut self.new_lockfile.mods,
-            }.push((addon.clone(), resolved));
+            }
+            .push((addon.clone(), resolved));
         }
 
         let existing_files = match addon_type {
             AddonType::Plugin => self.lockfile.plugins.iter(),
             AddonType::Mod => self.lockfile.mods.iter(),
-        }.map(|(_, res)| res.filename.clone()).collect::<HashSet<_>>();
+        }
+        .map(|(_, res)| res.filename.clone())
+        .collect::<HashSet<_>>();
 
-        pb.set_style(ProgressStyle::with_template("{spinner:.blue} {prefix:.yellow} {msg}")?);
+        pb.set_style(ProgressStyle::with_template(
+            "{spinner:.blue} {prefix:.yellow} {msg}",
+        )?);
         pb.set_prefix("Deleting");
         pb.enable_steady_tick(Duration::from_micros(250));
         for removed_file in existing_files.difference(&files_list) {

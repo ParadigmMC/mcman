@@ -4,9 +4,9 @@ use anyhow::Result;
 use regex::Regex;
 
 pub mod env;
+pub mod logger;
 pub mod maven_import;
 pub mod md;
-pub mod logger;
 
 pub struct SelectItem<T>(pub T, pub String);
 
@@ -40,12 +40,10 @@ pub fn get_latest_semver(list: &[String]) -> Option<String> {
                     let b = b.parse::<i32>();
 
                     match (a, b) {
-                        (Ok(a), Ok(b)) => {
-                            match a.cmp(&b) {
-                                Ordering::Equal => continue,
-                                ord => ord,
-                            }
-                        }
+                        (Ok(a), Ok(b)) => match a.cmp(&b) {
+                            Ordering::Equal => continue,
+                            ord => ord,
+                        },
                         (Err(_), Ok(_)) => Ordering::Less,
                         (Ok(_), Err(_)) => Ordering::Greater,
                         _ => Ordering::Equal,
@@ -54,7 +52,7 @@ pub fn get_latest_semver(list: &[String]) -> Option<String> {
                 (Some(_), None) => Ordering::Greater,
                 (None, Some(_)) => Ordering::Less,
                 _ => Ordering::Equal,
-            }
+            };
         }
     });
 

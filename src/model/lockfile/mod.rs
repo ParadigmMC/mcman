@@ -1,7 +1,8 @@
 use std::{
     fs::{read_to_string, File},
     io::Write,
-    path::{PathBuf, Path}, time::SystemTime
+    path::{Path, PathBuf},
+    time::SystemTime,
 };
 
 use anyhow::Result;
@@ -20,7 +21,7 @@ pub struct Lockfile {
     pub plugins: Vec<(Downloadable, ResolvedFile)>,
     pub mods: Vec<(Downloadable, ResolvedFile)>,
 
-    pub files: Vec<BootstrappedFile>
+    pub files: Vec<BootstrappedFile>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

@@ -1,13 +1,13 @@
-use std::{path::PathBuf, process::Child, time::Duration, fmt::Debug};
+use std::{fmt::Debug, path::PathBuf, process::Child, time::Duration};
 
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use console::style;
-use indicatif::{ProgressBar, FormattedDuration};
+use indicatif::{FormattedDuration, ProgressBar};
 use tokio::io::AsyncWriteExt;
 
 use crate::{
+    app::{AddonType, App, Resolvable, ResolvedFile},
     model::Lockfile,
-    app::{Resolvable, App, ResolvedFile, AddonType},
 };
 
 pub mod addons;
@@ -38,7 +38,10 @@ impl<'a> BuildContext<'a> {
             style(&server_name).green().bold()
         );
         self.app.print_job(&banner);
-        let progress_bar = self.app.multi_progress.add(ProgressBar::new_spinner())
+        let progress_bar = self
+            .app
+            .multi_progress
+            .add(ProgressBar::new_spinner())
             .with_message(banner);
         progress_bar.enable_steady_tick(Duration::from_millis(250));
 
@@ -49,7 +52,8 @@ impl<'a> BuildContext<'a> {
         self.reload();
 
         if !self.skip_stages.is_empty() {
-            self.app.info(format!("Skipping stages: {}", self.skip_stages.join(", ")));
+            self.app
+                .info(format!("Skipping stages: {}", self.skip_stages.join(", ")));
         }
 
         // actual stages contained here
@@ -58,7 +62,8 @@ impl<'a> BuildContext<'a> {
         let server_jar = self.download_server_jar().await?;
         self.app.ci("::endgroup::");
 
-        if !self.app.server.plugins.is_empty() && !self.skip_stages.contains(&"plugins".to_owned()) {
+        if !self.app.server.plugins.is_empty() && !self.skip_stages.contains(&"plugins".to_owned())
+        {
             self.download_addons(AddonType::Plugin).await?;
         }
 
@@ -70,7 +75,9 @@ impl<'a> BuildContext<'a> {
             self.process_worlds().await?;
         }
 
-        if self.app.server.path.join("config").exists() && !self.skip_stages.contains(&"bootstrap".to_owned()) {
+        if self.app.server.path.join("config").exists()
+            && !self.skip_stages.contains(&"bootstrap".to_owned())
+        {
             self.bootstrap_files().await?;
         }
 
@@ -94,7 +101,7 @@ impl<'a> BuildContext<'a> {
 
         progress_bar.disable_steady_tick();
         progress_bar.finish_and_clear();
-        
+
         self.app.success(format!(
             "Successfully built {} in {}",
             style(&server_name).green().bold(),
@@ -141,17 +148,21 @@ impl<'a> BuildContext<'a> {
         parent_progress: Option<&ProgressBar>,
     ) -> Result<(PathBuf, ResolvedFile)> {
         let progress_bar = if let Some(parent) = parent_progress {
-            self.app.multi_progress.insert_after(parent, ProgressBar::new_spinner())
+            self.app
+                .multi_progress
+                .insert_after(parent, ProgressBar::new_spinner())
         } else {
             self.app.multi_progress.add(ProgressBar::new_spinner())
         };
 
-        let result = self.app.download(
-            resolvable,
-            self.output_dir.join(folder_path),
-            progress_bar
-        ).await?;
+        let result = self
+            .app
+            .download(resolvable, self.output_dir.join(folder_path), progress_bar)
+            .await?;
 
-        Ok((self.output_dir.join(folder_path).join(&result.filename), result))
+        Ok((
+            self.output_dir.join(folder_path).join(&result.filename),
+            result,
+        ))
     }
 }

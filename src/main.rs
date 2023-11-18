@@ -13,14 +13,14 @@ use anyhow::Result;
 use app::BaseApp;
 use clap::Parser;
 
+mod app;
 mod commands;
 mod core;
-mod app;
+mod hot_reload;
+mod interop;
 mod model;
 mod sources;
 mod util;
-mod interop;
-mod hot_reload;
 
 #[derive(clap::Parser)]
 #[command(author = "ParadigmMC", color = clap::ColorChoice::Always)]
@@ -77,7 +77,7 @@ enum Commands {
     /// Show version information
     #[command(visible_alias = "v")]
     Version,
-    
+
     /// Eject - remove everything related to mcman
     #[command(hide = true)]
     Eject,

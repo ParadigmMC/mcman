@@ -1,8 +1,9 @@
 use anyhow::{bail, Result};
 
 use crate::{
+    app::{App, Prefix},
     model::Downloadable,
-    util::SelectItem, app::{App, Prefix},
+    util::SelectItem,
 };
 
 #[derive(clap::Args)]
@@ -11,11 +12,14 @@ pub struct Args {
 }
 
 pub async fn run(mut app: App, args: Args) -> Result<()> {
-    let search_type = app.select("Which project type?", &[
-        SelectItem("mod", "Mods".to_owned()),
-        SelectItem("datapack", "Datapacks".to_owned()),
-        SelectItem("modpack", "Modpacks".to_owned()),
-    ])?;
+    let search_type = app.select(
+        "Which project type?",
+        &[
+            SelectItem("mod", "Mods".to_owned()),
+            SelectItem("datapack", "Datapacks".to_owned()),
+            SelectItem("modpack", "Modpacks".to_owned()),
+        ],
+    )?;
 
     let query = if let Some(s) = args.search {
         s.clone()
@@ -42,10 +46,7 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
                 w = 10
             );
 
-            SelectItem(
-                p,
-                str,
-            )
+            SelectItem(p, str)
         })
         .collect::<Vec<_>>();
 
@@ -53,23 +54,26 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
 
     let versions = app.modrinth().fetch_versions(&project.slug).await?;
 
-    let version = app.select("Which version?", &versions
-        .into_iter()
-        .map(|v| {
-            let str = format!(
-                "[{}]: {}",
-                v.version_number,
-                v.name,
-            );
-            SelectItem(v, str)
-        }).collect::<Vec<_>>())?;
+    let version = app.select(
+        "Which version?",
+        &versions
+            .into_iter()
+            .map(|v| {
+                let str = format!("[{}]: {}", v.version_number, v.name,);
+                SelectItem(v, str)
+            })
+            .collect::<Vec<_>>(),
+    )?;
 
     match if version.loaders.contains(&"datapack".to_owned()) {
         if version.loaders.len() > 1 {
-            app.select("Import as...", &[
-                SelectItem("datapack", "Datapack".to_owned()),
-                SelectItem("mod", "Mod/Plugin".to_owned()),
-            ])?
+            app.select(
+                "Import as...",
+                &[
+                    SelectItem("datapack", "Datapack".to_owned()),
+                    SelectItem("mod", "Mod/Plugin".to_owned()),
+                ],
+            )?
         } else {
             "datapack"
         }

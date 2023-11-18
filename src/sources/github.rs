@@ -1,12 +1,18 @@
-use std::{time::{Duration, SystemTime, UNIX_EPOCH}, collections::HashMap};
+use std::{
+    collections::HashMap,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
-use anyhow::{anyhow, Result, Context};
+use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
-use reqwest::{header::{HeaderMap, HeaderValue}, StatusCode};
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use reqwest::{
+    header::{HeaderMap, HeaderValue},
+    StatusCode,
+};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::time::sleep;
 
-use crate::app::{App, ResolvedFile, CacheStrategy};
+use crate::app::{App, CacheStrategy, ResolvedFile};
 
 pub trait GithubRequestExt {
     fn with_token(self, token: Option<String>) -> Self;
@@ -44,7 +50,7 @@ impl GithubWaitRatelimit<reqwest::Response> for reqwest::Response {
         } else {
             self.error_for_status()?
         };
-    
+
         Ok(res)
     }
 }
@@ -71,7 +77,7 @@ pub struct GithubAsset {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct GithubRepository {
-    pub description: String
+    pub description: String,
 }
 
 static CACHE_DIR: &str = "github";
@@ -83,7 +89,7 @@ impl<'a> GithubAPI<'a> {
     pub async fn fetch_api<T: DeserializeOwned + Clone + Serialize>(
         &self,
         url: String,
-        cache_path: String
+        cache_path: String,
     ) -> Result<T> {
         let cached_data = if let Some(cache) = self.0.get_cache(CACHE_DIR) {
             cache.try_get_json::<CachedData<T>>(&cache_path)?
@@ -91,7 +97,9 @@ impl<'a> GithubAPI<'a> {
             None
         };
 
-        let response = self.0.http_client
+        let response = self
+            .0
+            .http_client
             .get(&url)
             .with_token(None) // TODO: token via App
             .headers(if let Some(cached_data) = &cached_data {
@@ -103,7 +111,7 @@ impl<'a> GithubAPI<'a> {
             })
             .send()
             .await?;
-        
+
         if response.status() == StatusCode::NOT_MODIFIED {
             Ok(cached_data.unwrap().data)
         } else {
@@ -118,10 +126,15 @@ impl<'a> GithubAPI<'a> {
 
             if let Some(etag) = etag {
                 if let Some(cache) = self.0.get_cache(CACHE_DIR) {
-                    cache.write_json(&cache_path, &CachedData {
-                        etag: etag.to_str()?.to_owned(),
-                        data: json.clone(),
-                    }).context("Saving github api response to cache")?;
+                    cache
+                        .write_json(
+                            &cache_path,
+                            &CachedData {
+                                etag: etag.to_str()?.to_owned(),
+                                data: json.clone(),
+                            },
+                        )
+                        .context("Saving github api response to cache")?;
                 }
             }
 
@@ -130,19 +143,21 @@ impl<'a> GithubAPI<'a> {
     }
 
     pub async fn fetch_repo_description(&self, repo: &str) -> Result<String> {
-        Ok(
-            self.fetch_api::<GithubRepository>(
+        Ok(self
+            .fetch_api::<GithubRepository>(
                 format!("{API_URL}/repos/{repo}"),
-                format!("{repo}/repository.json")
-            ).await?.description
-        )
+                format!("{repo}/repository.json"),
+            )
+            .await?
+            .description)
     }
 
     pub async fn fetch_releases(&self, repo: &str) -> Result<Vec<GithubRelease>> {
         self.fetch_api::<Vec<GithubRelease>>(
             format!("{API_URL}/repos/{repo}/releases"),
-            format!("{repo}/releases.json")
-        ).await
+            format!("{repo}/releases.json"),
+        )
+        .await
     }
 
     pub async fn fetch_release(&self, repo: &str, release_tag: &str) -> Result<GithubRelease> {
@@ -153,15 +168,24 @@ impl<'a> GithubAPI<'a> {
 
         let release = match tag.as_str() {
             "latest" => releases.first(),
-            tag => releases.iter()
+            tag => releases
+                .iter()
                 .find(|r| r.tag_name == tag)
-                .or_else(|| releases.iter().find(|r| r.tag_name.contains(tag)))
-        }.ok_or(anyhow!("Github release '{tag}' ('{release_tag}') not found on repository '{repo}'"))?;
+                .or_else(|| releases.iter().find(|r| r.tag_name.contains(tag))),
+        }
+        .ok_or(anyhow!(
+            "Github release '{tag}' ('{release_tag}') not found on repository '{repo}'"
+        ))?;
 
         Ok(release.clone())
     }
 
-    pub async fn fetch_asset(&self, repo: &str, release_tag: &str, asset_name: &str) -> Result<(GithubRelease, GithubAsset)> {
+    pub async fn fetch_asset(
+        &self,
+        repo: &str,
+        release_tag: &str,
+        asset_name: &str,
+    ) -> Result<(GithubRelease, GithubAsset)> {
         let release = self.fetch_release(repo, release_tag).await?;
 
         let asset = match asset_name {
@@ -176,7 +200,7 @@ impl<'a> GithubAPI<'a> {
                 } else {
                     id.to_owned()
                 };
-    
+
                 release.assets
                     .iter()
                     .find(|a| id == a.name)
@@ -187,13 +211,18 @@ impl<'a> GithubAPI<'a> {
             "Github release asset '{asset_name}' on release '{}' ('{release_tag}') of repository '{repo}' not found",
             release.tag_name
         ))?.clone();
-    
+
         Ok((release, asset))
     }
 
-    pub async fn resolve_source(&self, repo: &str, release_tag: &str, asset_name: &str) -> Result<ResolvedFile> {
+    pub async fn resolve_source(
+        &self,
+        repo: &str,
+        release_tag: &str,
+        asset_name: &str,
+    ) -> Result<ResolvedFile> {
         let (release, asset) = self.fetch_asset(repo, release_tag, asset_name).await?;
-        
+
         let cached_file_path = format!("{repo}/releases/{}/{}", release.tag_name, asset.name);
 
         Ok(ResolvedFile {
@@ -204,11 +233,10 @@ impl<'a> GithubAPI<'a> {
             filename: asset.name,
             cache: CacheStrategy::File {
                 namespace: CACHE_DIR.to_owned(),
-                path: cached_file_path
+                path: cached_file_path,
             },
             size: Some(asset.size),
             hashes: HashMap::new(),
         })
     }
 }
-

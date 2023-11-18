@@ -1,16 +1,29 @@
-use std::{process::{Stdio, ExitStatus}, time::Duration, path::PathBuf, sync::{Mutex, Arc}};
+use std::{
+    path::PathBuf,
+    process::{ExitStatus, Stdio},
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
-use anyhow::{Result, Context, bail, anyhow};
+use anyhow::{anyhow, bail, Context, Result};
 use console::style;
 use dialoguer::theme::ColorfulTheme;
 use indicatif::ProgressBar;
-use notify_debouncer_mini::{new_debouncer, Debouncer, notify::{RecommendedWatcher, RecursiveMode}, DebounceEventResult};
+use notify_debouncer_mini::{
+    new_debouncer,
+    notify::{RecommendedWatcher, RecursiveMode},
+    DebounceEventResult, Debouncer,
+};
 use pathdiff::diff_paths;
-use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, sync::mpsc, process::Child};
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    process::Child,
+    sync::mpsc,
+};
 
 use crate::core::BuildContext;
 
-use self::config::{HotReloadConfig, HotReloadAction};
+use self::config::{HotReloadAction, HotReloadConfig};
 
 pub mod config;
 pub mod pattern_serde;
@@ -34,7 +47,9 @@ pub enum Command {
     Bootstrap(PathBuf),
 }
 
-async fn try_read_line(opt: &mut Option<tokio::io::Lines<BufReader<tokio::process::ChildStdout>>>) -> Result<Option<String>> {
+async fn try_read_line(
+    opt: &mut Option<tokio::io::Lines<BufReader<tokio::process::ChildStdout>>>,
+) -> Result<Option<String>> {
     match opt {
         Some(lines) => Ok(lines.next_line().await?),
         None => Ok(None),
@@ -60,7 +75,7 @@ pub enum TestResult {
 // [x] commands are not being sent properly
 // [x] use debouncer for notify
 // [ ] reload server.toml properly
-// [x] tests 
+// [x] tests
 
 pub const LINE_CRASHED: &str = "]: Crashed! The full crash report has been saved to";
 
@@ -78,7 +93,9 @@ impl<'a> DevSession<'a> {
         let java = launcher.get_java();
         let args = launcher.get_arguments(&startup, platform);
 
-        self.builder.app.dbg(format!("Running: {java} {}", args.join(" ")));
+        self.builder
+            .app
+            .dbg(format!("Running: {java} {}", args.join(" ")));
 
         let cwd = std::env::current_dir()?.canonicalize()?;
         // because jre is stupid
@@ -88,24 +105,27 @@ impl<'a> DevSession<'a> {
         //self.builder.app.info(&format!("Cwd: {}", cwd.display()))?;
         //self.builder.app.info(&format!("Working directory: {}", dir.display()))?;
 
-        Ok(
-            tokio::process::Command::new(java)
+        Ok(tokio::process::Command::new(java)
             .args(args)
             .current_dir(&dir)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())
-            .spawn()?
-        )
+            .spawn()?)
     }
 
     #[allow(unused_assignments)]
     #[allow(clippy::too_many_lines)]
-    async fn handle_commands(mut self, mut rx: mpsc::Receiver<Command>, mut tx: mpsc::Sender<Command>) -> Result<()> {
+    async fn handle_commands(
+        mut self,
+        mut rx: mpsc::Receiver<Command>,
+        mut tx: mpsc::Sender<Command>,
+    ) -> Result<()> {
         let mp = self.builder.app.multi_progress.clone();
 
         let mut child: Option<Child> = None;
-        let mut stdout_lines: Option<tokio::io::Lines<BufReader<tokio::process::ChildStdout>>> = None;
+        let mut stdout_lines: Option<tokio::io::Lines<BufReader<tokio::process::ChildStdout>>> =
+            None;
 
         let mut is_stopping = false;
         let mut is_session_ending = false;
@@ -155,7 +175,7 @@ impl<'a> DevSession<'a> {
                                         }
                                     // should be unreachable since infinite loop
                                     // but still, return false, idk
-                                    } => false, 
+                                    } => false,
                                     status = child.wait() => {
                                         exit_status = status.ok();
                                         false
@@ -211,7 +231,7 @@ impl<'a> DevSession<'a> {
                             test_result = TestResult::Success;
 
                             self.builder.app.success("Test passed!");
-    
+
                             tx.send(Command::SendCommand("stop\nend\n".to_owned())).await?;
                             tx.send(Command::WaitUntilExit).await?;
                             tx.send(Command::EndSession).await?;
@@ -261,7 +281,7 @@ impl<'a> DevSession<'a> {
                         break 'l;
                     } else if !is_stopping {
                         self.builder.app.info("Stopping development session...");
-                        
+
                         tx.send(Command::SendCommand("stop\nend\n".to_owned())).await?;
                         tx.send(Command::WaitUntilExit).await?;
                         tx.send(Command::EndSession).await?;
@@ -287,11 +307,8 @@ impl<'a> DevSession<'a> {
                 }
                 TestResult::Crashed | TestResult::Failed => {
                     mp.suspend(|| {
-                        println!(
-                            "{} Test failed!",
-                            ColorfulTheme::default().error_prefix
-                        );
-    
+                        println!("{} Test failed!", ColorfulTheme::default().error_prefix);
+
                         if let Some(status) = &exit_status {
                             if let Some(code) = status.code() {
                                 println!(
@@ -303,26 +320,25 @@ impl<'a> DevSession<'a> {
                                     }
                                 );
                             } else if !status.success() {
-                                println!(
-                                    "  - Process didn't exit successfully"
-                                );
+                                println!("  - Process didn't exit successfully");
                             }
                         }
-    
+
                         if let TestResult::Crashed = test_result {
-                            println!(
-                                "  - Server crashed"
-                            );
+                            println!("  - Server crashed");
                         }
                     });
 
-                    if std::env::var("upload_to_mclogs") == Ok("true".to_string()) || self.builder.app.server.options.upload_to_mclogs {
-                        let pb = mp.add(ProgressBar::new_spinner()
-                            .with_message("Uploading to mclo.gs"));
-    
+                    if std::env::var("upload_to_mclogs") == Ok("true".to_string())
+                        || self.builder.app.server.options.upload_to_mclogs
+                    {
+                        let pb =
+                            mp.add(ProgressBar::new_spinner().with_message("Uploading to mclo.gs"));
+
                         pb.enable_steady_tick(Duration::from_millis(250));
 
-                        let latest_log_path = self.builder.output_dir.join("logs").join("latest.log");
+                        let latest_log_path =
+                            self.builder.output_dir.join("logs").join("latest.log");
 
                         if latest_log_path.exists() {
                             let content = std::fs::read_to_string(&latest_log_path)
@@ -339,31 +355,35 @@ impl<'a> DevSession<'a> {
                                 if !folder.exists() {
                                     bail!("crash-reports folder doesn't exist, cant upload to mclo.gs");
                                 }
-    
+
                                 // get latest crash report
-                                let (report_path, _) = folder.read_dir()?
+                                let (report_path, _) = folder
+                                    .read_dir()?
                                     .filter_map(Result::ok)
-                                    .filter_map(|f| Some((f.path(), f.metadata().ok()?.modified().ok()?)))
+                                    .filter_map(|f| {
+                                        Some((f.path(), f.metadata().ok()?.modified().ok()?))
+                                    })
                                     .max_by_key(|(_, t)| *t)
                                     .ok_or(anyhow!("can't find crash report"))?;
-    
+
                                 Some(report_path)
                             } else {
                                 None
                             };
-    
+
                             let log = self.builder.app.mclogs().paste_log(&content).await?;
                             drop(content);
 
                             let crash_log = if let Some(log_path) = crash_log_path {
-                                let content = std::fs::read_to_string(&log_path)
-                                    .context(format!("Reading crash log file: {}", log_path.display()))?;
+                                let content = std::fs::read_to_string(&log_path).context(
+                                    format!("Reading crash log file: {}", log_path.display()),
+                                )?;
 
                                 Some(self.builder.app.mclogs().paste_log(&content).await?)
                             } else {
                                 None
                             };
-    
+
                             pb.finish_and_clear();
                             self.builder.app.log("  - Logs uploaded to mclo.gs");
                             mp.suspend(|| {
@@ -376,14 +396,16 @@ impl<'a> DevSession<'a> {
                             });
                         } else {
                             pb.finish_and_clear();
-                            mp.suspend(|| println!(
-                                "{} '{}' does not exist! Can't upload log.",
-                                ColorfulTheme::default().error_prefix,
-                                style(latest_log_path.to_string_lossy()).dim()
-                            ));
+                            mp.suspend(|| {
+                                println!(
+                                    "{} '{}' does not exist! Can't upload log.",
+                                    ColorfulTheme::default().error_prefix,
+                                    style(latest_log_path.to_string_lossy()).dim()
+                                )
+                            });
                         }
                     }
-    
+
                     std::process::exit(1);
                 }
             }
@@ -395,85 +417,98 @@ impl<'a> DevSession<'a> {
     pub fn create_hotreload_watcher(
         config: Arc<Mutex<HotReloadConfig>>,
     ) -> Result<Debouncer<RecommendedWatcher>> {
-        Ok(new_debouncer(Duration::from_secs(1), move |e: DebounceEventResult| {
-            if let Ok(_e) = e {
-                let mut guard = config.lock().unwrap();
+        Ok(new_debouncer(
+            Duration::from_secs(1),
+            move |e: DebounceEventResult| {
+                if let Ok(_e) = e {
+                    let mut guard = config.lock().unwrap();
 
-                match HotReloadConfig::load_from(&guard.path) {
-                    Ok(updated) => {
-                        eprintln!("Updated hotreload.toml :3");
-                        *guard = updated;
-                    }
-                    Err(e) => {
-                        eprintln!("hotreload.toml error: {e}");
-                        eprintln!("cannot update hotreload.toml");
+                    match HotReloadConfig::load_from(&guard.path) {
+                        Ok(updated) => {
+                            eprintln!("Updated hotreload.toml :3");
+                            *guard = updated;
+                        }
+                        Err(e) => {
+                            eprintln!("hotreload.toml error: {e}");
+                            eprintln!("cannot update hotreload.toml");
+                        }
                     }
                 }
-            }
-        })?)
+            },
+        )?)
     }
 
     pub fn create_config_watcher(
         config: Arc<Mutex<HotReloadConfig>>,
         tx: mpsc::Sender<Command>,
     ) -> Result<Debouncer<RecommendedWatcher>> {
-        Ok(new_debouncer(Duration::from_secs(1), move |e: DebounceEventResult| {
-            if let Ok(e) = e {
-                for e in e {
-                    let path = e.path;
+        Ok(new_debouncer(
+            Duration::from_secs(1),
+            move |e: DebounceEventResult| {
+                if let Ok(e) = e {
+                    for e in e {
+                        let path = e.path;
 
-                    if path.is_dir() || !path.exists() {
-                        continue;
-                    }
-
-                    tx.blocking_send(Command::Bootstrap(path.clone())).unwrap();
-
-                    let guard = config.lock().unwrap();
-                    let Some(file) = guard.files.iter().find(|f| {
-                        f.path.matches_path(&path)
-                    }).cloned() else {
-                        continue;
-                    };
-                    drop(guard);
-
-                    match &file.action {
-                        HotReloadAction::Reload => {
-                            tx.blocking_send(Command::SendCommand("reload confirm\n".to_owned()))
-                                .expect("tx send err");
+                        if path.is_dir() || !path.exists() {
+                            continue;
                         }
-                        HotReloadAction::Restart => {
-                            tx.blocking_send(Command::SendCommand("stop\nend\n".to_owned()))
+
+                        tx.blocking_send(Command::Bootstrap(path.clone())).unwrap();
+
+                        let guard = config.lock().unwrap();
+                        let Some(file) = guard
+                            .files
+                            .iter()
+                            .find(|f| f.path.matches_path(&path))
+                            .cloned()
+                        else {
+                            continue;
+                        };
+                        drop(guard);
+
+                        match &file.action {
+                            HotReloadAction::Reload => {
+                                tx.blocking_send(Command::SendCommand(
+                                    "reload confirm\n".to_owned(),
+                                ))
                                 .expect("tx send err");
-                            tx.blocking_send(Command::WaitUntilExit)
-                                .expect("tx send err");
-                            tx.blocking_send(Command::Start)
-                                .expect("tx send err");
-                        }
-                        HotReloadAction::RunCommand(cmd) => {
-                            tx.blocking_send(Command::SendCommand(format!("{cmd}\n")))
-                                .expect("tx send err");
+                            }
+                            HotReloadAction::Restart => {
+                                tx.blocking_send(Command::SendCommand("stop\nend\n".to_owned()))
+                                    .expect("tx send err");
+                                tx.blocking_send(Command::WaitUntilExit)
+                                    .expect("tx send err");
+                                tx.blocking_send(Command::Start).expect("tx send err");
+                            }
+                            HotReloadAction::RunCommand(cmd) => {
+                                tx.blocking_send(Command::SendCommand(format!("{cmd}\n")))
+                                    .expect("tx send err");
+                            }
                         }
                     }
                 }
-            }
-        })?)
+            },
+        )?)
     }
 
-    pub fn create_servertoml_watcher(tx: mpsc::Sender<Command>) -> Result<Debouncer<RecommendedWatcher>> {
-        Ok(new_debouncer(Duration::from_secs(1), move |e: DebounceEventResult| {
-            if let Ok(e) = e {
-                for _e in e {
-                    tx.blocking_send(Command::SendCommand("stop\nend".to_owned()))
-                        .expect("tx send err");
-                    tx.blocking_send(Command::WaitUntilExit)
-                        .expect("tx send err");
-                    tx.blocking_send(Command::Rebuild)
-                        .expect("tx send err");
-                    tx.blocking_send(Command::Start)
-                        .expect("tx send err");
+    pub fn create_servertoml_watcher(
+        tx: mpsc::Sender<Command>,
+    ) -> Result<Debouncer<RecommendedWatcher>> {
+        Ok(new_debouncer(
+            Duration::from_secs(1),
+            move |e: DebounceEventResult| {
+                if let Ok(e) = e {
+                    for _e in e {
+                        tx.blocking_send(Command::SendCommand("stop\nend".to_owned()))
+                            .expect("tx send err");
+                        tx.blocking_send(Command::WaitUntilExit)
+                            .expect("tx send err");
+                        tx.blocking_send(Command::Rebuild).expect("tx send err");
+                        tx.blocking_send(Command::Start).expect("tx send err");
+                    }
                 }
-            }
-        })?)
+            },
+        )?)
     }
 
     pub async fn start(mut self) -> Result<()> {
@@ -484,9 +519,23 @@ impl<'a> DevSession<'a> {
             let mut hotreload_watcher = Self::create_hotreload_watcher(cfg_mutex.clone())?;
             let mut servertoml_watcher = Self::create_servertoml_watcher(tx.clone())?;
 
-            config_watcher.watcher().watch(self.builder.app.server.path.join("config").as_path(), RecursiveMode::Recursive)?;
-            servertoml_watcher.watcher().watch(self.builder.app.server.path.join("server.toml").as_path(), RecursiveMode::NonRecursive)?;
-            hotreload_watcher.watcher().watch(self.builder.app.server.path.join("hotreload.toml").as_path(), RecursiveMode::NonRecursive)?;
+            config_watcher.watcher().watch(
+                self.builder.app.server.path.join("config").as_path(),
+                RecursiveMode::Recursive,
+            )?;
+            servertoml_watcher.watcher().watch(
+                self.builder.app.server.path.join("server.toml").as_path(),
+                RecursiveMode::NonRecursive,
+            )?;
+            hotreload_watcher.watcher().watch(
+                self.builder
+                    .app
+                    .server
+                    .path
+                    .join("hotreload.toml")
+                    .as_path(),
+                RecursiveMode::NonRecursive,
+            )?;
         }
 
         tx.send(Command::Rebuild).await?;

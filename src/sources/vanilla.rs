@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 
-use crate::app::{App, ResolvedFile, CacheStrategy};
+use crate::app::{App, CacheStrategy, ResolvedFile};
 
 pub struct VanillaAPI<'a>(pub &'a App);
 
@@ -10,34 +10,47 @@ pub const CACHE_DIR: &str = "vanilla";
 
 impl<'a> VanillaAPI<'a> {
     pub async fn fetch_latest_mcver(&self) -> Result<String> {
-        Ok(mcapi::vanilla::fetch_version_manifest(&self.0.http_client).await?.latest.release)
+        Ok(mcapi::vanilla::fetch_version_manifest(&self.0.http_client)
+            .await?
+            .latest
+            .release)
     }
 
     pub async fn resolve_source(&self, version: &str) -> Result<ResolvedFile> {
         let version_manifest = mcapi::vanilla::fetch_version_manifest(&self.0.http_client).await?;
 
         let version = match version {
-            "latest" => version_manifest.fetch_latest_release(&self.0.http_client).await?,
-            "latest-snapshot" => version_manifest.fetch_latest_snapshot(&self.0.http_client).await?,
+            "latest" => {
+                version_manifest
+                    .fetch_latest_release(&self.0.http_client)
+                    .await?
+            }
+            "latest-snapshot" => {
+                version_manifest
+                    .fetch_latest_snapshot(&self.0.http_client)
+                    .await?
+            }
             id => version_manifest.fetch(id, &self.0.http_client).await?,
         };
 
-        let file = version.downloads
+        let file = version
+            .downloads
             .get(&mcapi::vanilla::DownloadType::Server)
             .ok_or(anyhow!(
                 "version manifest doesn't include a server download"
             ))?;
-        
+
         let cached_file_path = format!("server-{}.jar", version.id);
 
         Ok(ResolvedFile {
             url: file.url.clone(),
             filename: cached_file_path.clone(),
-            cache: CacheStrategy::File { namespace: CACHE_DIR.to_owned(), path: cached_file_path },
+            cache: CacheStrategy::File {
+                namespace: CACHE_DIR.to_owned(),
+                path: cached_file_path,
+            },
             size: Some(file.size as u64),
-            hashes: HashMap::from([
-                ("sha1".to_owned(), file.sha1.clone())
-            ]),
+            hashes: HashMap::from([("sha1".to_owned(), file.sha1.clone())]),
         })
     }
 }

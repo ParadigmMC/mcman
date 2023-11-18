@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use crate::app::{Resolvable, App, ResolvedFile};
+use crate::app::{App, Resolvable, ResolvedFile};
 
 use crate::model::Downloadable;
 
@@ -119,15 +119,16 @@ impl ServerType {
             ServerType::Quilt { .. } => Some("quilt"),
             ServerType::Forge { .. } => Some("forge"),
             ServerType::NeoForge { .. } => Some("neoforge"),
-            ServerType::Paper {  } => Some("paper"),
+            ServerType::Paper {} => Some("paper"),
             ServerType::BuildTools { .. } => Some("spigot"),
             ServerType::Purpur { .. } => Some("purpur"),
-            ServerType::BungeeCord {  } => Some("bungeecord"),
-            ServerType::Velocity {  } => Some("velocity"),
-            ServerType::Waterfall {  } => Some("waterfall"),
+            ServerType::BungeeCord {} => Some("bungeecord"),
+            ServerType::Velocity {} => Some("velocity"),
+            ServerType::Waterfall {} => Some("waterfall"),
             ServerType::PaperMC { project, .. } => Some(project.as_str()),
             _ => None,
-        }.map(ToOwned::to_owned)
+        }
+        .map(ToOwned::to_owned)
     }
 
     pub fn is_modded(&self) -> bool {
@@ -142,7 +143,7 @@ impl ServerType {
 impl ToString for ServerType {
     fn to_string(&self) -> String {
         match self {
-            ServerType::Vanilla {  } => String::from("Vanilla"),
+            ServerType::Vanilla {} => String::from("Vanilla"),
             ServerType::PaperMC { project, build } => format!("{project} build {build}"),
             ServerType::Purpur { build } => format!("Purpur build {build}"),
             ServerType::Fabric { loader, .. } => format!("Fabric v{loader}"),
@@ -150,10 +151,10 @@ impl ToString for ServerType {
             ServerType::NeoForge { loader } => format!("NeoForge v{loader}"),
             ServerType::Forge { loader } => format!("Forge v{loader}"),
             ServerType::BuildTools { software, .. } => format!("(BuildTools) {software}"),
-            ServerType::Paper {  } => "Paper".to_owned(),
-            ServerType::Velocity {  } => "Velocity".to_owned(),
-            ServerType::Waterfall {  } => "Waterfall".to_owned(),
-            ServerType::BungeeCord {  } => "BungeeCord".to_owned(),
+            ServerType::Paper {} => "Paper".to_owned(),
+            ServerType::Velocity {} => "Velocity".to_owned(),
+            ServerType::Waterfall {} => "Waterfall".to_owned(),
+            ServerType::BungeeCord {} => "BungeeCord".to_owned(),
             ServerType::Downloadable { inner } => inner.to_string(),
         }
     }
@@ -165,18 +166,34 @@ impl Resolvable for ServerType {
         let version = &app.mc_version();
 
         match self {
-            ServerType::Vanilla {  } => app.vanilla().resolve_source(version).await,
-            ServerType::PaperMC { project, build } => app.papermc().resolve_source(project, version, build).await,
+            ServerType::Vanilla {} => app.vanilla().resolve_source(version).await,
+            ServerType::PaperMC { project, build } => {
+                app.papermc().resolve_source(project, version, build).await
+            }
             ServerType::Purpur { build } => app.purpur().resolve_source(version, build).await,
-            ServerType::Fabric { loader, installer } => app.fabric().resolve_source(loader, installer).await,
+            ServerType::Fabric { loader, installer } => {
+                app.fabric().resolve_source(loader, installer).await
+            }
             ServerType::Quilt { installer, .. } => app.quilt().resolve_installer(installer).await,
             ServerType::NeoForge { loader } => app.neoforge().resolve_source(loader).await,
             ServerType::Forge { loader } => app.forge().resolve_source(loader).await,
             ServerType::BuildTools { .. } => buildtools().resolve_source(app).await,
-            ServerType::Paper {  } => app.papermc().resolve_source("paper", version, "latest").await,
-            ServerType::Velocity {  } => app.papermc().resolve_source("velocity", version, "latest").await,
-            ServerType::Waterfall {  } => app.papermc().resolve_source("waterfall", version, "latest").await,
-            ServerType::BungeeCord {  } => bungeecord().resolve_source(app).await,
+            ServerType::Paper {} => {
+                app.papermc()
+                    .resolve_source("paper", version, "latest")
+                    .await
+            }
+            ServerType::Velocity {} => {
+                app.papermc()
+                    .resolve_source("velocity", version, "latest")
+                    .await
+            }
+            ServerType::Waterfall {} => {
+                app.papermc()
+                    .resolve_source("waterfall", version, "latest")
+                    .await
+            }
+            ServerType::BungeeCord {} => bungeecord().resolve_source(app).await,
             ServerType::Downloadable { inner } => inner.resolve_source(app).await,
         }
     }

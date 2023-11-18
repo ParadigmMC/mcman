@@ -23,8 +23,9 @@ pub async fn run(app: App, args: Args) -> Result<()> {
     app.download(
         &dl,
         PathBuf::from("."),
-        app.multi_progress.add(ProgressBar::new_spinner())
-    ).await?;
+        app.multi_progress.add(ProgressBar::new_spinner()),
+    )
+    .await?;
 
     Ok(())
 }

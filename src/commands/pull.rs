@@ -19,7 +19,9 @@ pub struct Args {
 pub fn run(app: &App, args: Args) -> Result<()> {
     let files = args.file;
 
-    let pb = app.multi_progress.add(ProgressBar::new_spinner())
+    let pb = app
+        .multi_progress
+        .add(ProgressBar::new_spinner())
         .with_message("Pulling files...");
 
     pb.enable_steady_tick(Duration::from_millis(250));

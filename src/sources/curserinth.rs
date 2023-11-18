@@ -1,7 +1,7 @@
-use anyhow::{Result, anyhow};
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use anyhow::{anyhow, Result};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-use crate::app::{App, ResolvedFile, CacheStrategy};
+use crate::app::{App, CacheStrategy, ResolvedFile};
 
 use super::modrinth::{ModrinthFile, ModrinthProject, VersionType};
 
@@ -47,27 +47,28 @@ pub static CURSERINTH_API: &str = "https://curserinth-api.kuylar.dev/v2";
 pub struct CurserinthAPI<'a>(pub &'a App);
 
 impl<'a> CurserinthAPI<'a> {
-    pub async fn fetch_api<T: DeserializeOwned>(
-        &self,
-        url: String,
-    ) -> Result<T> {
-        let json: T = self.0.http_client
+    pub async fn fetch_api<T: DeserializeOwned>(&self, url: String) -> Result<T> {
+        let json: T = self
+            .0
+            .http_client
             .get(url)
             .send()
             .await?
             .error_for_status()?
             .json()
             .await?;
-        
+
         Ok(json)
     }
 
     pub async fn fetch_project(&self, id: &str) -> Result<ModrinthProject> {
-        self.fetch_api(format!("{CURSERINTH_API}/project/{id}")).await
+        self.fetch_api(format!("{CURSERINTH_API}/project/{id}"))
+            .await
     }
 
     pub async fn fetch_all_versions(&self, id: &str) -> Result<Vec<CurseRinthVersion>> {
-        self.fetch_api(format!("{CURSERINTH_API}/project/{id}/version")).await
+        self.fetch_api(format!("{CURSERINTH_API}/project/{id}/version"))
+            .await
     }
 
     pub fn get_modrinth_name(&self) -> Option<String> {
@@ -75,19 +76,26 @@ impl<'a> CurserinthAPI<'a> {
     }
 
     /// Result<(filtered, unfiltered)>
-    pub async fn fetch_versions(&self, id: &str) -> Result<(Vec<CurseRinthVersion>, Vec<CurseRinthVersion>)> {
+    pub async fn fetch_versions(
+        &self,
+        id: &str,
+    ) -> Result<(Vec<CurseRinthVersion>, Vec<CurseRinthVersion>)> {
         let versions = self.fetch_all_versions(id).await?;
 
         Ok((
-            versions.iter().filter(|v| if let Some(loader) = self.get_modrinth_name() {
-                v.loaders.contains(&loader)
-            } else {
-            true
-            })
-            .filter(|v| v.game_versions.contains(&self.0.server.mc_version))
-            .cloned()
-            .collect(),
             versions
+                .iter()
+                .filter(|v| {
+                    if let Some(loader) = self.get_modrinth_name() {
+                        v.loaders.contains(&loader)
+                    } else {
+                        true
+                    }
+                })
+                .filter(|v| v.game_versions.contains(&self.0.server.mc_version))
+                .cloned()
+                .collect(),
+            versions,
         ))
     }
 
@@ -97,24 +105,40 @@ impl<'a> CurserinthAPI<'a> {
         let version = match version {
             "latest" => {
                 // TODO: unfiltered_versions based on some option
-                versions.first().ok_or(anyhow!("No compatible versions for CurseRinth project '{id}' (version 'latest')"))?
+                versions.first().ok_or(anyhow!(
+                    "No compatible versions for CurseRinth project '{id}' (version 'latest')"
+                ))?
             }
-            ver => unfiltered_versions.iter().find(|v| v.id == ver)
-                .ok_or(anyhow!("Version '{ver}' not found for CurseRinth project '{id}'"))?
+            ver => unfiltered_versions
+                .iter()
+                .find(|v| v.id == ver)
+                .ok_or(anyhow!(
+                    "Version '{ver}' not found for CurseRinth project '{id}'"
+                ))?,
         };
 
         Ok(version.clone())
     }
 
-    pub async fn fetch_file(&self, id: &str, version: &str) -> Result<(ModrinthFile, CurseRinthVersion)> {
+    pub async fn fetch_file(
+        &self,
+        id: &str,
+        version: &str,
+    ) -> Result<(ModrinthFile, CurseRinthVersion)> {
         let version = self.fetch_version(id, version).await?;
 
         Ok((
-            version.files.iter()
-                .find(|f| f.primary)
-                .ok_or(anyhow!("Primary file not found on CurseRinth version '{}' ({}), project '{id}'", version.id, version.name))?
-                .clone(),
             version
+                .files
+                .iter()
+                .find(|f| f.primary)
+                .ok_or(anyhow!(
+                    "Primary file not found on CurseRinth version '{}' ({}), project '{id}'",
+                    version.id,
+                    version.name
+                ))?
+                .clone(),
+            version,
         ))
     }
 
@@ -128,7 +152,7 @@ impl<'a> CurserinthAPI<'a> {
             filename: file.filename,
             cache: CacheStrategy::File {
                 namespace: String::from("curserinth"),
-                path: cached_file_path
+                path: cached_file_path,
             },
             size: Some(file.size),
             hashes: file.hashes,

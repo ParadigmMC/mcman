@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
-use mcapi::fabric::{FabricLoader, FabricInstaller, FABRIC_META_URL};
+use mcapi::fabric::{FabricInstaller, FabricLoader, FABRIC_META_URL};
 
-use crate::app::{App, ResolvedFile, CacheStrategy};
+use crate::app::{App, CacheStrategy, ResolvedFile};
 
 pub struct FabricAPI<'a>(pub &'a App);
 
@@ -13,7 +13,13 @@ impl<'a> FabricAPI<'a> {
     }
 
     pub async fn fetch_latest_loader(&self) -> Result<String> {
-        Ok(self.fetch_loaders().await?.first().ok_or(anyhow!("No fabric loaders???"))?.version.clone())
+        Ok(self
+            .fetch_loaders()
+            .await?
+            .first()
+            .ok_or(anyhow!("No fabric loaders???"))?
+            .version
+            .clone())
     }
 
     pub async fn fetch_installers(&self) -> Result<Vec<FabricInstaller>> {
@@ -21,7 +27,13 @@ impl<'a> FabricAPI<'a> {
     }
 
     pub async fn fetch_latest_installer(&self) -> Result<String> {
-        Ok(self.fetch_installers().await?.first().ok_or(anyhow!("No fabric installers???"))?.version.clone())
+        Ok(self
+            .fetch_installers()
+            .await?
+            .first()
+            .ok_or(anyhow!("No fabric installers???"))?
+            .version
+            .clone())
     }
 
     pub async fn resolve_source(&self, loader: &str, installer: &str) -> Result<ResolvedFile> {
@@ -35,7 +47,10 @@ impl<'a> FabricAPI<'a> {
             id => id.to_owned(),
         };
 
-        let cached_file_path = format!("fabric-server-{}-{installer}-{loader}.jar", self.0.mc_version());
+        let cached_file_path = format!(
+            "fabric-server-{}-{installer}-{loader}.jar",
+            self.0.mc_version()
+        );
 
         Ok(ResolvedFile {
             url: format!(
@@ -43,7 +58,10 @@ impl<'a> FabricAPI<'a> {
                 self.0.mc_version()
             ),
             filename: cached_file_path.clone(),
-            cache: CacheStrategy::File { namespace: String::from("fabric"), path: cached_file_path },
+            cache: CacheStrategy::File {
+                namespace: String::from("fabric"),
+                path: cached_file_path,
+            },
             size: None,
             hashes: HashMap::new(),
         })

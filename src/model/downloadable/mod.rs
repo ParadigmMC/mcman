@@ -4,8 +4,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
+use crate::app::{App, CacheStrategy, Resolvable, ResolvedFile};
 use crate::sources::jenkins;
-use crate::app::{ResolvedFile, CacheStrategy, App, Resolvable};
 
 mod markdown;
 mod meta;
@@ -94,19 +94,14 @@ pub fn artifact() -> String {
 impl Resolvable for Downloadable {
     async fn resolve_source(&self, app: &App) -> Result<ResolvedFile> {
         match self {
-            Self::Url {
-                url,
-                filename,
-                ..
-            } => Ok(ResolvedFile {
+            Self::Url { url, filename, .. } => Ok(ResolvedFile {
                 url: url.clone(),
-                filename:
-                    if let Some(filename) = filename {
-                        filename.clone()
-                    } else {
-                        let url_clean = url.split('?').next().unwrap_or(url);
-                        url_clean.split('/').last().unwrap().to_string()
-                    },
+                filename: if let Some(filename) = filename {
+                    filename.clone()
+                } else {
+                    let url_clean = url.split('?').next().unwrap_or(url);
+                    url_clean.split('/').last().unwrap().to_string()
+                },
                 cache: CacheStrategy::None,
                 size: None,
                 hashes: HashMap::new(),
@@ -115,7 +110,9 @@ impl Resolvable for Downloadable {
             Self::CurseRinth { id, version } => app.curserinth().resolve_source(id, version).await,
             Self::Spigot { id, version } => app.spigot().resolve_source(id, version).await,
             Self::Hangar { id, version } => app.hangar().resolve_source(id, version).await,
-            Self::GithubRelease { repo, tag, asset } => app.github().resolve_source(repo, tag, asset).await,
+            Self::GithubRelease { repo, tag, asset } => {
+                app.github().resolve_source(repo, tag, asset).await
+            }
             Self::Jenkins {
                 url,
                 job,
@@ -128,7 +125,11 @@ impl Resolvable for Downloadable {
                 artifact,
                 version,
                 filename,
-            } => app.maven().resolve_source(url, group, artifact, version, filename).await,
+            } => {
+                app.maven()
+                    .resolve_source(url, group, artifact, version, filename)
+                    .await
+            }
         }
     }
 }
