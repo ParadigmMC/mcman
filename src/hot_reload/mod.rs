@@ -401,7 +401,7 @@ impl<'a> DevSession<'a> {
                                     "{} '{}' does not exist! Can't upload log.",
                                     ColorfulTheme::default().error_prefix,
                                     style(latest_log_path.to_string_lossy()).dim()
-                                )
+                                );
                             });
                         }
                     }

@@ -226,6 +226,7 @@ impl<'a> MarkdownAPI<'a> {
         Ok(table)
     }
 
+    #[allow(clippy::too_many_lines)]
     pub async fn fetch_downloadable_info(
         &self,
         dl: &Downloadable,
