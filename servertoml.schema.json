@@ -1,7 +1,138 @@
 {
-    "$schema": "http://json-schema.org/schema",
+    "$schema": "http://json-schema.org/draft-07/schema",
     "$id": "https://raw.githubusercontent.com/ParadigmMC/mcman/main/servertoml.schema.json",
     "definitions": {
+        "ServerType": {
+            "anyOf": [
+                {
+                    "type": "object",
+                    "anyOf": [
+                        {
+                            "properties": {
+                                "type": {
+                                    "const": "papermc"
+                                },
+                                "project": {
+                                    "type": "string",
+                                    "enum": [
+                                        "paper",
+                                        "velocity",
+                                        "waterfall"
+                                    ]
+                                },
+                                "build": {
+                                    "type": "string",
+                                    "default": "latest"
+                                }
+                            }
+                        },
+                        {
+                            "properties": {
+                                "type": {
+                                    "const": "purpur"
+                                },
+                                "build": {
+                                    "type": "string",
+                                    "default": "latest"
+                                }
+                            }
+                        },
+                        {
+                            "properties": {
+                                "type": {
+                                    "anyOf": [
+                                        {
+                                            "const": "quilt"
+                                        },
+                                        {
+                                            "const": "fabric"
+                                        }
+                                    ]
+                                },
+                                "loader": {
+                                    "description": "The loader version",
+                                    "type": "string",
+                                    "default": "latest"
+                                },
+                                "installer": {
+                                    "description": "The installer version",
+                                    "type": "string",
+                                    "default": "latest"
+                                }
+                            },
+                            "required": ["loader"]
+                        },
+                        {
+                            "properties": {
+                                "type": {
+                                    "anyOf": [
+                                        {
+                                            "const": "neoforge"
+                                        },
+                                        {
+                                            "const": "forge"
+                                        }
+                                    ]
+                                },
+                                "loader": {
+                                    "description": "The loader version",
+                                    "type": "string",
+                                    "default": "latest"
+                                }
+                            },
+                            "required": ["loader"]
+                        },
+                        {
+                            "properties": {
+                                "type": {
+                                    "const": "buildtools"
+                                },
+                                "software": {
+                                    "enum": [
+                                        "spigot",
+                                        "craftbukkit",
+                                        "none"
+                                    ],
+                                    "default": "spigot"
+                                },
+                                "args": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "properties": {
+                                "type": {
+                                    "anyOf": [
+                                        {
+                                            "const": "paper"
+                                        },
+                                        {
+                                            "const": "velocity"
+                                        },
+                                        {
+                                            "const": "waterfall"
+                                        },
+                                        {
+                                            "const": "bungeecord"
+                                        },
+                                        {
+                                            "const": "vanilla"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "$ref": "#/definitions/Downloadable"
+                }
+            ]
+        },
         "Downloadable": {
             "type": "object",
             "anyOf": [
@@ -41,9 +172,11 @@
                             "type": "string"
                         },
                         "version": {
-                            "type": "string"
+                            "type": "string",
+                            "default": "latest"
                         }
-                    }
+                    },
+                    "required": ["id"]
                 },
                 {
                     "properties": {
@@ -63,26 +196,8 @@
                         "version": {
                             "type": "string"
                         }
-                    }
-                },
-                {
-                    "properties": {
-                        "type": {
-                            "const": "papermc"
-                        },
-                        "project": {
-                            "type": "string",
-                            "enum": [
-                                "paper",
-                                "velocity",
-                                "waterfall"
-                            ]
-                        },
-                        "build": {
-                            "type": "string",
-                            "default": "latest"
-                        }
-                    }
+                    },
+                    "required": ["id"]
                 },
                 {
                     "description": "Download from Spigot Resources",
@@ -92,8 +207,10 @@
                         },
                         "id": {
                             "type": "string"
-                        }
-                    }
+                        },
+                        "version": { "type": "string", "default": "latest" }
+                    },
+                    "required": ["id"]
                 },
                 {
                     "description": "Download from Github Releases",
@@ -112,7 +229,8 @@
                             "type": "string",
                             "default": "first"
                         }
-                    }
+                    },
+                    "required": ["repo"]
                 },
                 {
                     "description": "Download from jenkins",
@@ -137,71 +255,30 @@
                     }
                 },
                 {
+                    "description": "Download from a Maven repository",
                     "properties": {
                         "type": {
-                            "const": "purpur"
+                            "const": "maven"
                         },
-                        "build": {
-                            "type": "string",
-                            "default": "latest"
-                        }
-                    }
-                },
-                {
-                    "properties": {
-                        "type": {
-                            "anyOf": [
-                                { "const": "quilt" },
-                                { "const": "fabric" }
-                            ]
+                        "url": {
+                            "type": "string"
                         },
-                        "loader": {
-                            "description": "The loader version",
+                        "group": {
+                            "type": "string"
+                        },
+                        "artifact": {
+                            "type": "string"
+                        },
+                        "version": {
                             "type": "string",
                             "default": "latest"
                         },
-                        "installer": {
-                            "description": "The installer version",
+                        "filename": {
                             "type": "string",
-                            "default": "latest"
+                            "default": "artifact"
                         }
-                    }
-                },
-                {
-                    "properties": {
-                        "type": {
-                            "const": "buildtools"
-                        },
-                        "args": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                },
-                {
-                    "properties": {
-                        "type": {
-                            "anyOf": [
-                                {
-                                    "const": "paper"
-                                },
-                                {
-                                    "const": "velocity"
-                                },
-                                {
-                                    "const": "waterfall"
-                                },
-                                {
-                                    "const": "bungeecord"
-                                },
-                                {
-                                    "const": "vanilla"
-                                }
-                            ]
-                        }
-                    }
+                    },
+                    "required": ["url", "group", "artifact"]
                 }
             ]
         }
@@ -220,19 +297,20 @@
         },
         "jar": {
             "description": "The server jar to use",
-            "$ref": "#/definitions/Downloadable"
+            "$ref": "#/definitions/ServerType"
         },
         "launcher": {
             "type": "object",
             "description": "Config properties for generating launch scripts",
             "properties": {
-                "aikars_flags": {
-                    "type": "boolean",
-                    "description": "Uses aikar's flags on the launch scripts"
-                },
-                "proxy_flags": {
-                    "type": "boolean",
-                    "description": "Uses proxy-optimized flags on the launch scripts"
+                "preset_flags": {
+                    "description": "Preset flags for launch scripts",
+                    "enum": [
+                        "aikars",
+                        "proxy",
+                        "none"
+                    ],
+                    "default": "none"
                 },
                 "nogui": {
                     "type": "boolean",
@@ -261,6 +339,11 @@
                 "properties": {
                     "type": "object",
                     "description": "The -Dsomething=something properties to add to the launcher scripts"
+                },
+                "java_version": {
+                    "type": "string",
+                    "description": "Java version hint",
+                    "examples": ["17", "16", "8"]
                 }
             }
         },
@@ -284,7 +367,11 @@
             "items": {
                 "type": "array",
                 "items": {
-                    "allOf": [{ "$ref": "#/definitions/Downloadable" }],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/Downloadable"
+                        }
+                    ],
                     "properties": {
                         "optional": {
                             "type": "boolean",
@@ -305,6 +392,10 @@
                 "type": "object",
                 "description": "A world",
                 "properties": {
+                    "download": {
+                        "description": "Where to download the world, if missing",
+                        "$ref": "#/definitions/Downloadable"
+                    },
                     "datapacks": {
                         "type": "array",
                         "items": {
@@ -317,7 +408,15 @@
         },
         "variables": {
             "type": "object",
-            "description": "Variables to use in bootstrapping"
+            "description": "Variables to use in bootstrapping",
+            "properties": {
+                "MODPACK_NAME": { "type": "string" },
+                "MODPACK_DESCRIPTION": { "type": "string" },
+                "MODPACK_VERSION": { "type": "string" },
+                "MODPACK_SUMMARY": { "type": "string" },
+                "MODPACK_AUTHOR": { "type": "string" },
+                "MOTD": { "type": "string" }
+            }
         },
         "markdown": {
             "type": "object",
@@ -330,12 +429,29 @@
                         "type": "string",
                         "description": "Path to a markdown file"
                     },
-                    "default": ["README.md"]
+                    "default": [
+                        "README.md"
+                    ]
                 },
                 "auto_update": {
                     "type": "boolean",
                     "description": "If enabled, will automatically render on some events",
                     "default": false
+                }
+            }
+        },
+        "options": {
+            "description": "Extra optional options",
+            "type": "object",
+            "properties": {
+                "upload_to_mclogs": {
+                    "description": "If enabled, uploads logs to https://mclo.gs if server stops/crashes when using `run`/`dev` commands",
+                    "type": "boolean"
+                },
+                "bootstrap_exts": {
+                    "description": "Extra file extensions to boostrap",
+                    "type": "array",
+                    "items": { "type": "string" }
                 }
             }
         }

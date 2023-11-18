@@ -69,7 +69,6 @@ pub enum Downloadable {
     Maven {
         url: String,
         group: String,
-        #[serde(default = "first")]
         artifact: String,
         #[serde(default = "latest")]
         version: String,

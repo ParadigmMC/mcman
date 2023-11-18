@@ -52,7 +52,6 @@ pub enum ServerType {
         installer: String,
     },
 
-    #[serde(alias = "neoforged")]
     NeoForge {
         #[serde(default = "latest")]
         loader: String,

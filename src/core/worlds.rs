@@ -78,7 +78,7 @@ impl<'a> BuildContext<'a> {
 
                 unzip(&path, &self.output_dir.join(name))?;
 
-                spinner.finish_with_message(format!("Unzipped world successfully"));
+                spinner.finish_with_message("Unzipped world successfully".to_string());
             }
         }
 
@@ -88,7 +88,7 @@ impl<'a> BuildContext<'a> {
 
             self.process_datapacks(progress_bar, name, world)
                 .await
-                .context(format!("Processing datapacks"))?;
+                .context("Processing datapacks")?;
         }
 
         Ok(())
