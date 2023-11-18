@@ -209,6 +209,9 @@ impl<'a> ModrinthAPI<'a> {
 
         if let Some(n) = self.get_modrinth_name() {
             arr.push(vec![format!("categories:{n}")]);
+            if n == "quilt" {
+                arr.push(vec![format!("categories:fabric")]);
+            }
         }
 
         serde_json::to_string(&arr).unwrap()
@@ -223,8 +226,10 @@ impl<'a> ModrinthAPI<'a> {
             .send()
             .await?
             .error_for_status()?
-            .json()
-            .await?)
+            .json::<ModrinthSearchResults>()
+            .await?
+            .hits
+        )
     }
 
     pub async fn version_from_hash(&self, hash: &str, algo: &str) -> Result<ModrinthVersion> {

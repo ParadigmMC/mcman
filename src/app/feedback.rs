@@ -189,6 +189,7 @@ impl App {
                 .items(items)
                 .with_prompt(prompt)
                 .default(0)
+                .max_length(5)
                 .interact()
         })?];
 
@@ -206,6 +207,7 @@ impl App {
                 .items(items)
                 .with_prompt(prompt)
                 .default(def)
+                .max_length(5)
                 .interact()
         })?];
 

@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use crate::app::App;
 
-#[derive(clap::Args)]
+#[derive(clap::Args, Default)]
 pub struct Args {
     source: String,
 }

@@ -13,6 +13,10 @@
 ## Mods
 
 <!--start:mcman-addons-->
-|  |
-|  |
+| Name                                                                                        | Description                                                                                    | Version  |
+| ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | -------- |
+| [Create Fabric](https://modrinth.com/mod/create-fabric)                                     | Building Tools and Aesthetic Technology                                                        | wKEEi1qX |
+| [Quilted Fabric API (QFAPI) / Quilt Standard Libraries (QSL)](https://modrinth.com/mod/qsl) | The standard libraries of the Quilt ecosystem. Essential for your modding experience on Quilt! | BTCxVi75 |
+| [spark](https://modrinth.com/mod/spark)                                                     | spark is a performance profiler for Minecraft clients, servers and proxies.                    | XhFbpH8f |
+| [spark](https://modrinth.com/mod/spark)                                                     | spark is a performance profiler for Minecraft clients, servers and proxies.                    | XhFbpH8f |
 <!--end:mcman-addons-->

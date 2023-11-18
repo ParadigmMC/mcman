@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{bail, Result, Context};
 
 use crate::{
     app::{App, Prefix},
@@ -27,7 +27,8 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
         app.prompt_string("Search on Modrinth")?
     };
 
-    let projects = app.modrinth().search(&query).await?;
+    let projects = app.modrinth().search(&query).await
+        .context("Searching modrinth")?;
 
     if projects.is_empty() {
         bail!("No modrinth projects found for query '{query}'");
@@ -43,7 +44,7 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
                 p.slug,
                 p.description,
                 s = " ",
-                w = 10
+                w = 4
             );
 
             SelectItem(p, str)
@@ -52,7 +53,8 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
 
     let project = app.select("Which project?", &items)?;
 
-    let versions = app.modrinth().fetch_versions(&project.slug).await?;
+    let versions = app.modrinth().fetch_versions(&project.slug).await
+        .context("Fetching modrinth versions")?;
 
     let version = app.select(
         "Which version?",
@@ -92,9 +94,8 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
             app.add_addon_inferred(&addon)?;
 
             app.save_changes()?;
-            app.refresh_markdown().await?;
-
             app.notify(Prefix::Imported, format!("{} from modrinth", project.title));
+            app.refresh_markdown().await?;
         }
         "datapack" => {
             let dp = Downloadable::Modrinth {

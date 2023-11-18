@@ -21,8 +21,14 @@ pub enum Commands {
     Packwiz(packwiz::Args),
 }
 
-pub async fn run(mut app: App, subcommands: Commands) -> Result<()> {
-    match subcommands {
+impl Default for Commands {
+    fn default() -> Self {
+        Self::Url(url::Args::default())
+    }
+}
+
+pub async fn run(mut app: App, subcommand: Commands) -> Result<()> {
+    match subcommand {
         Commands::Url(args) => url::run(app, args).await?,
         Commands::Datapack(args) => datapack::run(app, args).await?,
         Commands::Mrpack(args) => mrpack::run(app, args).await?,

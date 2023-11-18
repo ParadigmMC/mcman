@@ -6,7 +6,7 @@ use tempfile::Builder;
 
 use crate::{app::App, interop::mrpack::MRPackReader};
 
-#[derive(clap::Args)]
+#[derive(clap::Args, Default)]
 pub struct Args {
     source: String,
 }
