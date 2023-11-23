@@ -23,7 +23,6 @@ impl<'a> PaperMCAPI<'a> {
         Ok(json)
     }
 
-    #[allow(unused)]
     pub async fn fetch_versions(&self, project: &str) -> Result<Vec<String>> {
         let proj = self
             .fetch_api::<PaperProject>(format!("{PAPERMC_URL}/projects/{project}"))
@@ -74,7 +73,14 @@ impl<'a> PaperMCAPI<'a> {
         version: &str,
         build: &str,
     ) -> Result<ResolvedFile> {
-        let resolved_build = self.fetch_build(project, version, build).await?;
+        let version = match version {
+            "latest" => {
+                self.fetch_versions(project).await?.last().ok_or(anyhow!("No versions"))?.clone()
+            },
+            id => id.to_owned(),
+        };
+
+        let resolved_build = self.fetch_build(project, &version, build).await?;
 
         let download = resolved_build.downloads.get("application")
             .ok_or(anyhow!("downloads['application'] missing for papermc project {project} {version}, build {build} ({})", resolved_build.build))?;

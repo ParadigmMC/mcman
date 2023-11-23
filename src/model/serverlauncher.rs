@@ -138,7 +138,7 @@ impl ServerLauncher {
             }
         }
 
-        if self.nogui {
+        if self.nogui && !matches!(self.preset_flags, PresetFlags::Proxy) {
             args.push(String::from("--nogui"));
         }
 

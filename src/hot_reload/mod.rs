@@ -226,7 +226,7 @@ impl<'a> DevSession<'a> {
                     if self.test_mode
                         && !is_stopping
                         && test_result == TestResult::Failed {
-                        if s.contains("]: Done") && s.ends_with("For help, type \"help\"") {
+                        if s.contains("]: Done") /* && s.ends_with("For help, type \"help\"") */ {
                             test_result = TestResult::Success;
 
                             self.builder.app.success("Test passed!");

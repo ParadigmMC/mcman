@@ -154,7 +154,7 @@ impl<'a> MarkdownAPI<'a> {
 
         if self.0.network.is_some() {
             templates.push(MarkdownTemplate {
-                id: "network-servers".to_string(),
+                id: "servers".to_string(),
                 table: self.table_network(),
             });
         }
