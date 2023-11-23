@@ -1,102 +1,103 @@
-use anyhow::{Context, Result};
-use console::style;
+use std::{collections::HashSet, time::Duration};
+
+use anyhow::{bail, Result};
+use indicatif::{FormattedDuration, ProgressBar, ProgressIterator, ProgressStyle};
 use tokio::fs;
 
-use crate::{model::Change, util::logger::Logger};
+use crate::app::AddonType;
 
-use super::{BuildContext, ReportBackState};
+use super::BuildContext;
 
-impl BuildContext {
-    pub async fn download_addons(
-        &mut self,
-        addon_type: &str,
-    ) -> Result<()> {
-        let change_list = match addon_type {
-            "plugins" => &self.changes.plugins,
-            "mods" => &self.changes.mods,
-            _ => unreachable!()
-        };
-
+impl<'a> BuildContext<'a> {
+    pub async fn download_addons(&mut self, addon_type: AddonType) -> Result<()> {
         let server_list = match addon_type {
-            "plugins" => &self.server.plugins,
-            "mods" => &self.server.mods,
-            _ => unreachable!()
+            AddonType::Plugin => &self.app.server.plugins,
+            AddonType::Mod => &self.app.server.mods,
         };
 
-        let addon_count = server_list.len();
+        self.app.print_job(&format!(
+            "Processing {} {addon_type}{}...{}",
+            server_list.len(),
+            if server_list.len() == 1 { "" } else { "s" },
+            if server_list.len() < 200 {
+                ""
+            } else {
+                " may god help you"
+            },
+        ));
 
-        let idx_w = addon_count.to_string().len();
+        self.app.ci(&format!("::group::Processing {addon_type}s"));
 
-        let removed_addons = change_list.iter()
-            .filter(|c| matches!(c, Change::Removed(_)))
-            .map(|c| c.inner())
-            .collect::<Vec<_>>();
+        let mut files_list = HashSet::new();
 
-        if !removed_addons.is_empty() {
-            println!(
-                "          {}",
-                style(format!("{} {addon_type} were removed from server.toml", removed_addons.len())).dim()
-            );
-
-            let logger = Logger::List { indent: 10, len: removed_addons.len() };
-
-            for (idx, (filename, _)) in removed_addons.iter().enumerate() {
-                let path = self.output_dir.join(addon_type).join(filename);
-                if path.exists() {
-                    fs::remove_file(path).await?;
-                    logger.item(idx, &format!(
-                        "{}: {}",
-                        style("Deleted   ").bold(),
-                        style(filename).dim()
-                    ));
-                } else {
-                    logger.item(idx, &format!(
-                        "{}: {}",
-                        style("Not Found ").bold(),
-                        style(filename).dim()
-                    ));
+        let pb = ProgressBar::new(server_list.len() as u64)
+            .with_style(ProgressStyle::with_template(
+                "{msg} [{wide_bar:.cyan/blue}] {pos}/{len}",
+            )?)
+            .with_message(format!("Processing {addon_type}s"));
+        let pb = self.app.multi_progress.add(pb);
+        for addon in server_list.iter().progress_with(pb.clone()) {
+            let mut attempt = 0;
+            let max_tries = std::env::var("MAX_TRIES")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(3);
+            let (_path, resolved) = loop {
+                match self
+                    .downloadable(addon, &addon_type.folder(), Some(&pb))
+                    .await
+                {
+                    Ok(d) => break d,
+                    Err(e) => {
+                        self.app.error(e.to_string());
+                        if max_tries > attempt {
+                            bail!(
+                                "Max attempts reached while processing {}",
+                                addon.to_short_string()
+                            );
+                        }
+                        attempt += 1;
+                    }
                 }
-            }
-        }
+            };
 
-        println!(
-            "          {}",
-            style(format!("{addon_count} {addon_type} present, processing...")).dim()
-        );
-
-        std::fs::create_dir_all(self.output_dir.join(addon_type))
-            .context(format!("Failed to create {addon_type} directory"))?;
-
-        for (idx, addon) in server_list
-            .iter()
-            .enumerate()
-        {
-            let filename = self.downloadable(addon, Some(addon_type), |state, file_name| match state {
-                ReportBackState::Skipped => {
-                    println!(
-                        "          ({:idx_w$}/{addon_count}) Skipping  : {}",
-                        idx + 1,
-                        style(&file_name).dim()
-                    );
-                }
-                ReportBackState::Downloaded => {
-                    println!(
-                        "          ({:idx_w$}/{addon_count}) {}: {}",
-                        idx + 1,
-                        style("Downloaded").green().bold(),
-                        style(&file_name).dim()
-                    );
-                }
-                ReportBackState::Downloading => {}
-            })
-            .await?;
+            files_list.insert(resolved.filename.clone());
 
             match addon_type {
-                "plugins" => self.new_lockfile.plugins.push((filename, addon.clone())),
-                "mods" => self.new_lockfile.mods.push((filename, addon.clone())),
-                _ => unreachable!(),
+                AddonType::Plugin => &mut self.new_lockfile.plugins,
+                AddonType::Mod => &mut self.new_lockfile.mods,
             }
+            .push((addon.clone(), resolved));
         }
+
+        let existing_files = match addon_type {
+            AddonType::Plugin => self.lockfile.plugins.iter(),
+            AddonType::Mod => self.lockfile.mods.iter(),
+        }
+        .map(|(_, res)| res.filename.clone())
+        .collect::<HashSet<_>>();
+
+        pb.set_style(ProgressStyle::with_template(
+            "{spinner:.blue} {prefix:.yellow} {msg}",
+        )?);
+        pb.set_prefix("Deleting");
+        pb.enable_steady_tick(Duration::from_micros(250));
+        for removed_file in existing_files.difference(&files_list) {
+            pb.set_message(removed_file.clone());
+            fs::remove_file(self.output_dir.join(addon_type.folder()).join(removed_file)).await?;
+        }
+
+        pb.finish_and_clear();
+        if files_list.len() >= 10 {
+            self.app.success(format!(
+                "Processed {} {addon_type}{} in {}",
+                files_list.len(),
+                if files_list.len() == 1 { "" } else { "s" },
+                FormattedDuration(pb.elapsed())
+            ));
+        }
+
+        self.app.ci("::endgroup::");
 
         Ok(())
     }

@@ -1,16 +1,45 @@
-use std::{collections::HashMap, path::PathBuf, fs::File, io::Write};
+use std::{collections::HashMap, fs::File, io::Write, path::PathBuf};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use glob::Pattern;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
+#[serde(tag = "type", try_from = "String", into = "String")]
 pub enum HotReloadAction {
+    #[default]
     Reload,
     Restart,
-    ReloadPlugin(String),
+    #[serde(alias = "run")]
     RunCommand(String),
+}
+
+impl TryFrom<String> for HotReloadAction {
+    type Error = anyhow::Error;
+
+    fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
+        if value.starts_with('/') {
+            Ok(Self::RunCommand(
+                value.strip_prefix('/').unwrap().to_string(),
+            ))
+        } else {
+            match value.to_lowercase().as_str() {
+                "reload" => Ok(Self::Reload),
+                "restart" => Ok(Self::Restart),
+                _ => Err(anyhow!("Cant parse HotReloadAction: {value}")),
+            }
+        }
+    }
+}
+
+impl From<HotReloadAction> for String {
+    fn from(val: HotReloadAction) -> Self {
+        match val {
+            HotReloadAction::Reload => String::from("reload"),
+            HotReloadAction::Restart => String::from("restart"),
+            HotReloadAction::RunCommand(cmd) => format!("/{cmd}"),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -18,10 +47,23 @@ pub struct HotReloadConfig {
     #[serde(skip)]
     pub path: PathBuf,
 
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::default")]
     pub files: Vec<Entry>,
-    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
     pub events: HashMap<String, HotReloadAction>,
+}
+
+impl Default for HotReloadConfig {
+    fn default() -> Self {
+        Self {
+            path: PathBuf::from("./hotreload.toml"),
+            events: HashMap::new(),
+            files: vec![Entry {
+                path: Pattern::new("server.properties").unwrap(),
+                action: HotReloadAction::Reload,
+            }],
+        }
+    }
 }
 
 impl HotReloadConfig {
@@ -30,15 +72,6 @@ impl HotReloadConfig {
         let mut h: Self = toml::from_str(&data)?;
         h.path = path.to_owned();
         Ok(h)
-    }
-
-    pub fn reload(&mut self) -> Result<()> {
-        let path = self.path.clone();
-        let data = std::fs::read_to_string(path)?;
-        let mut h: Self = toml::from_str(&data)?;
-        self.events = h.events;
-        self.files = h.files;
-        Ok(())
     }
 
     pub fn save(&self) -> Result<()> {
@@ -50,7 +83,7 @@ impl HotReloadConfig {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Entry {
     #[serde(with = "super::pattern_serde")]
     pub path: Pattern,

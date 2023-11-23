@@ -10,7 +10,7 @@
 ![downloads](https://img.shields.io/github/downloads/ParadigmMC/mcman/total?logo=github)
 [![discord server](https://img.shields.io/discord/1108817072814817410?logo=discord)](https://discord.gg/YFuxNmKvSr)
 
-Powerful Minecraft Server Manager CLI. Easily install jars (server, plugins & mods) and write config files. Docker and git support included.
+Powerful Minecraft Server Manager CLI. Easily install jars (server, plugins & mods), write config files, manage worlds and more. Docker and git support included.
 
 ## Getting Started
 
@@ -20,7 +20,7 @@ Powerful Minecraft Server Manager CLI. Easily install jars (server, plugins & mo
 | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------- | ------------------------------------------------------ |
 
 - Join the [discord](https://discord.gg/YFuxNmKvSr) for support!
-- 📋 Want an example? Here's [iptfreedom](https://github.com/IPTFreedom/iptfreedom)
+- 📋 Some examples can be found under [examples/](./examples/)
 
 Submit a PR or open an issue if you have a mcman-server repository that we can add here!
 
@@ -29,18 +29,32 @@ Submit a PR or open an issue if you have a mcman-server repository that we can a
 - 📜 Everything in one simple `server.toml` file!
 - 📥 Downloads the *server jar*, *plugins*, *mods*, *datapacks* and *worlds* (if any)!
 - 🔁 Always keep up to date with new builds and releases
-- ✔️ No more manually downloading jars or editing config files on remote
+- ✔️ No third-party hosts (metadata/mirrors)
+- :octocat: Fully `git`-compatible!
+- 🐳 Supports Docker, out of the box
+- 📦 **Import** from or **export** to `mrpack`s or `packwiz` packs!
 - 📚 Supports way too many sources, some are:
   - Modrinth, CurseRinth, Spigot, Hangar, Github Releases, Jenkins, Maven
   - If you need something else, it even supports custom urls!
 - ⚙️ Better configuration files with `config/`!
   - Allows you to use **variables** inside your config files
   - Use *environment variables* for secrets
-- :octocat: Fully `git`-compatible!
-- 🐳 Supports Docker, out of the box
-- 📦 Import from or export to [mrpack](./DOCS.md#mcman-import-mrpack-src)s!
-- 📦 Import from or export to [packwiz](./DOCS.md#mcman-import-mrpack-src) packs!
-- 🛡️ More secure than in-game plugin managers which are prone to permission attacks
+- 🌐 Keep worlds as `worlds/*.zip` for git, or set it to be downloaded from somewhere!
+- ✨ Managing a network? Use `network.toml` to manage servers' ports, have shared variables, config files, plugins or mods.
+
+## Reviews
+
+"faster than gradle builds"
+
+\- kuylar
+
+"makes even oracle linux usable"
+
+\- PureComedi
+
+"I'm technically a contributor"
+
+\- Trash Panda
 
 ## Changelog
 
@@ -48,16 +62,7 @@ whats a semver? /s
 
 ### `0.4.0`
 
-- Added [NeoForge](https://neoforged.net/) server type
-- Added [Forge](https://forums.minecraftforge.net/) server type
-- Added Downloadable type **Maven**
-- Added [Hangar](https://hangar.papermc.io/) support
-- Improved building process
-- Implemented a lockfile to speed things up and fix the remove-issue
-- Fixed a bug on `mcman run` which messed up the output when server crashes
-- Some downloadables now support variables
-- Experimental `add` command
-- Experimental `world` feature
+- See [#31](https://github.com/ParadigmMC/mcman/issues/31)
 
 ### `0.3.0`
 

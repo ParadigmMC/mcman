@@ -3,24 +3,6 @@ use indexmap::IndexMap;
 use super::{Downloadable, ServerType};
 
 impl ServerType {
-    pub fn get_type_name(&self) -> String {
-        match self {
-            Self::Vanilla {} => "Vanilla".to_owned(),
-            Self::Velocity {} => "Velocity".to_owned(),
-            Self::Waterfall {} => "Waterfall".to_owned(),
-            Self::Paper {} => "Paper".to_owned(),
-            Self::BungeeCord {} => "BungeeCord".to_owned(),
-            Self::Fabric { .. } => "Fabric".to_owned(),
-            Self::Purpur { .. } => "Purpur".to_owned(),
-            Self::PaperMC { .. } => "PaperMC".to_owned(),
-            Self::Quilt { .. } => "Quilt".to_owned(),
-            Self::BuildTools { .. } => "BuildTools".to_owned(),
-            Self::NeoForge { .. } => "NeoForge".to_owned(),
-            Self::Forge { .. } => "Forge".to_owned(),
-            Self::Downloadable { inner } => inner.get_type_name(),
-        }
-    }
-
     pub fn get_md_link(&self) -> String {
         match self {
             Self::Vanilla {} => "Vanilla".to_owned(),

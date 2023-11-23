@@ -11,3 +11,6 @@ site/
 .env
 # mcman: Exclude exported mrpacks
 *.mrpack
+
+# mcman: Exclude local dotenv files
+**/.env

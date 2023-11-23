@@ -1,0 +1,15 @@
+name = "proxy"
+mc_version = "latest"
+
+[jar]
+type = "velocity"
+
+[variables]
+PORT = "25565"
+
+[launcher]
+eula_args = true
+preset_flags = "proxy"
+
+[options]
+upload_to_mclogs = false

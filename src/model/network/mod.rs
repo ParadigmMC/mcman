@@ -9,7 +9,7 @@ use std::{
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use super::{ClientSideMod, Downloadable};
+use super::{ClientSideMod, Downloadable, MarkdownOptions};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]
@@ -20,6 +20,7 @@ pub struct Network {
     pub name: String,
     pub proxy: String,
     pub port: u16,
+    pub servers: HashMap<String, ServerEntry>,
     pub variables: HashMap<String, String>,
 
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -28,6 +29,9 @@ pub struct Network {
     pub mods: Vec<Downloadable>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub clientsidemods: Vec<ClientSideMod>,
+
+    #[serde(skip_serializing_if = "MarkdownOptions::is_empty")]
+    pub markdown: MarkdownOptions,
 }
 
 impl Network {
@@ -53,30 +57,47 @@ impl Network {
     pub fn load_from(path: &PathBuf) -> Result<Self> {
         let data = read_to_string(path)?;
         let mut nw: Self = toml::from_str(&data)?;
-        nw.path = path.clone();
+        nw.path = path.parent().unwrap().to_path_buf();
         Ok(nw)
     }
 
     pub fn save(&self) -> Result<()> {
         let cfg_str = toml::to_string_pretty(&self)?;
-        let mut f = File::create(&self.path)?;
+        let mut f = File::create(self.path.join("network.toml"))?;
         f.write_all(cfg_str.as_bytes())?;
 
         Ok(())
+    }
+
+    pub fn next_port(&self) -> u16 {
+        let mut port = 25565;
+
+        let mut taken = vec![self.port];
+        for serv in self.servers.values() {
+            taken.push(serv.port);
+        }
+
+        while taken.contains(&port) {
+            port += 1;
+        }
+
+        port
     }
 }
 
 impl Default for Network {
     fn default() -> Self {
         Self {
-            path: PathBuf::from("./network.toml"),
+            path: PathBuf::from("."),
             name: String::new(),
             proxy: "proxy".to_owned(),
             port: 25565,
+            servers: HashMap::new(),
             variables: HashMap::new(),
             plugins: vec![],
             mods: vec![],
             clientsidemods: vec![],
+            markdown: MarkdownOptions::default(),
         }
     }
 }
@@ -85,4 +106,7 @@ impl Default for Network {
 #[serde(default)]
 pub struct ServerEntry {
     pub port: u16,
+    pub ip_address: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub groups: Vec<String>,
 }

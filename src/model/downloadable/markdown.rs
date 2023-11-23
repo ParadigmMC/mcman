@@ -1,17 +1,6 @@
-use anyhow::Result;
 use indexmap::IndexMap;
-use regex::Regex;
 
-use crate::{
-    model::Downloadable,
-    sources::{
-        curserinth::fetch_curserinth_project,
-        github::fetch_repo_description,
-        jenkins::{fetch_jenkins_description, str_process_job},
-        modrinth::fetch_modrinth_project,
-        spigot::fetch_spigot_info,
-    },
-};
+use crate::{model::Downloadable, sources::jenkins::JenkinsAPI};
 
 impl Downloadable {
     pub fn get_md_link(&self) -> String {
@@ -32,13 +21,12 @@ impl Downloadable {
                 format!("[{id}](https://hangar.papermc.io/{id})")
             }
             Self::Jenkins { url, job, .. } => {
-                let link = url.clone() + &str_process_job(job);
-                format!("[{job}]({link})")
+                format!("[{job}]({})", JenkinsAPI::get_url(url, job))
             }
             Self::Maven { url, group, .. } => {
                 format!("[{g}]({url}/{g})", g = group.replace('.', "/"))
             }
-            Self::Spigot { id } => {
+            Self::Spigot { id, .. } => {
                 format!("[{id}](https://www.spigotmc.org/resources/{id})")
             }
             Self::Modrinth { id, .. } => {
@@ -48,107 +36,6 @@ impl Downloadable {
                 format!("`{id}`<sup>[CF](https://www.curseforge.com/minecraft/mc-mods/{id}) [CR](https://curserinth.kuylar.dev/mod/{id})</sup>")
             }
         }
-    }
-
-    pub async fn fetch_info_to_map(
-        &self,
-        client: &reqwest::Client,
-    ) -> Result<IndexMap<String, String>> {
-        let mut map: IndexMap<String, String> = IndexMap::new();
-
-        match self {
-            Self::Modrinth { id, version } => {
-                let proj = fetch_modrinth_project(client, id).await?;
-
-                map.insert(
-                    "Name".to_owned(),
-                    format!("[{}](https://modrinth.com/mod/{})", proj.title, proj.slug),
-                );
-                map.insert("Description".to_owned(), sanitize(&proj.description)?);
-                map.insert("Version".to_owned(), version.clone());
-            }
-
-            Self::CurseRinth { id, version } => {
-                let proj = fetch_curserinth_project(client, id).await?;
-
-                map.insert(
-                    "Name".to_owned(),
-                    format!("{} <sup>[CF](https://www.curseforge.com/minecraft/mc-mods/{id}) [CR](https://curserinth.kuylar.dev/mod/{id})</sup>", proj.title, id = proj.slug),
-                );
-                map.insert("Description".to_owned(), sanitize(&proj.description)?);
-                map.insert("Version".to_owned(), version.clone());
-            }
-
-            Self::Spigot { id } => {
-                let (name, desc) = fetch_spigot_info(client, id).await?;
-
-                map.insert(
-                    "Name".to_owned(),
-                    format!("[{name}](https://www.spigotmc.org/resources/{id})"),
-                );
-                map.insert("Description".to_owned(), sanitize(&desc)?);
-            }
-
-            Self::Hangar { id, version } => {
-                let proj = mcapi::hangar::fetch_project(client, id).await?;
-
-                map.insert(
-                    "Name".to_owned(),
-                    format!("[{}](https://hangar.papermc.io/{})", proj.name, proj.namespace.to_string()),
-                );
-                map.insert("Description".to_owned(), sanitize(&proj.description)?);
-                map.insert("Version".to_owned(), version.clone());
-            }
-
-            Self::GithubRelease { repo, tag, asset } => {
-                let desc = fetch_repo_description(client, repo).await?;
-
-                map.insert("Name".to_owned(), self.get_md_link());
-                map.insert("Description".to_owned(), sanitize(&desc)?);
-                map.insert("Version".to_owned(), format!("{tag} / `{asset}`"));
-            }
-
-            Self::Jenkins {
-                url,
-                job,
-                build,
-                artifact,
-            } => {
-                let desc = fetch_jenkins_description(client, url, job).await?;
-
-                map.insert("Name".to_owned(), self.get_md_link());
-                map.insert("Description".to_owned(), sanitize(&desc)?);
-                map.insert("Version".to_owned(), format!("{build} / `{artifact}`"));
-            }
-
-            Self::Maven { version, .. } => {
-                map.insert("Name".to_owned(), self.get_md_link());
-                map.insert("Version".to_owned(), version.clone());
-            }
-
-            Self::Url {
-                url,
-                filename,
-                desc,
-            } => {
-                map.insert(
-                    "Name".to_owned(),
-                    format!(
-                        "`{}`",
-                        filename.as_ref().unwrap_or(&"Custom URL".to_owned())
-                    ),
-                );
-                map.insert(
-                    "Description".to_owned(),
-                    desc.as_ref()
-                        .unwrap_or(&"*No description provided*".to_owned())
-                        .clone(),
-                );
-                map.insert("Version".to_owned(), format!("[URL]({url})"));
-            }
-        };
-
-        Ok(map)
     }
 
     pub fn get_type_name(&self) -> String {
@@ -185,13 +72,12 @@ impl Downloadable {
                 map.insert("Asset/File".to_owned(), asset.clone());
             }
 
-            Self::Modrinth { id, version } | Self::CurseRinth { id, version } | Self::Hangar { id, version } => {
+            Self::Modrinth { id, version }
+            | Self::CurseRinth { id, version }
+            | Self::Hangar { id, version }
+            | Self::Spigot { id, version } => {
                 map.insert("Project/URL".to_owned(), id.clone());
                 map.insert("Version/Release".to_owned(), version.clone());
-            }
-
-            Self::Spigot { id } => {
-                map.insert("Project/URL".to_owned(), id.clone());
             }
 
             Self::Jenkins {
@@ -229,7 +115,7 @@ impl Downloadable {
             Self::Modrinth { id, .. } => format!("Modrinth:{id}"),
             Self::Hangar { id, .. } => format!("Hangar:{id}"),
             Self::CurseRinth { id, .. } => format!("CurseRinth:{id}"),
-            Self::Spigot { id } => format!("Spigot:{id}"),
+            Self::Spigot { id, .. } => format!("Spigot:{id}"),
             Self::GithubRelease { repo, .. } => format!("Github:{repo}"),
             Self::Jenkins { job, .. } => format!("Jenkins:{job}"),
             Self::Url { filename, .. } => {
@@ -248,15 +134,8 @@ impl Downloadable {
     }
 }
 
-static SANITIZE_R1: &str = "<(?:\"[^\"]*\"['\"]*|'[^']*'['\"]*|[^'\">])+>";
-
-fn sanitize(s: &str) -> Result<String> {
-    let re = Regex::new(SANITIZE_R1)?;
-
-    Ok(re
-        .replace_all(
-            &s.replace('\n', " ").replace('\r', "").replace("<br>", " "),
-            "",
-        )
-        .to_string())
+impl ToString for Downloadable {
+    fn to_string(&self) -> String {
+        self.to_short_string()
+    }
 }

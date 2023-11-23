@@ -1,88 +1,67 @@
 use anyhow::{anyhow, Context, Result};
 
-use crate::util;
-
-use super::maven;
+use crate::app::{App, ResolvedFile};
 
 pub static FORGE_MAVEN: &str = "https://maven.minecraftforge.net";
 pub static FORGE_GROUP: &str = "net.minecraftforge";
 pub static FORGE_ARTIFACT: &str = "forge";
 pub static FORGE_FILENAME: &str = "${artifact}-${version}-installer.jar";
 
-pub async fn get_versions_for(mcver: &str, client: &reqwest::Client) -> Result<Vec<String>> {
-    let (_, versions) =
-        maven::get_maven_versions(client, FORGE_MAVEN, FORGE_GROUP, FORGE_ARTIFACT).await?;
+pub struct ForgeAPI<'a>(pub &'a App);
 
-    Ok(versions
-        .iter()
-        .filter_map(|s| {
-            let (m, l) = s.split_once('-')?;
+impl<'a> ForgeAPI<'a> {
+    pub async fn fetch_versions(&self) -> Result<Vec<String>> {
+        let (_, versions) = self
+            .0
+            .maven()
+            .fetch_versions(FORGE_MAVEN, FORGE_GROUP, FORGE_ARTIFACT)
+            .await?;
 
-            if m == mcver {
-                Some(l.to_owned())
-            } else {
-                None
-            }
+        Ok(versions
+            .iter()
+            .filter_map(|s| {
+                let (m, l) = s.split_once('-')?;
+
+                if m == self.0.mc_version() {
+                    Some(l.to_owned())
+                } else {
+                    None
+                }
+            })
+            .collect())
+    }
+
+    pub async fn fetch_latest(&self) -> Result<String> {
+        crate::util::get_latest_semver(&self.fetch_versions().await?).ok_or(anyhow!(
+            "No forge loader versions for {}",
+            self.0.mc_version()
+        ))
+    }
+
+    pub async fn resolve_version(&self, loader: &str) -> Result<String> {
+        Ok(if loader == "latest" || loader.is_empty() {
+            self.fetch_latest()
+                .await
+                .context("Getting latest Forge version")?
+        } else {
+            loader.to_owned()
         })
-        .collect())
-}
+    }
 
-pub async fn get_latest_version_for(mcver: &str, client: &reqwest::Client) -> Result<String> {
-    let loader_versions = get_versions_for(mcver, client).await?;
-
-    util::get_latest_semver(&loader_versions).ok_or(anyhow!("No loader versions for {mcver}"))
-}
-
-pub async fn map_forge_version(
-    loader: &str,
-    mcver: &str,
-    client: &reqwest::Client,
-) -> Result<String> {
-    Ok(if loader == "latest" || loader.is_empty() {
-        get_latest_version_for(mcver, client)
+    pub async fn resolve_source(&self, loader: &str) -> Result<ResolvedFile> {
+        self.0
+            .maven()
+            .resolve_source(
+                FORGE_MAVEN,
+                FORGE_GROUP,
+                FORGE_ARTIFACT,
+                &format!(
+                    "{}-{}",
+                    self.0.mc_version(),
+                    self.resolve_version(loader).await?
+                ),
+                FORGE_FILENAME,
+            )
             .await
-            .context("Getting latest Forge version")?
-    } else {
-        loader.to_owned()
-    })
-}
-
-pub async fn get_forge_installer_url(
-    loader: &str,
-    mcver: &str,
-    client: &reqwest::Client,
-) -> Result<String> {
-    maven::get_maven_url(
-        client,
-        FORGE_MAVEN,
-        FORGE_GROUP,
-        FORGE_ARTIFACT,
-        &format!(
-            "{mcver}-{}",
-            map_forge_version(loader, mcver, client).await?
-        ),
-        FORGE_FILENAME,
-        mcver,
-    )
-    .await
-}
-
-pub async fn get_forge_installer_filename(
-    loader: &str,
-    mcver: &str,
-    client: &reqwest::Client,
-) -> Result<String> {
-    maven::get_maven_filename(
-        client,
-        FORGE_MAVEN,
-        FORGE_GROUP,
-        FORGE_ARTIFACT,
-        &format!(
-            "{mcver}-{}",
-            map_forge_version(loader, mcver, client).await?
-        ),
-        FORGE_FILENAME,
-        mcver,
-    )
-    .await
+    }
 }

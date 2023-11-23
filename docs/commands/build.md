@@ -1,16 +1,23 @@
 # `mcman build`
 
-See [here](../tutorials/building.md) for more info
+See the page for [Building](../tutorials/building.md) for more info
 
-??? "Extra flags (output, skip, force)"
-    You can alternatively set the output folder manually using `--output <path>` option.
+## `--force`
 
-    The `--force` flag can be used to disable checking if files exist, effectively forcefully downloading everything.
+The `--force` flag can be used to make mcman not skip already downloaded files, basically acting like the output directory is empty.
 
-    You can use the `--skip <stages>` flag to skip stages.
+## `--output <path>`
 
-    - Stages should be comma-seperated, like `--skip bootstrap,scripts,dp`
-    - The stages are: `serverjar`, `plugins`, `mods`, `dp` (datapacks), `bootstrap` (config/) and `scripts`
+You can alternatively set the output folder manually using `--output <path>` option. The default is `server`.
+
+## `--skip`/`-s`
+
+You can use the `--skip`/`-s` flag to skip stages.
+
+- Use the flag multiple times to skip many: `-s bootstrap -s worlds`
+- The stages are: `plugins`, `mods`, `worlds` and `bootstrap`
+
+## After building
 
 After building, you can start the server with the launch scripts if theyre not [disabled](../reference/server-launcher.md):
 

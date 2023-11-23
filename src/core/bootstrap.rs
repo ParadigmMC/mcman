@@ -1,131 +1,177 @@
-use std::{env, path::{Path, PathBuf}, collections::HashMap, time::SystemTime};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+    time::{Duration, SystemTime},
+};
 
-use anyhow::{Result, Context, anyhow};
-use console::style;
+use anyhow::{anyhow, Context, Result};
+use indicatif::{ProgressBar, ProgressStyle};
 use pathdiff::diff_paths;
-use tokio::{fs, io::AsyncWriteExt};
+use tokio::fs;
 use walkdir::WalkDir;
 
 use crate::model::BootstrappedFile;
 
 use super::BuildContext;
 
-impl BuildContext {
+impl<'a> BuildContext<'a> {
     pub async fn bootstrap_files(&mut self) -> Result<()> {
-        if !Path::new(self.output_dir.as_path()).exists() {
-            fs::create_dir_all(&self.output_dir)
-                .await
-                .context("Creating output directory (server/)")?;
-        }
+        self.app.print_job("Bootstrapping...");
 
-        let lockfile_entries: HashMap<PathBuf, SystemTime> = HashMap::from_iter(self.lockfile.files.iter()
-            .map(|e| (e.path.clone(), e.date.clone())));
+        self.app.ci("::group::Bootstrapping");
 
-        for entry in WalkDir::new(self.server.path.join("config")) {
-            let entry = entry
-                .map_err(|e| anyhow!(
+        let pb = self.app.multi_progress.add(
+            ProgressBar::new_spinner()
+                .with_style(ProgressStyle::with_template(
+                    "{spinner:.blue} {prefix} {msg}",
+                )?)
+                .with_prefix("Bootstrapping"),
+        );
+        pb.enable_steady_tick(Duration::from_millis(250));
+
+        let lockfile_entries = self
+            .lockfile
+            .files
+            .iter()
+            .map(|e| (e.path.clone(), e.date))
+            .collect::<HashMap<_, _>>();
+
+        for entry in WalkDir::new(self.app.server.path.join("config")) {
+            let entry = entry.map_err(|e| {
+                anyhow!(
                     "Can't walk directory/file: {}",
-                    &e.path().unwrap_or(Path::new("<unknown>")
-                ).display()))?;
-    
+                    &e.path().unwrap_or(Path::new("<unknown>")).display()
+                )
+            })?;
+
             if entry.file_type().is_dir() {
                 continue;
             }
 
             let source = entry.path();
-            let dest = self.map_config_path(source);
-            let diffed_paths = diff_paths(&dest, self.server.path.join("config"))
+            let diffed_paths = diff_paths(source, self.app.server.path.join("config"))
                 .ok_or(anyhow!("Cannot diff paths"))?;
-    
-            self.bootstrap_file(&diffed_paths, lockfile_entries.get(&diffed_paths)).await.context(format!(
-                "Bootstrapping file: {}",
-                entry.path().display()
-            ))?;
+
+            pb.set_message(diffed_paths.to_string_lossy().to_string());
+
+            self.bootstrap_file(&diffed_paths, lockfile_entries.get(&diffed_paths))
+                .await
+                .context(format!(
+                    "Bootstrapping file:
+                - Entry: {}
+                - Relative: {}",
+                    entry.path().display(),
+                    diffed_paths.display()
+                ))?;
         }
 
-        if self.server.launcher.eula_args && !self.server.jar.supports_eula_args() {
-            println!(
-                "          {}",
-                style("=> eula.txt [eula_args unsupported]").dim()
-            );
-            fs::File::create(self.output_dir.join("eula.txt"))
-                .await?
-                .write_all(b"eula=true\n")
-                .await?;
-        }
+        pb.disable_steady_tick();
+        pb.finish_and_clear();
+        self.app.success("Bootstrapping complete");
 
-        println!("          {}", style("Bootstrapping complete").dim());
+        self.app.ci("::endgroup::");
 
         Ok(())
     }
 
-    pub fn map_config_path(&self, path: &Path) -> PathBuf {
-        let mut path_buf = PathBuf::new();
-        let mut iter = path.components();
-
-        iter.next().expect("Path to have atleast 1 component");
-
-        path_buf.push(self.output_dir.as_os_str());
-
-        path_buf.extend(iter);
-
-        path_buf
-    }
-
     pub fn should_bootstrap_file(&self, path: &Path) -> bool {
-        let ext = path.extension().unwrap_or_default().to_str().unwrap_or_default();
+        let ext = path
+            .extension()
+            .unwrap_or_default()
+            .to_str()
+            .unwrap_or_default();
 
-        let bootstrap_exts = vec![
-            "properties", "txt", "yaml", "yml", "conf", "config", "toml", "json", "json5", "secret"
+        let bootstrap_exts = [
+            "properties",
+            "txt",
+            "yaml",
+            "yml",
+            "conf",
+            "config",
+            "toml",
+            "json",
+            "json5",
+            "secret",
         ];
 
         bootstrap_exts.contains(&ext)
+            || self
+                .app
+                .server
+                .options
+                .bootstrap_exts
+                .contains(&ext.to_string())
     }
 
-    pub async fn bootstrap_file(&mut self, path: &PathBuf, cache: Option<&SystemTime>) -> Result<()> {
-        let pretty_path = path.display();
+    pub async fn bootstrap_file(
+        &mut self,
+        rel_path: &PathBuf,
+        cache: Option<&SystemTime>,
+    ) -> Result<()> {
+        let pretty_path = rel_path.display();
 
-        let source = self.server.path.join("config").join(path);
-        let dest = self.output_dir.join(path);
+        let source = self.app.server.path.join("config").join(rel_path);
+        let dest = self.output_dir.join(rel_path);
 
-        let source_time = fs::metadata(&source).await?.modified()?;
+        let metadata = fs::metadata(&source).await.context(format!(
+            "Getting metadata
+                - File: {}
+                - Relative path: {pretty_path}
+                - Destination: {}",
+            source.display(),
+            dest.display(),
+        ))?;
+
+        let modified = metadata.modified();
 
         if self.force || {
             if let Some(time) = cache {
-                &source_time > time
+                if let Ok(source_time) = modified {
+                    &source_time > time
+                } else {
+                    true
+                }
             } else {
                 true
             }
         } {
-            if self.should_bootstrap_file(path) {
-                let config_contents = fs::read_to_string(&source)
-                    .await.context(format!("Reading from '{}' ; [{pretty_path}]", source.display()))?;
-    
+            fs::create_dir_all(dest.parent().unwrap())
+                .await
+                .context("Creating parent directory")?;
+
+            if self.should_bootstrap_file(rel_path) {
+                let config_contents = fs::read_to_string(&source).await.context(format!(
+                    "Reading from '{}' ; [{pretty_path}]",
+                    source.display()
+                ))?;
+
                 let bootstrapped_contents = self.bootstrap_content(&config_contents);
-    
+
                 fs::write(&dest, bootstrapped_contents)
-                    .await.context(format!("Writing to '{}' ; [{pretty_path}]", dest.display()))?;
+                    .await
+                    .context(format!("Writing to '{}' ; [{pretty_path}]", dest.display()))?;
             } else {
                 // ? idk why but read_to_string and fs::write works with 'dest' but fs::copy doesnt
-                fs::copy(&source, &dest)
-                    .await.context(format!("Copying '{}' to '{}' ; [{pretty_path}]", source.display(), dest.display()))?;
+                fs::copy(&source, &dest).await.context(format!(
+                    "Copying '{}' to '{}' ; [{pretty_path}]",
+                    source.display(),
+                    dest.display()
+                ))?;
             }
-    
-            println!(
-                "          {}",
-                style(format!("-> {pretty_path}")).dim()
-            );
+
+            self.app.log(format!("  -> {pretty_path}"));
         } else {
-            println!(
-                "          {}",
-                style(format!("unchanged: {pretty_path}")).dim()
-            );
+            self.app.log(format!("  unchanged: {pretty_path}"));
         }
 
-        self.new_lockfile.files.push(BootstrappedFile {
-            path: path.clone(),
-            date: source_time
-        });
+        if let Ok(source_time) = modified {
+            self.new_lockfile.files.push(BootstrappedFile {
+                path: rel_path.clone(),
+                date: source_time,
+            });
+        } else {
+            self.app.warn("File metadata not supported");
+        }
 
         Ok(())
     }
@@ -140,17 +186,7 @@ impl BuildContext {
                 (k, None)
             };
 
-            match k {
-                "SERVER_NAME" => Some(self.server.name.clone()),
-                "SERVER_VERSION" | "mcver" | "mcversion" => Some(self.server.mc_version.clone()),
-                "PLUGIN_COUNT" => Some(self.server.plugins.len().to_string()),
-                "MOD_COUNT" => Some(self.server.mods.len().to_string()),
-                "WORLD_COUNT" => Some(self.server.worlds.len().to_string()),
-                "CLIENTSIDE_MOD_COUNT" => Some(self.server.clientsidemods.len().to_string()),
-                k => self.server.variables.get(k)
-                    .cloned()
-                    .or(env::var(k).ok())
-            }.or(def)
+            self.app.var(k).or(def)
         })
     }
 }

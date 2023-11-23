@@ -1,12 +1,25 @@
 # mcman
 
-mcman is a command line tool that makes it easier to create and manage minecraft servers. Instead of manually downloading jars from the internet and doing intricate replace operations and whatnot on your plugin configuration files, mcman downloads everything you need from one configuration file (`server.toml`) and handles your config files with one very useful feature - variables.
+The Powerful Minecraft Manager CLI.
+
+`mcman` allows you to:
+- Have a single `server.toml` for auto-updating plugins/mods, the server jar, worlds, etc...
+- get rid of the hassle of downloading and dragging over jar files,
+- efficiently write config files using config and environment variables,
+- use `git` for your servers to be able to version control and collaborate,
+- render markdown about the server
+- test if the server works using CI
+- and more!
+
+`mcman` is not great for:
+- Creating clientside modpacks or modpacks to only publish them (use [packwiz](https://packwiz.infra.link/) for that)
 
 ## Quick Start
 
 - [Installation](./installation.md)
 - [Getting Started](./tutorials/getting-started.md)
-- [Explaining how building works](./tutorials/building.md)
+- [Building, Running and Developing](./tutorials/building.md)
+- [Variables and Bootstrapping](./tutorials/variables.md)
 - [Commands](./commands)
 - [Reference](./reference/server.toml.md)
 

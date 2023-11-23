@@ -1,0 +1,10 @@
+# CoolNetwork
+
+[![mcman badge](https://img.shields.io/badge/uses-mcman-purple?logo=github)](https://github.com/ParadigmMC/mcman)
+
+<!-- run 'mcman md' to update! -->
+
+## Servers
+
+<!--start:mcman-servers-->
+<!--end:mcman-servers-->

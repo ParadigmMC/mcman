@@ -6,24 +6,28 @@
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::struct_excessive_bools)]
 #![allow(unknown_lints)]
+// its used mutably, silly rustc
+#![allow(unused_mut)]
 
-use anyhow::{Context, Result};
-use async_trait::async_trait;
+use anyhow::Result;
+use app::BaseApp;
 use clap::Parser;
 
+mod app;
 mod commands;
 mod core;
+mod hot_reload;
+mod interop;
 mod model;
 mod sources;
 mod util;
-//mod hot_reload;
 
 #[derive(clap::Parser)]
 #[command(author = "ParadigmMC", color = clap::ColorChoice::Always)]
 #[command(about = "Powerful Minecraft Server Manager CLI")]
 #[command(after_help = "To start building servers, try 'mcman init'")]
 #[command(subcommand_required = true, arg_required_else_help = true)]
-struct CLI {
+struct Cli {
     #[command(subcommand)]
     command: Commands,
 }
@@ -32,19 +36,17 @@ struct CLI {
 enum Commands {
     /// Initialize a new mcman server
     Init(commands::init::Args),
+
     /// Build using server.toml configuration
-    Build(commands::build::Args),
+    Build(commands::build::BuildArgs),
     /// Test the server (stops it when it ends startup)
-    Run(commands::run::Args),
+    Run(commands::run::RunArgs),
+    /// Start a development session
+    Dev(commands::dev::DevArgs),
+
     /// Add a plugin/mod/datapack
     #[command(subcommand)]
     Add(commands::add::Commands),
-    /// Importing tools
-    #[command(subcommand)]
-    Import(commands::import::Commands),
-    /// Update markdown files with server info
-    #[command(visible_alias = "md")]
-    Markdown,
     /// Pull files from server/ to config/
     Pull(commands::pull::Args),
     /// Helpers for setting up the environment
@@ -53,14 +55,29 @@ enum Commands {
     /// Pack or unpack a world
     #[command(subcommand, visible_alias = "w")]
     World(commands::world::Commands),
+    
+    /// Importing tools
+    #[command(subcommand, visible_alias = "i")]
+    Import(commands::import::Commands),
+    /// Exporting tools
+    #[command(subcommand)]
+    Export(commands::export::Commands),
+    /// Update markdown files with server info
+    #[command(visible_alias = "md")]
+    Markdown,
+
+    /// Download a downloadable
+    #[command(visible_alias = "dl")]
+    Download(commands::download::Args),
+    /// Cache management commands
+    #[command(subcommand)]
+    Cache(commands::cache::Commands),
     /// Show info about the server in console
     Info,
     /// Show version information
     #[command(visible_alias = "v")]
     Version,
-    /// Exporting tools
-    #[command(subcommand)]
-    Export(commands::export::Commands),
+
     /// Eject - remove everything related to mcman
     #[command(hide = true)]
     Eject,
@@ -68,49 +85,42 @@ enum Commands {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let args = CLI::parse();
+    if std::env::var("CI") == Ok("true".to_owned()) {
+        println!("::endgroup::");
+    }
+    let args = Cli::parse();
+
+    let mut base_app = BaseApp::new()?;
 
     match args.command {
-        Commands::Init(args) => commands::init::run(args).await,
-        Commands::Build(args) => commands::build::run(args).await.map(|_| ()),
-        Commands::Run(args) => commands::run::run(args).await,
-        Commands::Add(commands) => commands::add::run(commands).await,
-        Commands::Import(subcommands) => commands::import::run(subcommands).await,
-        Commands::Markdown => commands::markdown::run().await,
-        Commands::Pull(args) => commands::pull::run(args),
-        Commands::Env(commands) => commands::env::run(commands),
-        Commands::World(commands) => commands::world::run(commands).await,
-        Commands::Info => commands::info::run(),
-        Commands::Version => commands::version::run().await,
-        Commands::Export(commands) => commands::export::run(commands).await,
-        Commands::Eject => commands::eject::run(),
+        Commands::Init(args) => commands::init::run(base_app, args).await,
+        Commands::Cache(subcommands) => commands::cache::run(subcommands),
+        Commands::Version => commands::version::run(base_app).await,
+        c => {
+            let app = base_app.upgrade()?;
+
+            match c {
+                // Build
+                Commands::Build(args) => commands::build::run(app, args).await,
+                Commands::Run(args) => commands::run::run(app, args).await,
+                Commands::Dev(args) => commands::dev::run(app, args).await,
+
+                // Management
+                Commands::Add(commands) => commands::add::run(app, commands).await,
+                Commands::Import(subcommands) => commands::import::run(app, subcommands).await,
+                Commands::Export(commands) => commands::export::run(app, commands).await,
+                Commands::Markdown => commands::markdown::run(app).await,
+                Commands::World(commands) => commands::world::run(&app, commands),
+                Commands::Pull(args) => commands::pull::run(&app, args),
+                Commands::Env(commands) => commands::env::run(&app, commands),
+                Commands::Eject => commands::eject::run(&app),
+
+                // Utils
+                Commands::Info => commands::info::run(&app),
+                Commands::Download(args) => commands::download::run(app, args).await,
+
+                _ => unreachable!(),
+            }
+        }
     }
-}
-
-pub const APP_USER_AGENT: &str = concat!(
-    env!("CARGO_PKG_NAME"),
-    "/",
-    env!("CARGO_PKG_VERSION"),
-    " - ",
-    env!("CARGO_PKG_REPOSITORY"),
-);
-
-pub fn create_http_client() -> Result<reqwest::Client> {
-    let b = reqwest::Client::builder().user_agent(APP_USER_AGENT);
-
-    b.build().context("Failed to create HTTP client")
-}
-
-#[async_trait]
-pub trait Source {
-    async fn get_filename(
-        &self,
-        server: &model::Server,
-        client: &reqwest::Client,
-    ) -> Result<String>;
-    async fn download(
-        &self,
-        server: &model::Server,
-        client: &reqwest::Client,
-    ) -> Result<reqwest::Response>;
 }

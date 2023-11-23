@@ -1,10 +1,10 @@
-use std::time::Duration;
+use std::{path::Path, time::Duration};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Result};
 use dialoguer::{theme::ColorfulTheme, Select};
 use indicatif::{ProgressBar, ProgressStyle};
 
-use crate::{model::Server, util::SelectItem};
+use crate::{app::App, util::SelectItem};
 
 #[derive(clap::Args)]
 pub struct Args {
@@ -12,17 +12,21 @@ pub struct Args {
     world: Option<String>,
 }
 
-pub async fn run(args: Args) -> Result<()> {
-    let server = Server::load().context("Failed to load server.toml")?;
-
+pub fn run(app: &App, args: Args) -> Result<()> {
     let zipfile = if let Some(s) = args.world {
-        server.path.join("worlds").join(if s.ends_with(".zip") {
-            s.clone()
-        } else {
-            format!("{s}.zip")
-        })
+        app.server.path.join("worlds").join(
+            if Path::new(&s)
+                .extension()
+                .map_or(false, |ext| ext.eq_ignore_ascii_case("zip"))
+            {
+                s.clone()
+            } else {
+                format!("{s}.zip")
+            },
+        )
     } else {
-        let worlds = server
+        let worlds = app
+            .server
             .path
             .join("worlds")
             .read_dir()?
@@ -55,8 +59,7 @@ pub async fn run(args: Args) -> Result<()> {
 
     let world_name = zipfile
         .file_name()
-        .map(|o| o.to_string_lossy().into_owned())
-        .unwrap_or("world".to_owned());
+        .map_or("world".to_owned(), |o| o.to_string_lossy().into_owned());
     let world_name = world_name.strip_suffix(".zip").unwrap_or(&world_name);
 
     let spinner = ProgressBar::new_spinner()
@@ -65,7 +68,7 @@ pub async fn run(args: Args) -> Result<()> {
 
     spinner.enable_steady_tick(Duration::from_millis(200));
 
-    crate::core::worlds::unzip(&zipfile, &server.path.join("server"))?;
+    crate::core::worlds::unzip(&zipfile, &app.server.path.join("server"))?;
 
     spinner.finish_with_message(format!("Unzipped world '{world_name}' successfully"));
 

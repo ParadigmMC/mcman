@@ -1,18 +1,51 @@
 use std::{fs::OpenOptions, io::Write};
 
 use anyhow::Result;
-use console::style;
 use tokio::fs;
+
+use crate::model::{ServerType, StartupMethod};
 
 use super::BuildContext;
 
-impl BuildContext {
-    pub async fn create_scripts(&self) -> Result<()> {
+impl<'a> BuildContext<'a> {
+    pub async fn get_startup_method(&self, serverjar_name: &str) -> Result<StartupMethod> {
+        let mcver = &self.app.mc_version();
+        Ok(match &self.app.server.jar {
+            ServerType::NeoForge { loader } => {
+                let l = self.app.neoforge().resolve_version(loader).await?;
+
+                StartupMethod::Custom {
+                    windows: vec![format!(
+                        "@libraries/net/neoforged/forge/{mcver}-{l}/win_args.txt"
+                    )],
+                    linux: vec![format!(
+                        "@libraries/net/neoforged/forge/{mcver}-{l}/unix_args.txt"
+                    )],
+                }
+            }
+            ServerType::Forge { loader } => {
+                let l = self.app.forge().resolve_version(loader).await?;
+
+                StartupMethod::Custom {
+                    windows: vec![format!(
+                        "@libraries/net/minecraftforge/forge/{mcver}-{l}/win_args.txt"
+                    )],
+                    linux: vec![format!(
+                        "@libraries/net/minecraftforge/forge/{mcver}-{l}/unix_args.txt"
+                    )],
+                }
+            }
+            _ => StartupMethod::Jar(serverjar_name.to_owned()),
+        })
+    }
+
+    pub async fn create_scripts(&self, startup: StartupMethod) -> Result<()> {
         fs::write(
             self.output_dir.join("start.bat"),
-            self.server
+            self.app
+                .server
                 .launcher
-                .generate_script_win(&self.server.name, &self.startup_method),
+                .generate_script_win(&self.app.server.name, &startup),
         )
         .await?;
 
@@ -35,16 +68,12 @@ impl BuildContext {
         }
 
         file.write_all(
-            self.server
+            self.app
+                .server
                 .launcher
-                .generate_script_linux(&self.server.name, &self.startup_method)
+                .generate_script_linux(&self.app.server.name, &startup)
                 .as_bytes(),
         )?;
-
-        println!(
-            "          {}",
-            style("start.bat and start.sh created").dim()
-        );
 
         Ok(())
     }

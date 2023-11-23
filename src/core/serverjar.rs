@@ -12,18 +12,94 @@ use tokio::{
     io::AsyncWriteExt,
 };
 
-use crate::model::InstallMethod;
+use crate::{
+    model::{InstallMethod, ServerType},
+    sources::quilt,
+};
 
-use super::{BuildContext, ReportBackState};
+use super::BuildContext;
 
-impl BuildContext {
-    pub async fn download_server_jar(&mut self) -> Result<()> {
-        let serverjar_name = match self
-            .server
-            .jar
-            .get_install_method(&self.http_client, &self.server.mc_version)
-            .await?
-        {
+impl<'a> BuildContext<'a> {
+    pub async fn get_install_method(&self) -> Result<InstallMethod> {
+        let mcver = &self.app.mc_version();
+        Ok(match self.app.server.jar.clone() {
+            ServerType::Quilt { loader, .. } => {
+                let mut args = vec!["install", "server", mcver];
+
+                if loader != "latest" {
+                    args.push(&loader);
+                }
+
+                args.push("--install-dir=.");
+                args.push("--download-server");
+
+                InstallMethod::Installer {
+                    name: "Quilt Server Installer".to_owned(),
+                    label: "qsi".to_owned(),
+                    args: args.into_iter().map(ToOwned::to_owned).collect(),
+                    rename_from: Some("quilt-server-launch.jar".to_owned()),
+                    jar_name: format!(
+                        "quilt-server-launch-{mcver}-{}.jar",
+                        quilt::map_quilt_loader_version(&self.app.http_client, &loader)
+                            .await
+                            .context("resolving quilt loader version id (latest/latest-beta)")?
+                    ),
+                }
+            }
+            ServerType::NeoForge { loader } => InstallMethod::Installer {
+                name: "NeoForged Installer".to_owned(),
+                label: "nfi".to_owned(),
+                args: vec!["--installServer".to_owned(), ".".to_owned()],
+                rename_from: None,
+                jar_name: format!(
+                    "libraries/net/neoforged/forge/{mcver}-{0}/forge-{mcver}-{0}-server.jar",
+                    self.app.neoforge().resolve_version(&loader).await?
+                ),
+            },
+            ServerType::Forge { loader } => InstallMethod::Installer {
+                name: "Forge Installer".to_owned(),
+                label: "fi".to_owned(),
+                args: vec!["--installServer".to_owned(), ".".to_owned()],
+                rename_from: None,
+                jar_name: format!(
+                    "libraries/net/minecraftforge/forge/{mcver}-{0}/forge-{mcver}-{0}-server.jar",
+                    self.app.forge().resolve_version(&loader).await?
+                ),
+            },
+            ServerType::BuildTools { args, software } => {
+                let mut buildtools_args = vec![
+                    "--compile",
+                    &software,
+                    "--compile-if-changed",
+                    "--rev",
+                    mcver,
+                ];
+
+                for arg in &args {
+                    buildtools_args.push(arg);
+                }
+
+                InstallMethod::Installer {
+                    name: "BuildTools".to_owned(),
+                    label: "bt".to_owned(),
+                    args: buildtools_args.into_iter().map(ToOwned::to_owned).collect(),
+                    rename_from: Some("server.jar".to_owned()),
+                    jar_name: format!(
+                        "{}-{mcver}.jar",
+                        if software == "craftbukkit" {
+                            "craftbukkit"
+                        } else {
+                            "spigot"
+                        }
+                    ),
+                }
+            }
+            _ => InstallMethod::SingleJar,
+        })
+    }
+
+    pub async fn download_server_jar(&'a self) -> Result<String> {
+        let serverjar_name = match self.get_install_method().await? {
             InstallMethod::Installer {
                 name,
                 label,
@@ -31,46 +107,38 @@ impl BuildContext {
                 rename_from,
                 jar_name,
             } => {
-                let installer_jar = self
-                    .downloadable(&self.server.jar, None, |state, filename| match state {
-                        ReportBackState::Skipped => {
-                            println!(
-                                "          {name} is present ({})",
-                                style(filename.clone()).dim()
-                            );
-                        }
-                        ReportBackState::Downloading => {
-                            println!(
-                                "          Downloading {name}... ({})",
-                                style(filename.clone()).dim()
-                            );
-                        }
-                        ReportBackState::Downloaded => {}
-                    })
-                    .await?;
+                let (_, resolved) = self.downloadable(&self.app.server.jar, "", None).await?;
 
-                let jar_name = jar_name.replace("${mcver}", &self.server.mc_version);
+                let installer_jar = resolved.filename;
+
+                let jar_name = jar_name.replace("${mcver}", &self.app.server.mc_version);
 
                 if !self.force && self.output_dir.join(&jar_name).exists() {
-                    println!(
-                        "          Skipping server jar ({})",
+                    self.app.log(format!(
+                        "  Skipping server jar ({})",
                         style(if rename_from.is_some() {
                             jar_name.clone()
                         } else {
                             "<in libraries>".to_owned()
                         })
                         .dim()
-                    );
+                    ));
                 } else {
-                    println!(
-                        "          Installing server jar... ({})",
+                    let pb = self.app.multi_progress.add(
+                        ProgressBar::new_spinner()
+                            .with_style(ProgressStyle::with_template("  {spinner:.green} {msg}")?),
+                    );
+                    pb.enable_steady_tick(Duration::from_millis(250));
+
+                    pb.set_message(format!(
+                        "Installing server jar... ({})",
                         style(if rename_from.is_some() {
                             jar_name.clone()
                         } else {
                             "<in libraries>".to_owned()
                         })
                         .dim()
-                    );
+                    ));
 
                     let mut cmd_args = vec!["-jar", &installer_jar];
 
@@ -78,52 +146,59 @@ impl BuildContext {
                         cmd_args.push(arg);
                     }
 
-                    self.execute_child(("java", cmd_args.clone()), &name, &label)
+                    let java = std::env::var("JAVA_BIN").unwrap_or("java".to_owned());
+
+                    self.execute_child((&java, cmd_args.clone()), &name, &label)
                         .await
                         .context(format!("Executing command: 'java {}'", cmd_args.join(" ")))
                         .context(format!("Running installer: {name}"))?;
 
-                    if let Some(from) = rename_from {
-                        println!(
-                            "          Renaming... ({})",
-                            style(format!("{from} => {jar_name}")).dim()
-                        );
+                    if let Some(from) = &rename_from {
+                        let from_path = self.output_dir.join(from);
+                        let to_path = self.output_dir.join(&jar_name);
+                        if from_path.exists() {
+                            pb.set_message(format!(
+                                "Renaming... ({})",
+                                style(format!("{from} => {jar_name}")).dim()
+                            ));
 
-                        fs::rename(self.output_dir.join(&from), self.output_dir.join(&jar_name))
-                            .await
-                            .context(format!("Renaming: {from} => {jar_name}"))?;
+                            fs::rename(from_path, &to_path)
+                                .await
+                                .context(format!("Renaming: {from} => {jar_name}"))?;
+                        } else if to_path.exists() {
+                            self.app
+                                .log(format!("  Rename skipped ({from} doesn't exist)"));
+                        } else {
+                            bail!(
+                                "Installer did not output '{from}', can't rename to '{jar_name}'"
+                            );
+                        }
                     }
+
+                    self.app.log(format!(
+                        "  Server jar installed successfully ({})",
+                        style(if rename_from.is_some() {
+                            jar_name.clone()
+                        } else {
+                            "<in libraries>".to_owned()
+                        })
+                        .dim()
+                    ));
+
+                    pb.finish_and_clear();
                 }
 
-                Ok(jar_name)
+                jar_name
             }
             InstallMethod::SingleJar => {
-                self.downloadable(&self.server.jar, None, |state, server_jar| match state {
-                    ReportBackState::Skipped => {
-                        println!(
-                            "          Skipping server jar ({})",
-                            style(server_jar.clone()).dim()
-                        );
-                    }
-                    ReportBackState::Downloading => {
-                        println!(
-                            "          Downloading server jar ({})",
-                            style(server_jar.clone()).dim()
-                        );
-                    }
-                    ReportBackState::Downloaded => {}
-                })
-                .await
+                self.downloadable(&self.app.server.jar, "", None)
+                    .await?
+                    .1
+                    .filename
             }
-        }?;
+        };
 
-        self.startup_method = self
-            .server
-            .jar
-            .get_startup_method(&self.http_client, &serverjar_name, &self.server.mc_version)
-            .await?;
-
-        Ok(())
+        Ok(serverjar_name)
     }
 
     pub async fn execute_child(
@@ -133,20 +208,24 @@ impl BuildContext {
         tag: &str,
     ) -> Result<()> {
         let mut child = std::process::Command::new(cmd.0)
-            .args(cmd.1.iter().map(|a| self.server.format(a)))
+            .args(cmd.1.iter().map(|a| self.app.server.format(a)))
             .current_dir(&self.output_dir)
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
             .spawn()
             .context("Running ".to_owned() + label)?;
 
-        let spinner = ProgressBar::new_spinner().with_style(ProgressStyle::with_template(
-            "          {spinner:.dim.bold} {msg}",
-        )?);
+        let spinner = self
+            .app
+            .multi_progress
+            .add(
+                ProgressBar::new_spinner().with_style(ProgressStyle::with_template(
+                    "    {spinner:.green} {prefix:.bold} {msg}",
+                )?),
+            );
 
         spinner.enable_steady_tick(Duration::from_millis(200));
-
-        let prefix = style(format!("[{tag}]")).bold();
+        spinner.set_prefix(format!("[{tag}]"));
 
         let mut log_file =
             File::create(self.output_dir.join(".".to_owned() + tag + ".mcman.log")).await?;
@@ -156,7 +235,7 @@ impl BuildContext {
             .await?;
 
         for buf in BufReader::new(child.stdout.take().unwrap()).lines() {
-            let buf = buf.unwrap();
+            let buf = buf.context("Reading child process stdout buffer")?;
             let buf = buf.trim();
 
             if !buf.is_empty() {
@@ -164,7 +243,7 @@ impl BuildContext {
                 log_file.write_all(b"\n").await?;
 
                 if let Some(last_line) = buf.split('\n').last() {
-                    spinner.set_message(format!("{prefix} {last_line}"));
+                    spinner.set_message(last_line.to_string());
                 }
             }
         }
@@ -173,6 +252,7 @@ impl BuildContext {
             bail!("{label} exited with non-zero code");
         }
 
+        spinner.disable_steady_tick();
         spinner.finish_and_clear();
 
         Ok(())

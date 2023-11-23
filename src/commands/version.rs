@@ -4,9 +4,9 @@ use anyhow::Result;
 use console::style;
 use semver::Version;
 
-use crate::{create_http_client, sources::github};
+use crate::app::BaseApp;
 
-pub async fn run() -> Result<()> {
+pub async fn run(base_app: BaseApp) -> Result<()> {
     println!(
         " > {} by {}",
         style(env!("CARGO_PKG_NAME")).green().bold(),
@@ -18,11 +18,11 @@ pub async fn run() -> Result<()> {
 
     println!(" {}", style("> checking for updates...").dim());
 
-    let http_client = create_http_client()?;
-
     let repo_name: String = env!("CARGO_PKG_REPOSITORY").chars().skip(19).collect();
 
-    let releases = github::fetch_github_releases(&repo_name, &http_client).await?;
+    let app = base_app.upgrade_with_default_server()?;
+
+    let releases = app.github().fetch_releases(&repo_name).await?;
 
     let latest_ver = Version::parse(&releases.first().unwrap().tag_name)?;
 

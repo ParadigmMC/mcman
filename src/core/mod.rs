@@ -1,231 +1,168 @@
-use std::{path::PathBuf, process::Child, time::Instant};
+use std::{fmt::Debug, path::PathBuf, process::Child, time::Duration};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use console::style;
-use dialoguer::theme::ColorfulTheme;
-use tokio::fs::{self, File};
+use indicatif::{FormattedDuration, ProgressBar};
+use tokio::io::AsyncWriteExt;
 
 use crate::{
-    model::{Server, StartupMethod, Network, Lockfile, Changes},
-    util::{self, logger::Logger}, Source,
+    app::{AddonType, App, Resolvable, ResolvedFile},
+    model::Lockfile,
 };
 
 pub mod addons;
 pub mod bootstrap;
-pub mod runner;
 pub mod scripts;
 pub mod serverjar;
 pub mod worlds;
 
 #[derive(Debug)]
-pub struct BuildContext {
-    pub logger: Logger,
-    pub server: Server,
-    pub network: Option<Network>,
-    pub http_client: reqwest::Client,
+pub struct BuildContext<'a> {
+    pub app: &'a App,
+
     pub output_dir: PathBuf,
     pub lockfile: Lockfile,
     pub new_lockfile: Lockfile,
 
-    pub changes: Changes,
     pub force: bool,
     pub skip_stages: Vec<String>,
-    pub start_time: Instant,
-    pub stage_index: u8,
-    pub startup_method: StartupMethod,
     pub server_process: Option<Child>,
 }
 
-impl Default for BuildContext {
-    fn default() -> Self {
-        Self {
-            logger: Logger::new(),
-            server: Server::default(),
-            network: None,
-            force: false,
-            http_client: reqwest::Client::default(),
-            output_dir: PathBuf::new(),
-            lockfile: Lockfile::default(),
-            new_lockfile: Lockfile::default(),
-            changes: Changes::default(),
-            startup_method: StartupMethod::Jar(String::from("server.jar")),
-            skip_stages: vec![],
-            stage_index: 1,
-            start_time: Instant::now(),
-            server_process: None,
-        }
-    }
-}
-
-impl BuildContext {
-    pub async fn build_all(&mut self) -> Result<()> {
-        self.stage_index = 1;
-        self.start_time = Instant::now();
-
-        self.reload()?;
-
-        println!(
-            " {} {}...",
+impl<'a> BuildContext<'a> {
+    pub async fn build_all(&mut self) -> Result<String> {
+        let server_name = self.app.server.name.clone();
+        let banner = format!(
+            "{} {}...",
             style("Building").bold(),
-            style(&self.server.name).green().bold()
+            style(&server_name).green().bold()
         );
+        self.app.print_job(&banner);
+        let progress_bar = self
+            .app
+            .multi_progress
+            .add(ProgressBar::new_spinner())
+            .with_message(banner);
+        progress_bar.enable_steady_tick(Duration::from_millis(250));
 
-        if self.force {
-            println!(" => {}", style("using force flag").bold());
-        }
+        tokio::fs::create_dir_all(&self.output_dir)
+            .await
+            .context("Creating output directory")?;
+
+        self.reload();
 
         if !self.skip_stages.is_empty() {
-            println!(" => skipping stages: {}", self.skip_stages.join(", "));
+            self.app
+                .info(format!("Skipping stages: {}", self.skip_stages.join(", ")));
         }
 
         // actual stages contained here
 
-        self.run_stage("Server Jar", "serverjar").await?;
+        self.app.ci("::group::Server Jar");
+        let server_jar = self.download_server_jar().await?;
+        self.app.ci("::endgroup::");
 
-        if !self.server.plugins.is_empty() {
-            self.run_stage("Plugins", "plugins").await?;
+        if !self.app.server.plugins.is_empty() && !self.skip_stages.contains(&"plugins".to_owned())
+        {
+            self.download_addons(AddonType::Plugin).await?;
         }
 
-        if !self.server.mods.is_empty() {
-            self.run_stage("Mods", "mods").await?;
+        if !self.app.server.mods.is_empty() && !self.skip_stages.contains(&"mods".to_owned()) {
+            self.download_addons(AddonType::Mod).await?;
         }
 
-        if !self.server.worlds.is_empty() {
-            self.run_stage("Datapacks", "dp").await?;
+        if !self.app.server.worlds.is_empty() && !self.skip_stages.contains(&"worlds".to_owned()) {
+            self.process_worlds().await?;
         }
 
-        self.run_stage("Configurations", "bootstrap").await?;
+        if self.app.server.path.join("config").exists()
+            && !self.skip_stages.contains(&"bootstrap".to_owned())
+        {
+            self.bootstrap_files().await?;
+        }
 
-        if !self.server.launcher.disable {
-            self.run_stage("Scripts", "scripts").await?;
+        if !self.app.server.launcher.disable {
+            let startup = self.get_startup_method(&server_jar).await?;
+
+            self.create_scripts(startup).await?;
+
+            self.app.log("start.bat and start.sh created");
+        }
+
+        if self.app.server.launcher.eula_args && !self.app.server.jar.supports_eula_args() {
+            tokio::fs::File::create(self.output_dir.join("eula.txt"))
+                .await?
+                .write_all(b"eula=true\n")
+                .await?;
+            self.app.log("eula.txt written");
         }
 
         self.write_lockfile()?;
 
-        println!(
-            " {} Successfully built {} in {}",
-            ColorfulTheme::default().success_prefix,
-            style(&self.server.name).green().bold(),
-            style(self.start_time.elapsed().as_millis().to_string() + "ms").blue(),
-        );
+        progress_bar.disable_steady_tick();
+        progress_bar.finish_and_clear();
 
-        Ok(())
+        self.app.success(format!(
+            "Successfully built {} in {}",
+            style(&server_name).green().bold(),
+            style(FormattedDuration(progress_bar.elapsed())).blue(),
+        ));
+
+        Ok(server_jar)
     }
 
-    pub fn reload(&mut self) -> Result<()> {
-        self.lockfile = Lockfile::get_lockfile(&self.output_dir)?;
-        self.changes = self.lockfile.get_changes(&self.server);
+    /// Load to `self.lockfile` and create a default one at `self.new_lockfile`
+    pub fn reload(&mut self) {
+        self.lockfile = if let Ok(f) = Lockfile::get_lockfile(&self.output_dir) {
+            f
+        } else {
+            self.app.warn("Lockfile error, using default");
+            Lockfile {
+                path: self.output_dir.join(".mcman.lock"),
+                ..Default::default()
+            }
+        };
+
         self.new_lockfile = Lockfile {
             path: self.output_dir.join(".mcman.lock"),
             ..Default::default()
         };
-        Ok(())
     }
 
+    /// Save `new_lockfile`
     pub fn write_lockfile(&mut self) -> Result<()> {
-        self.new_lockfile.save()?;
-
-        println!(
-            "          {}",
-            style("updated lockfile").dim()
-        );
+        if std::env::var("MCMAN_DISABLE_LOCKFILE") == Ok("true".to_owned()) {
+            self.app.dbg("lockfile disabled");
+        } else {
+            self.new_lockfile.save()?;
+            self.app.log("updated lockfile");
+        }
 
         Ok(())
     }
 
-    pub async fn run_stage(&mut self, name: &str, id: &str) -> Result<()> {
-        println!(" stage {}: {}", self.stage_index, style(name).blue().bold());
-
-        self.stage_index += 1;
-
-        if self.skip_stages.contains(&id.to_owned()) {
-            println!("      {} {id}", style("-> Skipping stage").yellow().bold());
-            Ok(())
-        } else {
-            match id {
-                "serverjar" => self
-                    .download_server_jar()
-                    .await
-                    .context("Downloading server jar"),
-                "plugins" => self
-                    .download_addons("plugins")
-                    .await
-                    .context("Downloading plugins"),
-                "mods" => self
-                    .download_addons("mods")
-                    .await
-                    .context("Downloading mods"),
-                "dp" => self
-                    .process_worlds()
-                    .await
-                    .context("Processing worlds/datapacks"),
-                "bootstrap" => self.bootstrap_files().await.context("Bootstrapping config files"),
-                "scripts" => self
-                    .create_scripts()
-                    .await
-                    .context("Creating launch scripts"),
-                id => Err(anyhow!("Unknown build stage: {id}")),
-            }
-        }
-    }
-
-    pub async fn downloadable<F: Fn(ReportBackState, &str)>(
+    pub async fn downloadable(
         &self,
-        dl: &(impl Source + std::fmt::Debug),
-        folder_path: Option<&str>,
-        report_back: F,
-    ) -> Result<String> {
-        let file_name = dl
-            .get_filename(&self.server, &self.http_client)
-            .await
-            .with_context(|| format!("Getting filename of Downloadable: {dl:#?}"))?;
-
-        let file_path = if let Some(path) = folder_path {
-            self.output_dir.join(path)
+        resolvable: &(impl Resolvable + Debug + ToString),
+        folder_path: &str,
+        parent_progress: Option<&ProgressBar>,
+    ) -> Result<(PathBuf, ResolvedFile)> {
+        let progress_bar = if let Some(parent) = parent_progress {
+            self.app
+                .multi_progress
+                .insert_after(parent, ProgressBar::new_spinner())
         } else {
-            self.output_dir.clone()
-        }
-        .join(&file_name);
+            self.app.multi_progress.add(ProgressBar::new_spinner())
+        };
 
-        if !self.force && file_path.exists() {
-            report_back(ReportBackState::Skipped, &file_name);
-        } else {
-            report_back(ReportBackState::Downloading, &file_name);
+        let result = self
+            .app
+            .download(resolvable, self.output_dir.join(folder_path), progress_bar)
+            .await?;
 
-            let file = File::create(&file_path).await.with_context(|| {
-                format!(
-                    "Failed to create output file: {}",
-                    file_path.to_string_lossy()
-                )
-            })?;
-
-            let result = util::download_with_progress(
-                file,
-                &file_name,
-                dl,
-                &self.server,
-                &self.http_client,
-            )
-            .await
-            .with_context(|| format!("Downloading Downloadable: {dl:#?}"));
-
-            if result.is_err() {
-                // try to remove file if errored
-                // so we wont have any "0 bytes" files (which mcman will skip)
-                _ = fs::remove_file(file_path).await;
-            }
-
-            result?;
-
-            report_back(ReportBackState::Downloaded, &file_name);
-        }
-
-        Ok(file_name)
+        Ok((
+            self.output_dir.join(folder_path).join(&result.filename),
+            result,
+        ))
     }
-}
-
-pub enum ReportBackState {
-    Skipped,
-    Downloading,
-    Downloaded,
 }

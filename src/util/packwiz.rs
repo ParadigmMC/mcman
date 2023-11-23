@@ -8,6 +8,7 @@ use console::style;
 use pathdiff::diff_paths;
 use reqwest::{IntoUrl, Url};
 use rpackwiz::model::{HashFormat, Mod, Pack, PackFile, PackIndex, Side};
+use serde::de::DeserializeOwned;
 use tokio::{
     fs::{self, File},
     io::AsyncWriteExt,
@@ -19,9 +20,8 @@ use crate::{
     model::{ClientSideMod, Server, ServerType},
     util::env::try_get_url,
     util::{
-        download_with_progress,
         hash::{hash_contents, hash_file},
-    },
+    }
 };
 
 pub struct PackwizExportOptions {
@@ -122,7 +122,7 @@ pub async fn packwiz_import_http(
                 .await
                 .context("Fetching metafile toml")?;
 
-            let Some(dl) = Downloadable::from_pw_mod(&m, http_client, server).await? else {
+            /* let Some(dl) = Downloadable::from_pw_mod(&m, http_client, server).await? else {
                 continue;
             };
 
@@ -151,7 +151,7 @@ pub async fn packwiz_import_http(
                 );
 
                 server.mods.push(dl);
-            }
+            } */
 
             mod_count += 1;
         } else {
@@ -171,7 +171,7 @@ pub async fn packwiz_import_http(
                     dest_path.to_string_lossy()
                 ))?;
 
-            download_with_progress(
+            /* download_with_progress(
                 File::create(&dest_path)
                     .await
                     .context(format!("Creating file {}", dest_path.to_string_lossy()))?,
@@ -185,7 +185,7 @@ pub async fn packwiz_import_http(
                 http_client,
             )
             .await
-            .context(format!("Downloading {} from {file_url}", file.file))?;
+            .context(format!("Downloading {} from {file_url}", file.file))?; */
 
             config_count += 1;
         }
@@ -250,7 +250,7 @@ pub async fn packwiz_import_local(
                 .await
                 .context(format!("Reading toml from {}", file_path.to_string_lossy()))?;
 
-            let Some(dl) = Downloadable::from_pw_mod(&m, http_client, server).await? else {
+            /* let Some(dl) = Downloadable::from_pw_mod(&m, http_client, server).await? else {
                 continue;
             };
 
@@ -279,7 +279,7 @@ pub async fn packwiz_import_local(
                 );
 
                 server.mods.push(dl);
-            }
+            } */
 
             mod_count += 1;
         } else {
@@ -496,7 +496,7 @@ pub async fn create_packwiz_modlist(
 ) -> Result<Vec<(String, Mod)>> {
     let mut list = vec![];
 
-    for dl in &server.mods {
+    /* for dl in &server.mods {
         if let Some(t) = dl.to_pw_mod(http_client, server, opts, None, "").await? {
             list.push(t);
         }
@@ -516,7 +516,7 @@ pub async fn create_packwiz_modlist(
         {
             list.push(t);
         }
-    }
+    } */
 
     Ok(list)
 }

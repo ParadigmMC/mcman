@@ -1,16 +1,11 @@
 use anyhow::Result;
-use console::style;
 
-use crate::util::env::write_gitignore;
+use crate::{app::App, util::env::write_git};
 
-pub fn run() -> Result<()> {
-    let path = write_gitignore()?;
+pub fn run(app: &App) -> Result<()> {
+    write_git()?;
 
-    println!(
-        " > {} {}",
-        style("Configured gitignore at").green(),
-        style(path.to_string_lossy()).dim()
-    );
+    app.success("Configured gitignore and gitattributes");
 
     Ok(())
 }
