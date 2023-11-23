@@ -47,7 +47,7 @@ impl MavenMetadata {
     pub fn find_url(&self, url: &str) -> Option<(String, String)> {
         let t = url.split_once(&format!(
             "{}/{}",
-            self.group_id.clone()?.replace('.', "/"),
+            self.group_id.clone()?.replace(['.', ':'], "/"),
             self.artifact_id.clone()?
         ))?;
         Some((t.0.to_owned(), t.1.to_owned()))
@@ -60,7 +60,7 @@ impl<'a> MavenAPI<'a> {
     pub fn get_metadata_url(url: &str, group_id: &str, artifact_id: &str) -> String {
         format!(
             "{url}/{}/{artifact_id}/maven-metadata.xml",
-            group_id.replace('.', "/")
+            group_id.replace(['.', ':'], "/")
         )
     }
 

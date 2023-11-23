@@ -64,6 +64,7 @@ pub enum ServerType {
         #[serde(default = "spigot")]
         software: String,
         #[serde(skip_serializing_if = "Vec::is_empty")]
+        #[serde(default = "Vec::new")]
         args: Vec<String>,
     },
 
@@ -223,6 +224,6 @@ pub fn buildtools() -> Downloadable {
         url: BUILDTOOLS_JENKINS.to_owned(),
         job: "BuildTools".to_owned(),
         build: "latest".to_owned(),
-        artifact: "BuildTools".to_owned(),
+        artifact: "first".to_owned(),
     }
 }

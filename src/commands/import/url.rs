@@ -18,9 +18,8 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
     app.add_addon_inferred(&addon)?;
 
     app.save_changes()?;
-    app.refresh_markdown().await?;
-
     app.notify(Prefix::Imported, addon.to_short_string());
+    app.refresh_markdown().await?;
 
     Ok(())
 }

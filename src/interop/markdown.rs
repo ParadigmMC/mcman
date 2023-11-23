@@ -152,6 +152,13 @@ impl<'a> MarkdownAPI<'a> {
             }
         }
 
+        if self.0.network.is_some() {
+            templates.push(MarkdownTemplate {
+                id: "network-servers".to_string(),
+                table: self.table_network(),
+            });
+        }
+
         progress_bar.finish_and_clear();
 
         Ok(templates)
@@ -166,6 +173,23 @@ impl<'a> MarkdownAPI<'a> {
         map.extend(self.0.server.jar.get_metadata());
 
         MarkdownTable::from_map(&map)
+    }
+
+    pub fn table_network(&self) -> MarkdownTable {
+        let mut table = MarkdownTable::new();
+
+        if let Some(nw) = &self.0.network {
+            for (name, serv) in &nw.servers {
+                let mut map = IndexMap::new();
+
+                map.insert("Name".to_owned(), format!("[`{name}`](./servers/{name}/)"));
+                map.insert("Port".to_owned(), serv.port.to_string());
+
+                table.add_from_map(&map);
+            }
+        }
+
+        table
     }
 
     pub async fn table_addons(&self) -> Result<MarkdownTable> {
@@ -302,12 +326,7 @@ impl<'a> MarkdownAPI<'a> {
                 build,
                 artifact,
             } => {
-                let desc = crate::sources::jenkins::fetch_jenkins_description(
-                    &self.0.http_client,
-                    url,
-                    job,
-                )
-                .await?;
+                let desc = self.0.jenkins().fetch_description(url, job).await?;
 
                 IndexMap::from([
                     ("Name".to_owned(), dl.get_md_link()),

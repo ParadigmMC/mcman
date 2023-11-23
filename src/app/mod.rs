@@ -228,6 +228,7 @@ impl<'a> App {
 
     api_methods!(github, GithubAPI);
     api_methods!(maven, MavenAPI);
+    api_methods!(jenkins, JenkinsAPI);
 
     api_methods!(modrinth, ModrinthAPI);
     api_methods!(curserinth, CurserinthAPI);

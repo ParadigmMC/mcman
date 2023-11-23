@@ -29,9 +29,11 @@ id = "spark"
 version = "XhFbpH8f"
 
 [[mods]]
-type = "modrinth"
-id = "spark"
-version = "XhFbpH8f"
+type = "jenkins"
+url = "https://ci.lucko.me"
+job = "LuckPerms"
+build = "latest"
+artifact = "Fabric"
 
 [markdown]
 files = ["README.md"]

@@ -1,6 +1,6 @@
 use indexmap::IndexMap;
 
-use crate::{model::Downloadable, sources::jenkins::str_process_job};
+use crate::{model::Downloadable, sources::jenkins::JenkinsAPI};
 
 impl Downloadable {
     pub fn get_md_link(&self) -> String {
@@ -21,8 +21,7 @@ impl Downloadable {
                 format!("[{id}](https://hangar.papermc.io/{id})")
             }
             Self::Jenkins { url, job, .. } => {
-                let link = url.clone() + &str_process_job(job);
-                format!("[{job}]({link})")
+                format!("[{job}]({})", JenkinsAPI::get_url(url, job))
             }
             Self::Maven { url, group, .. } => {
                 format!("[{g}]({url}/{g})", g = group.replace('.', "/"))

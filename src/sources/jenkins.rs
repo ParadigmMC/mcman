@@ -1,177 +1,171 @@
-//! Bad way pls fix
-//!        - dennis
-
 use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
+use serde::{Serialize, Deserialize};
 
 use crate::app::{App, CacheStrategy, ResolvedFile};
 
-//pub static API_MAGIC_JOB: &str = "/api/json?tree=url,name,builds[*[url,number,result,artifacts[relativePath,fileName]]]";
-static API_MAGIC_JOB: &str = "/api/json?tree=builds[*[url,number,result]]";
-static API_MAGIC_BUILD: &str = "/api/json";
 static SUCCESS_STR: &str = "SUCCESS";
 
-pub async fn resolve_source(
-    app: &App,
-    url: &str,
-    job: &str,
-    build: &str,
-    artifact: &str,
-) -> Result<ResolvedFile> {
-    let (build_url, filename, relative_path, build_number, md5hash) =
-        get_jenkins_filename(&app.http_client, url, job, build, artifact).await?;
-
-    // TODO: use utils
-    // ci.luckto.me => ci-lucko-me
-    let folder = url.replace("https://", "");
-    let folder = folder.replace("http://", "");
-    let folder = folder.replace('/', " ");
-    let folder = folder.trim();
-    let folder = folder.replace(' ', "-");
-
-    let cached_file_path = format!("{folder}/{job}/{build_number}/{filename}");
-
-    Ok(ResolvedFile {
-        url: format!("{build_url}artifact/{relative_path}"),
-        filename,
-        cache: CacheStrategy::File {
-            namespace: String::from("jenkins"),
-            path: cached_file_path,
-        },
-        size: None,
-        hashes: if let Some(md5) = md5hash {
-            HashMap::from([("md5".to_owned(), md5.clone())])
-        } else {
-            HashMap::new()
-        },
-    })
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct JenkinsBuildItem {
+    pub url: String,
+    pub number: i32,
+    pub result: String,
+    pub fingerprint: Vec<JenkinsFingerprint>,
 }
 
-// has 1 dep, beware lol
-pub fn str_process_job(job: &str) -> String {
-    job.split('/')
-        .map(|j| "/job/".to_owned() + j)
-        .collect::<String>()
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct JenkinsArtifact {
+    pub file_name: String,
+    pub relative_path: String,
 }
 
-pub async fn get_jenkins_job_value(
-    client: &reqwest::Client,
-    url: &str,
-    job: &str,
-) -> Result<serde_json::Value> {
-    let base = url.to_owned() + &str_process_job(job) + API_MAGIC_JOB;
-
-    let v: serde_json::Value = client
-        .get(&base)
-        .send()
-        .await?
-        .error_for_status()?
-        .json()
-        .await?;
-
-    Ok(v)
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct JenkinsFingerprint {
+    file_name: String,
+    hash: String,
 }
 
-pub async fn get_jenkins_build_value(
-    client: &reqwest::Client,
-    build_url: &str,
-) -> Result<serde_json::Value> {
-    let base = build_url.to_owned() + API_MAGIC_BUILD;
+pub struct JenkinsAPI<'a>(pub &'a App);
 
-    let v: serde_json::Value = client
-        .get(&base)
-        .send()
-        .await?
-        .error_for_status()?
-        .json()
-        .await?;
-
-    Ok(v)
-}
-
-/// returns (`build_url`, fileName, relativePath, `build_number`, md5)
-pub async fn get_jenkins_filename(
-    client: &reqwest::Client,
-    url: &str,
-    job: &str,
-    build: &str,
-    artifact_id: &str,
-) -> Result<(String, String, String, i64, Option<String>)> {
-    let j = get_jenkins_job_value(client, url, job).await?;
-
-    let mut filtered_builds = j["builds"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .filter(|b| b["result"].as_str().unwrap() == SUCCESS_STR);
-
-    let matched_build = match build {
-        // iter.first doesnt exist i guess? .next works
-        "latest" => filtered_builds.next().unwrap(),
-        id => filtered_builds
-            .find(|b| b["number"].as_i64().unwrap().to_string() == id)
-            .unwrap(),
-    };
-
-    let build_url = matched_build["url"].as_str().unwrap();
-
-    let v = get_jenkins_build_value(client, build_url).await?;
-
-    let mut artifacts_iter = v["artifacts"].as_array().unwrap().iter();
-
-    let artifact = match artifact_id {
-        "first" => artifacts_iter.next(),
-        id => {
-            let id = id.replace(
-                "${build}",
-                &matched_build["number"].as_i64().unwrap().to_string(),
-            );
-
-            artifacts_iter
-                .find(|a| a["fileName"].as_str().unwrap() == id)
-                .or(artifacts_iter.find(|a| id.contains(a["fileName"].as_str().unwrap())))
-        }
+impl<'a> JenkinsAPI<'a> {
+    pub fn get_url(url: &str, job: &str) -> String {
+        job.split('/')
+            .fold(url.strip_suffix('/').unwrap_or(url).to_owned(), |acc, j| format!("{acc}/job/{j}"))
     }
-    .ok_or(anyhow!(
-        "artifact for jenkins build artifact not found ({url};{job};{build};{artifact_id})"
-    ))?;
 
-    let md5hash = if let Some(serde_json::Value::Array(values)) = matched_build.get("fingerprint") {
-        values
-            .iter()
-            .find(|v| v["fileName"].as_str() == Some(artifact["fileName"].as_str().unwrap()))
-            .map(|v| v["hash"].as_str().unwrap_or_default().to_owned())
-    } else {
-        None
-    };
+    pub async fn fetch_builds(
+        &self,
+        url: &str,
+        job: &str,
+    ) -> Result<Vec<JenkinsBuildItem>> {
+        Ok(serde_json::from_value(self.0.http_client.get(format!(
+            "{}/api/json?tree=builds[*[url,number,result]]",
+            Self::get_url(url, job)
+        ))
+            .send()
+            .await?
+            .error_for_status()?
+            .json::<serde_json::Value>()
+            .await?
+            ["builds"]
+        .take())?)
+    }
 
-    Ok((
-        build_url.to_owned(),
-        artifact["fileName"].as_str().unwrap().to_owned(),
-        artifact["relativePath"].as_str().unwrap().to_owned(),
-        matched_build["number"].as_i64().unwrap(),
-        md5hash,
-    ))
-}
+    pub async fn fetch_build(
+        &self,
+        url: &str,
+        job: &str,
+        build: &str,
+    ) -> Result<JenkinsBuildItem> {
+        let builds = self.fetch_builds(url, job).await?;
+        let builds = builds.into_iter().filter(|b| b.result == SUCCESS_STR).collect::<Vec<_>>();
 
-pub async fn fetch_jenkins_description(
-    client: &reqwest::Client,
-    url: &str,
-    job: &str,
-) -> Result<String> {
-    let base = url.to_owned() + &str_process_job(job) + "/api/json?tree=description";
+        let selected_build = match build {
+            "latest" => builds.first(),
+            id => builds.iter().find(|b| b.number.to_string() == id),
+        }.ok_or(anyhow!("Can't find Jenkins build '{build}', URL: '{url}', Job: '{job}'"))?.clone();
 
-    let desc = client
-        .get(&base)
-        .send()
-        .await?
-        .error_for_status()?
-        .json::<serde_json::Value>()
-        .await?["description"]
-        .as_str()
-        .unwrap()
-        .to_owned();
+        Ok(selected_build)
+    }
 
-    Ok(desc)
+    pub async fn fetch_artifacts(
+        &self,
+        build_url: &str
+    ) -> Result<Vec<JenkinsArtifact>> {
+        Ok(serde_json::from_value(self.0.http_client.get(format!(
+            "{build_url}/api/json?tree=artifacts[*]"
+        ))
+            .send()
+            .await?
+            .error_for_status()?
+            .json::<serde_json::Value>()
+            .await?
+            ["artifacts"]
+            .take())?)
+    }
+
+    pub async fn fetch_artifact(
+        &self,
+        url: &str,
+        job: &str,
+        build: &str,
+        artifact: &str,
+    ) -> Result<(JenkinsBuildItem, JenkinsArtifact)> {
+        let selected_build = self.fetch_build(url, job, build).await?;
+        let artifacts = self.fetch_artifacts(&selected_build.url).await?;
+
+        let artifact = artifact.replace("${mcver}", &self.0.mc_version())
+            .replace("${mcversion}", &self.0.mc_version())
+            .replace("${build}", &selected_build.number.to_string());
+
+        let selected_artifact = match artifact.as_str() {
+            "first" => artifacts.first(),
+            id => artifacts.iter().find(|a| a.file_name == id)
+                .or_else(|| artifacts.iter().find(|a| a.file_name.contains(id))),
+        }.ok_or(anyhow!(
+            "Can't find Jenkins artifact '{artifact}', on build '{}' ({build}), job '{job}', url: '{url}'",
+            selected_build.number
+        ))?.clone();
+
+        Ok((selected_build, selected_artifact))
+    }
+
+    pub async fn resolve_source(
+        &self,
+        url: &str,
+        job: &str,
+        build: &str,
+        artifact: &str,
+    ) -> Result<ResolvedFile> {
+        let (build, artifact) = self.fetch_artifact(url, job, build, artifact).await?;
+
+        let cached_file_path = format!(
+            "{}/{job}/{}/{}",
+            crate::util::url_to_folder(url),
+            build.number,
+            artifact.file_name,
+        );
+
+        Ok(ResolvedFile {
+            url: format!(
+                "{}artifact/{}",
+                build.url,
+                artifact.relative_path,
+            ),
+            filename: artifact.file_name.clone(),
+            cache: CacheStrategy::File {
+                namespace: String::from("jenkins"),
+                path: cached_file_path,
+            },
+            size: None,
+            hashes: if let Some(JenkinsFingerprint { hash, .. }) = build.fingerprint.iter().find(|f| f.file_name == artifact.file_name) {
+                HashMap::from([("md5".to_owned(), hash.clone())])
+            } else {
+                HashMap::new()
+            },
+        })
+    }
+
+    pub async fn fetch_description(
+        &self,
+        url: &str,
+        job: &str,
+    ) -> Result<String> {
+        Ok(serde_json::from_value(self.0.http_client.get(format!(
+            "{}/api/json?tree=description",
+            Self::get_url(url, job)
+        ))
+            .send()
+            .await?
+            .error_for_status()?
+            .json::<serde_json::Value>()
+            .await?
+            ["description"]
+        .take())?)
+    }
 }

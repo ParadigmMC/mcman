@@ -82,6 +82,7 @@ impl App {
         destination: PathBuf,
         progress_bar: ProgressBar,
     ) -> Result<ResolvedFile> {
+        let progress_bar = progress_bar.with_finish(indicatif::ProgressFinish::AndClear);
         progress_bar.set_style(ProgressStyle::with_template(
             "{spinner:.blue} {prefix} {msg}...",
         )?);

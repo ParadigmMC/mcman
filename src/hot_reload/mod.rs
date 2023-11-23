@@ -16,8 +16,8 @@ use notify_debouncer_mini::{
 };
 use pathdiff::diff_paths;
 use tokio::{
-    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
-    process::Child,
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader, Lines},
+    process::{Child, ChildStdout, ChildStdin},
     sync::mpsc,
 };
 
@@ -124,15 +124,16 @@ impl<'a> DevSession<'a> {
         let mp = self.builder.app.multi_progress.clone();
 
         let mut child: Option<Child> = None;
-        let mut stdout_lines: Option<tokio::io::Lines<BufReader<tokio::process::ChildStdout>>> =
+        let mut stdout_lines: Option<Lines<BufReader<ChildStdout>>> =
             None;
+        let mut child_stdin: Option<ChildStdin> = None;
 
         let mut is_stopping = false;
         let mut is_session_ending = false;
         let mut test_result = TestResult::Failed;
         let mut exit_status = None;
 
-        let mut stdin_lines = tokio::io::BufReader::new(tokio::io::stdin()).lines();
+        let mut stdin_lines = BufReader::new(tokio::io::stdin()).lines();
 
         'l: loop {
             tokio::select! {
@@ -143,16 +144,14 @@ impl<'a> DevSession<'a> {
                             self.builder.app.info("Starting server process...");
                             if child.is_none() {
                                 let mut spawned_child = self.spawn_child().await?;
-                                stdout_lines = Some(tokio::io::BufReader::new(spawned_child.stdout.take().expect("stdout None")).lines());
+                                stdout_lines = Some(tokio::io::BufReader::new(spawned_child.stdout.take().expect("child stdout None")).lines());
+                                child_stdin = Some(spawned_child.stdin.take().expect("child stdin None"));
                                 child = Some(spawned_child);
                             }
                         }
                         Command::SendCommand(command) => {
-                            if let Some(ref mut child) = &mut child {
-                                if let Some(ref mut stdin) = &mut child.stdin {
-                                    eprintln!("checkpoint 2");
-                                    let _ = stdin.write_all(command.as_bytes()).await;
-                                }
+                            if let Some(ref mut stdin) = &mut child_stdin {
+                                stdin.write_all(command.as_bytes()).await?;
                             }
                         }
                         Command::WaitUntilExit => {
@@ -254,12 +253,9 @@ impl<'a> DevSession<'a> {
                 Ok(Some(line)) = stdin_lines.next_line() => {
                     let mut cmd = line.trim();
 
-                    //self.builder.app.info(&format!("Sending command: {cmd}"))?;
-                    if let Some(ref mut child) = &mut child {
-                        if let Some(ref mut stdin) = &mut child.stdin {
-                            eprintln!("checkpoint 1");
-                            let _ = stdin.write_all(format!("{cmd}\n").as_bytes()).await;
-                        }
+                    self.builder.app.info(format!("Sending command: {cmd}"));
+                    if let Some(ref mut stdin) = &mut child_stdin {
+                        stdin.write_all(format!("{cmd}\n").as_bytes()).await?;
                     }
                 },
                 Ok(Some(status)) = try_wait_child(&mut child) => {

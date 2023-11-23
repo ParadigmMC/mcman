@@ -1,5 +1,3 @@
 [[files]]
 path = "server.properties"
-
-[files.action]
-type = "Reload"
+action = "reload"

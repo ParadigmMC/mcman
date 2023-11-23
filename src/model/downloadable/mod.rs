@@ -5,7 +5,6 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use crate::app::{App, CacheStrategy, Resolvable, ResolvedFile};
-use crate::sources::jenkins;
 
 mod markdown;
 mod meta;
@@ -117,7 +116,7 @@ impl Resolvable for Downloadable {
                 job,
                 build,
                 artifact,
-            } => jenkins::resolve_source(app, url, job, build, artifact).await,
+            } => app.jenkins().resolve_source(url, job, build, artifact).await,
             Self::Maven {
                 url,
                 group,
