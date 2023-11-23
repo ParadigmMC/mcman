@@ -1,7 +1,8 @@
 on:
-  workflow_dispatch
+  push:
+  pull_request:
 
-name: Test bc23
+name: Test Servers
 jobs:
   test:
     runs-on: ubuntu-latest
