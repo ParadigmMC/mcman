@@ -10,7 +10,7 @@
 ![downloads](https://img.shields.io/github/downloads/ParadigmMC/mcman/total?logo=github)
 [![discord server](https://img.shields.io/discord/1108817072814817410?logo=discord)](https://discord.gg/YFuxNmKvSr)
 
-Powerful Minecraft Server Manager CLI. Easily install jars (server, plugins & mods), write config files, manage worlds and more. Docker and git support included.
+Powerful Minecraft Server Manager CLI. Manage your servers using git - easily install jars (server, plugins & mods); manage config files, worlds, entire networks, and more.
 
 ## Getting Started
 
@@ -21,26 +21,32 @@ Powerful Minecraft Server Manager CLI. Easily install jars (server, plugins & mo
 
 - Join the [discord](https://discord.gg/YFuxNmKvSr) for support!
 - 📋 Some examples can be found under [examples/](./examples/)
+- 🚀 Here's [BlanketCon '23](https://github.com/ParadigmMC/mcman-bc23) imported to mcman - you can even see its [test workflow](https://github.com/ParadigmMC/mcman-bc23/actions/workflows/bc23test.yml)
 
 Submit a PR or open an issue if you have a mcman-server repository that we can add here!
 
 ## Features
 
 - 📜 Everything in one simple `server.toml` file!
-- 📥 Downloads the *server jar*, *plugins*, *mods*, *datapacks* and *worlds* (if any)!
+- 📥 Downloads everything automatically for you
 - 🔁 Always keep up to date with new builds and releases
-- ✔️ No third-party hosts (metadata/mirrors)
-- :octocat: Fully `git`-compatible!
-- 🐳 Supports Docker, out of the box
-- 📦 **Import** from or **export** to `mrpack`s or `packwiz` packs!
+- 🔒 Does size & hash checks even for cached files for integrity
+- :octocat: Fully `git`-compatible
+- 📦 **Import** from or **export** to `mrpack`s or `packwiz` packs
 - 📚 Supports way too many sources, some are:
   - Modrinth, CurseRinth, Spigot, Hangar, Github Releases, Jenkins, Maven
-  - If you need something else, it even supports custom urls!
+  - Not here? You can use custom urls.
+- 🏷️ Easily render a list of plugins/mods or the server info to **markdown** files
+- ✨ Managing a network? Use `network.toml` to manage servers' ports, have shared variables, config files, plugins and mods.
+- 🌐 Keep worlds as `worlds/*.zip` to version control them, or set it to be downloaded from somewhere!
+- ☔ Develop your servers with hot reloading using `mcman dev`
+- 🔁 Test your servers using CI (`mcman run --test`)
+- 🔗 mclo.gs integration
+- 🐳 Supports Docker, out of the box
+- ✔️ No third-party hosts (metadata/mirrors)
 - ⚙️ Better configuration files with `config/`!
   - Allows you to use **config variables** inside your config files
   - Use **environment variables** for secrets
-- 🌐 Keep worlds as `worlds/*.zip` for git, or set it to be downloaded from somewhere!
-- ✨ Managing a network? Use `network.toml` to manage servers' ports, have shared variables, config files, plugins or mods.
 
 > [!IMPORTANT]
 > While `mcman` can manage your server, its not designed to run it. You should use something else, for example, docker or pterodactyl to run your servers.

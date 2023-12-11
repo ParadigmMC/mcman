@@ -3,7 +3,7 @@
 
 # Installation
 
-If you are a Windows user, we recommend **Scoop**.
+If you are a Windows user, we recommend **Scoop**. [Whats Next? ->](./tutorials/getting-started.md)
 
 === "Github Releases"
     You can use the links below to get the mcman executable.
