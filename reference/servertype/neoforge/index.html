@@ -9,17 +9,17 @@
       
       
       
-        <link rel="prev" href="../papermc/">
+        <link rel="prev" href="../quilt/">
       
       
-        <link rel="next" href="../bungeecord/">
+        <link rel="next" href="../forge/">
       
       <link rel="icon" href="../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
     
     
       
-        <title>PurpurMC - mcman</title>
+        <title>NeoForge - mcman</title>
       
     
     
@@ -67,7 +67,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#purpurmc" class="md-skip">
+        <a href="#neoforge" class="md-skip">
           Skip to content
         </a>
       
@@ -100,7 +100,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              PurpurMC
+              NeoForge
             
           </span>
         </div>
@@ -942,11 +942,21 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../neoforge/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         NeoForge
       </a>
+      
     </li>
   
 
@@ -984,21 +994,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../purpurmc/" class="md-nav__link">
         PurpurMC
       </a>
-      
     </li>
   
 
@@ -1255,16 +1255,11 @@
   
 
 
-<h1 id="purpurmc">PurpurMC</h1>
-<p>Downloads the server jar from <a href="https://purpurmc.org/">PurpurMC</a>.</p>
-<div class="admonition example">
-<p class="admonition-title">Example</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;purpur&quot;</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">build</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;10&quot;</span><span class="w"> </span><span class="c1">#(1)!</span>
-</code></pre></div>
-<ol>
-<li>Defaults to <code>latest</code></li>
-</ol>
+<h1 id="neoforge">NeoForge</h1>
+<p>Downloads the server jar from <a href="https://neoforged.net/">NeoForge</a></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>mcman</code> will need to run <code>java</code> to install the server, ensure it exists in the environment before building</p>
 </div>
 <p><strong>Fields:</strong></p>
 <table>
@@ -1278,16 +1273,19 @@
 <tbody>
 <tr>
 <td><code>type</code></td>
-<td><code>"purpur"</code></td>
+<td><code>"neoforge"</code></td>
 <td></td>
 </tr>
 <tr>
-<td><code>build</code></td>
+<td><code>loader</code></td>
 <td>string/<code>"latest"</code></td>
-<td>Optionally define the build id</td>
+<td>Loader version to use</td>
 </tr>
 </tbody>
 </table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;neoforge&quot;</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">loader</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;latest&quot;</span>
+</code></pre></div>
 
 
 
