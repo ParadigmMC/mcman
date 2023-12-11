@@ -11,7 +11,7 @@ documentation = "https://paradigmmc.github.io/mcman/"
 keywords = [
     "minecraft", "server"
 ]
-categories = ["command-line-utilities", "config", ""]
+categories = ["command-line-utilities", "config"]
 
 [profile.release]
 debug = false
@@ -54,3 +54,4 @@ dirs = "5.0.1"
 base16ct = { version = "0.2", features = ["alloc"] }
 digest = "0.10"
 opener = "0.6"
+confique = { version = "0.2.5", default-features = false, features = ["toml"] }

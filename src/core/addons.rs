@@ -10,11 +10,8 @@ use super::BuildContext;
 
 impl<'a> BuildContext<'a> {
     pub async fn download_addons(&mut self, addon_type: AddonType) -> Result<()> {
-        let server_list = match addon_type {
-            AddonType::Plugin => &self.app.server.plugins,
-            AddonType::Mod => &self.app.server.mods,
-        };
-
+        let server_list = self.app.get_addons(addon_type);
+        
         self.app.print_job(&format!(
             "Processing {} {addon_type}{}...{}",
             server_list.len(),

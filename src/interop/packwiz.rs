@@ -295,6 +295,7 @@ impl<'a> PackwizInterop<'a> {
             )?)
             .with_prefix(ProgressPrefix::Exporting);
 
+        tokio::fs::create_dir_all(output_dir.join("mods")).await?;
         for dl in self.0.server.mods.iter().progress_with(pb.clone()) {
             pb.set_message(dl.to_short_string());
 

@@ -5,6 +5,9 @@
 <!-- run 'mcman md' to update! -->
 
 <!--start:mcman-server-->
+| Version | Type                                             |
+| ------- | ------------------------------------------------ |
+| latest  | [Velocity](https://papermc.io/software/velocity) |
 <!--end:mcman-server-->
 
 ## Plugins

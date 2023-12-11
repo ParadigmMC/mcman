@@ -76,7 +76,7 @@ enum Commands {
     Info,
     /// Show version information
     #[command(visible_alias = "v")]
-    Version,
+    Version(commands::version::Args),
 
     /// Eject - remove everything related to mcman
     #[command(hide = true)]
@@ -95,7 +95,7 @@ async fn main() -> Result<()> {
     match args.command {
         Commands::Init(args) => commands::init::run(base_app, args).await,
         Commands::Cache(subcommands) => commands::cache::run(subcommands),
-        Commands::Version => commands::version::run(base_app).await,
+        Commands::Version(args) => commands::version::run(base_app, args).await,
         c => {
             let app = base_app.upgrade()?;
 

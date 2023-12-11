@@ -325,9 +325,7 @@ impl<'a> DevSession<'a> {
                         }
                     });
 
-                    if std::env::var("upload_to_mclogs") == Ok("true".to_string())
-                        || self.builder.app.server.options.upload_to_mclogs
-                    {
+                    if self.builder.app.config.services.mclogs.enabled {
                         let pb =
                             mp.add(ProgressBar::new_spinner().with_message("Uploading to mclo.gs"));
 

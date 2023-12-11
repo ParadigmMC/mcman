@@ -55,7 +55,6 @@ pub struct Server {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq)]
 pub struct ServerOptions {
-    pub upload_to_mclogs: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub bootstrap_exts: Vec<String>,
 }

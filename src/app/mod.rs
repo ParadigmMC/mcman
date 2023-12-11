@@ -9,11 +9,12 @@ mod resolvable;
 
 use anyhow::{Context, Result};
 pub use caching::*;
+use confique::Config;
 pub use feedback::*;
 use indicatif::MultiProgress;
 pub use resolvable::*;
 
-use crate::model::{Network, Server};
+use crate::model::{Network, Server, Downloadable, AppConfig};
 use crate::sources;
 
 pub const APP_USER_AGENT: &str = concat!(
@@ -63,20 +64,13 @@ impl BaseApp {
 
     pub fn upgrade(self) -> Result<App> {
         Ok(App {
-            http_client: self.http_client,
             server: Server::load().context("Failed to load server.toml")?,
-            network: Network::load()?,
-            multi_progress: MultiProgress::new(),
+            ..App::new(self)?
         })
     }
 
     pub fn upgrade_with_default_server(self) -> Result<App> {
-        Ok(App {
-            http_client: self.http_client,
-            server: Server::default(),
-            network: Network::load()?,
-            multi_progress: MultiProgress::new(),
-        })
+        App::new(self)
     }
 }
 
@@ -87,11 +81,45 @@ pub struct App {
     pub network: Option<Network>,
 
     pub multi_progress: MultiProgress,
+    pub config: AppConfig,
 }
 
 impl App {
+    pub fn new(base_app: BaseApp) -> Result<Self> {
+        Ok(Self {
+            http_client: base_app.http_client,
+            server: Server::default(),
+            network: Network::load()?,
+            multi_progress: MultiProgress::new(),
+            config: Config::builder()
+                .env()
+                .file(".mcman.toml")
+                .file(dirs::config_dir().unwrap_or_default().join("mcman/.mcman.toml"))
+                .load()?,
+        })
+    }
+
     pub fn mc_version(&self) -> String {
         self.server.mc_version.clone()
+    }
+
+    pub fn get_addons(&self, ty: AddonType) -> Vec<Downloadable> {
+        match ty {
+            AddonType::Plugin => {
+                let mut list = self.server.plugins.clone();
+                if let Some(nw) = &self.network {
+                    list.extend_from_slice(&nw.plugins);
+                }
+                list
+            }
+            AddonType::Mod => {
+                let mut list = self.server.mods.clone();
+                if let Some(nw) = &self.network {
+                    list.extend_from_slice(&nw.mods);
+                }
+                list
+            }
+        }
     }
 
     pub fn var<I: AsRef<str>>(&self, var: I) -> Option<String> {

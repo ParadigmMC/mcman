@@ -7,6 +7,7 @@ use std::{
 use anyhow::{bail, Context, Result};
 use console::style;
 use indicatif::{ProgressBar, ProgressStyle};
+use pathdiff::diff_paths;
 use tokio::{
     fs::{self, File},
     io::AsyncWriteExt,
@@ -207,9 +208,15 @@ impl<'a> BuildContext<'a> {
         label: &str,
         tag: &str,
     ) -> Result<()> {
+        // because jre cant understand UNC
+        let dir = diff_paths(&self.output_dir, std::env::current_dir()?.canonicalize()?).unwrap();
+
+        let args: Vec<String> = cmd.1.iter().map(|a| self.app.server.format(a)).collect();
+        self.app.dbg(args.join(" "));
+
         let mut child = std::process::Command::new(cmd.0)
-            .args(cmd.1.iter().map(|a| self.app.server.format(a)))
-            .current_dir(&self.output_dir)
+            .args(args)
+            .current_dir(dir)
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
             .spawn()

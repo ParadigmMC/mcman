@@ -10,7 +10,7 @@ PORT = "25565"
 
 [launcher]
 nogui = true
-preset_flags = "Aikars"
+preset_flags = "aikars"
 eula_args = true
 
 [options]

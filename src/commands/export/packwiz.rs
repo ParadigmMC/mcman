@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, fs};
 
 use anyhow::Result;
 
@@ -14,6 +14,8 @@ pub struct Args {
 pub async fn run(mut app: App, args: Args) -> Result<()> {
     let default_output = app.server.path.join("pack");
     let output_dir = args.output.unwrap_or(default_output);
+
+    fs::create_dir_all(&output_dir)?;
 
     app.packwiz().export_all(output_dir).await?;
 

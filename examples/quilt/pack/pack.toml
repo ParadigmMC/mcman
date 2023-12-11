@@ -1,0 +1,13 @@
+name = "quilt"
+pack-format = "packwiz:1.1.0"
+
+[index]
+file = "index.toml"
+hash = "ac92fe07b8f854a92f7fc3d5182b69e10edffcbce86b9b3eefef74580fc30a7f"
+hash-format = "sha256"
+metafile = false
+preserve = false
+
+[versions]
+minecraft = "1.19.2"
+quilt = "latest"

@@ -37,24 +37,24 @@ Submit a PR or open an issue if you have a mcman-server repository that we can a
   - Modrinth, CurseRinth, Spigot, Hangar, Github Releases, Jenkins, Maven
   - If you need something else, it even supports custom urls!
 - ⚙️ Better configuration files with `config/`!
-  - Allows you to use **variables** inside your config files
-  - Use *environment variables* for secrets
+  - Allows you to use **config variables** inside your config files
+  - Use **environment variables** for secrets
 - 🌐 Keep worlds as `worlds/*.zip` for git, or set it to be downloaded from somewhere!
 - ✨ Managing a network? Use `network.toml` to manage servers' ports, have shared variables, config files, plugins or mods.
 
+> [!IMPORTANT]
+> While `mcman` can manage your server, its not designed to run it. You should use something else, for example, docker or pterodactyl to run your servers.
+
 ## Reviews
 
-"faster than gradle builds"
+> "faster than gradle builds"
+- kuylar
 
-\- kuylar
+> "makes even oracle linux usable"
+- PureComedi
 
-"makes even oracle linux usable"
-
-\- PureComedi
-
-"I'm technically a contributor"
-
-\- Trash Panda
+> "I'm technically a contributor"
+- Trash Panda
 
 ## Changelog
 

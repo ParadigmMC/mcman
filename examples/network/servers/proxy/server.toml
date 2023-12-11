@@ -9,7 +9,12 @@ PORT = "25565"
 
 [launcher]
 eula_args = true
+nogui = true
 preset_flags = "proxy"
+
+[markdown]
+files = ["README.md"]
+auto_update = false
 
 [options]
 upload_to_mclogs = false

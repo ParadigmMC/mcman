@@ -11,3 +11,7 @@ port = 25567
 [variables]
 MADE_USING = "mcman"
 MOTD = "Welcome to CoolNetwork!"
+
+[markdown]
+files = ["README.md"]
+auto_update = false

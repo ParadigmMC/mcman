@@ -1,0 +1,31 @@
+hash-format = "sha256"
+
+[[files]]
+file = "create-fabric-0.5.1-b-build.1089+mc1.19.2.pw.toml"
+hash = "ae51e9c4c9a18d10148cd9c433e97c86e7ebc551cfaeb1c411233a6faa58a8e3"
+metafile = true
+preserve = false
+
+[[files]]
+file = "qfapi-4.0.0-beta.30_qsl-3.0.0-beta.29_fapi-0.76.0_mc-1.19.2.pw.toml"
+hash = "59eec7d8968f3ca5642dc4b8c200cc616b238dbb0bb20c9dba90d1fc7c511d80"
+metafile = true
+preserve = false
+
+[[files]]
+file = "spark-1.10.37-fabric.pw.toml"
+hash = "ee035f74af6356f42182ac59c8078db57864c8bf498692735e880696e3b83519"
+metafile = true
+preserve = false
+
+[[files]]
+file = "LuckPerms-Fabric-5.4.111.pw.toml"
+hash = "34ad5161ea9af7e07af9c82a753b8be20169583fba9d1fa968cf42b7a49bbb7c"
+metafile = true
+preserve = false
+
+[[files]]
+file = "server.properties"
+hash = "995c65ecc7b74194662077f62c59e380a642b06de13b00b4e0160e83805c57d8"
+metafile = false
+preserve = false

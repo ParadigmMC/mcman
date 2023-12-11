@@ -7,4 +7,8 @@
 ## Servers
 
 <!--start:mcman-servers-->
+| Name                        | Port  |
+| --------------------------- | ----- |
+| [`lobby`](./servers/lobby/) | 25566 |
+| [`game1`](./servers/game1/) | 25567 |
 <!--end:mcman-servers-->

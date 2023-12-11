@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Result, Context};
 use serde::{Serialize, Deserialize};
 
 use crate::app::{App, CacheStrategy, ResolvedFile};
@@ -62,7 +62,8 @@ impl<'a> JenkinsAPI<'a> {
         job: &str,
         build: &str,
     ) -> Result<JenkinsBuildItem> {
-        let builds = self.fetch_builds(url, job).await?;
+        let builds = self.fetch_builds(url, job).await
+            .context("Fetching jenkins builds")?;
         let builds = builds.into_iter().filter(|b| b.result == SUCCESS_STR).collect::<Vec<_>>();
 
         let selected_build = match build {
@@ -96,8 +97,10 @@ impl<'a> JenkinsAPI<'a> {
         build: &str,
         artifact: &str,
     ) -> Result<(JenkinsBuildItem, JenkinsArtifact)> {
-        let selected_build = self.fetch_build(url, job, build).await?;
-        let artifacts = self.fetch_artifacts(&selected_build.url).await?;
+        let selected_build = self.fetch_build(url, job, build).await
+            .context("Fetching jenkins build")?;
+        let artifacts = self.fetch_artifacts(&selected_build.url).await
+            .context("Fetching jenkins artifacts")?;
 
         let artifact = artifact.replace("${mcver}", &self.0.mc_version())
             .replace("${mcversion}", &self.0.mc_version())
@@ -122,7 +125,9 @@ impl<'a> JenkinsAPI<'a> {
         build: &str,
         artifact: &str,
     ) -> Result<ResolvedFile> {
-        let (build, artifact) = self.fetch_artifact(url, job, build, artifact).await?;
+        let (build, artifact) = self.fetch_artifact(url, job, build, artifact)
+            .await
+            .context("Fetching jenkins artifact")?;
 
         let cached_file_path = format!(
             "{}/{job}/{}/{}",
