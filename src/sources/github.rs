@@ -81,7 +81,6 @@ pub struct GithubRepository {
 }
 
 static CACHE_DIR: &str = "github";
-static API_URL: &str = "https://api.github.com";
 
 pub struct GithubAPI<'a>(pub &'a App);
 
@@ -100,8 +99,8 @@ impl<'a> GithubAPI<'a> {
         let response = self
             .0
             .http_client
-            .get(&url)
-            .with_token(None) // TODO: token via App
+            .get(format!("{}/{url}", self.0.config.sources.github.api_url))
+            .with_token(self.0.config.sources.github.api_token.clone())
             .headers(if let Some(cached_data) = &cached_data {
                 let mut map = HeaderMap::new();
                 map.insert("if-none-match", HeaderValue::from_str(&cached_data.etag)?);
@@ -145,7 +144,7 @@ impl<'a> GithubAPI<'a> {
     pub async fn fetch_repo_description(&self, repo: &str) -> Result<String> {
         Ok(self
             .fetch_api::<GithubRepository>(
-                format!("{API_URL}/repos/{repo}"),
+                format!("repos/{repo}"),
                 format!("{repo}/repository.json"),
             )
             .await?
@@ -154,7 +153,7 @@ impl<'a> GithubAPI<'a> {
 
     pub async fn fetch_releases(&self, repo: &str) -> Result<Vec<GithubRelease>> {
         self.fetch_api::<Vec<GithubRelease>>(
-            format!("{API_URL}/repos/{repo}/releases"),
+            format!("repos/{repo}/releases"),
             format!("{repo}/releases.json"),
         )
         .await

@@ -1,8 +1,4 @@
-#![allow(dead_code)] // todo...
-#![allow(unused)]
-
 use anyhow::{anyhow, Result};
-use mcapi::quilt::{self, InstallerVariant};
 
 use crate::app::{App, ResolvedFile};
 
@@ -28,7 +24,6 @@ impl<'a> QuiltAPI<'a> {
     }
 }
 
-// TODO ...
 pub async fn map_quilt_loader_version(client: &reqwest::Client, loader: &str) -> Result<String> {
     Ok(match loader {
         "latest" => mcapi::quilt::fetch_loaders(client)

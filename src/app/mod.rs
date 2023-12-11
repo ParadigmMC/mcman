@@ -236,10 +236,12 @@ impl App {
         }
     }
 
-    #[allow(clippy::unused_self)]
     pub fn get_cache(&self, ns: &str) -> Option<Cache> {
-        // TODO check if cache should be enabled to return None
-        Cache::get_cache(ns)
+        if self.config.disable_cache.contains(&ns.to_owned()) {
+            None
+        } else {
+            Cache::get_cache(ns)
+        }
     }
 }
 

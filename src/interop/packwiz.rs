@@ -272,10 +272,6 @@ impl<'a> PackwizInterop<'a> {
             self.0.info("Exported pack URL:");
             self.0
                 .log(format!("             https://raw.githack.com/{u}",));
-            self.0.info("MultiMC prelaunch command:");
-            self.0.log(format!(
-                "  $INST_JAVA -jar packwiz-installer-bootstrap.jar https://raw.githack.com/{u}",
-            ));
         }
 
         Ok(())
