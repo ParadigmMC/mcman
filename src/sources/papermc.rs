@@ -74,9 +74,12 @@ impl<'a> PaperMCAPI<'a> {
         build: &str,
     ) -> Result<ResolvedFile> {
         let version = match version {
-            "latest" => {
-                self.fetch_versions(project).await?.last().ok_or(anyhow!("No versions"))?.clone()
-            },
+            "latest" => self
+                .fetch_versions(project)
+                .await?
+                .last()
+                .ok_or(anyhow!("No versions"))?
+                .clone(),
             id => id.to_owned(),
         };
 

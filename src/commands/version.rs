@@ -15,10 +15,7 @@ pub struct Args {
 
 pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
     if args.plain {
-        println!(
-            "{}",
-            env!("CARGO_PKG_VERSION")
-        );
+        println!("{}", env!("CARGO_PKG_VERSION"));
     } else {
         println!(
             " > {} by {}",
@@ -64,6 +61,6 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
             }
         }
     }
-    
+
     Ok(())
 }

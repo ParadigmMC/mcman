@@ -96,12 +96,15 @@ impl<'a> GithubAPI<'a> {
         } else {
             None
         };
-        
+
         let mut headers = HeaderMap::new();
         if let Some(cached_data) = &cached_data {
             headers.insert("if-none-match", HeaderValue::from_str(&cached_data.etag)?);
         }
-        headers.insert("X-GitHub-Api-Version", HeaderValue::from_str(GITHUB_API_VERSION)?);
+        headers.insert(
+            "X-GitHub-Api-Version",
+            HeaderValue::from_str(GITHUB_API_VERSION)?,
+        );
 
         let response = self
             .0

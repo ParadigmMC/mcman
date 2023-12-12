@@ -1,4 +1,4 @@
-use anyhow::{bail, Result, Context};
+use anyhow::{bail, Context, Result};
 
 use crate::{
     app::{App, Prefix},
@@ -27,7 +27,10 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
         app.prompt_string("Search on Modrinth")?
     };
 
-    let projects = app.modrinth().search(&query).await
+    let projects = app
+        .modrinth()
+        .search(&query)
+        .await
         .context("Searching modrinth")?;
 
     if projects.is_empty() {
@@ -53,7 +56,10 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
 
     let project = app.select("Which project?", &items)?;
 
-    let versions = app.modrinth().fetch_versions(&project.slug).await
+    let versions = app
+        .modrinth()
+        .fetch_versions(&project.slug)
+        .await
         .context("Fetching modrinth versions")?;
 
     let version = app.select(

@@ -17,7 +17,7 @@ use notify_debouncer_mini::{
 use pathdiff::diff_paths;
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader, Lines},
-    process::{Child, ChildStdout, ChildStdin},
+    process::{Child, ChildStdin, ChildStdout},
     sync::mpsc,
 };
 
@@ -124,8 +124,7 @@ impl<'a> DevSession<'a> {
         let mp = self.builder.app.multi_progress.clone();
 
         let mut child: Option<Child> = None;
-        let mut stdout_lines: Option<Lines<BufReader<ChildStdout>>> =
-            None;
+        let mut stdout_lines: Option<Lines<BufReader<ChildStdout>>> = None;
         let mut child_stdin: Option<ChildStdin> = None;
 
         let mut is_stopping = false;

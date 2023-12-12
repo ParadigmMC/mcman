@@ -228,8 +228,7 @@ impl<'a> ModrinthAPI<'a> {
             .error_for_status()?
             .json::<ModrinthSearchResults>()
             .await?
-            .hits
-        )
+            .hits)
     }
 
     pub async fn version_from_hash(&self, hash: &str, algo: &str) -> Result<ModrinthVersion> {

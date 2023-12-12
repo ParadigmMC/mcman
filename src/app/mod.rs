@@ -14,7 +14,7 @@ pub use feedback::*;
 use indicatif::MultiProgress;
 pub use resolvable::*;
 
-use crate::model::{Network, Server, Downloadable, AppConfig};
+use crate::model::{AppConfig, Downloadable, Network, Server};
 use crate::sources;
 
 pub const APP_USER_AGENT: &str = concat!(
@@ -94,7 +94,11 @@ impl App {
             config: Config::builder()
                 .env()
                 .file(".mcman.toml")
-                .file(dirs::config_dir().unwrap_or_default().join("mcman/.mcman.toml"))
+                .file(
+                    dirs::config_dir()
+                        .unwrap_or_default()
+                        .join("mcman/.mcman.toml"),
+                )
                 .load()?,
         })
     }

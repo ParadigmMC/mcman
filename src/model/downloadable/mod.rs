@@ -116,7 +116,11 @@ impl Resolvable for Downloadable {
                 job,
                 build,
                 artifact,
-            } => app.jenkins().resolve_source(url, job, build, artifact).await,
+            } => {
+                app.jenkins()
+                    .resolve_source(url, job, build, artifact)
+                    .await
+            }
             Self::Maven {
                 url,
                 group,

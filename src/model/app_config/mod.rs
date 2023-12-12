@@ -1,5 +1,5 @@
 use confique::Config;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Config)]
 pub struct MCLogsService {

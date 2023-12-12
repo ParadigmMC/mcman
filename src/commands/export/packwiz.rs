@@ -1,4 +1,4 @@
-use std::{path::PathBuf, fs};
+use std::{fs, path::PathBuf};
 
 use anyhow::Result;
 
