@@ -64,60 +64,7 @@ Submit a PR or open an issue if you have a mcman-server repository that we can a
 
 ## Changelog
 
-whats a semver? /s
-
-### `0.4.0`
-
-- See [#31](https://github.com/ParadigmMC/mcman/issues/31)
-
-### `0.3.0`
-
-- Added [CurseRinth](https://curserinth.kuylar.dev/) support
-- Added **packwiz importing**
-- Added **packwiz exporting** (client)
-- Added initializing with `--packwiz <source>`
-- Added **mrpack exporting**
-- Added client-side mods field
-- Added `client-config/` folder
-- Fixed github ratelimiting issue
-- Some init improvements
-- A lot of improvements overall
-
-### `0.2.2`
-
-- Added support for **Datapacks**
-  - Added command `mcman import datapack`
-- Added **BuildTools** support.
-  - This includes *spigot, bukkit and craftbukkit*
-- Even better docs and tutorial.md
-
-### `0.2.1`
-
-- Added **Fabric** support.
-- Added **Quilt** support.
-- Added `mcman import mrpack` command.
-- `mcman init` now supports mrpacks
-
-### `0.2.0`
-
-- Wrote more [documentation](./DOCS.md)
-- New branding lol
-- Added markdown templates
-  - `markdown` in server.toml
-  - `mcman markdown` command
-- Added `launcher.properties` in server.toml
-- Added `mcman import url <URL>` command
-  - Supports modrinth, modrinth's cdn, github, spigot, jenkins and custom urls.
-  - Also wayy too interactive. For example, it'll ask for which release to use and suggest which asset to use. Similar thing in modrinth importing.
-- Added **BungeeCord** support.
-- Added **Jenkins** as a source.
-- Impoved `mcman init` command. It now has a little wizard!
-- Made mcman build look prettier
-- Removed `Folia` shortcut because PaperMC api does not provide it.
-
-### `0.1.0`: The Prototype
-
-Initial project
+Changelogs can be see in detail [here](CHANGELOG.md)
 
 ## Special Thanks
 
