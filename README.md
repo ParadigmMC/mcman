@@ -1,6 +1,6 @@
 # mcman
 
-![mcman](https://media.discordapp.net/attachments/1109215116060266567/1134554971937972374/mcman-2.png)
+![mcman](./docs/mcman-3.png)
 
 [![GitHub release](https://img.shields.io/github/release/ParadigmMC/mcman.svg)](https://github.com/ppy/osu/releases/latest)
 [![builds](https://img.shields.io/github/actions/workflow/status/ParadigmMC/mcman/build.yml?logo=github)](https://github.com/ParadigmMC/mcman/actions/workflows/build.yml)
