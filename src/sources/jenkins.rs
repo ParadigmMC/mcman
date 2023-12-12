@@ -161,7 +161,7 @@ impl<'a> JenkinsAPI<'a> {
         url: &str,
         job: &str,
     ) -> Result<String> {
-        Ok(serde_json::from_value(self.0.http_client.get(format!(
+        Ok(self.0.http_client.get(format!(
             "{}/api/json?tree=description",
             Self::get_url(url, job)
         ))
@@ -171,6 +171,9 @@ impl<'a> JenkinsAPI<'a> {
             .json::<serde_json::Value>()
             .await?
             ["description"]
-        .take())?)
+            .take()
+            .as_str()
+            .map(ToOwned::to_owned)
+            .unwrap_or_default())
     }
 }

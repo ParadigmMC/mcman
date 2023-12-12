@@ -77,10 +77,11 @@ pub struct GithubAsset {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct GithubRepository {
-    pub description: String,
+    pub description: Option<String>,
 }
 
 static CACHE_DIR: &str = "github";
+static GITHUB_API_VERSION: &str = "2022-11-28";
 
 pub struct GithubAPI<'a>(pub &'a App);
 
@@ -95,19 +96,19 @@ impl<'a> GithubAPI<'a> {
         } else {
             None
         };
+        
+        let mut headers = HeaderMap::new();
+        if let Some(cached_data) = &cached_data {
+            headers.insert("if-none-match", HeaderValue::from_str(&cached_data.etag)?);
+        }
+        headers.insert("X-GitHub-Api-Version", HeaderValue::from_str(GITHUB_API_VERSION)?);
 
         let response = self
             .0
             .http_client
             .get(format!("{}/{url}", self.0.config.sources.github.api_url))
             .with_token(self.0.config.sources.github.api_token.clone())
-            .headers(if let Some(cached_data) = &cached_data {
-                let mut map = HeaderMap::new();
-                map.insert("if-none-match", HeaderValue::from_str(&cached_data.etag)?);
-                map
-            } else {
-                HeaderMap::new()
-            })
+            .headers(headers)
             .send()
             .await?;
 
@@ -148,7 +149,8 @@ impl<'a> GithubAPI<'a> {
                 format!("{repo}/repository.json"),
             )
             .await?
-            .description)
+            .description
+            .unwrap_or_default())
     }
 
     pub async fn fetch_releases(&self, repo: &str) -> Result<Vec<GithubRelease>> {

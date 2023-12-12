@@ -1,6 +1,6 @@
 use std::{fs::File, io::Write, time::Duration};
 
-use anyhow::Result;
+use anyhow::{Result, Context};
 use indexmap::IndexMap;
 use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
 use regex::Regex;
@@ -215,14 +215,19 @@ impl<'a> MarkdownAPI<'a> {
             .progress_with(pb.clone())
         {
             pb.set_message(addon.to_string());
-            table.add_from_map(&self.fetch_downloadable_info(addon).await?);
+            table.add_from_map(&self.fetch_downloadable_info(addon).await
+                .context(format!("Rendering addon: {addon:#?}"))?);
         }
 
         Ok(table)
     }
 
     pub async fn table_world(&self, world: &World) -> Result<MarkdownTable> {
-        let mut table = MarkdownTable::new();
+        let mut table = MarkdownTable::with_headers(vec![
+            "Name".to_owned(),
+            "Description".to_owned(),
+            "Version".to_owned(),
+        ]);
 
         if let Some(dl) = &world.download {
             let mut map = self.fetch_downloadable_info(dl).await?;
@@ -335,8 +340,9 @@ impl<'a> MarkdownAPI<'a> {
                 ])
             }
 
-            Downloadable::Maven { version, .. } => IndexMap::from([
-                ("Name".to_owned(), dl.get_md_link()),
+            Downloadable::Maven { version, artifact, .. } => IndexMap::from([
+                ("Name".to_owned(), artifact.clone()),
+                ("Description".to_owned(), dl.get_md_link()),
                 ("Version".to_owned(), version.clone()),
             ]),
 

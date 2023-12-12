@@ -22,6 +22,13 @@ If you are a Windows user, we recommend **Scoop**. [Whats Next? ->](./tutorials/
 
     [Scoop](https://scoop.sh/) is a command-line installer for Windows. You can use 2 commands in powershell to install it. (4 commands in total to install mcman!)
 
+=== "AUR: mcman-bin"
+    `mcman` is [available](https://aur.archlinux.org/packages/mcman-bin) in AUR as `mcman-bin`
+
+    ```sh
+    https://aur.archlinux.org/mcman-bin.git
+    ```
+
 === "Linux: wget"
     Install to `/usr/bin` using `wget`:
 
@@ -36,11 +43,4 @@ If you are a Windows user, we recommend **Scoop**. [Whats Next? ->](./tutorials/
 
     ```sh
     cargo install --git https://github.com/ParadigmMC/mcman.git
-    ```
-
-=== "AUR: mcman-bin"
-    `mcman` is [available](https://aur.archlinux.org/packages/mcman-bin) in AUR as `mcman-bin`
-
-    ```sh
-    https://aur.archlinux.org/mcman-bin.git
     ```

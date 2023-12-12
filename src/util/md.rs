@@ -12,6 +12,13 @@ impl MarkdownTable {
         }
     }
 
+    pub fn with_headers(headers: Vec<String>) -> Self {
+        Self {
+            headers,
+            rows: vec![],
+        }
+    }
+
     pub fn from_map(map: &IndexMap<String, String>) -> Self {
         let mut table = Self::new();
 
