@@ -10,6 +10,7 @@ pub static FORGE_FILENAME: &str = "${artifact}-${version}-installer.jar";
 pub struct ForgeAPI<'a>(pub &'a App);
 
 impl<'a> ForgeAPI<'a> {
+    /// Returns a string list of filtered versions, everything after the first dash (-)
     pub async fn fetch_versions(&self) -> Result<Vec<String>> {
         let (_, versions) = self
             .0
@@ -20,10 +21,10 @@ impl<'a> ForgeAPI<'a> {
         Ok(versions
             .iter()
             .filter_map(|s| {
-                let (m, l) = s.split_once('-')?;
+                let v = s.split('-').collect::<Vec<_>>();
 
-                if m == self.0.mc_version() {
-                    Some(l.to_owned())
+                if v[0] == self.0.mc_version() {
+                    Some(v[1].to_owned())
                 } else {
                     None
                 }

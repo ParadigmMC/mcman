@@ -156,26 +156,21 @@ impl<'a> MavenAPI<'a> {
         artifact_id: &str,
         version: &str,
     ) -> Result<String> {
-        let fetch_versions = || self.fetch_versions(url, group_id, artifact_id);
+        let (latest, versions) = self.fetch_versions(url, group_id, artifact_id).await?;
 
         let version = match version {
-            "latest" => fetch_versions().await?.0,
+            "latest" => latest,
             id => {
-                if id.contains('$') {
-                    let versions = fetch_versions().await?.1;
-                    let id = id
-                        .replace("${artifact}", artifact_id)
-                        .replace("${mcversion}", &self.0.mc_version())
-                        .replace("${mcver}", &self.0.mc_version());
-                    versions
-                        .iter()
-                        .find(|v| *v == &id)
-                        .or_else(|| versions.iter().find(|v| v.contains(&id)))
-                        .ok_or(anyhow!("Couldn't resolve maven artifact version (url={url},g={group_id},a={artifact_id})"))?
-                        .clone()
-                } else {
-                    id.to_owned()
-                }
+                let id = id
+                    .replace("${artifact}", artifact_id)
+                    .replace("${mcversion}", &self.0.mc_version())
+                    .replace("${mcver}", &self.0.mc_version());
+                versions
+                    .iter()
+                    .find(|v| *v == &id)
+                    .or_else(|| versions.iter().find(|v| v.contains(&id)))
+                    .ok_or(anyhow!("Couldn't resolve maven artifact version (url={url},g={group_id},a={artifact_id})"))?
+                    .clone()
             }
         };
 
