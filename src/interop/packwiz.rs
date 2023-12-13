@@ -412,7 +412,7 @@ impl<'a> PackwizInterop<'a> {
     }
 
     pub async fn resolved_to_mod(&self, resolved_file: &ResolvedFile) -> Result<Mod> {
-        let (hash, hash_format) = self.0.hash_resolved_file(resolved_file).await?;
+        let (hash_format, hash) = self.0.hash_resolved_file(resolved_file).await?;
 
         Ok(Mod {
             filename: resolved_file.filename.clone(),
