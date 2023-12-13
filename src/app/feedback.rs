@@ -42,6 +42,8 @@ pub enum Prefix {
     Imported,
     Exported,
     Rendered,
+    Unpacked,
+    Packed,
 
     Warning,
     Error,
@@ -60,17 +62,19 @@ impl Prefix {
             Prefix::Imported => "    Imported",
             Prefix::Exported => "    Exported",
             Prefix::Rendered => "    Rendered",
+            Prefix::Unpacked => "    Unpacked",
+            Prefix::Packed =>   "      Packed",
 
-            Prefix::Error => "     ⚠ Error",
-            Prefix::Warning => "      ⚠ Warn",
-            Prefix::Info => "      🛈 Info",
-            Prefix::Debug => "       debug",
+            Prefix::Error =>    "     ⚠ Error",
+            Prefix::Warning =>  "      ⚠ Warn",
+            Prefix::Info =>     "      🛈 Info",
+            Prefix::Debug =>    "       debug",
         }
     }
 
     pub fn styled(self) -> StyledObject<&'static str> {
         match self {
-            Prefix::Downloaded | Prefix::Imported | Prefix::Exported | Prefix::Rendered => {
+            Prefix::Downloaded | Prefix::Imported | Prefix::Exported | Prefix::Rendered | Prefix::Packed | Prefix::Unpacked => {
                 style(self.as_str()).green().bold()
             }
             Prefix::Copied | Prefix::Skipped => style(self.as_str()).green(),

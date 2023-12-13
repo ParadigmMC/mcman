@@ -46,24 +46,7 @@ impl<'a> BuildContext<'a> {
     ) -> Result<()> {
         if !self.world_exists_in_output(name)? {
             if self.world_source_exists(name) {
-                let spinner = self.app.multi_progress.insert_after(
-                    progress_bar,
-                    ProgressBar::new_spinner().with_message("Unzipping world..."),
-                );
-
-                spinner.enable_steady_tick(Duration::from_millis(250));
-
-                unzip(
-                    &self
-                        .app
-                        .server
-                        .path
-                        .join("worlds")
-                        .join(format!("{name}.zip")),
-                    &self.output_dir.join(name),
-                )?;
-
-                spinner.finish_with_message(format!("Unzipped {name}.zip successfully"));
+                self.app.worlds().unpack(name)?;
             } else if let Some(dl) = &world.download {
                 let (path, _resolved) = self
                     .downloadable(dl, ".mcman-cache", Some(progress_bar))

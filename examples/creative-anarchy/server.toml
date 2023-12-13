@@ -20,3 +20,5 @@ eula_args = true
 [markdown]
 files = ["README.md"]
 auto_update = false
+
+[worlds.world]

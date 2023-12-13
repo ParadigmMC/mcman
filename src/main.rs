@@ -97,7 +97,7 @@ async fn main() -> Result<()> {
         Commands::Cache(subcommands) => commands::cache::run(subcommands),
         Commands::Version(args) => commands::version::run(base_app, args).await,
         c => {
-            let app = base_app.upgrade()?;
+            let mut app = base_app.upgrade()?;
 
             match c {
                 // Build
@@ -110,7 +110,7 @@ async fn main() -> Result<()> {
                 Commands::Import(subcommands) => commands::import::run(app, subcommands).await,
                 Commands::Export(commands) => commands::export::run(app, commands).await,
                 Commands::Markdown => commands::markdown::run(app).await,
-                Commands::World(commands) => commands::world::run(&app, commands),
+                Commands::World(commands) => commands::world::run(&mut app, commands),
                 Commands::Pull(args) => commands::pull::run(&app, args),
                 Commands::Env(commands) => commands::env::run(&app, commands),
                 Commands::Eject => commands::eject::run(&app),

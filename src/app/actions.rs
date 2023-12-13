@@ -70,7 +70,7 @@ impl App {
         Ok(())
     }
 
-    pub fn add_datapack(&mut self, dp: &Downloadable) -> Result<()> {
+    pub fn select_world(&mut self, prompt: &str) -> Result<String> {
         let selected_world_name = if self.server.worlds.is_empty() {
             "+".to_owned()
         } else {
@@ -83,7 +83,7 @@ impl App {
 
             items.push(SelectItem("+".to_owned(), "+ New world entry".to_owned()));
 
-            self.select("Add datapack to...", &items)?
+            self.select(prompt, &items)?
         };
 
         let world_name = if selected_world_name == "+" {
@@ -96,7 +96,15 @@ impl App {
             self.server
                 .worlds
                 .insert(world_name.clone(), World::default());
+
+            self.server.save()?;
         }
+
+        Ok(world_name)
+    }
+
+    pub fn add_datapack(&mut self, dp: &Downloadable) -> Result<()> {
+        let world_name = self.select_world("Add datapack to...")?;
 
         self.add_datapack_to(&world_name, dp)?;
 

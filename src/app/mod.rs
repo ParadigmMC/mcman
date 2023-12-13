@@ -290,4 +290,8 @@ impl<'a> App {
     pub fn mrpack(&'a mut self) -> crate::interop::mrpack::MRPackInterop<'a> {
         crate::interop::mrpack::MRPackInterop(self)
     }
+
+    pub fn worlds(&'a self) -> crate::interop::worlds::WorldsAPI<'a> {
+        crate::interop::worlds::WorldsAPI(self)
+    }
 }

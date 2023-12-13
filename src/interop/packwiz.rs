@@ -310,7 +310,7 @@ impl<'a> PackwizInterop<'a> {
             self.0.notify(Prefix::Exported, format!("mods/{filename}"));
 
             files_list.push(PackFile {
-                file: filename,
+                file: format!("mods/{filename}"),
                 hash,
                 metafile: true,
                 alias: None,
