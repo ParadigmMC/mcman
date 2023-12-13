@@ -1,0 +1,21 @@
+name: "Create Draft Release"
+on:
+  workflow_dispatch:
+
+jobs:
+  draft-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        id: download-artifact
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: build.yml
+          workflow_conclusion: success
+      - uses: marvinpinto/action-automatic-releases
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN  }}
+          draft: true
+          files: |
+            mcman.exe
+            mcman
