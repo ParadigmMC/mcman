@@ -1,5 +1,5 @@
-use anyhow::Result;
 use crate::app::App;
+use anyhow::Result;
 
 #[derive(clap::Args)]
 pub struct Args {

@@ -1,6 +1,9 @@
-use std::{path::{PathBuf, Path}, time::Duration};
+use std::{
+    path::{Path, PathBuf},
+    time::Duration,
+};
 
-use anyhow::{Result, anyhow, bail, Context};
+use anyhow::{anyhow, bail, Context, Result};
 use indicatif::ProgressBar;
 use pathdiff::diff_paths;
 use walkdir::WalkDir;
@@ -12,15 +15,23 @@ pub struct WorldsAPI<'a>(pub &'a App);
 
 impl<'a> WorldsAPI<'a> {
     pub fn unpack(&self, world: &str) -> Result<()> {
-        let spinner = self.0.multi_progress.add(ProgressBar::new_spinner())
+        let spinner = self
+            .0
+            .multi_progress
+            .add(ProgressBar::new_spinner())
             .with_message(format!("Unzipping world '{world}'..."));
         spinner.enable_steady_tick(Duration::from_millis(250));
-        let zip_path = self.0.server.path.join("worlds").join(format!("{world}.zip"));
+        let zip_path = self
+            .0
+            .server
+            .path
+            .join("worlds")
+            .join(format!("{world}.zip"));
 
         if !zip_path.exists() {
             bail!("worlds/{world}.zip doesnt exist");
         }
-        
+
         self.unzip(&zip_path, &self.0.server.path.join("server").join(world))?;
 
         spinner.finish();
@@ -30,13 +41,15 @@ impl<'a> WorldsAPI<'a> {
     }
 
     #[allow(clippy::unused_self)]
-    pub fn unzip(&self, zipfile: &PathBuf, output: &PathBuf) -> Result<()> {
-        let file = std::fs::File::open(&zipfile)
-            .context(format!("Opening zip file: {}", zipfile.display()))?;
-        let mut archive = zip::ZipArchive::new(file)
-            .context("Opening zip archive")?;
+    pub fn unzip(&self, zip_archive_path: &PathBuf, output: &Path) -> Result<()> {
+        let file = std::fs::File::open(zip_archive_path)
+            .context(format!("Opening zip file: {}", zip_archive_path.display()))?;
+        let mut archive = zip::ZipArchive::new(file).context("Opening zip archive")?;
 
-        let files = archive.file_names().map(ToOwned::to_owned).collect::<Vec<_>>();
+        let files = archive
+            .file_names()
+            .map(ToOwned::to_owned)
+            .collect::<Vec<_>>();
 
         for filename in files {
             if filename.ends_with('/') {
@@ -55,15 +68,23 @@ impl<'a> WorldsAPI<'a> {
     }
 
     pub fn pack(&self, world: &str) -> Result<()> {
-        let spinner = self.0.multi_progress.add(ProgressBar::new_spinner())
+        let spinner = self
+            .0
+            .multi_progress
+            .add(ProgressBar::new_spinner())
             .with_message(format!("Zipping world '{world}'..."));
 
         spinner.enable_steady_tick(Duration::from_millis(250));
 
         let input_path = self.0.server.path.join("server").join(world);
-        let output_path = self.0.server.path.join("worlds").join(format!("{world}.zip"));
+        let output_path = self
+            .0
+            .server
+            .path
+            .join("worlds")
+            .join(format!("{world}.zip"));
         std::fs::create_dir_all(self.0.server.path.join("worlds"))?;
-        let output_file = std::fs::File::create(&output_path)?;
+        let output_file = std::fs::File::create(output_path)?;
 
         let mut zip = zip::ZipWriter::new(output_file);
 
@@ -76,8 +97,8 @@ impl<'a> WorldsAPI<'a> {
             })?;
 
             let source = entry.path();
-            let diffed_paths = diff_paths(source, &input_path)
-                .ok_or(anyhow!("Cannot diff paths"))?;
+            let diffed_paths =
+                diff_paths(source, &input_path).ok_or(anyhow!("Cannot diff paths"))?;
 
             if entry.file_type().is_dir() {
                 zip.add_directory(diffed_paths.to_string_lossy(), FileOptions::default())?;

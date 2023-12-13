@@ -63,20 +63,23 @@ impl Prefix {
             Prefix::Exported => "    Exported",
             Prefix::Rendered => "    Rendered",
             Prefix::Unpacked => "    Unpacked",
-            Prefix::Packed =>   "      Packed",
+            Prefix::Packed => "      Packed",
 
-            Prefix::Error =>    "     ⚠ Error",
-            Prefix::Warning =>  "      ⚠ Warn",
-            Prefix::Info =>     "      🛈 Info",
-            Prefix::Debug =>    "       debug",
+            Prefix::Error => "     ⚠ Error",
+            Prefix::Warning => "      ⚠ Warn",
+            Prefix::Info => "      🛈 Info",
+            Prefix::Debug => "       debug",
         }
     }
 
     pub fn styled(self) -> StyledObject<&'static str> {
         match self {
-            Prefix::Downloaded | Prefix::Imported | Prefix::Exported | Prefix::Rendered | Prefix::Packed | Prefix::Unpacked => {
-                style(self.as_str()).green().bold()
-            }
+            Prefix::Downloaded
+            | Prefix::Imported
+            | Prefix::Exported
+            | Prefix::Rendered
+            | Prefix::Packed
+            | Prefix::Unpacked => style(self.as_str()).green().bold(),
             Prefix::Copied | Prefix::Skipped => style(self.as_str()).green(),
             Prefix::Error => style(self.as_str()).red().bold(),
             Prefix::Warning | Prefix::SkippedWarning => style(self.as_str()).yellow().bold(),
