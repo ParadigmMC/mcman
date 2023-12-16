@@ -145,10 +145,6 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
             };
 
             app.server.launcher.nogui = serv_type != SoftwareType::Proxy;
-            app.server.launcher.preset_flags = match serv_type {
-                SoftwareType::Proxy => PresetFlags::Proxy,
-                _ => PresetFlags::Aikars,
-            };
 
             app.server.jar = match serv_type {
                 SoftwareType::Normal => ServerType::select_jar_interactive(),
