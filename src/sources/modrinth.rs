@@ -1,14 +1,14 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
 use anyhow::{anyhow, Result};
+use async_trait::async_trait;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use tokio::time::sleep;
 
 use crate::{
     app::{App, CacheStrategy, ResolvedFile},
     model::SoftwareType,
 };
-
-use super::github::GithubWaitRatelimit;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ModrinthProject {
@@ -101,6 +101,33 @@ pub struct ModrinthFile {
     pub primary: bool,
     pub size: u64,
     // file_type omitted
+}
+
+
+#[async_trait]
+pub trait ModrinthWaitRatelimit<T> {
+    async fn wait_ratelimit(self) -> Result<T>;
+}
+
+#[async_trait]
+impl ModrinthWaitRatelimit<reqwest::Response> for reqwest::Response {
+    async fn wait_ratelimit(self) -> Result<Self> {
+        let res = if let Some(h) = self.headers().get("x-ratelimit-remaining") {
+            if String::from_utf8_lossy(h.as_bytes()) == "1" {
+                let ratelimit_reset =
+                    String::from_utf8_lossy(self.headers()["x-ratelimit-reset"].as_bytes())
+                        .parse::<u64>()?;
+                let amount = ratelimit_reset;
+                println!(" (!) Ratelimit exceeded. sleeping for {amount} seconds...");
+                sleep(Duration::from_secs(amount)).await;
+            }
+            self
+        } else {
+            self.error_for_status()?
+        };
+
+        Ok(res)
+    }
 }
 
 pub struct ModrinthAPI<'a>(pub &'a App);

@@ -12,7 +12,7 @@ use crate::app::BaseApp;
 use crate::interop::mrpack::MRPackReader;
 use crate::interop::packwiz::FileProvider;
 use crate::model::Server;
-use crate::model::{Network, PresetFlags, ServerEntry, ServerType, SoftwareType};
+use crate::model::{Network, ServerEntry, ServerType, SoftwareType};
 use crate::util::env::{get_docker_version, write_dockerfile, write_dockerignore, write_git};
 use crate::util::SelectItem;
 use anyhow::{bail, Context, Result};
