@@ -83,7 +83,7 @@ pub fn write_gitignore() -> Result<PathBuf> {
 pub fn write_gitattributes() -> Result<PathBuf> {
     let root = get_git_root()?.ok_or(anyhow!("cant get repo root"))?;
 
-    let gitattributes_path = Path::new(&root).join(".gitattibutes");
+    let gitattributes_path = Path::new(&root).join(".gitattributes");
 
     let contents = fs::read_to_string(&gitattributes_path).unwrap_or_default();
 

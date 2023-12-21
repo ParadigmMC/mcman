@@ -1,6 +1,6 @@
 [package]
 name = "mcman"
-version = "0.4.2"
+version = "0.4.3"
 edition = "2021"
 repository = "https://github.com/ParadigmMC/mcman"
 homepage = "https://paradigmmc.github.io/mcman/"
@@ -55,3 +55,4 @@ base16ct = { version = "0.2", features = ["alloc"] }
 digest = "0.10"
 opener = "0.6"
 confique = { version = "0.2.5", default-features = false, features = ["toml"] }
+rayon = "1.8.0"
