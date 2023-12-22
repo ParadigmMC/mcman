@@ -7,14 +7,14 @@ use std::{
 use anyhow::{anyhow, Result};
 use pathdiff::diff_paths;
 
-pub fn try_get_url(folder: &PathBuf) -> Result<String> {
+pub fn try_get_url(folder: &Path) -> Result<String> {
     let repo_url = get_git_remote()?.ok_or(anyhow!("cant get repo url"))?;
     let root = get_git_root()?.ok_or(anyhow!("cant get repo root"))?;
     let branch = get_git_branch()?.ok_or(anyhow!("cant get repo branch"))?;
 
     let root_path = Path::new(&root).canonicalize()?;
 
-    let diff = diff_paths(folder.canonicalize()?, &root_path).ok_or(anyhow!("cant diff paths"))?;
+    let diff = diff_paths(folder.canonicalize()?, root_path).ok_or(anyhow!("cant diff paths"))?;
 
     let repo = if repo_url.starts_with("https") {
         repo_url.strip_prefix("https://github.com/")

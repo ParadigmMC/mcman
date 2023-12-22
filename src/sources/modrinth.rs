@@ -103,7 +103,6 @@ pub struct ModrinthFile {
     // file_type omitted
 }
 
-
 #[async_trait]
 pub trait ModrinthWaitRatelimit<T> {
     async fn wait_ratelimit(self) -> Result<T>;

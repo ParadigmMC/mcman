@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{anyhow, Result, Context};
+use anyhow::{anyhow, Context, Result};
 
 use crate::app::{App, CacheStrategy, ResolvedFile};
 
@@ -17,23 +17,22 @@ impl<'a> VanillaAPI<'a> {
     }
 
     pub async fn resolve_source(&self, version: &str) -> Result<ResolvedFile> {
-        let version_manifest = mcapi::vanilla::fetch_version_manifest(&self.0.http_client).await
+        let version_manifest = mcapi::vanilla::fetch_version_manifest(&self.0.http_client)
+            .await
             .context("Fetching version manifest")?;
 
         let version = match version {
-            "latest" => {
-                version_manifest
-                    .fetch_latest_release(&self.0.http_client)
-                    .await
-                    .context("Fetching latest release")?
-            }
-            "latest-snapshot" => {
-                version_manifest
-                    .fetch_latest_snapshot(&self.0.http_client)
-                    .await
-                    .context("Fetching latest snapshot")?
-            }
-            id => version_manifest.fetch(id, &self.0.http_client).await
+            "latest" => version_manifest
+                .fetch_latest_release(&self.0.http_client)
+                .await
+                .context("Fetching latest release")?,
+            "latest-snapshot" => version_manifest
+                .fetch_latest_snapshot(&self.0.http_client)
+                .await
+                .context("Fetching latest snapshot")?,
+            id => version_manifest
+                .fetch(id, &self.0.http_client)
+                .await
                 .context(format!("Fetching release {id}"))?,
         };
 

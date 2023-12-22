@@ -4,8 +4,8 @@ use crate::app::App;
 
 mod docker;
 mod gitignore;
-mod workflow_test;
 mod workflow_packwiz;
+mod workflow_test;
 
 #[derive(clap::Subcommand, Clone, Copy)]
 pub enum Commands {

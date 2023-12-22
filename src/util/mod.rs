@@ -4,7 +4,6 @@ use anyhow::Result;
 use regex::Regex;
 
 pub mod env;
-pub mod logger;
 pub mod maven_import;
 pub mod md;
 
