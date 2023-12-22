@@ -1,7 +1,23 @@
-
 # Changelog
 
-whats a semver? /s
+## 0.4.3
+
+- Fix modrinth ratelimit ( @ClusterConsultant, #36 )
+- Fix a bug with old vanilla versions ( @MrPixelized, #39 )
+- Fix misspelt `.gitattibutes` -> `.gitattributes` ( jayson729 on discord )
+- Preset flags are now `none` by default
+- Fix packwiz export showing incorrect URL
+
+## 0.4.2
+
+- Fixes packwiz export
+- Adds `world pack` and fixes `world unpack` commands
+
+## 0.4.1
+
+- Fixes markdown not being able to render Github and Jenkins downloadables
+- Fix a bug with old forge versions ( thanks for reporting @EldosHD #34 )
+- docs: extract changelogs to a file ( thanks for the pr @Madscientiste #35 )
 
 ## 0.4.0
 
