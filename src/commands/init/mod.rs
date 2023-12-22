@@ -132,6 +132,15 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                 ],
             )?;
 
+            app.server.launcher.nogui = serv_type != SoftwareType::Proxy;
+
+            app.server.jar = match serv_type {
+                SoftwareType::Normal => ServerType::select_jar_interactive(),
+                SoftwareType::Modded => ServerType::select_modded_jar_interactive(),
+                SoftwareType::Proxy => ServerType::select_proxy_jar_interactive(),
+                SoftwareType::Unknown => unreachable!(),
+            }?;
+
             app.server.mc_version = if serv_type == SoftwareType::Proxy {
                 "latest".to_owned()
             } else {
@@ -143,15 +152,6 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
 
                 app.prompt_string_default("Server version?", &latest_ver)?
             };
-
-            app.server.launcher.nogui = serv_type != SoftwareType::Proxy;
-
-            app.server.jar = match serv_type {
-                SoftwareType::Normal => ServerType::select_jar_interactive(),
-                SoftwareType::Modded => ServerType::select_modded_jar_interactive(),
-                SoftwareType::Proxy => ServerType::select_proxy_jar_interactive(),
-                SoftwareType::Unknown => unreachable!(),
-            }?;
         }
 
         InitType::Network => {
