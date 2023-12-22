@@ -12,7 +12,9 @@ pub fn try_get_url(folder: &PathBuf) -> Result<String> {
     let root = get_git_root()?.ok_or(anyhow!("cant get repo root"))?;
     let branch = get_git_branch()?.ok_or(anyhow!("cant get repo branch"))?;
 
-    let diff = diff_paths(folder, root).ok_or(anyhow!("cant diff paths"))?;
+    let root_path = Path::new(&root).canonicalize()?;
+
+    let diff = diff_paths(folder.canonicalize()?, &root_path).ok_or(anyhow!("cant diff paths"))?;
 
     let repo = if repo_url.starts_with("https") {
         repo_url.strip_prefix("https://github.com/")
@@ -73,7 +75,7 @@ pub fn write_gitignore() -> Result<PathBuf> {
         }
     }
 
-    let contents = list.join(if has_r { "\r\n" } else { "\n" });
+    let contents = list.join(if has_r { "\r\n" } else { "\n" }) + if has_r { "\r\n" } else { "\n" };
 
     fs::write(&gitignore_path, contents)?;
 
@@ -105,7 +107,7 @@ pub fn write_gitattributes() -> Result<PathBuf> {
         }
     }
 
-    let contents = list.join(if has_r { "\r\n" } else { "\n" });
+    let contents = list.join(if has_r { "\r\n" } else { "\n" }) + if has_r { "\r\n" } else { "\n" };
 
     fs::write(&gitattributes_path, contents)?;
 
