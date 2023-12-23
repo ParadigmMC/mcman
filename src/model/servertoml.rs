@@ -9,9 +9,7 @@ use std::{
 use anyhow::{anyhow, bail, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::sources::modrinth;
-
-use super::{ClientSideMod, Downloadable, ServerLauncher, ServerType, SoftwareType, World};
+use super::{ClientSideMod, Downloadable, ServerLauncher, ServerType, World};
 
 #[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(default)]
@@ -97,7 +95,6 @@ impl Server {
         Ok(())
     }
 
-    #[allow(dead_code)]
     pub fn format(&self, str: &str) -> String {
         mcapi::dollar_repl(str, |key| match key {
             "mcver" | "mcversion" | "SERVER_VERSION" => Some(self.mc_version.clone()),
@@ -150,34 +147,6 @@ impl Server {
         }
 
         map
-    }
-
-    // TODO: move to ModrinthAPI
-    pub fn filter_modrinth_versions(
-        &self,
-        list: &[modrinth::ModrinthVersion],
-    ) -> Vec<modrinth::ModrinthVersion> {
-        let is_proxy = self.jar.get_software_type() == SoftwareType::Proxy;
-        let is_vanilla = matches!(self.jar, ServerType::Vanilla {});
-
-        let mcver = &self.mc_version;
-        let loader = self.jar.get_modrinth_name();
-
-        list.iter()
-            .filter(|v| is_proxy || v.game_versions.contains(mcver))
-            .filter(|v| {
-                if let Some(n) = &loader {
-                    v.loaders
-                        .iter()
-                        .any(|l| l == "datapack" || l == n || (l == "fabric" && n == "quilt"))
-                } else if is_vanilla {
-                    v.loaders.contains(&"datapack".to_owned())
-                } else {
-                    true
-                }
-            })
-            .cloned()
-            .collect()
     }
 }
 

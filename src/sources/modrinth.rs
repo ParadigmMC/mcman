@@ -7,7 +7,7 @@ use tokio::time::sleep;
 
 use crate::{
     app::{App, CacheStrategy, ResolvedFile},
-    model::SoftwareType,
+    model::{SoftwareType, ServerType},
 };
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -162,12 +162,12 @@ impl<'a> ModrinthAPI<'a> {
     pub async fn fetch_versions(&self, id: &str) -> Result<Vec<ModrinthVersion>> {
         let versions = self.fetch_all_versions(id).await?;
 
-        Ok(self.0.server.filter_modrinth_versions(&versions))
+        Ok(self.filter_versions(&versions))
     }
 
     pub async fn fetch_version(&self, id: &str, version: &str) -> Result<ModrinthVersion> {
         let all_versions = self.fetch_all_versions(id).await?;
-        let versions = self.0.server.filter_modrinth_versions(&all_versions);
+        let versions = self.filter_versions(&all_versions);
 
         let ver = version.replace("${mcver}", &self.0.mc_version());
         let ver = ver.replace("${mcversion}", &self.0.mc_version());
@@ -241,6 +241,33 @@ impl<'a> ModrinthAPI<'a> {
         }
 
         serde_json::to_string(&arr).unwrap()
+    }
+
+    pub fn filter_versions(
+        &self,
+        list: &[ModrinthVersion],
+    ) -> Vec<ModrinthVersion> {
+        let is_proxy = self.0.server.jar.get_software_type() == SoftwareType::Proxy;
+        let is_vanilla = matches!(self.0.server.jar, ServerType::Vanilla {});
+
+        let mcver = &self.0.mc_version();
+        let loader = self.0.server.jar.get_modrinth_name();
+
+        list.iter()
+            .filter(|v| is_proxy || v.game_versions.contains(mcver))
+            .filter(|v| {
+                if let Some(n) = &loader {
+                    v.loaders
+                        .iter()
+                        .any(|l| l == "datapack" || l == n || (l == "fabric" && n == "quilt"))
+                } else if is_vanilla {
+                    v.loaders.contains(&"datapack".to_owned())
+                } else {
+                    true
+                }
+            })
+            .cloned()
+            .collect()
     }
 
     pub async fn search(&self, query: &str) -> Result<Vec<ModrinthProject>> {
