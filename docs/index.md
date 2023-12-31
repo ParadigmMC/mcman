@@ -2,6 +2,8 @@
 
 Welcome to the `mcman` docs! Here, have some tea and make yourself comfortable. 🫖
 
+![mcman banner](./mcman-3.png)
+
 ## Quick Start
 
 - [Installation](./installation.md)
