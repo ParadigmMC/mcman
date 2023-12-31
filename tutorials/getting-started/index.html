@@ -411,22 +411,49 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#building" class="md-nav__link">
-    Building
+  <a href="#what-are-these-files" class="md-nav__link">
+    What are these files?
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#configuring-further" class="md-nav__link">
-    Configuring further
+  <a href="#adding-addons" class="md-nav__link">
+    Adding Addons
+  </a>
+  
+    <nav class="md-nav" aria-label="Adding Addons">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-adding-via-servertoml" class="md-nav__link">
+    A: Adding via server.toml
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-adding-via-mcman-import" class="md-nav__link">
+    B: Adding via mcman import
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-do-i-run-it" class="md-nav__link">
+    How do I run it?
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#adding-plugins-or-mods" class="md-nav__link">
-    Adding Plugins or Mods
+  <a href="#going-further" class="md-nav__link">
+    Going Further
   </a>
   
 </li>
@@ -1317,22 +1344,49 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#building" class="md-nav__link">
-    Building
+  <a href="#what-are-these-files" class="md-nav__link">
+    What are these files?
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#configuring-further" class="md-nav__link">
-    Configuring further
+  <a href="#adding-addons" class="md-nav__link">
+    Adding Addons
+  </a>
+  
+    <nav class="md-nav" aria-label="Adding Addons">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-adding-via-servertoml" class="md-nav__link">
+    A: Adding via server.toml
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-adding-via-mcman-import" class="md-nav__link">
+    B: Adding via mcman import
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-do-i-run-it" class="md-nav__link">
+    How do I run it?
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#adding-plugins-or-mods" class="md-nav__link">
-    Adding Plugins or Mods
+  <a href="#going-further" class="md-nav__link">
+    Going Further
   </a>
   
 </li>
@@ -1358,64 +1412,96 @@
 <h1 id="getting-started">Getting Started</h1>
 <p>Let's create a simple server as an example.</p>
 <h2 id="creating-a-new-server">Creating a new server</h2>
-<p>Create a new folder for your server (or create and clone a repository) and run <code>mcman init</code>, it will interactively ask you what to name the server, the version, server software and so on.</p>
-<div class="admonition note">
-<p class="admonition-title">Using git</p>
-<p><code>mcman</code> is fully git-compatible, meaning you can store, share and version control your server using something like Github.</p>
-<p>This is optional, but recommended since you get many benefits such as rollbacks/backups, collaboration, branches, etc.</p>
-<p>When you run <code>init</code>, mcman will try to add some extra entries to <code>.gitignore</code> if they are missing.</p>
-</div>
+<p>Create a new folder for your server (or initialize a git repository), open up a terminal inside and run:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>mcman<span class="w"> </span>init
+</code></pre></div>
+<p>This command will interactively help you set up a new server in the current directory.</p>
 <p><img alt="mcman init" src="https://cdn.discordapp.com/attachments/1109215116060266567/1134187743300296815/render1690481729604.gif" /></p>
-<p>After running <code>mcman init</code>, you'll get a few things:</p>
-<ul>
-<li><code>server.toml</code>: This configuration file is the core of your server. It includes things like <strong>server software</strong>, <strong>plugins/mods</strong> and a lot more.</li>
-<li><code>config/</code> folder: This folder will hold all your server configuration files, for example, <code>server.properties</code></li>
-</ul>
+<div class="admonition note">
+<p class="admonition-title"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M23.546 10.93 13.067.452a1.55 1.55 0 0 0-2.188 0L8.708 2.627l2.76 2.76a1.838 1.838 0 0 1 2.327 2.341l2.658 2.66a1.838 1.838 0 0 1 1.9 3.039 1.837 1.837 0 0 1-2.6 0 1.846 1.846 0 0 1-.404-1.996L12.86 8.955v6.525c.176.086.342.203.488.348a1.848 1.848 0 0 1 0 2.6 1.844 1.844 0 0 1-2.609 0 1.834 1.834 0 0 1 0-2.598c.182-.18.387-.316.605-.406V8.835a1.834 1.834 0 0 1-.996-2.41L7.636 3.7.45 10.881c-.6.605-.6 1.584 0 2.189l10.48 10.477a1.545 1.545 0 0 0 2.186 0l10.43-10.43a1.544 1.544 0 0 0 0-2.187"/></svg></span> Using git</p>
+<p><code>mcman</code> is fully git-compatible, meaning you can store, share and version control your server using a git repository provider such as <a href="https://github.com"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></span> Github</a>.</p>
+<p>This is optional, but <strong>recommended</strong> since you get many benefits such as rollbacks/backups, collaboration, branches, etc.</p>
+<p>When you run <code>init</code>, mcman will touch up your <code>.gitignore</code> and <code>.gitattributes</code></p>
+</div>
 <h2 id="initializing-from-a-modpack">Initializing from a modpack</h2>
-<p>If you want to create a server from a modpack, you can use the <code>--mrpack</code> or <code>--packwiz</code> options while using <code>mcman init</code>.</p>
-<ul>
-<li>Import from a local file:<ul>
-<li><code>mcman init --mrpack modpack.mrpack</code></li>
-<li><code>mcman init --pw ../pack.toml</code></li>
-</ul>
-</li>
-<li>Import from an URL:<ul>
-<li><code>mcman init --mrpack https://example.com/pack.mrpack</code></li>
-<li><code>mcman init --pw https://example.com/pack.toml</code></li>
-</ul>
-</li>
-<li>Import from Modrinth: <code>mcman init --mrpack mr:modpack-name</code></li>
-</ul>
-<h2 id="building">Building</h2>
-<p>We call 'downloading and configuring everything' <strong>building</strong>. Before you can run the server, it first needs to be built.</p>
+<p>You can check out the <a href="../importing-modpacks/">Importing Modpacks</a> section on how to initialize from a modpack.</p>
+<h2 id="what-are-these-files">What are these files?</h2>
+<p>After initializing the server, you'll notice a few things:</p>
+<dl>
+<dt><code>server.toml</code></dt>
+<dd>
+<p>This file is the core of your server configuration. It contains information about the server type, version, mods, plugins, worlds and more.</p>
+</dd>
+<dt>the <code>config/</code> directory</dt>
+<dd>
+<p>This folder will hold your config files for your Minecraft server, such as <code>server.properties</code></p>
+</dd>
+<dt>the <code>server/</code> directory</dt>
+<dd>
+<p>You might not see this folder immediately after initialization since it will be generated by <code>mcman</code> when you <strong>build</strong> the server. Everything, including the <code>jar</code> files, will be inside this directory.</p>
+<p>If you are using <span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M23.546 10.93 13.067.452a1.55 1.55 0 0 0-2.188 0L8.708 2.627l2.76 2.76a1.838 1.838 0 0 1 2.327 2.341l2.658 2.66a1.838 1.838 0 0 1 1.9 3.039 1.837 1.837 0 0 1-2.6 0 1.846 1.846 0 0 1-.404-1.996L12.86 8.955v6.525c.176.086.342.203.488.348a1.848 1.848 0 0 1 0 2.6 1.844 1.844 0 0 1-2.609 0 1.834 1.834 0 0 1 0-2.598c.182-.18.387-.316.605-.406V8.835a1.834 1.834 0 0 1-.996-2.41L7.636 3.7.45 10.881c-.6.605-.6 1.584 0 2.189l10.48 10.477a1.545 1.545 0 0 0 2.186 0l10.43-10.43a1.544 1.544 0 0 0 0-2.187"/></svg></span> git, you might notice that this folder is also ignored via <code>.gitignore</code>.</p>
+</dd>
+</dl>
+<h2 id="adding-addons">Adding Addons</h2>
+<p>Lets add a plugin or a mod! For demonstration purposes, lets add <em>Fabric API from Modrinth (mod)</em> or <em>Placeholder API (plugin)</em>.</p>
+<h3 id="a-adding-via-servertoml">A: Adding via <code>server.toml</code></h3>
+<p>Add a new entry in your <code>server.toml</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># For Fabric API</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">[[mods]]</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;modrinth&quot;</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;fabric-api&quot;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># For Placeholder API</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">[[mods]]</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;spigot&quot;</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;placeholderapi.6245&quot;</span>
+</code></pre></div>
+<h3 id="b-adding-via-mcman-import">B: Adding via <code>mcman import</code></h3>
+<p>You can alternatively use the <code>mcman i url</code> command:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>mcman<span class="w"> </span>import<span class="w"> </span>url<span class="w"> </span>https://modrinth.com/mod/fabric-api
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>mcman<span class="w"> </span>import<span class="w"> </span>url<span class="w"> </span>https://www.spigotmc.org/resources/placeholderapi.6245/
+</code></pre></div>
+<h2 id="how-do-i-run-it">How do I run it?</h2>
 <p><code>mcman</code> is not designed to run your server, but build it.</p>
-<ul>
-<li>You can build the server using the <a href="../../commands/build/"><code>mcman build</code></a> command.</li>
-<li>If you want <code>mcman</code> to run it, use the <a href="../../commands/run/"><code>mcman run</code></a> command. This is not recommended for production/live servers though.</li>
-<li>There's also the <a href="../../commands/dev/"><code>mcman dev</code></a> command that starts up a development session with <a href="../dev/">hot reloading</a>. This command is designed for server administrators to be able to iterate and develop their servers faster/easier.</li>
-</ul>
+<p><strong>Building</strong> is the process where <code>mcman</code> sets everything up for you. This includes downloading all the jars, unpacking worlds, processing config files etc. Before you can run the server, it first needs to be built.</p>
+<p>Let's build your server using the <a href="../../commands/build/"><code>mcman build</code></a> command:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>mcman<span class="w"> </span>build
+</code></pre></div>
+<p>Then, you can run it using the <code>start.bat</code>/<code>start.sh</code> <a href="../../reference/server-launcher/">launch scripts</a> inside the <code>server/</code> directory:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Windows</label><label for="__tabbed_1_2">Linux</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">cd</span><span class="w"> </span>server
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>call<span class="w"> </span>start
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">cd</span><span class="w"> </span>server
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>./start.sh
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>You can alternatively use <a href="../../commands/run/"><code>mcman run</code></a> to do both of those at once.</p>
+<h2 id="going-further">Going Further</h2>
+<dl>
+<dt>Format for addons</dt>
+<dd>
+<p>You can check out the documentation about <a href="../../reference/downloadable/">Downloadable</a>s</p>
+</dd>
+<dt>Configuration files and the <code>config/</code> directory</dt>
+<dd>
+<p>Read on how the <code>config/</code> directory works and how you can use it to manage your server's configuration files with ease: <a href="../variables/">Variables and Bootstrapping</a></p>
+</dd>
+<dt>Developing your server</dt>
+<dd>
+<p><code>mcman</code> includes a <strong>Hot-reloading</strong> feature where your changes to <code>server.toml</code>/<code>config/</code> are automatically applied. For more information, read <a href="../dev/">Development Sessions</a></p>
+</dd>
+<dt>More in-depth explanation of Building</dt>
+<dd>
 <p>To learn more about how building works, see <a href="../building/">Building, Running and Developing</a></p>
-<p>TLDR: everything gets downloaded and copied to the output folder which is <code>server/</code> by default.</p>
-<h2 id="configuring-further">Configuring further</h2>
-<p>If you open the newly generated <code>config/server.properties</code> file, you'll see something like this:</p>
-<div class="highlight"><span class="filename">config/server.properties</span><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="na">server-port</span><span class="o">=</span><span class="s">${PORT:25565}</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="na">motd</span><span class="o">=</span><span class="s">${SERVER_NAME:A Minecraft Server}</span>
-</code></pre></div>
-<p>If you build the server, a <code>server.properties</code> file inside the output directory (<code>server/</code>) will appear. If you open the contents of it, it should look like this:</p>
-<div class="highlight"><span class="filename">server/server.properties</span><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="na">server-port</span><span class="o">=</span><span class="s">25565</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="na">motd</span><span class="o">=</span><span class="s">my-server-name</span>
-</code></pre></div>
-<p>As you can guess, when building the server, mcman will process configuration files inside <code>config/</code> and copy them over to <code>server/</code>. We call this process <strong>bootstrapping</strong>.</p>
-<p>Learn more about how bootstrapping works and how to use it <a href="../variables/">here</a></p>
-<h2 id="adding-plugins-or-mods">Adding Plugins or Mods</h2>
-<p>Your server's plugins or mods will be saved in the <code>server.toml</code> file.</p>
-<p>For example:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">[[mods]]</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;modrinth&quot;</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;create-fabric&quot;</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;latest&quot;</span>
-</code></pre></div>
-<p>You can either write them manually or use the <a href="../../commands/import/#mcman-import-url-url"><code>mcman import url &lt;URL&gt;</code></a> command. Every mod or plugin is a <a href="../../reference/downloadable/">Downloadable</a>.</p>
+</dd>
+</dl>
 
 
 
