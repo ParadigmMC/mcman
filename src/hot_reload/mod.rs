@@ -225,12 +225,15 @@ impl<'a> DevSession<'a> {
                     if self.test_mode
                         && !is_stopping
                         && test_result == TestResult::Failed {
-                        if s.contains("]: Done") /* && s.ends_with("For help, type \"help\"") */ {
+                        if s.contains(&self.builder.app.server.options.success_line) /* && s.ends_with("For help, type \"help\"") */ {
                             test_result = TestResult::Success;
 
                             self.builder.app.success("Test passed!");
 
-                            tx.send(Command::SendCommand("stop\nend\n".to_owned())).await?;
+                            tx.send(Command::SendCommand(format!(
+                                "{}\n",
+                                &self.builder.app.server.options.stop_command
+                            ))).await?;
                             tx.send(Command::WaitUntilExit).await?;
                             tx.send(Command::EndSession).await?;
                         } else if s.contains(LINE_CRASHED) || s == "---- end of report ----" {
