@@ -1,4 +1,4 @@
-use std::{fmt::Debug, path::PathBuf, process::Child, time::Duration};
+use std::{fmt::Debug, path::PathBuf, process::Child, time::Duration, collections::HashMap};
 
 use anyhow::{Context, Result};
 use console::style;
@@ -7,7 +7,7 @@ use tokio::io::AsyncWriteExt;
 
 use crate::{
     app::{AddonType, App, Resolvable, ResolvedFile},
-    model::Lockfile,
+    model::{Lockfile, HookEvent},
 };
 
 pub mod addons;
@@ -56,6 +56,9 @@ impl<'a> BuildContext<'a> {
                 .info(format!("Skipping stages: {}", self.skip_stages.join(", ")));
         }
 
+        // hook: PreBuild
+        self.app.hooks().event(HookEvent::PreBuild, HashMap::default()).await?;
+
         // actual stages contained here
 
         self.app.ci("::group::Server Jar");
@@ -98,6 +101,9 @@ impl<'a> BuildContext<'a> {
         }
 
         self.write_lockfile()?;
+
+        // hook: PostBuild
+        self.app.hooks().event(HookEvent::PostBuild, HashMap::default()).await?;
 
         progress_bar.disable_steady_tick();
         progress_bar.finish_and_clear();

@@ -294,4 +294,8 @@ impl<'a> App {
     pub fn worlds(&'a self) -> crate::interop::worlds::WorldsAPI<'a> {
         crate::interop::worlds::WorldsAPI(self)
     }
+
+    pub fn hooks(&'a self) -> crate::interop::hooks::HooksAPI<'a> {
+        crate::interop::hooks::HooksAPI(self)
+    }
 }
