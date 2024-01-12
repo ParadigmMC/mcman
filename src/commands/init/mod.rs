@@ -246,10 +246,6 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
             _ => app.markdown().init_server()?,
         }
 
-        // TODO
-        //app.server.markdown.files = vec!["README.md".to_owned()];
-        //app.server.save()?;
-
         match ty {
             InitType::MRPack(_) | InitType::Packwiz(_) => {
                 if app.confirm("Render markdown now?")? {

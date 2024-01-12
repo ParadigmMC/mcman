@@ -9,13 +9,22 @@ use std::{
 use anyhow::{anyhow, bail, Result};
 use serde::{Deserialize, Serialize};
 
-use super::{ClientSideMod, Downloadable, ServerLauncher, ServerType, World};
+use super::{ClientSideMod, Downloadable, ServerLauncher, ServerType, World, Hook};
 
-#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(default)]
 pub struct MarkdownOptions {
     pub files: Vec<String>,
     pub auto_update: bool,
+}
+
+impl Default for MarkdownOptions {
+    fn default() -> Self {
+        Self {
+            files: vec!["README.md".to_owned()],
+            auto_update: false,
+        }
+    }
 }
 
 impl MarkdownOptions {
@@ -36,19 +45,26 @@ pub struct Server {
     pub jar: ServerType,
     pub variables: HashMap<String, String>,
     pub launcher: ServerLauncher,
+    
+    #[serde(default)]
+    #[serde(skip_serializing_if = "MarkdownOptions::is_empty")]
+    pub markdown: MarkdownOptions,
+
+    #[serde(default)]
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    pub hooks: HashMap<String, Hook>,
+
+    #[serde(default)]
+    pub options: ServerOptions,
+
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    pub worlds: HashMap<String, World>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub plugins: Vec<Downloadable>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub mods: Vec<Downloadable>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub clientsidemods: Vec<ClientSideMod>,
-    #[serde(skip_serializing_if = "HashMap::is_empty")]
-    pub worlds: HashMap<String, World>,
-    #[serde(default)]
-    #[serde(skip_serializing_if = "MarkdownOptions::is_empty")]
-    pub markdown: MarkdownOptions,
-    #[serde(default)]
-    pub options: ServerOptions,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq)]
@@ -161,12 +177,13 @@ impl Default for Server {
             jar: ServerType::Vanilla {},
             variables: vars,
             launcher: ServerLauncher::default(),
+            markdown: MarkdownOptions::default(),
+            hooks: HashMap::new(),
+            options: ServerOptions::default(),
+            worlds: HashMap::new(),
             plugins: vec![],
             mods: vec![],
             clientsidemods: vec![],
-            worlds: HashMap::new(),
-            markdown: MarkdownOptions::default(),
-            options: ServerOptions::default(),
         }
     }
 }

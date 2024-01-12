@@ -9,7 +9,7 @@ use std::{
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use super::{ClientSideMod, Downloadable, MarkdownOptions};
+use super::{ClientSideMod, Downloadable, MarkdownOptions, Hook};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]
@@ -23,15 +23,19 @@ pub struct Network {
     pub servers: HashMap<String, ServerEntry>,
     pub variables: HashMap<String, String>,
 
+    #[serde(skip_serializing_if = "MarkdownOptions::is_empty")]
+    pub markdown: MarkdownOptions,
+
+    #[serde(default)]
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    pub hooks: HashMap<String, Hook>,
+
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub plugins: Vec<Downloadable>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub mods: Vec<Downloadable>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub clientsidemods: Vec<ClientSideMod>,
-
-    #[serde(skip_serializing_if = "MarkdownOptions::is_empty")]
-    pub markdown: MarkdownOptions,
 }
 
 impl Network {
@@ -94,10 +98,11 @@ impl Default for Network {
             port: 25565,
             servers: HashMap::new(),
             variables: HashMap::new(),
+            markdown: MarkdownOptions::default(),
+            hooks: HashMap::new(),
             plugins: vec![],
             mods: vec![],
             clientsidemods: vec![],
-            markdown: MarkdownOptions::default(),
         }
     }
 }

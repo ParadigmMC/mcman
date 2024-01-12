@@ -2,7 +2,7 @@
 
 ![mcman](./docs/mcman-3.png)
 
-[![GitHub release](https://img.shields.io/github/release/ParadigmMC/mcman.svg)](https://github.com/ppy/osu/releases/latest)
+[![GitHub release](https://img.shields.io/github/release/ParadigmMC/mcman.svg)](https://github.com/ParadigmMC/mcman/releases/latest)
 [![builds](https://img.shields.io/github/actions/workflow/status/ParadigmMC/mcman/build.yml?logo=github)](https://github.com/ParadigmMC/mcman/actions/workflows/build.yml)
 [![docker publish](https://img.shields.io/github/actions/workflow/status/ParadigmMC/mcman/publish.yml?logo=github&label=docker%20publish)](https://github.com/ParadigmMC/mcman/actions/workflows/publish.yml)
 ![GitHub Repo stars](https://img.shields.io/github/stars/ParadigmMC/mcman?logo=github)
@@ -66,9 +66,3 @@ Submit a PR or open an issue if you have a mcman-server repository that we can a
 
 Changelogs can be see in detail [here](CHANGELOG.md)
 
-## Special Thanks
-
-- [flags.sh](https://flags.sh/) for the flags and stuff
-  - thank you aikar
-- PaperMC and Modrinth for having an amazing API
-- You for using our project

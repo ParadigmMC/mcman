@@ -255,8 +255,8 @@ impl App {
             // TODO: retry downloading if fails
             validate_hash(hasher)?;
 
-            self.notify(Prefix::Copied, resolved.filename.clone());
             progress_bar.finish_and_clear();
+            self.notify(Prefix::Copied, resolved.filename.clone());
         } else {
             progress_bar.set_prefix(ProgressPrefix::Fetching);
             progress_bar.set_message(resolved.filename.clone());
@@ -334,12 +334,14 @@ impl App {
                 tokio::fs::copy(cached_file_path, &file_path).await?;
             }
 
-            self.notify(Prefix::Downloaded, resolved.filename.clone());
             progress_bar.finish_and_clear();
+            self.notify(Prefix::Downloaded, resolved.filename.clone());
         }
 
         // succeeded, so defuse
         bomb.defuse();
+
+        progress_bar.finish_and_clear();
 
         Ok(resolved)
     }

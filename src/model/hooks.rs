@@ -8,7 +8,11 @@ pub struct Hook {
     pub onfail: HookFailBehavior,
     pub show_output: bool,
     pub description: String,
+    pub disabled: bool,
     pub env: HashMap<String, String>,
+
+    pub windows: Option<String>,
+    pub linux: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Hash, PartialEq, Default)]

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.4
+
+- `README.md` is now in markdown options by default
+- added `--keep` flag to `import <mrpack|packwiz>`, altering default behavior to clear mods list
+- fixed output of `import mrpack`
+
 ## 0.4.3
 
 - Fix modrinth ratelimit ( @ClusterConsultant, #36 )

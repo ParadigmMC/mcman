@@ -61,41 +61,6 @@ impl App {
 
     #[allow(clippy::too_many_lines)]
     pub async fn dl_from_url(&self, urlstr: &str) -> Result<Downloadable> {
-        let urlstring = if urlstr.starts_with("https://blanketcon.b-cdn.net") {
-            let mut path = urlstr
-                .strip_prefix("https://blanketcon.b-cdn.net/")
-                .unwrap()
-                .split('/');
-            match path.next() {
-                Some("devos") => format!(
-                    "https://mvn.devos.one/{}",
-                    path.collect::<Vec<_>>().join("/")
-                ),
-                Some("jared") => format!(
-                    "https://ci.blamejared.com/{}",
-                    path.collect::<Vec<_>>().join("/")
-                ),
-                Some("jaskarth") => format!(
-                    "https://jaskarth.com/{}",
-                    path.collect::<Vec<_>>().join("/")
-                ),
-                Some("ithundxr") => format!(
-                    "https://maven.ithundxr.dev/{}",
-                    path.collect::<Vec<_>>().join("/")
-                ),
-                Some("pub") => urlstr.to_owned(),
-                _ => format!(
-                    "https://github.com/{}",
-                    urlstr
-                        .strip_prefix("https://blanketcon.b-cdn.net/")
-                        .unwrap()
-                ),
-            }
-        } else {
-            urlstr.to_owned()
-        };
-
-        let urlstr = &urlstring;
         let url = reqwest::Url::parse(urlstr)?;
 
         match (

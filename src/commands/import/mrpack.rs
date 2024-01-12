@@ -4,11 +4,13 @@ use anyhow::Result;
 use indicatif::ProgressBar;
 use tempfile::Builder;
 
-use crate::{app::App, interop::mrpack::MRPackReader};
+use crate::{app::App, interop::mrpack::MRPackReader, model::Downloadable};
 
 #[derive(clap::Args, Default)]
 pub struct Args {
     source: String,
+    #[arg(long)]
+    keep: bool,
 }
 
 pub async fn run(mut app: App, args: Args) -> Result<()> {
@@ -19,7 +21,11 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
     let f = if Path::new(&src).exists() {
         std::fs::File::open(&src)?
     } else {
-        let dl = app.dl_from_string(&src).await?;
+        let dl = if src.starts_with("http") && src.ends_with(".mrpack") {
+            Downloadable::Url { url: src, filename: None, desc: None }
+        } else {
+            app.dl_from_string(&src).await?
+        };
         let resolved = app
             .download(
                 &dl,
@@ -30,6 +36,11 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
         let path = tmp_dir.path().join(resolved.filename);
         std::fs::File::open(path)?
     };
+
+    if !args.keep {
+        app.server.mods = vec![];
+        app.info("cleared mods list");
+    }
 
     app.mrpack()
         .import_all(MRPackReader::from_reader(f)?, None)

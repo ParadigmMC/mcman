@@ -9,7 +9,7 @@ use std::{
 use zip::{read::ZipFile, write::FileOptions, ZipArchive, ZipWriter};
 
 use crate::{
-    app::{App, Resolvable},
+    app::{App, Resolvable, Prefix},
     model::Downloadable,
 };
 
@@ -21,28 +21,29 @@ impl<'a> MRPackInterop<'a> {
         mut mrpack: MRPackReader<R>,
         name: Option<String>,
     ) -> Result<MRPackIndex> {
-        let progress_bar = self.0.multi_progress.add(
-            ProgressBar::new_spinner().with_finish(ProgressFinish::WithMessage("Imported".into())),
-        );
-        progress_bar.set_message(name.unwrap_or("mrpack".to_owned()).clone());
+        let progress_bar = self.0.multi_progress.add(ProgressBar::new_spinner());
         progress_bar.set_style(ProgressStyle::with_template(
-            "{spinner:.blue} {prefix} {msg}",
+            "{spinner:.blue} {msg}",
         )?);
-        progress_bar.set_prefix("Reading zip file");
         progress_bar.enable_steady_tick(Duration::from_millis(250));
-
-        progress_bar.set_prefix("Reading index of");
+        progress_bar.set_message("Reading index...");
 
         let index = mrpack.read_index()?;
-
         self.0.server.fill_from_map(&index.dependencies);
 
-        progress_bar.set_style(ProgressStyle::with_template(
-            "{prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}",
-        )?);
-        progress_bar.set_prefix("Importing mod");
-        for file in index.files.iter().progress_with(progress_bar.clone()) {
-            progress_bar.set_message(file.path.clone());
+        progress_bar.set_message(format!("Importing {} mods...", index.files.len()));
+
+        let pb = self
+            .0
+            .multi_progress
+            .insert_after(&progress_bar, ProgressBar::new(index.files.len() as u64))
+            .with_style(ProgressStyle::with_template(
+                "  {prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}",
+            )?)
+            .with_prefix("Importing");
+
+        for file in index.files.iter().progress_with(pb.clone()) {
+            pb.set_message(file.path.clone());
 
             let dl = if let Some(hash) = file.hashes.get("sha512") {
                 if let Ok(ver) = self.0.modrinth().version_from_hash(hash, "sha512").await {
@@ -62,18 +63,33 @@ impl<'a> MRPackInterop<'a> {
                 _ => self.0.dl_from_url(&file.downloads[0].clone()).await?,
             };
 
+            self.0.notify(Prefix::Imported, dl.to_short_string());
             self.0.server.mods.push(dl);
         }
 
+        pb.finish_and_clear();
+
         self.0.server.save()?;
 
-        progress_bar.set_prefix("Unzipping");
-        for (relative_path, zip_path) in mrpack
-            .get_files()
+        progress_bar.set_message("Unzipping files");
+
+        let files = mrpack
+            .get_files();
+
+        let pbf = self
+            .0
+            .multi_progress
+            .insert_after(&progress_bar, ProgressBar::new(files.len() as u64))
+            .with_style(ProgressStyle::with_template(
+                "  {prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}",
+            )?)
+            .with_prefix("Unzipping");
+        
+        for (relative_path, zip_path) in files
             .iter()
-            .progress_with(progress_bar.clone())
+            .progress_with(pbf.clone())
         {
-            progress_bar.set_message(relative_path.clone());
+            pbf.set_message(relative_path.clone());
 
             let zip_file = mrpack.get_file(zip_path)?;
             let target_path = self.0.server.path.join("config").join(relative_path);
@@ -93,9 +109,13 @@ impl<'a> MRPackInterop<'a> {
             pb.finish_and_clear();
         }
 
+        pbf.finish_and_clear();
         progress_bar.finish_and_clear();
 
-        self.0.success("mrpack imported!");
+        self.0.success(format!(
+            "Imported {}",
+            name.as_ref().unwrap_or(&"mrpack".to_string())
+        ));
 
         Ok(index)
     }
