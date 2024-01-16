@@ -27,6 +27,8 @@ You can check out the [Importing Modpacks](./importing-modpacks.md) section on h
 
 ## What are these files?
 
+![Files](../diagrams/diag1.png)
+
 After initializing the server, you'll notice a few things:
 
 `server.toml`

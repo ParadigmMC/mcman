@@ -19,6 +19,6 @@ type Lockfile = {
 
 type BootstrappedFile = {
     path: string,
-    date: number, // timestamp
+    date: Timestamp,
 }
 ```

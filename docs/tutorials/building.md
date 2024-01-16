@@ -6,6 +6,8 @@ mcman is not designed to handle running the server itself, but provides a `run` 
 
 ## Building
 
+![Building](../diagrams/build.png)
+
 To start the server, you need the files. The `.jar` files of the server, addons, and other stuff. We call the process of downloading, processing, copying etc. **building**.
 
 Building requires a valid [server.toml](../reference/server.toml.md) file - thats it.
@@ -16,11 +18,14 @@ You can override the output directory with the `--output <path>` option, but thi
 
 You can also skip some steps if you want using the `--skip`/`-s` option. Possible values are `plugins`, `mods`, `worlds` and `bootstrap`. If you need to skip multiple stages, stack them up like so: `-s mods -s worlds`
 
-### First steps
+### Overview
 
-`mcman` will try to load a [lockfile](../reference/lockfile.md) if present before beginning the build. This is done to speed up build times and skip unnecesary things. (you can ignore this)
-
-First, mcman will download or install the server jar as defined in `server.toml`'s [`jar`](../reference/servertype/index.md) field.
+1. Server jar is downloaded (or [installed](#java))
+2. Addons (plugins and mods) are downloaded
+3. Worlds are [unpacked or downloaded](./using-worlds.md) if they dont exist
+4. Datapacks are downloaded
+5. Files get [bootstrapped](./variables.md) with variables (`config/` -> `server/`)
+6. [Launch scripts](../reference/server-launcher.md) are created
 
 ### Java
 
@@ -29,37 +34,6 @@ Some servers (quilt, forge, neoforge, spigot/bukkit) require **java** to be pres
 If the server type is one that requires installation, you can find the installer's output logs under the output directory. The file name is `.S.mcman.log` where `S` is a short identifier for the installer. (`qsi` for quilt, `bt` for buildtools, `fi` and `nfi` for forge/neoforge respectively)
 
 The installer must exit with a non-zero code or mcman considers it a fail and stops building the server.
-
-### Addons (plugins and mods)
-
-Next, `mcman` will download all the addons according to `server.toml`
-
-By default, most downloaded addons get [cached](./caching.md) in your local system. If a Downloadable is cached, mcman will copy it from cache instead of downloading it again.
-
-If possible, mcman will also do size/hash checks on both downloaded and copied/cached files.
-
-Every addon gets 3 attempts, but this can be [overridden](./options.md#addon-download-attempts)
-
-### Worlds
-
-If there are any worlds specified in `server.toml`, they are processed.
-
-See [Using Worlds](./using-worlds.md) to learn more about worlds in mcman.
-
-Datapacks are also downloaded similar to addons in this stage.
-
-### Bootstrapping
-
-See [Variables aka Bootstrapping](./variables.md)
-
-### Finishing up
-
-Some last touches include:
-
-- Generating `start.sh`/`start.bat` scripts
-- Creating an `eula.txt` if `launcher.eula_args` is set to true and the server doesn't support the argument
-
-These can be [disabled or configured](../reference/server-launcher.md) further in `server.toml` 
 
 ## Running
 

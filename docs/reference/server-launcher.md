@@ -1,8 +1,14 @@
 # Server Launcher
 
-The `[launcher]` table lets mcman create launch scripts for you while running the [build](../commands/build.md) command.
+The `[launcher]` table in [`server.toml`](./server.toml.md) lets mcman create launch scripts for you.
 
-Default values aren't written back to config - except for `aikars_flags`, `proxy_flags` and `eula_args` which are always written.
+The scripts are named `start.sh` and `start.bat` and are created inside the output directory, `server/`.
+
+The order of these arguments are:
+
+`java [jvm_args] [memory] [preset] [eula] [properties] <startup> [nogui] [game_args]`
+
+Where `startup` is either `-jar *.jar` or some library shenanigans (NeoForge/Forge require this).
 
 ??? example "Example ServerLauncher"
 
@@ -40,15 +46,63 @@ Default values aren't written back to config - except for `aikars_flags`, `proxy
        jvm_args = "-Dhello=thing"
        ```
 
-**Fields:**
+## Fields
 
-| Name | Type | Description |
-| --- | --- | --- |
-| `disable` | bool | Disables script generation altogether |
-| `nogui` | bool | Adds `--nogui` at the end |
-| `aikars_flags` | bool | Use aikars flags <sup>[flags.sh](https://flags.sh)</sup> |
-| `proxy_flags` | bool | Use proxy flags <sup>[flags.sh](https://flags.sh)</sup> |
-| `jvm_args` | string | Custom jvm args (before `-jar serv.jar`) |
-| `game_args` | string | Custom game args (after `-jar serv.jar`) |
-| `memory` | string | How much memory to give (`-Xmx`/`-Xms`), example: `"2048M"` |
-| `properties` | table { string: string } | sets `-D`-prefixed system property jvm args |
+`disable`: bool
+
+:   If set to true, mcman will not generate start scripts
+
+`memory`: string
+
+:   Amount of memory to give, in jvm byte units. These are set using the `-Xmx`/`-Xms` arguments.
+
+    For example, `2048M`
+
+    You can also override this using the `MC_MEMORY` environment variable while building.
+
+`java_version`: string
+
+:   This field does not add any arguments to the startup command but rather helps mcman decide which java binary to use.
+
+    ```toml
+    [launcher]
+    java_version = "17"
+    ```
+
+    See [this section](../tutorials/options.md#setting-the-java-binary) for more information.
+
+`nogui`: bool
+
+:   Adds `--nogui` to the end as a game argument. Set this to false for proxy servers since they dont support it.
+
+`preset_flags`: PresetFlags
+
+:   Select a preset. Available presets are:
+
+    - `none` (default)
+    - `aikars`: Use [Aikar's Flags](https://mcflags.emc.gs), there's also [a post by PaperMC](https://docs.papermc.io/paper/aikars-flags) about it
+    - `proxy`: Preset for proxy servers
+
+`eula_args`: bool
+
+:   Bukkit/Spigot forks such as Paper and Purpur all support the `-Dcom.mojang.eula.agree=true` system property flag which allows the agreement of eula without `eula.txt`. If this is set to **`true`**, mcman will add this flag to the arguments. If the server software does not support this argument (such as fabric), `eula=true` will be written to `eula.txt`. 
+
+`jvm_args`: string
+
+:   Add JVM arguments here. JVM arguments are generally in the format of `-X...` and are entered before `-jar server.jar`
+
+`game_args`: string
+
+:   Game arguments are entered *after* `-jar server.jar` and are picked up by the server process.
+
+`properties`: Map<string, string>
+
+:   Enter a table of system property arguments. Properties are in the format of `-Dkey=value`.
+
+    For example, to write `-Dterminal.jline=false -Dterminal.ansi=true`:
+    ```toml
+    [launcher.properties]
+    terminal.jline=false
+    terminal.ansi=true
+    ```
+

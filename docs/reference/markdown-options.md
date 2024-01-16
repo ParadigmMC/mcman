@@ -4,13 +4,6 @@ Ever wanted to display all of the mods or plugins your server has? Using `mcman`
 
 If you havent added it, add your markdown file's name (`README.md` for example) into the `markdown.files` list. When the `mcman markdown` command is run, mcman will render every template in the listed files.
 
-**Fields:**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `files` | string[] | List of filenames to 'render' |
-| `auto_update` | bool | If set to `true`, markdown files will be rendered on commands that modify `server.toml` |
-
 ``` toml title="server.toml"
 [markdown]
 files = [
@@ -19,6 +12,16 @@ files = [
 ]
 auto_update = false
 ```
+
+## Fields
+
+`files`: string[]
+
+:   List of filenames to 'render'
+
+`auto_update`: bool
+
+:   If set to `true`, markdown files will be rendered on commands that modify `server.toml`
 
 !!! warning
     If `#!toml auto_update = true`, commands might take longer. We recommend you dont turn it on until you're done adding most of the mods/plugins.
