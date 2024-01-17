@@ -43,8 +43,7 @@ impl<'a> DevArgs {
 }
 
 pub async fn run(app: App, args: DevArgs) -> Result<()> {
-    let mut dev_session = args.create_dev_session(&app)?;
-
+    let dev_session = args.create_dev_session(&app)?;
     dev_session.start().await?;
 
     Ok(())

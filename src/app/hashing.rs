@@ -2,13 +2,13 @@ use std::{collections::HashMap, path::PathBuf};
 
 use anyhow::{Context, Result};
 use digest::{Digest, DynDigest};
-use futures::StreamExt;
 use indicatif::ProgressBar;
 use sha2::Sha256;
 use tokio::{
     fs::File,
     io::{AsyncRead, AsyncWrite},
 };
+use tokio_stream::StreamExt;
 use tokio_util::io::ReaderStream;
 
 use super::{App, ResolvedFile};
@@ -52,7 +52,7 @@ impl App {
                     .with_message(format!("Calculating hash for {}", resolved.filename)),
             );
 
-            let mut file = File::open(&file_path)
+            let file = File::open(&file_path)
                 .await
                 .context(format!("Opening file '{}'", file_path.display()))?;
 
@@ -72,7 +72,7 @@ impl App {
 
             pb.finish_and_clear();
 
-            let stream_hash = base16ct::lower::encode_string(&digester.finalize());
+            let stream_hash = hex::encode(&digester.finalize());
 
             Ok((preferred_hash.to_owned(), stream_hash))
         }
@@ -95,7 +95,7 @@ impl App {
             tokio::io::copy(&mut item.as_ref(), dest).await?;
         }
 
-        Ok(base16ct::lower::encode_string(&digester.finalize()))
+        Ok(hex::encode(&digester.finalize()))
     }
 
     pub fn hash_sha256(contents: &str) -> String {
@@ -103,6 +103,6 @@ impl App {
 
         Digest::update(&mut hasher, contents);
 
-        base16ct::lower::encode_string(&hasher.finalize())
+        hex::encode(hasher.finalize())
     }
 }

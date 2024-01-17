@@ -9,7 +9,7 @@ use std::{
 use zip::{read::ZipFile, write::FileOptions, ZipArchive, ZipWriter};
 
 use crate::{
-    app::{App, Resolvable, Prefix},
+    app::{App, Prefix, Resolvable},
     model::Downloadable,
 };
 
@@ -22,9 +22,7 @@ impl<'a> MRPackInterop<'a> {
         name: Option<String>,
     ) -> Result<MRPackIndex> {
         let progress_bar = self.0.multi_progress.add(ProgressBar::new_spinner());
-        progress_bar.set_style(ProgressStyle::with_template(
-            "{spinner:.blue} {msg}",
-        )?);
+        progress_bar.set_style(ProgressStyle::with_template("{spinner:.blue} {msg}")?);
         progress_bar.enable_steady_tick(Duration::from_millis(250));
         progress_bar.set_message("Reading index...");
 
@@ -73,8 +71,7 @@ impl<'a> MRPackInterop<'a> {
 
         progress_bar.set_message("Unzipping files");
 
-        let files = mrpack
-            .get_files();
+        let files = mrpack.get_files();
 
         let pbf = self
             .0
@@ -84,11 +81,8 @@ impl<'a> MRPackInterop<'a> {
                 "  {prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}",
             )?)
             .with_prefix("Unzipping");
-        
-        for (relative_path, zip_path) in files
-            .iter()
-            .progress_with(pbf.clone())
-        {
+
+        for (relative_path, zip_path) in files.iter().progress_with(pbf.clone()) {
             pbf.set_message(relative_path.clone());
 
             let zip_file = mrpack.get_file(zip_path)?;

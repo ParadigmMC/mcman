@@ -2,12 +2,12 @@ use std::{fmt::Debug, path::PathBuf, time::Duration};
 
 use anyhow::{bail, Context, Result};
 use digest::{Digest, DynDigest};
-use futures::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
 use md5::Md5;
 use sha1::Sha1;
 use sha2::{Sha256, Sha512};
 use tokio::{fs::File, io::BufWriter};
+use tokio_stream::StreamExt;
 use tokio_util::io::ReaderStream;
 
 use crate::util::SelectItem;
@@ -105,7 +105,7 @@ impl App {
 
         let validate_hash = |hasher: Option<(String, Box<dyn DynDigest>, String)>| {
             if let Some((hash_name, digest, resolved_hash)) = hasher {
-                let stream_hash = base16ct::lower::encode_string(&digest.finalize());
+                let stream_hash = hex::encode(&digest.finalize());
 
                 if resolved_hash == stream_hash {
                     self.dbg("hash check success");
@@ -225,7 +225,7 @@ impl App {
             progress_bar.set_length(cached_size);
             progress_bar.set_prefix(ProgressPrefix::Copying);
 
-            let mut cache_file = File::open(&cached).await.context(format!(
+            let cache_file = File::open(&cached).await.context(format!(
                 "Opening file '{}' from cache dir",
                 cached.to_string_lossy()
             ))?;

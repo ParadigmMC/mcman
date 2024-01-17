@@ -22,7 +22,11 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
         std::fs::File::open(&src)?
     } else {
         let dl = if src.starts_with("http") && src.ends_with(".mrpack") {
-            Downloadable::Url { url: src, filename: None, desc: None }
+            Downloadable::Url {
+                url: src,
+                filename: None,
+                desc: None,
+            }
         } else {
             app.dl_from_string(&src).await?
         };

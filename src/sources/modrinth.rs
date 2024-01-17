@@ -1,13 +1,12 @@
 use std::{collections::HashMap, time::Duration};
 
 use anyhow::{anyhow, Result};
-use async_trait::async_trait;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::time::sleep;
 
 use crate::{
     app::{App, CacheStrategy, ResolvedFile},
-    model::{SoftwareType, ServerType},
+    model::{ServerType, SoftwareType},
 };
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -103,12 +102,10 @@ pub struct ModrinthFile {
     // file_type omitted
 }
 
-#[async_trait]
 pub trait ModrinthWaitRatelimit<T> {
     async fn wait_ratelimit(self) -> Result<T>;
 }
 
-#[async_trait]
 impl ModrinthWaitRatelimit<reqwest::Response> for reqwest::Response {
     async fn wait_ratelimit(self) -> Result<Self> {
         let res = if let Some(h) = self.headers().get("x-ratelimit-remaining") {
@@ -243,10 +240,7 @@ impl<'a> ModrinthAPI<'a> {
         serde_json::to_string(&arr).unwrap()
     }
 
-    pub fn filter_versions(
-        &self,
-        list: &[ModrinthVersion],
-    ) -> Vec<ModrinthVersion> {
+    pub fn filter_versions(&self, list: &[ModrinthVersion]) -> Vec<ModrinthVersion> {
         let is_proxy = self.0.server.jar.get_software_type() == SoftwareType::Proxy;
         let is_vanilla = matches!(self.0.server.jar, ServerType::Vanilla {});
 

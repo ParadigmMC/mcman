@@ -17,8 +17,7 @@ jobs:
 
     - name: Install mcman
       run: |
-        wget https://github.com/ParadigmMC/mcman/releases/latest/download/mcman
-        sudo mv ./mcman /usr/bin/
+        sudo curl -L -o /usr/bin/mcman https://github.com/ParadigmMC/mcman/releases/latest/download/mcman
         sudo chmod +x /usr/bin/mcman
 
     - name: Run mcman export packwiz

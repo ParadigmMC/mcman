@@ -27,7 +27,7 @@ impl Default for Commands {
     }
 }
 
-pub async fn run(mut app: App, subcommand: Commands) -> Result<()> {
+pub async fn run(app: App, subcommand: Commands) -> Result<()> {
     match subcommand {
         Commands::Url(args) => url::run(app, args).await?,
         Commands::Datapack(args) => datapack::run(app, args).await?,

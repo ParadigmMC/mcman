@@ -1,14 +1,3 @@
-#![deny(clippy::all)]
-#![warn(clippy::pedantic)]
-#![allow(clippy::enum_variant_names)]
-#![allow(clippy::missing_docs_in_private_items)]
-#![allow(clippy::missing_errors_doc)]
-#![allow(clippy::module_name_repetitions)]
-#![allow(clippy::struct_excessive_bools)]
-#![allow(unknown_lints)]
-// its used mutably, silly rustc
-#![allow(unused_mut)]
-
 use anyhow::Result;
 use app::BaseApp;
 use clap::Parser;
@@ -88,9 +77,9 @@ async fn main() -> Result<()> {
     if std::env::var("CI") == Ok("true".to_owned()) {
         println!("::endgroup::");
     }
-    let args = Cli::parse();
 
-    let mut base_app = BaseApp::new()?;
+    let args = Cli::parse();
+    let base_app = BaseApp::new()?;
 
     match args.command {
         Commands::Init(args) => commands::init::run(base_app, args).await,
