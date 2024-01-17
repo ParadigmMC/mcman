@@ -312,7 +312,7 @@ pub fn initialize_environment() -> Result<()> {
         );
     }
 
-    if let Ok(Some(_)) = get_docker_version() {
+    if get_docker_version().is_ok() {
         write_dockerfile(Path::new("."))?;
         write_dockerignore(Path::new("."))?;
         println!(

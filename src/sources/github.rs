@@ -4,7 +4,6 @@ use std::{
 };
 
 use anyhow::{anyhow, Context, Result};
-use async_trait::async_trait;
 use reqwest::{
     header::{HeaderMap, HeaderValue},
     StatusCode,
@@ -28,12 +27,10 @@ impl GithubRequestExt for reqwest::RequestBuilder {
     }
 }
 
-#[async_trait]
 pub trait GithubWaitRatelimit<T> {
     async fn wait_ratelimit(self) -> Result<T>;
 }
 
-#[async_trait]
 impl GithubWaitRatelimit<reqwest::Response> for reqwest::Response {
     async fn wait_ratelimit(self) -> Result<Self> {
         let res = if let Some(h) = self.headers().get("x-ratelimit-remaining") {

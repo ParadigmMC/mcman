@@ -13,7 +13,7 @@ pub enum Commands {
     Packwiz(packwiz::Args),
 }
 
-pub async fn run(mut app: App, commands: Commands) -> Result<()> {
+pub async fn run(app: App, commands: Commands) -> Result<()> {
     match commands {
         Commands::Mrpack(args) => mrpack::run(app, args).await,
         Commands::Packwiz(args) => packwiz::run(app, args).await,

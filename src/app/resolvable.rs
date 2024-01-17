@@ -1,12 +1,10 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use super::App;
 
-#[async_trait]
 pub trait Resolvable {
     async fn resolve_source(&self, app: &App) -> Result<ResolvedFile>;
 }

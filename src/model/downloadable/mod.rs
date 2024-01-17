@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use crate::app::{App, CacheStrategy, Resolvable, ResolvedFile};
@@ -88,7 +87,6 @@ pub fn artifact() -> String {
     "artifact".to_owned()
 }
 
-#[async_trait]
 impl Resolvable for Downloadable {
     async fn resolve_source(&self, app: &App) -> Result<ResolvedFile> {
         match self {

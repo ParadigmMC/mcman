@@ -9,7 +9,7 @@ use std::{
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use super::{ClientSideMod, Downloadable, MarkdownOptions, Hook};
+use super::{ClientSideMod, Downloadable, Hook, MarkdownOptions};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]

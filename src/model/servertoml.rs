@@ -9,7 +9,7 @@ use std::{
 use anyhow::{anyhow, bail, Result};
 use serde::{Deserialize, Serialize};
 
-use super::{ClientSideMod, Downloadable, ServerLauncher, ServerType, World, Hook};
+use super::{ClientSideMod, Downloadable, Hook, ServerLauncher, ServerType, World};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(default)]
@@ -45,7 +45,7 @@ pub struct Server {
     pub jar: ServerType,
     pub variables: HashMap<String, String>,
     pub launcher: ServerLauncher,
-    
+
     #[serde(default)]
     #[serde(skip_serializing_if = "MarkdownOptions::is_empty")]
     pub markdown: MarkdownOptions,
@@ -72,10 +72,16 @@ pub struct ServerOptions {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub bootstrap_exts: Vec<String>,
 
-    #[serde(default = "default_success_line", skip_serializing_if = "is_default_success_line")]
+    #[serde(
+        default = "default_success_line",
+        skip_serializing_if = "is_default_success_line"
+    )]
     pub success_line: String,
 
-    #[serde(default = "default_stop_command", skip_serializing_if = "is_default_stop_command")]
+    #[serde(
+        default = "default_stop_command",
+        skip_serializing_if = "is_default_stop_command"
+    )]
     pub stop_command: String,
 }
 

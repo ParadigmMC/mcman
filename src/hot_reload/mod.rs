@@ -38,6 +38,7 @@ pub struct DevSession<'a> {
     pub test_mode: bool,
 }
 
+#[allow(clippy::enum_variant_names)]
 pub enum Command {
     Start,
     EndSession,
@@ -119,7 +120,7 @@ impl<'a> DevSession<'a> {
     async fn handle_commands(
         mut self,
         mut rx: mpsc::Receiver<Command>,
-        mut tx: mpsc::Sender<Command>,
+        tx: mpsc::Sender<Command>,
     ) -> Result<()> {
         let mp = self.builder.app.multi_progress.clone();
 
@@ -220,7 +221,7 @@ impl<'a> DevSession<'a> {
                     }
                 },
                 Ok(Some(line)) = try_read_line(&mut stdout_lines) => {
-                    let mut s = line.trim();
+                    let s = line.trim();
 
                     if self.test_mode
                         && !is_stopping
@@ -253,7 +254,7 @@ impl<'a> DevSession<'a> {
                     });
                 },
                 Ok(Some(line)) = stdin_lines.next_line() => {
-                    let mut cmd = line.trim();
+                    let cmd = line.trim();
 
                     self.builder.app.info(format!("Sending command: {cmd}"));
                     if let Some(ref mut stdin) = &mut child_stdin {
@@ -278,6 +279,7 @@ impl<'a> DevSession<'a> {
                         self.builder.app.info("Force-stopping development session...");
                         break 'l;
                     } else if !is_stopping {
+                        is_session_ending = true;
                         self.builder.app.info("Stopping development session...");
 
                         tx.send(Command::SendCommand("stop\nend\n".to_owned())).await?;
@@ -507,7 +509,7 @@ impl<'a> DevSession<'a> {
         )?)
     }
 
-    pub async fn start(mut self) -> Result<()> {
+    pub async fn start(self) -> Result<()> {
         let (tx, rx) = mpsc::channel(32);
 
         if let Some(cfg_mutex) = self.hot_reload.clone() {

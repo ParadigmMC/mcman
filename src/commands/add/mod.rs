@@ -11,7 +11,7 @@ pub enum Commands {
     Modrinth(modrinth::Args),
 }
 
-pub async fn run(mut app: App, args: Commands) -> Result<()> {
+pub async fn run(app: App, args: Commands) -> Result<()> {
     match args {
         Commands::Modrinth(args) => modrinth::run(app, args).await?,
     }

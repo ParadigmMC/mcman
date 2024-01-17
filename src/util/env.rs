@@ -4,13 +4,13 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use pathdiff::diff_paths;
 
 pub fn try_get_url(folder: &Path) -> Result<String> {
-    let repo_url = get_git_remote()?.ok_or(anyhow!("cant get repo url"))?;
-    let root = get_git_root()?.ok_or(anyhow!("cant get repo root"))?;
-    let branch = get_git_branch()?.ok_or(anyhow!("cant get repo branch"))?;
+    let repo_url = get_git_remote().context("Couldn't get repo url")?;
+    let root = get_git_root().context("Couldn't get repo root")?;
+    let branch = get_git_branch().context("Couldn't get repo branch")?;
 
     let root_path = Path::new(&root).canonicalize()?;
 
@@ -33,14 +33,13 @@ pub fn try_get_url(folder: &Path) -> Result<String> {
     Ok(repo.to_owned() + "/" + &branch + &parent_paths)
 }
 
-pub fn get_git_remote() -> Result<Option<String>> {
-    let path = git_command(vec!["remote", "get-url", "origin"])?
-        .ok_or(anyhow!("cant get git repo origin"))?;
+pub fn get_git_remote() -> Result<String> {
+    let path =
+        git_command(vec!["remote", "get-url", "origin"]).context("Couldn't get git repo origin")?;
 
-    Ok(Some(
-        path.strip_suffix(".git")
-            .map_or(path.clone(), ToOwned::to_owned),
-    ))
+    Ok(path
+        .strip_suffix(".git")
+        .map_or(path.clone(), ToOwned::to_owned))
 }
 
 pub fn write_git() -> Result<()> {
@@ -50,7 +49,7 @@ pub fn write_git() -> Result<()> {
 }
 
 pub fn write_gitignore() -> Result<PathBuf> {
-    let root = get_git_root()?.ok_or(anyhow!("cant get repo root"))?;
+    let root = get_git_root().context("Couldn't get repo root")?;
 
     let gitignore_path = Path::new(&root).join(".gitignore");
 
@@ -83,7 +82,7 @@ pub fn write_gitignore() -> Result<PathBuf> {
 }
 
 pub fn write_gitattributes() -> Result<PathBuf> {
-    let root = get_git_root()?.ok_or(anyhow!("cant get repo root"))?;
+    let root = get_git_root().context("Couldn't get repo root")?;
 
     let gitattributes_path = Path::new(&root).join(".gitattributes");
 
@@ -114,15 +113,15 @@ pub fn write_gitattributes() -> Result<PathBuf> {
     Ok(gitattributes_path)
 }
 
-pub fn get_git_root() -> Result<Option<String>> {
+pub fn get_git_root() -> Result<String> {
     git_command(vec!["rev-parse", "--show-toplevel"])
 }
 
-pub fn get_git_branch() -> Result<Option<String>> {
+pub fn get_git_branch() -> Result<String> {
     git_command(vec!["rev-parse", "--abbrev-ref", "HEAD"])
 }
 
-pub fn git_command(args: Vec<&str>) -> Result<Option<String>> {
+pub fn git_command(args: Vec<&str>) -> Result<String> {
     run_command("git", args)
 }
 
@@ -138,20 +137,20 @@ pub fn write_dockerignore(folder: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn get_docker_version() -> Result<Option<String>> {
+pub fn get_docker_version() -> Result<String> {
     run_command("docker", vec!["--version"])
 }
 
-pub fn run_command(prog: &str, args: Vec<&str>) -> Result<Option<String>> {
+pub fn run_command(prog: &str, args: Vec<&str>) -> Result<String> {
     let output = std::process::Command::new(prog).args(args).output()?;
 
-    Ok(if output.status.success() {
+    if output.status.success() {
         let path = String::from_utf8_lossy(output.stdout.as_slice())
             .into_owned()
             .trim()
             .to_owned();
-        Some(path)
+        Ok(path)
     } else {
-        None
-    })
+        bail!("exit code {}", output.status)
+    }
 }

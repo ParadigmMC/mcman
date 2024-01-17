@@ -27,8 +27,7 @@ impl<'a> RunArgs {
 }
 
 pub async fn run(app: App, args: RunArgs) -> Result<()> {
-    let mut dev_session = args.create_dev_session(&app)?;
-
+    let dev_session = args.create_dev_session(&app)?;
     dev_session.start().await?;
 
     Ok(())

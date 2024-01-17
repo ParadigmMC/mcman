@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
 pub struct Hook {
@@ -40,5 +40,3 @@ pub enum HookFailBehavior {
     Ignore,
     Warn,
 }
-
-

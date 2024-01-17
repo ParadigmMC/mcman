@@ -1,4 +1,4 @@
-use std::{fmt::Debug, path::PathBuf, process::Child, time::Duration, collections::HashMap};
+use std::{collections::HashMap, fmt::Debug, path::PathBuf, process::Child, time::Duration};
 
 use anyhow::{Context, Result};
 use console::style;
@@ -7,7 +7,7 @@ use tokio::io::AsyncWriteExt;
 
 use crate::{
     app::{AddonType, App, Resolvable, ResolvedFile},
-    model::{Lockfile, HookEvent},
+    model::{HookEvent, Lockfile},
 };
 
 pub mod addons;
@@ -57,7 +57,10 @@ impl<'a> BuildContext<'a> {
         }
 
         // hook: PreBuild
-        self.app.hooks().event(HookEvent::PreBuild, HashMap::default()).await?;
+        self.app
+            .hooks()
+            .event(HookEvent::PreBuild, HashMap::default())
+            .await?;
 
         // actual stages contained here
 
@@ -103,7 +106,10 @@ impl<'a> BuildContext<'a> {
         self.write_lockfile()?;
 
         // hook: PostBuild
-        self.app.hooks().event(HookEvent::PostBuild, HashMap::default()).await?;
+        self.app
+            .hooks()
+            .event(HookEvent::PostBuild, HashMap::default())
+            .await?;
 
         progress_bar.disable_steady_tick();
         progress_bar.finish_and_clear();
