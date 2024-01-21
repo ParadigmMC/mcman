@@ -128,7 +128,7 @@ impl<'a> MRPackInterop<'a> {
             .multi_progress
             .insert_after(
                 &progress_bar,
-                ProgressBar::new_spinner().with_style(ProgressStyle::with_template(
+                ProgressBar::new(self.0.server.mods.len() as u64).with_style(ProgressStyle::with_template(
                     "{prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}",
                 )?),
             )
@@ -187,6 +187,7 @@ impl<'a> MRPackInterop<'a> {
         Ok(MRPackFile {
             path: format!("mods/{}", resolved.filename),
             hashes: resolved.hashes,
+            file_size: resolved.size.unwrap_or_default(),
             // TODO: mrpack export EnvSupport
             env: None,
             downloads: vec![resolved.url],
@@ -206,10 +207,12 @@ pub struct MRPackIndex {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct MRPackFile {
     path: String,
     hashes: HashMap<String, String>,
     env: Option<Env>,
+    file_size: u64,
     downloads: Vec<String>,
 }
 
