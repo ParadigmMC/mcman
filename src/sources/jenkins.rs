@@ -13,6 +13,7 @@ pub struct JenkinsBuildItem {
     pub url: String,
     pub number: i32,
     pub result: String,
+    #[serde(default)]
     pub fingerprint: Vec<JenkinsFingerprint>,
 }
 
@@ -26,7 +27,9 @@ pub struct JenkinsArtifact {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct JenkinsFingerprint {
+    #[serde(default)]
     file_name: String,
+    #[serde(default)]
     hash: String,
 }
 
