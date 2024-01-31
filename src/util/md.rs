@@ -56,7 +56,7 @@ impl MarkdownTable {
         for idx in 0..self.headers.len() {
             let mut li = vec![self.headers[idx].len()];
 
-            li.extend(self.rows.iter().map(|idx| row[idx].len()));
+            li.extend(self.rows.iter().map(|row| row[idx].len()));
 
             col_lengths.push(li.into_iter().max().expect("col lengths iter max none"));
         }
@@ -102,7 +102,7 @@ impl MarkdownTable {
             li.extend(
                 self.rows
                     .iter()
-                    .map(|idx| row.get(idx).unwrap_or_default().len()),
+                    .map(|row| row.get(idx).unwrap_or_default().len()),
             );
 
             col_lengths.push(li.into_iter().max().expect("col lengths iter max none"));
@@ -135,7 +135,7 @@ impl MarkdownTable {
                 .iter()
                 .enumerate()
                 .take(row.len())
-                .map(|(idx, width)| format!("{:width$}", row.get(idx).unwrap_or_default()))
+                .map(|(idx, width)| format!("{:width$}", row.get(idx).unwrap_or(&String::new())))
                 .collect::<Vec<_>>();
 
             cols.join(" ")

@@ -140,7 +140,7 @@ impl<'a> BuildContext<'a> {
 
                     let mut cmd_args = vec!["-jar", &installer_jar];
 
-                    cmd_args.extend_from_slice(&args);
+                    cmd_args.extend(args.iter().map(|s| &s));
 
                     let java = std::env::var("JAVA_BIN").unwrap_or("java".to_owned());
 
