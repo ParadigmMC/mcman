@@ -185,7 +185,7 @@ impl<'a> MarkdownAPI<'a> {
                 map.insert("Name", format!("[`{name}`](./servers/{name}/)"));
                 map.insert("Port", serv.port.to_string());
 
-                table.add_from_map(&map);
+                table.add_from_map(map);
             }
         }
 
@@ -216,8 +216,7 @@ impl<'a> MarkdownAPI<'a> {
         {
             pb.set_message(addon.to_string());
             table.add_from_map(
-                &self
-                    .fetch_downloadable_info(addon)
+                self.fetch_downloadable_info(addon)
                     .await
                     .context(format!("Rendering addon: {addon:#?}"))?,
             );
@@ -236,7 +235,7 @@ impl<'a> MarkdownAPI<'a> {
         if let Some(dl) = &world.download {
             let mut map = self.fetch_downloadable_info(dl).await?;
             map.insert("Name", format!("**(World Download)** {}", map["Name"]));
-            table.add_from_map(&map);
+            table.add_from_map(map);
         }
 
         let pb = self
@@ -250,7 +249,7 @@ impl<'a> MarkdownAPI<'a> {
 
         for datapack in world.datapacks.iter().progress_with(pb.clone()) {
             pb.set_message(datapack.to_string());
-            table.add_from_map(&self.fetch_downloadable_info(datapack).await?);
+            table.add_from_map(self.fetch_downloadable_info(datapack).await?);
         }
 
         Ok(table)

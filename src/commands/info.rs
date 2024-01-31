@@ -42,7 +42,7 @@ pub fn run(app: &App) -> Result<()> {
         let mut table = MarkdownTable::new();
 
         for plugin in &server.plugins {
-            table.add_from_map(&plugin.fields_to_map());
+            table.add_from_map(plugin.fields_to_map());
         }
 
         let text = table.render_ascii();
@@ -61,7 +61,7 @@ pub fn run(app: &App) -> Result<()> {
         let mut table = MarkdownTable::new();
 
         for addon in &server.mods {
-            table.add_from_map(&addon.fields_to_map());
+            table.add_from_map(addon.fields_to_map());
         }
 
         let text = table.render_ascii();
