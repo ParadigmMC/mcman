@@ -212,7 +212,7 @@ impl App {
                             "Select a release",
                             &vec![SelectItem(
                                 "latest".to_owned(),
-                                Cow::Owned("Always use latest release"),
+                                Cow::Borrowed("Always use latest release"),
                             )]
                             .into_iter()
                             .chain(releases.iter().map(|r| {
@@ -249,11 +249,9 @@ impl App {
                                 )),
                             )]
                             .into_iter()
-                            .chain(
-                                rel.assets
-                                    .iter()
-                                    .map(|a| SelectItem(Some(a.name.clone()), a.name.clone())),
-                            )
+                            .chain(rel.assets.iter().map(|a| {
+                                SelectItem(Some(a.name.clone()), Cow::Owned(a.name.clone()))
+                            }))
                             .chain(vec![SelectItem(None, Cow::Borrowed("Set manually"))])
                             .collect::<Vec<_>>(),
                         )? {
@@ -436,7 +434,7 @@ impl App {
 
                         let mut versions = vec![SelectItem(
                             "latest".to_owned(),
-                            "Always use latest".to_owned(),
+                            Cow::Borrowed("Always use latest"),
                         )];
 
                         for v in self

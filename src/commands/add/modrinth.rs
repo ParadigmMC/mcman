@@ -43,7 +43,7 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
         .filter(|p| p.project_type == search_type)
         .map(|p| {
             SelectItem(
-                p,
+                p.clone(),
                 Cow::Owned(format!(
                     "{} [{}]\n{s:w$}{}",
                     p.title,
@@ -68,7 +68,12 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
         "Which version?",
         &versions
             .into_iter()
-            .map(|v| SelectItem(v, Cow::Owned(format!("[{}]: {}", v.version_number, v.name))))
+            .map(|v| {
+                SelectItem(
+                    v.clone(),
+                    Cow::Owned(format!("[{}]: {}", v.version_number, v.name)),
+                )
+            })
             .collect::<Vec<_>>(),
     )?;
 
