@@ -1,21 +1,27 @@
+use anyhow::{bail, Context, Result};
 use console::style;
 use dialoguer::{theme::ColorfulTheme, Input};
 use indicatif::ProgressBar;
 use rpackwiz::model::Pack;
-use std::ffi::OsStr;
-use std::fs::File;
-use std::io::Write;
-use std::path::Path;
+use std::{
+    borrow::Cow,
+    env,
+    ffi::OsStr,
+    fs::{self, File},
+    io::Write,
+    path::Path,
+};
 use tempfile::Builder;
 
-use crate::app::BaseApp;
-use crate::interop::mrpack::MRPackReader;
-use crate::interop::packwiz::FileProvider;
-use crate::model::Server;
-use crate::model::{Network, ServerEntry, ServerType, SoftwareType};
-use crate::util::env::{get_docker_version, write_dockerfile, write_dockerignore, write_git};
-use crate::util::SelectItem;
-use anyhow::{bail, Context, Result};
+use crate::{
+    app::BaseApp,
+    interop::{mrpack::MRPackReader, packwiz::FileProvider},
+    model::{Network, Server, ServerEntry, ServerType, SoftwareType},
+    util::{
+        env::{get_docker_version, write_dockerfile, write_dockerignore, write_git},
+        SelectItem,
+    },
+};
 
 #[derive(clap::Args)]
 pub struct Args {
@@ -43,7 +49,7 @@ pub enum InitType {
 
 #[allow(clippy::too_many_lines)]
 pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
-    let current_dir = std::env::current_dir()?;
+    let current_dir = env::current_dir()?;
     let name = if let Some(name) = args.name {
         name.clone()
     } else {
@@ -119,15 +125,15 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                 &[
                     SelectItem(
                         SoftwareType::Normal,
-                        "Normal Server (vanilla, spigot, paper etc.)".to_owned(),
+                        Cow::Borrowed("Normal Server (vanilla, spigot, paper etc.)"),
                     ),
                     SelectItem(
                         SoftwareType::Modded,
-                        "Modded Server (forge, fabric, quilt etc.)".to_owned(),
+                        Cow::Borrowed("Modded Server (forge, fabric, quilt etc.)"),
                     ),
                     SelectItem(
                         SoftwareType::Proxy,
-                        "Proxy Server (velocity, bungeecord, waterfall etc.)".to_owned(),
+                        Cow::Borrowed("Proxy Server (velocity, bungeecord, waterfall etc.)"),
                     ),
                 ],
             )?;
@@ -168,7 +174,7 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
             let tmp_dir = Builder::new().prefix("mcman-mrpack-import").tempdir()?;
 
             let f = if Path::new(&src).exists() {
-                std::fs::File::open(src)?
+                File::open(src)?
             } else {
                 let dl = app.dl_from_string(src).await?;
                 let resolved = app
@@ -178,8 +184,8 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                         ProgressBar::new_spinner(),
                     )
                     .await?;
-                let path = tmp_dir.path().join(resolved.filename);
-                std::fs::File::open(path)?
+
+                File::open(tmp_dir.path().join(resolved.filename))?
             };
 
             app.mrpack()
@@ -224,9 +230,9 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
 
     //env
     if let InitType::Network = ty {
-        std::fs::create_dir_all("./servers")?;
+        fs::create_dir_all("./servers")?;
     } else {
-        std::fs::create_dir_all("./config")?;
+        fs::create_dir_all("./config")?;
 
         if app.server.jar.get_software_type() != SoftwareType::Proxy {
             let mut f = File::create("./config/server.properties")?;
@@ -260,31 +266,20 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
 
     if let InitType::Network = ty {
         println!(
-            " > {} {} {}",
+            " > {} {} {}\n > {}\n   {}\n   {}\n   {}",
             style("Network").green(),
             style(&app.network.unwrap().name).bold(),
-            style("has been created!").green()
-        );
-
-        println!(
-            " > {}",
-            style("Initialize servers in this network using").cyan()
-        );
-        println!(
-            "   {}\n   {}\n   {}",
+            style("has been created!").green(),
+            style("Initialize servers in this network using").cyan(),
             style("cd servers").bold(),
             style("mkdir myserver").bold(),
             style("mcman init").bold(),
         );
     } else {
         println!(
-            " > {} {}",
+            " > {} {}\n > {} {}",
             style(&app.server.name).bold(),
-            style("has been initialized!").green()
-        );
-
-        println!(
-            " > {} {}",
+            style("has been initialized!").green(),
             style("Build using").cyan(),
             style("mcman build").bold()
         );

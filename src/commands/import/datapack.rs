@@ -13,9 +13,7 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
         None => app.prompt_string("URL")?,
     };
 
-    let dl = app.dl_from_string(&urlstr).await?;
-
-    app.add_datapack(&dl)?;
+    app.add_datapack(app.dl_from_string(&urlstr).await?)?;
 
     app.save_changes()?;
     app.refresh_markdown().await?;

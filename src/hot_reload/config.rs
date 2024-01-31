@@ -1,4 +1,9 @@
-use std::{collections::HashMap, fs::File, io::Write, path::PathBuf};
+use std::{
+    collections::HashMap,
+    fs::{self, File},
+    io::Write,
+    path::PathBuf,
+};
 
 use anyhow::{anyhow, Result};
 use glob::Pattern;
@@ -17,7 +22,7 @@ pub enum HotReloadAction {
 impl TryFrom<String> for HotReloadAction {
     type Error = anyhow::Error;
 
-    fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
+    fn try_from(value: String) -> core::result::Result<Self, Self::Error> {
         if value.starts_with('/') {
             Ok(Self::RunCommand(
                 value.strip_prefix('/').unwrap().to_string(),
@@ -68,7 +73,7 @@ impl Default for HotReloadConfig {
 
 impl HotReloadConfig {
     pub fn load_from(path: &PathBuf) -> Result<Self> {
-        let data = std::fs::read_to_string(path)?;
+        let data = fs::read_to_string(path)?;
         let mut h: Self = toml::from_str(&data)?;
         h.path = path.to_owned();
         Ok(h)

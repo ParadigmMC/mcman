@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
+use std::{borrow::ToOwned, collections::HashMap, env};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 #[serde(rename_all = "lowercase")]
@@ -67,11 +66,11 @@ impl ServerLauncher {
         if let Some(Some(path)) = self
             .java_version
             .as_ref()
-            .map(|v| std::env::var(format!("JAVA_{v}_BIN")).ok())
+            .map(|v| env::var(format!("JAVA_{v}_BIN")).ok())
         {
             path
         } else {
-            std::env::var("JAVA_BIN").unwrap_or(String::from("java"))
+            env::var("JAVA_BIN").unwrap_or(String::from("java"))
         }
     }
 
@@ -92,16 +91,15 @@ impl ServerLauncher {
     }
 
     pub fn get_arguments(&self, startup: &StartupMethod, platform: &str) -> Vec<String> {
-        let mut args = vec![];
+        let mut args = self
+            .jvm_args
+            .split_whitespace()
+            .map(ToOwned::to_owned)
+            .collect::<Vec<_>>();
 
-        for arg in self.jvm_args.split_whitespace() {
-            args.push(arg.to_owned());
-        }
-
-        if std::env::var("MC_MEMORY").is_ok() || !self.memory.is_empty() {
-            let m = std::env::var("MC_MEMORY").unwrap_or(self.memory.clone());
-            args.push(format!("-Xms{m}"));
-            args.push(format!("-Xmx{m}"));
+        if env::var("MC_MEMORY").is_ok() || !self.memory.is_empty() {
+            let m = env::var("MC_MEMORY").unwrap_or(self.memory.clone());
+            args.extend([format!("-Xms{m}"), format!("-Xmx{m}")]);
         }
 
         args.append(&mut self.preset_flags.get_flags());
@@ -122,29 +120,20 @@ impl ServerLauncher {
             ));
         }
 
-        match startup.clone() {
-            StartupMethod::Jar(jar) => {
-                args.push(String::from("-jar"));
-                args.push(jar);
-            }
-            StartupMethod::Custom { linux, windows } => {
-                for item in match platform {
-                    "linux" => linux,
-                    "windows" => windows,
-                    _ => vec![],
-                } {
-                    args.push(item);
-                }
-            }
-        }
+        args.extend(match startup.clone() {
+            StartupMethod::Jar(jar) => vec![String::from("-jar"), jar],
+            StartupMethod::Custom { linux, windows } => match platform {
+                "linux" => linux,
+                "windows" => windows,
+                _ => vec![],
+            },
+        });
 
         if self.nogui && !matches!(self.preset_flags, PresetFlags::Proxy) {
             args.push(String::from("--nogui"));
         }
 
-        for arg in self.game_args.split_whitespace() {
-            args.push(arg.to_owned());
-        }
+        args.extend(self.game_args.split_whitespace().map(ToOwned::to_owned));
 
         args
     }

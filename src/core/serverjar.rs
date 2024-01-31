@@ -1,5 +1,7 @@
 use std::{
+    env,
     io::{BufRead, BufReader},
+    process::Command,
     process::Stdio,
     time::Duration,
 };
@@ -31,12 +33,11 @@ impl<'a> BuildContext<'a> {
                     args.push(&loader);
                 }
 
-                args.push("--install-dir=.");
-                args.push("--download-server");
+                args.extend(["--install-dir=.", "--download-server"]);
 
                 InstallMethod::Installer {
-                    name: "Quilt Server Installer".to_owned(),
-                    label: "qsi".to_owned(),
+                    name: "Quilt Server Installer",
+                    label: "qsi",
                     args: args.into_iter().map(ToOwned::to_owned).collect(),
                     rename_from: Some("quilt-server-launch.jar".to_owned()),
                     jar_name: format!(
@@ -48,8 +49,8 @@ impl<'a> BuildContext<'a> {
                 }
             }
             ServerType::NeoForge { loader } => InstallMethod::Installer {
-                name: "NeoForged Installer".to_owned(),
-                label: "nfi".to_owned(),
+                name: "NeoForged Installer",
+                label: "nfi",
                 args: vec!["--installServer".to_owned(), ".".to_owned()],
                 rename_from: None,
                 jar_name: format!(
@@ -58,8 +59,8 @@ impl<'a> BuildContext<'a> {
                 ),
             },
             ServerType::Forge { loader } => InstallMethod::Installer {
-                name: "Forge Installer".to_owned(),
-                label: "fi".to_owned(),
+                name: "Forge Installer",
+                label: "fi",
                 args: vec!["--installServer".to_owned(), ".".to_owned()],
                 rename_from: None,
                 jar_name: format!(
@@ -76,13 +77,11 @@ impl<'a> BuildContext<'a> {
                     mcver,
                 ];
 
-                for arg in &args {
-                    buildtools_args.push(arg);
-                }
+                buildtools_args.extend(args.iter().map(String::as_str));
 
                 InstallMethod::Installer {
-                    name: "BuildTools".to_owned(),
-                    label: "bt".to_owned(),
+                    name: "BuildTools",
+                    label: "bt",
                     args: buildtools_args.into_iter().map(ToOwned::to_owned).collect(),
                     rename_from: Some("server.jar".to_owned()),
                     jar_name: format!(
@@ -143,13 +142,11 @@ impl<'a> BuildContext<'a> {
 
                     let mut cmd_args = vec!["-jar", &installer_jar];
 
-                    for arg in &args {
-                        cmd_args.push(arg);
-                    }
+                    cmd_args.extend(args.iter().map(String::as_str));
 
-                    let java = std::env::var("JAVA_BIN").unwrap_or("java".to_owned());
+                    let java = env::var("JAVA_BIN").unwrap_or("java".to_owned());
 
-                    self.execute_child((&java, cmd_args.clone()), &name, &label)
+                    self.execute_child((&java, cmd_args.clone()), name, label)
                         .await
                         .context(format!("Executing command: 'java {}'", cmd_args.join(" ")))
                         .context(format!("Running installer: {name}"))?;
@@ -209,12 +206,12 @@ impl<'a> BuildContext<'a> {
         tag: &str,
     ) -> Result<()> {
         // because jre cant understand UNC
-        let dir = diff_paths(&self.output_dir, std::env::current_dir()?.canonicalize()?).unwrap();
+        let dir = diff_paths(&self.output_dir, env::current_dir()?.canonicalize()?).unwrap();
 
         let args: Vec<String> = cmd.1.iter().map(|a| self.app.server.format(a)).collect();
         self.app.dbg(args.join(" "));
 
-        let mut child = std::process::Command::new(cmd.0)
+        let mut child = Command::new(cmd.0)
             .args(args)
             .current_dir(dir)
             .stdout(Stdio::piped())

@@ -167,12 +167,12 @@ impl<'a> MarkdownAPI<'a> {
     pub fn table_server(&self) -> MarkdownTable {
         let mut map = IndexMap::new();
 
-        map.insert("Version".to_owned(), self.0.server.mc_version.clone());
-        map.insert("Type".to_owned(), self.0.server.jar.get_md_link());
+        map.insert("Version", self.0.server.mc_version.clone());
+        map.insert("Type", self.0.server.jar.get_md_link());
 
         map.extend(self.0.server.jar.get_metadata());
 
-        MarkdownTable::from_map(&map)
+        MarkdownTable::from_map(map)
     }
 
     pub fn table_network(&self) -> MarkdownTable {
@@ -182,10 +182,10 @@ impl<'a> MarkdownAPI<'a> {
             for (name, serv) in &nw.servers {
                 let mut map = IndexMap::new();
 
-                map.insert("Name".to_owned(), format!("[`{name}`](./servers/{name}/)"));
-                map.insert("Port".to_owned(), serv.port.to_string());
+                map.insert("Name", format!("[`{name}`](./servers/{name}/)"));
+                map.insert("Port", serv.port.to_string());
 
-                table.add_from_map(&map);
+                table.add_from_map(map);
             }
         }
 
@@ -216,8 +216,7 @@ impl<'a> MarkdownAPI<'a> {
         {
             pb.set_message(addon.to_string());
             table.add_from_map(
-                &self
-                    .fetch_downloadable_info(addon)
+                self.fetch_downloadable_info(addon)
                     .await
                     .context(format!("Rendering addon: {addon:#?}"))?,
             );
@@ -227,19 +226,12 @@ impl<'a> MarkdownAPI<'a> {
     }
 
     pub async fn table_world(&self, world: &World) -> Result<MarkdownTable> {
-        let mut table = MarkdownTable::with_headers(vec![
-            "Name".to_owned(),
-            "Description".to_owned(),
-            "Version".to_owned(),
-        ]);
+        let mut table = MarkdownTable::with_headers(vec!["Name", "Description", "Version"]);
 
         if let Some(dl) = &world.download {
             let mut map = self.fetch_downloadable_info(dl).await?;
-            map.insert(
-                "Name".to_owned(),
-                format!("**(World Download)** {}", map["Name"]),
-            );
-            table.add_from_map(&map);
+            map.insert("Name", format!("**(World Download)** {}", map["Name"]));
+            table.add_from_map(map);
         }
 
         let pb = self
@@ -253,7 +245,7 @@ impl<'a> MarkdownAPI<'a> {
 
         for datapack in world.datapacks.iter().progress_with(pb.clone()) {
             pb.set_message(datapack.to_string());
-            table.add_from_map(&self.fetch_downloadable_info(datapack).await?);
+            table.add_from_map(self.fetch_downloadable_info(datapack).await?);
         }
 
         Ok(table)
@@ -263,18 +255,18 @@ impl<'a> MarkdownAPI<'a> {
     pub async fn fetch_downloadable_info(
         &self,
         dl: &Downloadable,
-    ) -> Result<IndexMap<String, String>> {
+    ) -> Result<IndexMap<&'static str, String>> {
         let map = match dl {
             Downloadable::Modrinth { id, version } => {
                 let proj = self.0.modrinth().fetch_project(id).await?;
 
                 IndexMap::from([
                     (
-                        "Name".to_owned(),
+                        "Name",
                         format!("[{}](https://modrinth.com/mod/{})", proj.title, proj.slug),
                     ),
-                    ("Description".to_owned(), sanitize(&proj.description)?),
-                    ("Version".to_owned(), version.clone()),
+                    ("Description", sanitize(&proj.description)?),
+                    ("Version", version.clone()),
                 ])
             }
 
@@ -282,11 +274,11 @@ impl<'a> MarkdownAPI<'a> {
                 let proj = self.0.curserinth().fetch_project(id).await?;
 
                 IndexMap::from([(
-                    "Name".to_owned(),
+                    "Name",
                     format!("{} <sup>[CF](https://www.curseforge.com/minecraft/mc-mods/{id}) [CR](https://curserinth.kuylar.dev/mod/{id})</sup>", proj.title, id = proj.slug),
                 ),
-                ("Description".to_owned(), sanitize(&proj.description)?),
-                ("Version".to_owned(), version.clone())])
+                ("Description", sanitize(&proj.description)?),
+                ("Version", version.clone())])
             }
 
             Downloadable::Spigot { id, version } => {
@@ -294,11 +286,11 @@ impl<'a> MarkdownAPI<'a> {
 
                 IndexMap::from([
                     (
-                        "Name".to_owned(),
+                        "Name",
                         format!("[{name}](https://www.spigotmc.org/resources/{id})"),
                     ),
-                    ("Description".to_owned(), sanitize(&desc)?),
-                    ("Version".to_owned(), version.clone()),
+                    ("Description", sanitize(&desc)?),
+                    ("Version", version.clone()),
                 ])
             }
 
@@ -307,15 +299,15 @@ impl<'a> MarkdownAPI<'a> {
 
                 IndexMap::from([
                     (
-                        "Name".to_owned(),
+                        "Name",
                         format!(
                             "[{}](https://hangar.papermc.io/{})",
                             proj.name,
                             proj.namespace.to_string()
                         ),
                     ),
-                    ("Description".to_owned(), sanitize(&proj.description)?),
-                    ("Version".to_owned(), version.clone()),
+                    ("Description", sanitize(&proj.description)?),
+                    ("Version", version.clone()),
                 ])
             }
 
@@ -323,9 +315,9 @@ impl<'a> MarkdownAPI<'a> {
                 let desc = self.0.github().fetch_repo_description(repo).await?;
 
                 IndexMap::from([
-                    ("Name".to_owned(), dl.get_md_link()),
-                    ("Description".to_owned(), sanitize(&desc)?),
-                    ("Version".to_owned(), format!("{tag} / `{asset}`")),
+                    ("Name", dl.get_md_link()),
+                    ("Description", sanitize(&desc)?),
+                    ("Version", format!("{tag} / `{asset}`")),
                 ])
             }
 
@@ -338,18 +330,18 @@ impl<'a> MarkdownAPI<'a> {
                 let desc = self.0.jenkins().fetch_description(url, job).await?;
 
                 IndexMap::from([
-                    ("Name".to_owned(), dl.get_md_link()),
-                    ("Description".to_owned(), sanitize(&desc)?),
-                    ("Version".to_owned(), format!("{build} / `{artifact}`")),
+                    ("Name", dl.get_md_link()),
+                    ("Description", sanitize(&desc)?),
+                    ("Version", format!("{build} / `{artifact}`")),
                 ])
             }
 
             Downloadable::Maven {
                 version, artifact, ..
             } => IndexMap::from([
-                ("Name".to_owned(), artifact.clone()),
-                ("Description".to_owned(), dl.get_md_link()),
-                ("Version".to_owned(), version.clone()),
+                ("Name", artifact.clone()),
+                ("Description", dl.get_md_link()),
+                ("Version", version.clone()),
             ]),
 
             Downloadable::Url {
@@ -358,19 +350,19 @@ impl<'a> MarkdownAPI<'a> {
                 desc,
             } => IndexMap::from([
                 (
-                    "Name".to_owned(),
+                    "Name",
                     format!(
                         "`{}`",
                         filename.as_ref().unwrap_or(&"Custom URL".to_owned())
                     ),
                 ),
                 (
-                    "Description".to_owned(),
+                    "Description",
                     desc.as_ref()
                         .unwrap_or(&"*No description provided*".to_owned())
                         .clone(),
                 ),
-                ("Version".to_owned(), format!("[URL]({url})")),
+                ("Version", format!("[URL]({url})")),
             ]),
         };
 

@@ -1,4 +1,4 @@
-use std::{fmt::Debug, path::PathBuf, time::Duration};
+use std::{borrow::Cow, fmt::Debug, fs, path::PathBuf, time::Duration};
 
 use anyhow::{bail, Context, Result};
 use digest::{Digest, DynDigest};
@@ -64,15 +64,13 @@ impl App {
     }
 
     pub fn create_hasher(name: &str) -> Box<dyn DynDigest> {
-        let digester: Box<dyn DynDigest> = match name {
+        match name {
             "sha256" => Box::new(<Sha256 as Digest>::new()),
             "sha512" => Box::new(<Sha512 as Digest>::new()),
             "sha1" => Box::new(<Sha1 as Digest>::new()),
             "md5" => Box::new(<Md5 as Digest>::new()),
             _ => unreachable!(),
-        };
-
-        digester
+        }
     }
 
     #[allow(clippy::too_many_lines)]
@@ -95,13 +93,11 @@ impl App {
         let hasher = Self::get_best_hash(&resolved.hashes);
 
         // if resolved has hashes, Some((hash name, dyndigest, hash value))
-        let mut hasher = if let Some((name, hash)) = hasher {
+        let mut hasher = hasher.map(|(name, hash)| {
             let digester: Box<dyn DynDigest> = App::create_hasher(&name);
 
-            Some((name, digester, hash))
-        } else {
-            None
-        };
+            (name, digester, hash)
+        });
 
         let validate_hash = |hasher: Option<(String, Box<dyn DynDigest>, String)>| {
             if let Some((hash_name, digest, resolved_hash)) = hasher {
@@ -148,9 +144,9 @@ impl App {
                 match self.select(
                     &message,
                     &[
-                        SelectItem(0, "Delete folder and download".to_owned()),
-                        SelectItem(1, "Skip file".to_owned()),
-                        SelectItem(2, "Bail".to_owned()),
+                        SelectItem(0, Cow::Borrowed("Delete folder and download")),
+                        SelectItem(1, Cow::Borrowed("Skip file")),
+                        SelectItem(2, Cow::Borrowed("Bail")),
                     ],
                 )? {
                     0 => {
@@ -189,7 +185,7 @@ impl App {
         // this bomb will explode (delete target_file) if its not defused (fn exits with Err)
         let mut bomb = Bomb(true, || {
             // i mean, atleast try right
-            let _ = std::fs::remove_file(&file_path);
+            let _ = fs::remove_file(&file_path);
         });
 
         if let Some((cached, cached_size)) = match &cached_file_path {

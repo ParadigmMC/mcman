@@ -1,6 +1,8 @@
 use std::{
     collections::HashSet,
+    env,
     path::PathBuf,
+    process,
     process::{ExitStatus, Stdio},
     sync::{Arc, Mutex},
     time::Duration,
@@ -62,17 +64,17 @@ pub enum Command {
 async fn try_read_line(
     opt: &mut Option<tokio::io::Lines<BufReader<tokio::process::ChildStdout>>>,
 ) -> Result<Option<String>> {
-    match opt {
-        Some(lines) => Ok(lines.next_line().await?),
-        None => Ok(None),
-    }
+    Ok(match opt {
+        Some(lines) => lines.next_line().await?,
+        None => None,
+    })
 }
 
 async fn try_wait_child(opt: &mut Option<Child>) -> Result<Option<ExitStatus>> {
-    match opt {
-        Some(c) => Ok(Some(c.wait().await?)),
-        None => Ok(None),
-    }
+    Ok(match opt {
+        Some(c) => Some(c.wait().await?),
+        None => None,
+    })
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -93,7 +95,7 @@ pub const LINE_CRASHED: &str = "]: Crashed! The full crash report has been saved
 
 impl<'a> DevSession<'a> {
     pub async fn spawn_child(&mut self) -> Result<Child> {
-        let platform = if std::env::consts::FAMILY == "windows" {
+        let platform = if env::consts::FAMILY == "windows" {
             "windows"
         } else {
             "linux"
@@ -109,7 +111,7 @@ impl<'a> DevSession<'a> {
             .app
             .dbg(format!("Running: {java} {}", args.join(" ")));
 
-        let cwd = std::env::current_dir()?.canonicalize()?;
+        let cwd = env::current_dir()?.canonicalize()?;
         // because jre is stupid
         let dir = diff_paths(&self.builder.output_dir, cwd).unwrap();
 
@@ -289,10 +291,11 @@ impl<'a> DevSession<'a> {
                     let cmd = line.trim();
 
                     self.builder.app.log_dev(format!("$ {cmd}"));
+
                     if let Some(ref mut stdin) = &mut child_stdin {
                         stdin.write_all(format!("{cmd}\n").as_bytes()).await?;
                     } else {
-                        self.builder.app.log_dev(String::from("Server offline"));
+                        self.builder.app.log_dev("Server offline");
                     }
                 },
                 Ok(Some(status)) = try_wait_child(&mut child) => {
@@ -338,7 +341,7 @@ impl<'a> DevSession<'a> {
             match test_result {
                 TestResult::Success => {
                     self.builder.app.success("Test passed");
-                    std::process::exit(0);
+                    process::exit(0);
                 }
                 TestResult::Crashed | TestResult::Failed => {
                     mp.suspend(|| {
@@ -420,8 +423,7 @@ impl<'a> DevSession<'a> {
                             pb.finish_and_clear();
                             self.builder.app.log("  - Logs uploaded to mclo.gs");
                             mp.suspend(|| {
-                                println!();
-                                println!(" latest.log [ {} ]", log.url);
+                                println!("\n latest.log [ {} ]", log.url);
                                 if let Some(log) = crash_log {
                                     println!(" crash report [ {} ]", log.url);
                                 }
@@ -439,7 +441,7 @@ impl<'a> DevSession<'a> {
                         }
                     }
 
-                    std::process::exit(1);
+                    process::exit(1);
                 }
             }
         }

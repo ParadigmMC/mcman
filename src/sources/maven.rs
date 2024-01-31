@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 use anyhow::{anyhow, Result};
 
@@ -216,7 +216,7 @@ impl<'a> MavenAPI<'a> {
             url: download_url,
             filename: file,
             cache: CacheStrategy::File {
-                namespace: String::from("maven"),
+                namespace: Cow::Borrowed("maven"),
                 path: cached_file_path,
             },
             size: None,

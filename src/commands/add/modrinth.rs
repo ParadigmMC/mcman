@@ -1,4 +1,5 @@
 use anyhow::{bail, Context, Result};
+use std::borrow::Cow;
 
 use crate::{
     app::{App, Prefix},
@@ -15,9 +16,9 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
     let search_type = app.select(
         "Which project type?",
         &[
-            SelectItem("mod", "Mods".to_owned()),
-            SelectItem("datapack", "Datapacks".to_owned()),
-            SelectItem("modpack", "Modpacks".to_owned()),
+            SelectItem("mod", Cow::Borrowed("Mods")),
+            SelectItem("datapack", Cow::Borrowed("Datapacks")),
+            SelectItem("modpack", Cow::Borrowed("Modpacks")),
         ],
     )?;
 
@@ -41,16 +42,17 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
         .into_iter()
         .filter(|p| p.project_type == search_type)
         .map(|p| {
-            let str = format!(
-                "{} [{}]\n{s:w$}{}",
-                p.title,
-                p.slug,
-                p.description,
-                s = " ",
-                w = 4
-            );
-
-            SelectItem(p, str)
+            SelectItem(
+                p.clone(),
+                Cow::Owned(format!(
+                    "{} [{}]\n{s:w$}{}",
+                    p.title,
+                    p.slug,
+                    p.description,
+                    s = " ",
+                    w = 4
+                )),
+            )
         })
         .collect::<Vec<_>>();
 
@@ -67,8 +69,10 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
         &versions
             .into_iter()
             .map(|v| {
-                let str = format!("[{}]: {}", v.version_number, v.name,);
-                SelectItem(v, str)
+                SelectItem(
+                    v.clone(),
+                    Cow::Owned(format!("[{}]: {}", v.version_number, v.name)),
+                )
             })
             .collect::<Vec<_>>(),
     )?;
@@ -78,8 +82,8 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
             app.select(
                 "Import as...",
                 &[
-                    SelectItem("datapack", "Datapack".to_owned()),
-                    SelectItem("mod", "Mod/Plugin".to_owned()),
+                    SelectItem("datapack", Cow::Borrowed("Datapack")),
+                    SelectItem("mod", Cow::Borrowed("Mod/Plugin")),
                 ],
             )?
         } else {
@@ -92,24 +96,20 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
             todo!("Modpack importing currently unsupported")
         }
         "mod" => {
-            let addon = Downloadable::Modrinth {
+            app.add_addon_inferred(Downloadable::Modrinth {
                 id: project.slug.clone(),
                 version: version.id.clone(),
-            };
-
-            app.add_addon_inferred(&addon)?;
+            })?;
 
             app.save_changes()?;
             app.notify(Prefix::Imported, format!("{} from modrinth", project.title));
             app.refresh_markdown().await?;
         }
         "datapack" => {
-            let dp = Downloadable::Modrinth {
+            app.add_datapack(Downloadable::Modrinth {
                 id: project.slug.clone(),
                 version: version.id.clone(),
-            };
-
-            app.add_datapack(&dp)?;
+            })?;
 
             app.save_changes()?;
             app.refresh_markdown().await?;

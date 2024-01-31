@@ -3,7 +3,8 @@ use indicatif::{ProgressBar, ProgressFinish, ProgressIterator, ProgressStyle};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
-    io::{Read, Seek, Write},
+    fs::{self, File},
+    io::{self, Read, Seek, Write},
     time::Duration,
 };
 use zip::{read::ZipFile, write::FileOptions, ZipArchive, ZipWriter};
@@ -88,7 +89,7 @@ impl<'a> MRPackInterop<'a> {
             let zip_file = mrpack.get_file(zip_path)?;
             let target_path = self.0.server.path.join("config").join(relative_path);
 
-            std::fs::create_dir_all(target_path.parent().unwrap())?;
+            fs::create_dir_all(target_path.parent().unwrap())?;
 
             // TODO mrpack import: is target_path exists prompt
 
@@ -97,8 +98,8 @@ impl<'a> MRPackInterop<'a> {
                 .multi_progress
                 .insert_after(&progress_bar, ProgressBar::new(zip_file.size()));
 
-            let mut target_file = std::fs::File::create(&target_path)?;
-            std::io::copy(&mut pb.wrap_read(zip_file), &mut target_file)?;
+            let mut target_file = File::create(&target_path)?;
+            io::copy(&mut pb.wrap_read(zip_file), &mut target_file)?;
 
             pb.finish_and_clear();
         }
@@ -244,26 +245,14 @@ impl<R: Read + Seek> MRPackReader<R> {
     }
 
     pub fn read_index(&mut self) -> Result<MRPackIndex> {
-        let mut entry = self.0.by_name(MRPACK_INDEX_FILE)?;
-        let mut zip_content = Vec::new();
-        entry
-            .read_to_end(&mut zip_content)
-            .context("Reading modrinth.index.json from zip archive")?;
-
-        let pack: MRPackIndex = serde_json::from_slice(&zip_content)?;
-
-        Ok(pack)
+        Ok(serde_json::from_reader(self.0.by_name(MRPACK_INDEX_FILE)?)?)
     }
 
     pub fn get_files(&self) -> HashMap<String, String> {
         let mut map = HashMap::new();
 
-        for filename in self.0.file_names() {
-            if filename.ends_with('/') {
-                continue; // folder
-            }
-
-            if filename.starts_with("overrides") {
+        for filename in self.0.file_names().filter(|f| !f.ends_with('/')) {
+            if filename.starts_with("overrides/") {
                 let relative = filename.strip_prefix("overrides/").unwrap();
 
                 if map.contains_key(relative) {
@@ -279,9 +268,7 @@ impl<R: Read + Seek> MRPackReader<R> {
                         .to_owned(),
                     filename.to_owned(),
                 );
-            } else {
-                continue;
-            };
+            }
         }
 
         map

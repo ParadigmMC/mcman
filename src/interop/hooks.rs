@@ -1,4 +1,4 @@
-use std::{collections::HashMap, process::Stdio, time::Duration};
+use std::{collections::HashMap, env, process::Stdio, time::Duration};
 
 use anyhow::{bail, Context, Result};
 use console::style;
@@ -22,7 +22,7 @@ impl<'a> HooksAPI<'a> {
             .or(self.0.network.as_ref().and_then(|nw| nw.hooks.get(entry)))
             .unwrap();
 
-        match std::env::consts::FAMILY {
+        match env::consts::FAMILY {
             "windows" => hook.windows.clone(),
             "unix" => hook.linux.clone(),
             _ => None,

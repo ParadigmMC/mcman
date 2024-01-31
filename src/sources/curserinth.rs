@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::borrow::Cow;
 
 use crate::app::{App, CacheStrategy, ResolvedFile};
 
@@ -151,7 +152,7 @@ impl<'a> CurserinthAPI<'a> {
             url: file.url,
             filename: file.filename,
             cache: CacheStrategy::File {
-                namespace: String::from("curserinth"),
+                namespace: Cow::Borrowed("curserinth"),
                 path: cached_file_path,
             },
             size: Some(file.size),

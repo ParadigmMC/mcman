@@ -1,6 +1,7 @@
 use crate::app::{App, Resolvable, ResolvedFile};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 
 use crate::model::Downloadable;
 
@@ -62,7 +63,7 @@ pub enum ServerType {
 
     BuildTools {
         #[serde(default = "spigot")]
-        software: String,
+        software: Cow<'static, str>,
         #[serde(skip_serializing_if = "Vec::is_empty")]
         #[serde(default = "Vec::new")]
         args: Vec<String>,
@@ -83,8 +84,8 @@ pub enum ServerType {
 pub enum InstallMethod {
     SingleJar,
     Installer {
-        name: String,
-        label: String,
+        name: &'static str,
+        label: &'static str,
         args: Vec<String>,
         rename_from: Option<String>,
         jar_name: String,
@@ -200,8 +201,8 @@ fn latest() -> String {
     "latest".to_owned()
 }
 
-fn spigot() -> String {
-    "spigot".to_owned()
+const fn spigot() -> Cow<'static, str> {
+    Cow::Borrowed("spigot")
 }
 
 static BUNGEECORD_JENKINS: &str = "https://ci.md-5.net";

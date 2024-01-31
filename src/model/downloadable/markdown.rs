@@ -52,32 +52,32 @@ impl Downloadable {
         .to_owned()
     }
 
-    pub fn fields_to_map(&self) -> IndexMap<String, String> {
+    pub fn fields_to_map(&self) -> IndexMap<&'static str, String> {
         let mut map = IndexMap::new();
 
-        map.insert("Type".to_owned(), self.get_type_name());
+        map.insert("Type", self.get_type_name());
 
         match self {
             Self::Url { url, filename, .. } => {
-                map.insert("Project/URL".to_owned(), url.clone());
+                map.insert("Project/URL", url.clone());
                 map.insert(
-                    "Asset/File".to_owned(),
+                    "Asset/File",
                     filename.as_ref().unwrap_or(&String::new()).clone(),
                 );
             }
 
             Self::GithubRelease { repo, tag, asset } => {
-                map.insert("Project/URL".to_owned(), repo.clone());
-                map.insert("Version/Release".to_owned(), tag.clone());
-                map.insert("Asset/File".to_owned(), asset.clone());
+                map.insert("Project/URL", repo.clone());
+                map.insert("Version/Release", tag.clone());
+                map.insert("Asset/File", asset.clone());
             }
 
             Self::Modrinth { id, version }
             | Self::CurseRinth { id, version }
             | Self::Hangar { id, version }
             | Self::Spigot { id, version } => {
-                map.insert("Project/URL".to_owned(), id.clone());
-                map.insert("Version/Release".to_owned(), version.clone());
+                map.insert("Project/URL", id.clone());
+                map.insert("Version/Release", version.clone());
             }
 
             Self::Jenkins {
@@ -86,9 +86,9 @@ impl Downloadable {
                 build,
                 artifact,
             } => {
-                map.insert("Project/URL".to_owned(), format!("{job} - ({url})"));
-                map.insert("Version/Release".to_owned(), build.clone());
-                map.insert("Asset/File".to_owned(), artifact.clone());
+                map.insert("Project/URL", format!("{job} - ({url})"));
+                map.insert("Version/Release", build.clone());
+                map.insert("Asset/File", artifact.clone());
             }
 
             Self::Maven {
@@ -98,12 +98,9 @@ impl Downloadable {
                 version,
                 filename,
             } => {
-                map.insert(
-                    "Project/URL".to_owned(),
-                    format!("{group}.{artifact} - ({url})"),
-                );
-                map.insert("Version/Release".to_owned(), version.clone());
-                map.insert("Asset/File".to_owned(), filename.clone());
+                map.insert("Project/URL", format!("{group}.{artifact} - ({url})"));
+                map.insert("Version/Release", version.clone());
+                map.insert("Asset/File", filename.clone());
             }
         }
 

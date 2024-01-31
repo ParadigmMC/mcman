@@ -474,16 +474,7 @@ pub async fn export_packwiz(
     );
 
     if let Ok(u) = try_get_url(&folder.join("pack.toml")) {
-        println!();
-        println!(" > {}", style("Exported pack URL:").cyan());
-        println!("     {}", "https://raw.githack.com/".to_owned() + &u);
-        println!(" > {}", style("MultiMC prelaunch command:").cyan());
-        println!(
-            "     {}",
-            "$INST_JAVA -jar packwiz-installer-bootstrap.jar https://raw.githack.com/".to_owned()
-                + &u
-        );
-        println!();
+        println!("\n > {}\n     https://raw.githack.com/{u}\n > {}\n     $INST_JAVA -jar packwiz-installer-bootstrap.jar https://raw.githack.com/{u}\n", style("Exported pack URL:").cyan(), style("MultiMC prelaunch command:").cyan());
     }
 
     Ok(())

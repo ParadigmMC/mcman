@@ -6,6 +6,7 @@ use crate::{
 };
 
 use super::{AddonType, App, Prefix};
+use std::borrow::Cow;
 
 impl App {
     pub fn save_changes(&self) -> Result<()> {
@@ -28,15 +29,15 @@ impl App {
         }
     }
 
-    pub fn add_addon_inferred(&mut self, addon: &Downloadable) -> Result<()> {
+    pub fn add_addon_inferred(&mut self, addon: Downloadable) -> Result<()> {
         let addon_type = match self.server.jar.get_software_type() {
             SoftwareType::Modded => AddonType::Mod,
             SoftwareType::Normal | SoftwareType::Proxy => AddonType::Plugin,
             SoftwareType::Unknown => self.select(
                 "Import as?",
                 &[
-                    SelectItem(AddonType::Mod, "Mod".to_owned()),
-                    SelectItem(AddonType::Plugin, "Plugin".to_owned()),
+                    SelectItem(AddonType::Mod, Cow::Borrowed("Mod")),
+                    SelectItem(AddonType::Plugin, Cow::Borrowed("Plugin")),
                 ],
             )?,
         };
@@ -44,7 +45,7 @@ impl App {
         self.add_addon(addon_type, addon)
     }
 
-    pub fn add_addon(&mut self, addon_type: AddonType, addon: &Downloadable) -> Result<()> {
+    pub fn add_addon(&mut self, addon_type: AddonType, addon: Downloadable) -> Result<()> {
         let existing = match addon_type {
             AddonType::Plugin => self.server.plugins.iter(),
             AddonType::Mod => self.server.mods.iter(),
@@ -65,7 +66,7 @@ impl App {
             AddonType::Plugin => &mut self.server.plugins,
             AddonType::Mod => &mut self.server.mods,
         }
-        .push(addon.clone());
+        .push(addon);
 
         Ok(())
     }
@@ -78,10 +79,13 @@ impl App {
                 .server
                 .worlds
                 .keys()
-                .map(|k| SelectItem(k.clone(), k.clone()))
+                .map(|k| SelectItem(k.clone(), Cow::Owned(k.clone())))
                 .collect();
 
-            items.push(SelectItem("+".to_owned(), "+ New world entry".to_owned()));
+            items.push(SelectItem(
+                "+".to_owned(),
+                Cow::Borrowed("+ New world entry"),
+            ));
 
             self.select(prompt, &items)?
         };
@@ -103,7 +107,7 @@ impl App {
         Ok(world_name)
     }
 
-    pub fn add_datapack(&mut self, dp: &Downloadable) -> Result<()> {
+    pub fn add_datapack(&mut self, dp: Downloadable) -> Result<()> {
         let world_name = self.select_world("Add datapack to...")?;
 
         self.add_datapack_to(&world_name, dp)?;
@@ -111,18 +115,17 @@ impl App {
         Ok(())
     }
 
-    pub fn add_datapack_to(&mut self, world: &str, dp: &Downloadable) -> Result<()> {
+    pub fn add_datapack_to(&mut self, world: &str, dp: Downloadable) -> Result<()> {
+        let dp_name = dp.to_short_string();
+
         self.server
             .worlds
             .get_mut(world)
             .ok_or(anyhow!("World entry did not exist"))?
             .datapacks
-            .push(dp.clone());
+            .push(dp);
 
-        self.notify(
-            Prefix::Imported,
-            format!("datapack {} to {world}", dp.to_short_string()),
-        );
+        self.notify(Prefix::Imported, format!("datapack {dp_name} to {world}"));
 
         Ok(())
     }

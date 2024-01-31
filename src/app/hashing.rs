@@ -1,9 +1,9 @@
-use std::{collections::HashMap, path::PathBuf};
-
 use anyhow::{Context, Result};
+use core::marker::Unpin;
 use digest::{Digest, DynDigest};
 use indicatif::ProgressBar;
 use sha2::Sha256;
+use std::{collections::HashMap, path::PathBuf};
 use tokio::{
     fs::File,
     io::{AsyncRead, AsyncWrite},
@@ -78,10 +78,7 @@ impl App {
         }
     }
 
-    pub async fn copy_with_hashing<
-        R: AsyncRead + std::marker::Unpin,
-        W: AsyncWrite + std::marker::Unpin,
-    >(
+    pub async fn copy_with_hashing<R: AsyncRead + Unpin, W: AsyncWrite + Unpin>(
         source: &mut R,
         dest: &mut W,
         mut digester: Box<dyn DynDigest>,

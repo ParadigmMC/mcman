@@ -5,6 +5,7 @@ use indicatif::ProgressBar;
 use tempfile::Builder;
 
 use crate::{app::App, interop::mrpack::MRPackReader, model::Downloadable};
+use std::fs::File;
 
 #[derive(clap::Args, Default)]
 pub struct Args {
@@ -19,7 +20,7 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
     let tmp_dir = Builder::new().prefix("mcman-mrpack-import").tempdir()?;
 
     let f = if Path::new(&src).exists() {
-        std::fs::File::open(&src)?
+        File::open(&src)?
     } else {
         let dl = if src.starts_with("http") && src.ends_with(".mrpack") {
             Downloadable::Url {
@@ -38,7 +39,7 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
             )
             .await?;
         let path = tmp_dir.path().join(resolved.filename);
-        std::fs::File::open(path)?
+        File::open(path)?
     };
 
     if !args.keep {

@@ -59,6 +59,9 @@ Submit a PR or open an issue if you have a mcman-server repository that we can a
 > "makes even oracle linux usable"
 - PureComedi
 
+> "it's ok"
+- null
+
 > "I'm technically a contributor"
 - Trash Panda
 
