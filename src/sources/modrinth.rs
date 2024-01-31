@@ -1,4 +1,4 @@
-use std::{collections::HashMap, time::Duration};
+use std::{borrow::Cow, collections::HashMap, time::Duration};
 
 use anyhow::{anyhow, Result};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -299,7 +299,7 @@ impl<'a> ModrinthAPI<'a> {
             url: file.url,
             filename: file.filename,
             cache: CacheStrategy::File {
-                namespace: "modrinth",
+                namespace: Cow::Borrowed("modrinth"),
                 path: cached_file_path,
             },
             size: Some(file.size),

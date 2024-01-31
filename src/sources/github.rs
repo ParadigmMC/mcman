@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     collections::HashMap,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -234,7 +235,7 @@ impl<'a> GithubAPI<'a> {
             ),
             filename: asset.name,
             cache: CacheStrategy::File {
-                namespace: CACHE_DIR,
+                namespace: Cow::Borrowed(CACHE_DIR),
                 path: cached_file_path,
             },
             size: Some(asset.size),

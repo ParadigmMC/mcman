@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 use anyhow::{anyhow, Result};
 use mcapi::papermc::{PaperBuildsResponse, PaperProject};
@@ -96,7 +96,7 @@ impl<'a> PaperMCAPI<'a> {
             ),
             filename: download.name.clone(),
             cache: CacheStrategy::File {
-                namespace: CACHE_DIR,
+                namespace: Cow::Borrowed(CACHE_DIR),
                 path: cached_file_path,
             },
             size: None,

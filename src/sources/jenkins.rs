@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
@@ -152,7 +152,7 @@ impl<'a> JenkinsAPI<'a> {
             url: format!("{}artifact/{}", build.url, artifact.relative_path,),
             filename: artifact.file_name.clone(),
             cache: CacheStrategy::File {
-                namespace: "jenkins",
+                namespace: Cow::Borrowed("jenkins"),
                 path: cached_file_path,
             },
             size: None,

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -22,7 +22,7 @@ pub struct ResolvedFile {
 #[serde(tag = "type")]
 pub enum CacheStrategy {
     File {
-        namespace: &'static str,
+        namespace: Cow<'static, str>,
         path: String,
     },
     Indexed {
