@@ -31,12 +31,11 @@ impl<'a> BuildContext<'a> {
                     args.push(&loader);
                 }
 
-                args.push("--install-dir=.");
-                args.push("--download-server");
+                args.extend(["--install-dir=.", "--download-server"]);
 
                 InstallMethod::Installer {
-                    name: "Quilt Server Installer".to_owned(),
-                    label: "qsi".to_owned(),
+                    name: "Quilt Server Installer",
+                    label: "qsi",
                     args: args.into_iter().map(ToOwned::to_owned).collect(),
                     rename_from: Some("quilt-server-launch.jar".to_owned()),
                     jar_name: format!(
@@ -48,8 +47,8 @@ impl<'a> BuildContext<'a> {
                 }
             }
             ServerType::NeoForge { loader } => InstallMethod::Installer {
-                name: "NeoForged Installer".to_owned(),
-                label: "nfi".to_owned(),
+                name: "NeoForged Installer",
+                label: "nfi",
                 args: vec!["--installServer".to_owned(), ".".to_owned()],
                 rename_from: None,
                 jar_name: format!(
@@ -58,8 +57,8 @@ impl<'a> BuildContext<'a> {
                 ),
             },
             ServerType::Forge { loader } => InstallMethod::Installer {
-                name: "Forge Installer".to_owned(),
-                label: "fi".to_owned(),
+                name: "Forge Installer",
+                label: "fi",
                 args: vec!["--installServer".to_owned(), ".".to_owned()],
                 rename_from: None,
                 jar_name: format!(
@@ -70,7 +69,7 @@ impl<'a> BuildContext<'a> {
             ServerType::BuildTools { args, software } => {
                 let mut buildtools_args = vec![
                     "--compile",
-                    software,
+                    &software,
                     "--compile-if-changed",
                     "--rev",
                     mcver,
@@ -81,8 +80,8 @@ impl<'a> BuildContext<'a> {
                 }
 
                 InstallMethod::Installer {
-                    name: "BuildTools".to_owned(),
-                    label: "bt".to_owned(),
+                    name: "BuildTools",
+                    label: "bt",
                     args: buildtools_args.into_iter().map(ToOwned::to_owned).collect(),
                     rename_from: Some("server.jar".to_owned()),
                     jar_name: format!(
@@ -149,7 +148,7 @@ impl<'a> BuildContext<'a> {
 
                     let java = std::env::var("JAVA_BIN").unwrap_or("java".to_owned());
 
-                    self.execute_child((&java, cmd_args.clone()), &name, &label)
+                    self.execute_child((&java, cmd_args.clone()), name, label)
                         .await
                         .context(format!("Executing command: 'java {}'", cmd_args.join(" ")))
                         .context(format!("Running installer: {name}"))?;

@@ -84,8 +84,8 @@ pub enum ServerType {
 pub enum InstallMethod {
     SingleJar,
     Installer {
-        name: String,
-        label: String,
+        name: &'static str,
+        label: &'static str,
         args: Vec<String>,
         rename_from: Option<String>,
         jar_name: String,
