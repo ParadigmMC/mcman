@@ -92,24 +92,20 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
             todo!("Modpack importing currently unsupported")
         }
         "mod" => {
-            let addon = Downloadable::Modrinth {
+            app.add_addon_inferred(Downloadable::Modrinth {
                 id: project.slug.clone(),
                 version: version.id.clone(),
-            };
-
-            app.add_addon_inferred(&addon)?;
+            })?;
 
             app.save_changes()?;
             app.notify(Prefix::Imported, format!("{} from modrinth", project.title));
             app.refresh_markdown().await?;
         }
         "datapack" => {
-            let dp = Downloadable::Modrinth {
+            app.add_datapack(Downloadable::Modrinth {
                 id: project.slug.clone(),
                 version: version.id.clone(),
-            };
-
-            app.add_datapack(&dp)?;
+            })?;
 
             app.save_changes()?;
             app.refresh_markdown().await?;

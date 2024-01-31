@@ -28,7 +28,7 @@ impl App {
         }
     }
 
-    pub fn add_addon_inferred(&mut self, addon: &Downloadable) -> Result<()> {
+    pub fn add_addon_inferred(&mut self, addon: Downloadable) -> Result<()> {
         let addon_type = match self.server.jar.get_software_type() {
             SoftwareType::Modded => AddonType::Mod,
             SoftwareType::Normal | SoftwareType::Proxy => AddonType::Plugin,
@@ -103,7 +103,7 @@ impl App {
         Ok(world_name)
     }
 
-    pub fn add_datapack(&mut self, dp: &Downloadable) -> Result<()> {
+    pub fn add_datapack(&mut self, dp: Downloadable) -> Result<()> {
         let world_name = self.select_world("Add datapack to...")?;
 
         self.add_datapack_to(&world_name, dp)?;
@@ -111,18 +111,17 @@ impl App {
         Ok(())
     }
 
-    pub fn add_datapack_to(&mut self, world: &str, dp: &Downloadable) -> Result<()> {
+    pub fn add_datapack_to(&mut self, world: &str, dp: Downloadable) -> Result<()> {
+        let dp_name = dp.to_short_string();
+
         self.server
             .worlds
             .get_mut(world)
             .ok_or(anyhow!("World entry did not exist"))?
             .datapacks
-            .push(dp.clone());
+            .push(dp);
 
-        self.notify(
-            Prefix::Imported,
-            format!("datapack {} to {world}", dp.to_short_string()),
-        );
+        self.notify(Prefix::Imported, format!("datapack {dp_name} to {world}"));
 
         Ok(())
     }

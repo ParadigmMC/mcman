@@ -14,11 +14,12 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
     };
 
     let addon = app.dl_from_string(&urlstr).await?;
+    let addon_name = addon.to_short_string();
 
-    app.add_addon_inferred(&addon)?;
+    app.add_addon_inferred(addon)?;
 
     app.save_changes()?;
-    app.notify(Prefix::Imported, addon.to_short_string());
+    app.notify(Prefix::Imported, addon_name);
     app.refresh_markdown().await?;
 
     Ok(())

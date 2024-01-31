@@ -95,10 +95,10 @@ impl<'a> PackwizInterop<'a> {
                     let modpw: Mod = source.parse_toml(&file.file).await?;
 
                     let dl = self.dl_from_mod(&modpw).await?;
+                    let dl_name = dl.to_short_string();
 
-                    self.0.add_addon(AddonType::Mod, &dl)?;
-
-                    self.0.notify(Prefix::Imported, dl.to_short_string());
+                    self.0.add_addon(AddonType::Mod, dl)?;
+                    self.0.notify(Prefix::Imported, dl_name);
                 } else {
                     // TODO: ???
                     self.0.warn(format!(
