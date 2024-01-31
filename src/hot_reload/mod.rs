@@ -178,6 +178,7 @@ impl<'a> DevSession<'a> {
                             is_stopping = true;
                             let mut lock = state.lock().unwrap();
                             *lock = State::Stopping;
+                            drop(lock);
                             if let Some(ref mut child) = &mut child {
                                 let should_kill = tokio::select! {
                                     () = async {
@@ -224,6 +225,7 @@ impl<'a> DevSession<'a> {
                             self.builder.app.log_dev("Building...");
                             let mut lock = state.lock().unwrap();
                             *lock = State::Building;
+                            drop(lock);
                             self.jar_name = Some(self.builder.build_all().await?);
                         }
                         Command::Bootstrap(rel_path) => {
@@ -252,6 +254,7 @@ impl<'a> DevSession<'a> {
 
                             let mut lock = state.lock().unwrap();
                             *lock = State::Online;
+                            drop(lock);
 
                             self.builder.app.success("Test passed!");
 
@@ -267,6 +270,7 @@ impl<'a> DevSession<'a> {
 
                             let mut lock = state.lock().unwrap();
                             *lock = State::Stopping;
+                            drop(lock);
 
                             tx.send(Command::WaitUntilExit).await?;
                             tx.send(Command::EndSession).await?;
