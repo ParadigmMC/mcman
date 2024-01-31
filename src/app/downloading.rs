@@ -64,13 +64,13 @@ impl App {
     }
 
     pub fn create_hasher(name: &str) -> Box<dyn DynDigest> {
-        Box::new(match name {
-            "sha256" => <Sha256 as Digest>::new(),
-            "sha512" => <Sha512 as Digest>::new(),
-            "sha1" => <Sha1 as Digest>::new(),
-            "md5" => <Md5 as Digest>::new(),
+        match name {
+            "sha256" => Box::new(<Sha256 as Digest>::new()),
+            "sha512" => Box::new(<Sha512 as Digest>::new()),
+            "sha1" => Box::new(<Sha1 as Digest>::new()),
+            "md5" => Box::new(<Md5 as Digest>::new()),
             _ => unreachable!(),
-        })
+        }
     }
 
     #[allow(clippy::too_many_lines)]

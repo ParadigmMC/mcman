@@ -310,7 +310,7 @@ impl<'a> MarkdownAPI<'a> {
                         "Name".to_owned(),
                         format!(
                             "[{}](https://hangar.papermc.io/{})",
-                            proj.name, proj.namespace
+                            proj.name, proj.namespace.to_string()
                         ),
                     ),
                     ("Description".to_owned(), sanitize(&proj.description)?),
