@@ -13,8 +13,8 @@ pub struct RunArgs {
     test: bool,
 }
 
-impl<'a> RunArgs {
-    pub fn create_dev_session(&self, app: &'a App) -> Result<DevSession<'a>> {
+impl RunArgs {
+    pub fn create_dev_session<'a>(self, app: &'a App) -> Result<DevSession<'a>> {
         let builder = self.build_args.create_build_context(app)?;
 
         Ok(DevSession {
