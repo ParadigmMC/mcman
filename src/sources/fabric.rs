@@ -59,7 +59,7 @@ impl<'a> FabricAPI<'a> {
             ),
             filename: cached_file_path.clone(),
             cache: CacheStrategy::File {
-                namespace: String::from("fabric"),
+                namespace: "fabric",
                 path: cached_file_path,
             },
             size: None,

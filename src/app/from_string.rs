@@ -98,7 +98,7 @@ impl App {
                                     if v.version_number == v.name {
                                         v.version_number.clone()
                                     } else {
-                                        format!("[{}] {}", v.version_number, v.name,)
+                                        format!("[{}] {}", v.version_number, v.name)
                                     },
                                 )
                             })

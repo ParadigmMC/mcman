@@ -234,7 +234,7 @@ impl<'a> GithubAPI<'a> {
             ),
             filename: asset.name,
             cache: CacheStrategy::File {
-                namespace: CACHE_DIR.to_owned(),
+                namespace: CACHE_DIR,
                 path: cached_file_path,
             },
             size: Some(asset.size),

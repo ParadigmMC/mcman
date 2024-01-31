@@ -60,7 +60,7 @@ impl<'a> PurpurAPI<'a> {
             url: format!("{API_URL}/{version}/{}/download", resolved_build.build),
             filename: cached_file_path.clone(),
             cache: CacheStrategy::File {
-                namespace: CACHE_DIR.to_owned(),
+                namespace: CACHE_DIR,
                 path: cached_file_path,
             },
             size: None,

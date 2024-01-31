@@ -22,7 +22,7 @@ pub struct ResolvedFile {
 #[serde(tag = "type")]
 pub enum CacheStrategy {
     File {
-        namespace: String,
+        namespace: &'static str,
         path: String,
     },
     Indexed {

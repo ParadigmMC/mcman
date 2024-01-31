@@ -32,10 +32,10 @@ pub enum AddonType {
 }
 
 impl AddonType {
-    pub fn folder(self) -> String {
+    pub fn folder(self) -> &'static str {
         match self {
-            Self::Mod => String::from("mods"),
-            Self::Plugin => String::from("plugins"),
+            Self::Mod => "mods",
+            Self::Plugin => "plugins",
         }
     }
 }

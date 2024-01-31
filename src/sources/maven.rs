@@ -216,7 +216,7 @@ impl<'a> MavenAPI<'a> {
             url: download_url,
             filename: file,
             cache: CacheStrategy::File {
-                namespace: String::from("maven"),
+                namespace: "maven",
                 path: cached_file_path,
             },
             size: None,

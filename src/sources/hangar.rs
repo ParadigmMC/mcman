@@ -107,7 +107,7 @@ impl<'a> HangarAPI<'a> {
             url: download.get_url(),
             filename: download.get_file_info().name,
             cache: CacheStrategy::File {
-                namespace: String::from("hangar"),
+                namespace: "hangar",
                 path: cached_file_path,
             },
             size: Some(download.get_file_info().size_bytes as u64),

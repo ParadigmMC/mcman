@@ -152,7 +152,7 @@ impl<'a> JenkinsAPI<'a> {
             url: format!("{}artifact/{}", build.url, artifact.relative_path,),
             filename: artifact.file_name.clone(),
             cache: CacheStrategy::File {
-                namespace: String::from("jenkins"),
+                namespace: "jenkins",
                 path: cached_file_path,
             },
             size: None,

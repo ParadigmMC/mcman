@@ -49,7 +49,7 @@ impl<'a> VanillaAPI<'a> {
             url: file.url.clone(),
             filename: cached_file_path.clone(),
             cache: CacheStrategy::File {
-                namespace: CACHE_DIR.to_owned(),
+                namespace: CACHE_DIR,
                 path: cached_file_path,
             },
             size: Some(file.size as u64),

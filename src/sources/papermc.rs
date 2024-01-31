@@ -96,7 +96,7 @@ impl<'a> PaperMCAPI<'a> {
             ),
             filename: download.name.clone(),
             cache: CacheStrategy::File {
-                namespace: CACHE_DIR.to_owned(),
+                namespace: CACHE_DIR,
                 path: cached_file_path,
             },
             size: None,

@@ -151,7 +151,7 @@ impl<'a> CurserinthAPI<'a> {
             url: file.url,
             filename: file.filename,
             cache: CacheStrategy::File {
-                namespace: String::from("curserinth"),
+                namespace: "curserinth",
                 path: cached_file_path,
             },
             size: Some(file.size),

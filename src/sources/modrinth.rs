@@ -299,7 +299,7 @@ impl<'a> ModrinthAPI<'a> {
             url: file.url,
             filename: file.filename,
             cache: CacheStrategy::File {
-                namespace: String::from("modrinth"),
+                namespace: "modrinth",
                 path: cached_file_path,
             },
             size: Some(file.size),

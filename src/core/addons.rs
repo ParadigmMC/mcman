@@ -35,7 +35,7 @@ impl<'a> BuildContext<'a> {
         let pb = self.app.multi_progress.add(pb);
         for addon in server_list.iter().progress_with(pb.clone()) {
             let (_path, resolved) = self
-                .downloadable(addon, &addon_type.folder(), Some(&pb))
+                .downloadable(addon, addon_type.folder(), Some(&pb))
                 .await?;
 
             files_list.insert(resolved.filename.clone());

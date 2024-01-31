@@ -289,10 +289,11 @@ impl<'a> DevSession<'a> {
                     let cmd = line.trim();
 
                     self.builder.app.log_dev(format!("$ {cmd}"));
+
                     if let Some(ref mut stdin) = &mut child_stdin {
                         stdin.write_all(format!("{cmd}\n").as_bytes()).await?;
                     } else {
-                        self.builder.app.log_dev(String::from("Server offline"));
+                        self.builder.app.log_dev("Server offline");
                     }
                 },
                 Ok(Some(status)) = try_wait_child(&mut child) => {
