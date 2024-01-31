@@ -172,7 +172,7 @@ impl<'a> MarkdownAPI<'a> {
 
         map.extend(self.0.server.jar.get_metadata());
 
-        MarkdownTable::from_map(&map)
+        MarkdownTable::from_map(map)
     }
 
     pub fn table_network(&self) -> MarkdownTable {
@@ -235,10 +235,7 @@ impl<'a> MarkdownAPI<'a> {
 
         if let Some(dl) = &world.download {
             let mut map = self.fetch_downloadable_info(dl).await?;
-            map.insert(
-                "Name".to_owned(),
-                format!("**(World Download)** {}", map["Name"]),
-            );
+            map.insert("Name", format!("**(World Download)** {}", map["Name"]));
             table.add_from_map(&map);
         }
 

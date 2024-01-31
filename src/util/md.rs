@@ -1,6 +1,7 @@
 use indexmap::IndexMap;
+
 pub struct MarkdownTable {
-    pub headers: Vec<String>,
+    pub headers: Vec<&'static str>,
     pub rows: Vec<Vec<String>>,
 }
 
@@ -19,7 +20,7 @@ impl MarkdownTable {
         }
     }
 
-    pub fn from_map(map: &IndexMap<&'static str, String>) -> Self {
+    pub fn from_map(map: IndexMap<&'static str, String>) -> Self {
         let mut table = Self::new();
 
         table.add_from_map(map);
@@ -27,21 +28,20 @@ impl MarkdownTable {
         table
     }
 
-    pub fn add_from_map(&mut self, map: &IndexMap<&'static str, String>) -> &mut Self {
+    pub fn add_from_map(&mut self, map: IndexMap<&'static str, String>) -> &mut Self {
         let mut row = vec![];
 
-        for header in &self.headers {
-            row.push(if let Some(value) = map.get(header) {
-                value.clone()
-            } else {
-                String::new()
+        for header in self.headers.iter() {
+            row.push(match map.get(header) {
+                Some(value) => value.clone(),
+                None => String::new(),
             });
         }
 
         let hack = self.headers.clone();
 
         for (k, v) in map.iter().filter(|(k, _)| !hack.contains(k)) {
-            self.headers.push(k.to_string());
+            self.headers.push(k);
             row.push(v.clone());
         }
 
