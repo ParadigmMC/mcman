@@ -1,4 +1,4 @@
-use std::{fmt::Debug, path::PathBuf, time::Duration};
+use std::{borrow::Cow, fmt::Debug, path::PathBuf, time::Duration};
 
 use anyhow::{bail, Context, Result};
 use digest::{Digest, DynDigest};
@@ -144,9 +144,9 @@ impl App {
                 match self.select(
                     &message,
                     &[
-                        SelectItem(0, "Delete folder and download".to_owned()),
-                        SelectItem(1, "Skip file".to_owned()),
-                        SelectItem(2, "Bail".to_owned()),
+                        SelectItem(0, Cow::Borrowed("Delete folder and download")),
+                        SelectItem(1, Cow::Borrowed("Skip file")),
+                        SelectItem(2, Cow::Borrowed("Bail")),
                     ],
                 )? {
                     0 => {

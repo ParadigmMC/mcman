@@ -70,7 +70,7 @@ impl<'a> BuildContext<'a> {
             ServerType::BuildTools { args, software } => {
                 let mut buildtools_args = vec![
                     "--compile",
-                    &software,
+                    software,
                     "--compile-if-changed",
                     "--rev",
                     mcver,

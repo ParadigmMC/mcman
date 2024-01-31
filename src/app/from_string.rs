@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{borrow::Cow, path::Path};
 
 use anyhow::{bail, Context, Result};
 
@@ -95,11 +95,11 @@ impl App {
                             .map(|v| {
                                 SelectItem(
                                     v.clone(),
-                                    if v.version_number == v.name {
+                                    Cow::Owned(if v.version_number == v.name {
                                         v.version_number.clone()
                                     } else {
                                         format!("[{}] {}", v.version_number, v.name)
-                                    },
+                                    }),
                                 )
                             })
                             .collect::<Vec<_>>(),
@@ -131,11 +131,11 @@ impl App {
                             .map(|v| {
                                 SelectItem(
                                     v.clone(),
-                                    if v.version_number == v.name {
+                                    Cow::Owned(if v.version_number == v.name {
                                         v.version_number.clone()
                                     } else {
-                                        format!("[{}] {}", v.version_number, v.name,)
-                                    },
+                                        format!("[{}] {}", v.version_number, v.name)
+                                    }),
                                 )
                             })
                             .collect::<Vec<_>>(),
@@ -170,11 +170,11 @@ impl App {
                             .map(|v| {
                                 SelectItem(
                                     v.clone(),
-                                    if v.version_number == v.name {
+                                    Cow::Owned(if v.version_number == v.name {
                                         v.version_number.clone()
                                     } else {
-                                        format!("[{}] {}", v.version_number, v.name,)
-                                    },
+                                        format!("[{}] {}", v.version_number, v.name)
+                                    }),
                                 )
                             })
                             .collect::<Vec<_>>(),
@@ -212,17 +212,17 @@ impl App {
                             "Select a release",
                             &vec![SelectItem(
                                 "latest".to_owned(),
-                                "Always use latest release".to_owned(),
+                                Cow::Owned("Always use latest release"),
                             )]
                             .into_iter()
                             .chain(releases.iter().map(|r| {
                                 SelectItem(
                                     r.tag_name.clone(),
-                                    if r.tag_name == r.name {
+                                    Cow::Owned(if r.tag_name == r.name {
                                         r.name.clone()
                                     } else {
                                         format!("[{}] {}", r.tag_name, r.name)
-                                    },
+                                    }),
                                 )
                             }))
                             .collect::<Vec<_>>(),
@@ -243,10 +243,10 @@ impl App {
                             "Which asset to use?",
                             &vec![SelectItem(
                                 Some("first".to_owned()),
-                                format!(
+                                Cow::Owned(format!(
                                     "Use the first asset ('{}' for '{}')",
                                     rel.assets[0].name, rel.tag_name
-                                ),
+                                )),
                             )]
                             .into_iter()
                             .chain(
@@ -254,7 +254,7 @@ impl App {
                                     .iter()
                                     .map(|a| SelectItem(Some(a.name.clone()), a.name.clone())),
                             )
-                            .chain(vec![SelectItem(None, "Set manually".to_string())])
+                            .chain(vec![SelectItem(None, Cow::Borrowed("Set manually"))])
                             .collect::<Vec<_>>(),
                         )? {
                             Some(a) => a,
@@ -286,9 +286,9 @@ impl App {
                 let selection = self.select_with_default(
                     urlstr,
                     &[
-                        SelectItem(0, "Add as Custom URL".to_owned()),
-                        SelectItem(1, "Add as Jenkins".to_owned()),
-                        SelectItem(2, "Add as Maven".to_owned()),
+                        SelectItem(0, Cow::Borrowed("Add as Custom URL")),
+                        SelectItem(1, Cow::Borrowed("Add as Jenkins")),
+                        SelectItem(2, Cow::Borrowed("Add as Maven")),
                     ],
                     def,
                 )?;
@@ -445,7 +445,7 @@ impl App {
                             .await?
                             .versions
                         {
-                            versions.push(SelectItem(v.clone(), v.clone()));
+                            versions.push(SelectItem(v.clone(), Cow::Owned(v.clone())));
                         }
 
                         let version = self.select("Which version?", &versions)?;

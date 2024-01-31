@@ -62,7 +62,7 @@ pub enum ServerType {
 
     BuildTools {
         #[serde(default = "spigot")]
-        software: String,
+        software: &'static str,
         #[serde(skip_serializing_if = "Vec::is_empty")]
         #[serde(default = "Vec::new")]
         args: Vec<String>,
@@ -200,8 +200,8 @@ fn latest() -> String {
     "latest".to_owned()
 }
 
-fn spigot() -> String {
-    "spigot".to_owned()
+const fn spigot() -> &'static str {
+    "spigot"
 }
 
 static BUNGEECORD_JENKINS: &str = "https://ci.md-5.net";

@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{borrow::Cow, cmp::Ordering};
 
 use anyhow::Result;
 use regex::Regex;
@@ -7,11 +7,11 @@ pub mod env;
 pub mod maven_import;
 pub mod md;
 
-pub struct SelectItem<T>(pub T, pub String);
+pub struct SelectItem<T>(pub T, pub Cow<'static, str>);
 
 impl<T> ToString for SelectItem<T> {
     fn to_string(&self) -> String {
-        self.1.clone()
+        self.1.into_owned()
     }
 }
 

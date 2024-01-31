@@ -2,20 +2,18 @@ use console::style;
 use dialoguer::{theme::ColorfulTheme, Input};
 use indicatif::ProgressBar;
 use rpackwiz::model::Pack;
-use std::ffi::OsStr;
-use std::fs::File;
-use std::io::Write;
-use std::path::Path;
+use std::{borrow::Cow, ffi::OsStr, fs::File, io::Write, path::Path};
 use tempfile::Builder;
 
-use crate::app::BaseApp;
-use crate::interop::mrpack::MRPackReader;
-use crate::interop::packwiz::FileProvider;
-use crate::model::Server;
-use crate::model::{Network, ServerEntry, ServerType, SoftwareType};
-use crate::util::env::{get_docker_version, write_dockerfile, write_dockerignore, write_git};
-use crate::util::SelectItem;
-use anyhow::{bail, Context, Result};
+use crate::{
+    app::BaseApp,
+    interop::{mrpack::MRPackReader, packwiz::FileProvider},
+    model::{Network, Server, ServerEntry, ServerType, SoftwareType},
+    util::{
+        env::{get_docker_version, write_dockerfile, write_dockerignore, write_git},
+        SelectItem,
+    },
+};
 
 #[derive(clap::Args)]
 pub struct Args {
@@ -119,15 +117,15 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                 &[
                     SelectItem(
                         SoftwareType::Normal,
-                        "Normal Server (vanilla, spigot, paper etc.)".to_owned(),
+                        Cow::Borrowed("Normal Server (vanilla, spigot, paper etc.)"),
                     ),
                     SelectItem(
                         SoftwareType::Modded,
-                        "Modded Server (forge, fabric, quilt etc.)".to_owned(),
+                        Cow::Borrowed("Modded Server (forge, fabric, quilt etc.)"),
                     ),
                     SelectItem(
                         SoftwareType::Proxy,
-                        "Proxy Server (velocity, bungeecord, waterfall etc.)".to_owned(),
+                        Cow::Borrowed("Proxy Server (velocity, bungeecord, waterfall etc.)"),
                     ),
                 ],
             )?;
