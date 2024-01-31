@@ -86,7 +86,7 @@ impl<'a> MarkdownAPI<'a> {
 
             let mut content = tokio::fs::read_to_string(&path).await?;
 
-            for MarkdownTemplate { id, table } in &templates {
+            for MarkdownTemplate { id, table } in templates.iter() {
                 let re = Regex::new(&format!(
                     r"(<!--start:mcman-{id}-->)([\w\W]*)(<!--end:mcman-{id}-->)"
                 ))
@@ -179,7 +179,7 @@ impl<'a> MarkdownAPI<'a> {
         let mut table = MarkdownTable::new();
 
         if let Some(nw) = &self.0.network {
-            for (name, serv) in &nw.servers {
+            for (name, serv) in nw.servers.iter() {
                 let mut map = IndexMap::new();
 
                 map.insert("Name", format!("[`{name}`](./servers/{name}/)"));

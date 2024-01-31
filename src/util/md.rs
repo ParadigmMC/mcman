@@ -54,13 +54,9 @@ impl MarkdownTable {
         let mut col_lengths = vec![];
 
         for idx in 0..self.headers.len() {
-            let mut li = vec![];
+            let mut li = vec![self.headers[idx].len()];
 
-            li.push(self.headers[idx].len());
-
-            for row in &self.rows {
-                li.push(row[idx].len());
-            }
+            li.extend(self.rows.iter().map(|idx| row[idx].len()));
 
             col_lengths.push(li.into_iter().max().expect("col lengths iter max none"));
         }
@@ -77,24 +73,22 @@ impl MarkdownTable {
         });
 
         lines.push({
-            let mut cols = vec![];
-            for length in &col_lengths {
-                cols.push(format!("{:-^width$}", "", width = length));
-            }
+            let cols = col_lengths
+                .iter()
+                .map(|length| format!("{:-^width$}", "", width = length))
+                .collect::<Vec<_>>();
 
             "| ".to_owned() + &cols.join(" | ") + " |"
         });
 
-        for row in &self.rows {
-            lines.push({
-                let mut cols = vec![];
-                for idx in 0..row.len() {
-                    cols.push(format!("{:width$}", row[idx], width = col_lengths[idx]));
-                }
+        lines.extend(self.rows.iter().map(|row| {
+            let cols = (0..row.len())
+                .into_iter()
+                .map(|idx| format!("{:width$}", row[idx], width = col_lengths[idx]))
+                .collect::<Vec<_>>();
 
-                "| ".to_owned() + &cols.join(" | ") + " |"
-            });
-        }
+            "| ".to_owned() + &cols.join(" | ") + " |"
+        }));
 
         lines.join("\n")
     }
@@ -103,13 +97,13 @@ impl MarkdownTable {
         let mut col_lengths = vec![];
 
         for idx in 0..self.headers.len() {
-            let mut li = vec![];
+            let mut li = vec![self.headers[idx].len()];
 
-            li.push(self.headers[idx].len());
-
-            for row in &self.rows {
-                li.push(row.get(idx).unwrap_or(&String::new()).len());
-            }
+            li.extend(
+                self.rows
+                    .iter()
+                    .map(|idx| row.get(idx).unwrap_or_default().len()),
+            );
 
             col_lengths.push(li.into_iter().max().expect("col lengths iter max none"));
         }
@@ -127,25 +121,25 @@ impl MarkdownTable {
             });
 
             lines.push({
-                let mut cols = vec![];
-                for length in &col_lengths {
-                    cols.push(format!("{:-^width$}", "", width = length));
-                }
+                let cols = col_lengths
+                    .iter()
+                    .map(|length| format!("{:-^width$}", "", width = length))
+                    .collect::<Vec<_>>();
 
                 cols.join(" ")
             });
         }
 
-        for row in &self.rows {
-            lines.push({
-                let mut cols = vec![];
-                for (idx, width) in col_lengths.iter().enumerate().take(row.len()) {
-                    cols.push(format!("{:width$}", row.get(idx).unwrap_or(&String::new())));
-                }
+        lines.extend(self.rows.iter().map(|row| {
+            let cols = col_lengths
+                .iter()
+                .enumerate()
+                .take(row.len())
+                .map(|(idx, width)| format!("{:width$}", row.get(idx).unwrap_or_default()))
+                .collect::<Vec<_>>();
 
-                cols.join(" ")
-            });
-        }
+            cols.join(" ")
+        }));
 
         lines
     }

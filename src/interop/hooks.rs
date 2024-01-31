@@ -69,7 +69,7 @@ impl<'a> HooksAPI<'a> {
                     .current_dir(&self.0.server.path)
                     .stdout(Stdio::piped());
 
-                for (k, v) in &data {
+                for (k, v) in data.iter() {
                     cmd.env(k, v);
                 }
 

@@ -108,7 +108,7 @@ impl ServerLauncher {
             args.push(String::from("-Dcom.mojang.eula.agree=true"));
         }
 
-        for (key, value) in &self.properties {
+        for (key, value) in self.properties.iter() {
             args.push(format!(
                 "-D{}={}",
                 key,
