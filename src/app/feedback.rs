@@ -111,6 +111,10 @@ impl App {
         self.println(format!("  {message}"));
     }
 
+    pub fn log_dev<S: std::fmt::Display>(&self, message: S) {
+        self.println(format!("🛈 {message}"));
+    }
+
     pub fn notify<S: std::fmt::Display>(&self, prefix: Prefix, message: S) {
         self.println(format!("{} {message}", prefix.styled()));
     }
@@ -119,6 +123,7 @@ impl App {
         self.notify(Prefix::Warning, message);
     }
 
+    #[allow(dead_code)]
     pub fn error<S: std::fmt::Display>(&self, message: S) {
         self.notify(Prefix::Error, message);
     }

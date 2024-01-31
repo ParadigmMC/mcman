@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     path::PathBuf,
     process::{ExitStatus, Stdio},
     sync::{Arc, Mutex},
@@ -9,10 +10,10 @@ use anyhow::{anyhow, bail, Context, Result};
 use console::style;
 use dialoguer::theme::ColorfulTheme;
 use indicatif::ProgressBar;
-use notify_debouncer_mini::{
+use notify_debouncer_full::{
     new_debouncer,
-    notify::{RecommendedWatcher, RecursiveMode},
-    DebounceEventResult, Debouncer,
+    notify::{RecommendedWatcher, RecursiveMode, Watcher},
+    DebounceEventResult, Debouncer, FileIdMap,
 };
 use pathdiff::diff_paths;
 use tokio::{
@@ -38,12 +39,22 @@ pub struct DevSession<'a> {
     pub test_mode: bool,
 }
 
+#[derive(Debug)]
+pub enum State {
+    Building,
+    Starting,
+    Online,
+    Stopping,
+    Stopped,
+}
+
 #[allow(clippy::enum_variant_names)]
 pub enum Command {
     Start,
     EndSession,
     Rebuild,
     SendCommand(String),
+    Log(String),
     WaitUntilExit,
     Bootstrap(PathBuf),
 }
@@ -133,6 +144,8 @@ impl<'a> DevSession<'a> {
         let mut test_result = TestResult::Failed;
         let mut exit_status = None;
 
+        let state = Arc::new(Mutex::new(State::Stopped));
+
         let mut stdin_lines = BufReader::new(tokio::io::stdin()).lines();
 
         'l: loop {
@@ -141,22 +154,30 @@ impl<'a> DevSession<'a> {
                     match cmd {
                         Command::Start => {
                             self.builder.app.ci("::group::Starting server process");
-                            self.builder.app.info("Starting server process...");
+                            self.builder.app.log_dev("Starting server process...");
                             if child.is_none() {
                                 let mut spawned_child = self.spawn_child().await?;
                                 stdout_lines = Some(tokio::io::BufReader::new(spawned_child.stdout.take().expect("child stdout None")).lines());
                                 child_stdin = Some(spawned_child.stdin.take().expect("child stdin None"));
                                 child = Some(spawned_child);
+                                let mut lock = state.lock().unwrap();
+                                *lock = State::Starting;
                             }
                         }
                         Command::SendCommand(command) => {
+                            self.builder.app.log_dev(format!("$ {}", command.trim()));
                             if let Some(ref mut stdin) = &mut child_stdin {
                                 stdin.write_all(command.as_bytes()).await?;
                             }
                         }
+                        Command::Log(message) => {
+                            self.builder.app.log_dev(message);
+                        }
                         Command::WaitUntilExit => {
-                            self.builder.app.info("Waiting for process exit...");
+                            self.builder.app.log_dev("Waiting for process exit...");
                             is_stopping = true;
+                            let mut lock = state.lock().unwrap();
+                            *lock = State::Stopping;
                             if let Some(ref mut child) = &mut child {
                                 let should_kill = tokio::select! {
                                     () = async {
@@ -197,16 +218,16 @@ impl<'a> DevSession<'a> {
                             is_stopping = false;
                             child = None;
                             stdout_lines = None;
-                            self.builder.app.info("Server process ended");
+                            self.builder.app.log_dev("Server process ended");
                         }
                         Command::Rebuild => {
-                            self.builder.app.info("Building...");
+                            self.builder.app.log_dev("Building...");
+                            let mut lock = state.lock().unwrap();
+                            *lock = State::Building;
                             self.jar_name = Some(self.builder.build_all().await?);
                         }
-                        Command::Bootstrap(path) => {
-                            let rel_path = diff_paths(&path, self.builder.app.server.path.join("config"))
-                                .expect("Cannot diff paths");
-                            self.builder.app.info(format!("Bootstrapping: {}", rel_path.to_string_lossy().trim()));
+                        Command::Bootstrap(rel_path) => {
+                            //self.builder.app.log_dev(format!("Bootstrapping: {}", rel_path.to_string_lossy().trim()));
                             if let Err(e) = self.builder.bootstrap_file(&rel_path, None).await {
                                 self.builder.app.warn(format!("Error while bootstrapping:
                                 - Path: {}
@@ -214,7 +235,7 @@ impl<'a> DevSession<'a> {
                             }
                         }
                         Command::EndSession => {
-                            self.builder.app.info("Ending session...");
+                            self.builder.app.log_dev("Ending session...");
                             self.builder.app.ci("::endgroup::");
                             break 'l;
                         }
@@ -229,6 +250,9 @@ impl<'a> DevSession<'a> {
                         if s.contains(&self.builder.app.server.options.success_line) /* && s.ends_with("For help, type \"help\"") */ {
                             test_result = TestResult::Success;
 
+                            let mut lock = state.lock().unwrap();
+                            *lock = State::Online;
+
                             self.builder.app.success("Test passed!");
 
                             tx.send(Command::SendCommand(format!(
@@ -240,6 +264,9 @@ impl<'a> DevSession<'a> {
                         } else if s.contains(LINE_CRASHED) || s == "---- end of report ----" {
                             self.builder.app.warn("Server crashed!");
                             test_result = TestResult::Crashed;
+
+                            let mut lock = state.lock().unwrap();
+                            *lock = State::Stopping;
 
                             tx.send(Command::WaitUntilExit).await?;
                             tx.send(Command::EndSession).await?;
@@ -256,19 +283,22 @@ impl<'a> DevSession<'a> {
                 Ok(Some(line)) = stdin_lines.next_line() => {
                     let cmd = line.trim();
 
-                    self.builder.app.info(format!("Sending command: {cmd}"));
+                    self.builder.app.log_dev(format!("$ {cmd}"));
                     if let Some(ref mut stdin) = &mut child_stdin {
                         stdin.write_all(format!("{cmd}\n").as_bytes()).await?;
+                    } else {
+                        self.builder.app.log_dev(String::from("Server offline"));
                     }
                 },
                 Ok(Some(status)) = try_wait_child(&mut child) => {
                     exit_status = Some(status);
                     self.builder.app.ci("::endgroup::");
-                    self.builder.app.info("Server process exited");
+                    self.builder.app.log_dev("Server process exited");
 
                     is_stopping = false;
                     child = None;
                     stdout_lines = None;
+                    child_stdin = None;
 
                     if self.test_mode {
                         tx.send(Command::EndSession).await?;
@@ -276,11 +306,11 @@ impl<'a> DevSession<'a> {
                 },
                 _ = tokio::signal::ctrl_c() => {
                     if is_session_ending {
-                        self.builder.app.info("Force-stopping development session...");
+                        self.builder.app.log_dev("Force-stopping development session...");
                         break 'l;
                     } else if !is_stopping {
                         is_session_ending = true;
-                        self.builder.app.info("Stopping development session...");
+                        self.builder.app.log_dev("Stopping development session...");
 
                         tx.send(Command::SendCommand("stop\nend\n".to_owned())).await?;
                         tx.send(Command::WaitUntilExit).await?;
@@ -414,21 +444,26 @@ impl<'a> DevSession<'a> {
 
     pub fn create_hotreload_watcher(
         config: Arc<Mutex<HotReloadConfig>>,
-    ) -> Result<Debouncer<RecommendedWatcher>> {
+        tx: mpsc::Sender<Command>,
+    ) -> Result<Debouncer<RecommendedWatcher, FileIdMap>> {
         Ok(new_debouncer(
             Duration::from_secs(1),
+            None,
             move |e: DebounceEventResult| {
                 if let Ok(_e) = e {
                     let mut guard = config.lock().unwrap();
 
                     match HotReloadConfig::load_from(&guard.path) {
                         Ok(updated) => {
-                            eprintln!("Updated hotreload.toml :3");
+                            tx.blocking_send(Command::Log(String::from("Reloaded hotreload.toml")))
+                                .unwrap();
                             *guard = updated;
                         }
                         Err(e) => {
-                            eprintln!("hotreload.toml error: {e}");
-                            eprintln!("cannot update hotreload.toml");
+                            tx.blocking_send(Command::Log(format!(
+                                "Error reloading hotreload.toml: {e}"
+                            )))
+                            .unwrap();
                         }
                     }
                 }
@@ -439,25 +474,32 @@ impl<'a> DevSession<'a> {
     pub fn create_config_watcher(
         config: Arc<Mutex<HotReloadConfig>>,
         tx: mpsc::Sender<Command>,
-    ) -> Result<Debouncer<RecommendedWatcher>> {
+        base: PathBuf,
+    ) -> Result<Debouncer<RecommendedWatcher, FileIdMap>> {
         Ok(new_debouncer(
             Duration::from_secs(1),
+            None,
             move |e: DebounceEventResult| {
                 if let Ok(e) = e {
-                    for e in e {
-                        let path = e.path;
-
+                    for path in e
+                        .into_iter()
+                        .flat_map(|e| e.paths.clone())
+                        .collect::<HashSet<_>>()
+                    {
                         if path.is_dir() || !path.exists() {
                             continue;
                         }
 
-                        tx.blocking_send(Command::Bootstrap(path.clone())).unwrap();
+                        let rel_path = diff_paths(&path, &base).expect("Cannot diff paths");
+
+                        tx.blocking_send(Command::Bootstrap(rel_path.clone()))
+                            .unwrap();
 
                         let guard = config.lock().unwrap();
                         let Some(file) = guard
                             .files
                             .iter()
-                            .find(|f| f.path.matches_path(&path))
+                            .find(|f| f.path.matches_path(&rel_path))
                             .cloned()
                         else {
                             continue;
@@ -491,19 +533,21 @@ impl<'a> DevSession<'a> {
 
     pub fn create_servertoml_watcher(
         tx: mpsc::Sender<Command>,
-    ) -> Result<Debouncer<RecommendedWatcher>> {
+    ) -> Result<Debouncer<RecommendedWatcher, FileIdMap>> {
         Ok(new_debouncer(
             Duration::from_secs(1),
+            None,
             move |e: DebounceEventResult| {
                 if let Ok(e) = e {
-                    for _e in e {
-                        tx.blocking_send(Command::SendCommand("stop\nend".to_owned()))
-                            .expect("tx send err");
-                        tx.blocking_send(Command::WaitUntilExit)
-                            .expect("tx send err");
-                        tx.blocking_send(Command::Rebuild).expect("tx send err");
-                        tx.blocking_send(Command::Start).expect("tx send err");
+                    if !e.iter().any(|e| e.kind.is_modify()) {
+                        return;
                     }
+                    tx.blocking_send(Command::SendCommand("stop\nend".to_owned()))
+                        .expect("tx send err");
+                    tx.blocking_send(Command::WaitUntilExit)
+                        .expect("tx send err");
+                    tx.blocking_send(Command::Rebuild).expect("tx send err");
+                    tx.blocking_send(Command::Start).expect("tx send err");
                 }
             },
         )?)
@@ -512,11 +556,18 @@ impl<'a> DevSession<'a> {
     pub async fn start(self) -> Result<()> {
         let (tx, rx) = mpsc::channel(32);
 
-        if let Some(cfg_mutex) = self.hot_reload.clone() {
-            let mut config_watcher = Self::create_config_watcher(cfg_mutex.clone(), tx.clone())?;
-            let mut hotreload_watcher = Self::create_hotreload_watcher(cfg_mutex.clone())?;
-            let mut servertoml_watcher = Self::create_servertoml_watcher(tx.clone())?;
+        let cfg_mutex_w = self.hot_reload.clone().unwrap_or_default();
 
+        let mut config_watcher = Self::create_config_watcher(
+            cfg_mutex_w.clone(),
+            tx.clone(),
+            self.builder.app.server.path.join("config"),
+        )?;
+        let mut hotreload_watcher =
+            Self::create_hotreload_watcher(cfg_mutex_w.clone(), tx.clone())?;
+        let mut servertoml_watcher = Self::create_servertoml_watcher(tx.clone())?;
+
+        if self.hot_reload.is_some() {
             config_watcher.watcher().watch(
                 self.builder.app.server.path.join("config").as_path(),
                 RecursiveMode::Recursive,

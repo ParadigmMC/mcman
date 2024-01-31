@@ -128,9 +128,11 @@ impl<'a> MRPackInterop<'a> {
             .multi_progress
             .insert_after(
                 &progress_bar,
-                ProgressBar::new(self.0.server.mods.len() as u64).with_style(ProgressStyle::with_template(
-                    "{prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}",
-                )?),
+                ProgressBar::new(self.0.server.mods.len() as u64).with_style(
+                    ProgressStyle::with_template(
+                        "{prefix:.blue.bold} {msg} [{wide_bar:.cyan/blue}] {pos}/{len}",
+                    )?,
+                ),
             )
             .with_prefix("Mod");
         for server_mod in self.0.server.mods.iter().progress_with(pb.clone()) {

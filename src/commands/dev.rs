@@ -46,5 +46,7 @@ pub async fn run(app: App, args: DevArgs) -> Result<()> {
     let dev_session = args.create_dev_session(&app)?;
     dev_session.start().await?;
 
+    println!();
+
     Ok(())
 }

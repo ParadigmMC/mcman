@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     path::{Path, PathBuf},
     time::{Duration, SystemTime},
 };
@@ -29,12 +28,12 @@ impl<'a> BuildContext<'a> {
         );
         pb.enable_steady_tick(Duration::from_millis(250));
 
-        let lockfile_entries = self
-            .lockfile
-            .files
-            .iter()
-            .map(|e| (e.path.clone(), e.date))
-            .collect::<HashMap<_, _>>();
+        /* let lockfile_entries = self
+        .lockfile
+        .files
+        .iter()
+        .map(|e| (e.path.clone(), e.date))
+        .collect::<HashMap<_, _>>(); */
 
         for entry in WalkDir::new(self.app.server.path.join("config")) {
             let entry = entry.map_err(|e| {
@@ -54,15 +53,18 @@ impl<'a> BuildContext<'a> {
 
             pb.set_message(diffed_paths.to_string_lossy().to_string());
 
-            self.bootstrap_file(&diffed_paths, lockfile_entries.get(&diffed_paths))
-                .await
-                .context(format!(
-                    "Bootstrapping file:
+            self.bootstrap_file(
+                &diffed_paths,
+                None, /* lockfile_entries.get(&diffed_paths) */
+            )
+            .await
+            .context(format!(
+                "Bootstrapping file:
                 - Entry: {}
                 - Relative: {}",
-                    entry.path().display(),
-                    diffed_paths.display()
-                ))?;
+                entry.path().display(),
+                diffed_paths.display()
+            ))?;
         }
 
         pb.disable_steady_tick();

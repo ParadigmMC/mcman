@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     fs::{read_to_string, File},
     io::Write,
     path::{Path, PathBuf},
@@ -20,6 +21,9 @@ pub struct Lockfile {
 
     pub plugins: Vec<(Downloadable, ResolvedFile)>,
     pub mods: Vec<(Downloadable, ResolvedFile)>,
+
+    pub server_vars: HashMap<String, String>,
+    pub nw_vars: HashMap<String, String>,
 
     pub files: Vec<BootstrappedFile>,
 }
@@ -65,6 +69,8 @@ impl Default for Lockfile {
             plugins: vec![],
             mods: vec![],
             files: vec![],
+            server_vars: HashMap::default(),
+            nw_vars: HashMap::default(),
         }
     }
 }

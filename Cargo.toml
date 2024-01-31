@@ -6,7 +6,7 @@ rust-version = "1.75"
 repository = "https://github.com/ParadigmMC/mcman"
 homepage = "https://paradigmmc.github.io/mcman/"
 authors = ["ParadigmMC"]
-license = "gpl"
+license = "gpl-3"
 description = "Powerful Minecraft Server Manager CLI"
 documentation = "https://paradigmmc.github.io/mcman/"
 keywords = [
@@ -42,7 +42,7 @@ indexmap = "2.1"
 indicatif = "0.17"
 mcapi = { git = "https://github.com/ParadigmMC/mcapi.git" }
 md-5 = "0.10"
-notify-debouncer-mini = { version = "0.4" }
+notify-debouncer-full = { version = "0.3" }
 opener = "0.6"
 pathdiff = { git = "https://github.com/Manishearth/pathdiff.git" }
 rpackwiz = { git = "https://github.com/vgskye/rpackwiz.git" }
