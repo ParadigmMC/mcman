@@ -17,20 +17,17 @@ pub struct BuildArgs {
     force: bool,
 }
 
-impl<'a> BuildArgs {
-    pub fn create_build_context(&self, app: &'a App) -> Result<BuildContext<'a>> {
+impl BuildArgs {
+    pub fn create_build_context<'a>(self, app: &'a App) -> Result<BuildContext<'a>> {
         let default_output = app.server.path.join("server");
-        let output_dir = self.output.clone().unwrap_or(default_output);
-
-        let force = self.force;
-        let skip_stages = self.skip.clone();
+        let output_dir = self.output.unwrap_or(default_output);
 
         std::fs::create_dir_all(&output_dir).context("Failed to create output directory")?;
 
         Ok(BuildContext {
             app,
-            force,
-            skip_stages,
+            force: self.force,
+            skip_stages: self.skip,
             output_dir,
             lockfile: Lockfile::default(),
             new_lockfile: Lockfile::default(),

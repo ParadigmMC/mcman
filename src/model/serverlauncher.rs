@@ -92,16 +92,15 @@ impl ServerLauncher {
     }
 
     pub fn get_arguments(&self, startup: &StartupMethod, platform: &str) -> Vec<String> {
-        let mut args = vec![];
-
-        for arg in self.jvm_args.split_whitespace() {
-            args.push(arg.to_owned());
-        }
+        let mut args = self
+            .jvm_args
+            .split_whitespace()
+            .map(|x| x.to_owned())
+            .collect::<Vec<_>>();
 
         if std::env::var("MC_MEMORY").is_ok() || !self.memory.is_empty() {
             let m = std::env::var("MC_MEMORY").unwrap_or(self.memory.clone());
-            args.push(format!("-Xms{m}"));
-            args.push(format!("-Xmx{m}"));
+            args.extend([format!("-Xms{m}"), format!("-Xmx{m}")]);
         }
 
         args.append(&mut self.preset_flags.get_flags());
@@ -122,29 +121,20 @@ impl ServerLauncher {
             ));
         }
 
-        match startup.clone() {
-            StartupMethod::Jar(jar) => {
-                args.push(String::from("-jar"));
-                args.push(jar);
-            }
-            StartupMethod::Custom { linux, windows } => {
-                for item in match platform {
-                    "linux" => linux,
-                    "windows" => windows,
-                    _ => vec![],
-                } {
-                    args.push(item);
-                }
-            }
-        }
+        args.extend(match startup.clone() {
+            StartupMethod::Jar(jar) => vec![String::from("-jar"), jar],
+            StartupMethod::Custom { linux, windows } => match platform {
+                "linux" => linux,
+                "windows" => windows,
+                _ => vec![],
+            },
+        });
 
         if self.nogui && !matches!(self.preset_flags, PresetFlags::Proxy) {
             args.push(String::from("--nogui"));
         }
 
-        for arg in self.game_args.split_whitespace() {
-            args.push(arg.to_owned());
-        }
+        args.extend(self.game_args.split_whitespace().map(|x| x.to_owned()));
 
         args
     }
@@ -155,15 +145,8 @@ impl Default for ServerLauncher {
         Self {
             preset_flags: PresetFlags::None,
             nogui: true,
-            jvm_args: String::new(),
-            game_args: String::new(),
-            disable: false,
             eula_args: true,
-            memory: String::new(),
-            properties: HashMap::default(),
-            prelaunch: vec![],
-            postlaunch: vec![],
-            java_version: None,
+            ..Default::default()
         }
     }
 }

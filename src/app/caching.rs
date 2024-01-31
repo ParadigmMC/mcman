@@ -1,6 +1,6 @@
 use std::{
     fs::{self, File},
-    io::Write,
+    io::{BufReader, Write},
     path::PathBuf,
 };
 
@@ -20,8 +20,10 @@ impl Cache {
     }
 
     pub fn get_json<T: DeserializeOwned>(&self, path: &str) -> Result<T> {
-        let content = fs::read_to_string(self.0.join(path))?;
-        Ok(serde_json::from_str(&content)?)
+        let file = File::open(self.0.join(path))?;
+        let reader = BufReader::new(file);
+
+        Ok(serde_json::from_reader(reader)?)
     }
 
     pub fn path(&self, path: &str) -> PathBuf {
@@ -33,21 +35,18 @@ impl Cache {
     }
 
     pub fn try_get_json<T: DeserializeOwned>(&self, path: &str) -> Result<Option<T>> {
-        if self.exists(path) {
-            Ok(Some(self.get_json(path)?))
+        Ok(if self.exists(path) {
+            Some(self.get_json(path)?)
         } else {
-            Ok(None)
-        }
+            None
+        })
     }
 
     pub fn write_json<T: serde::Serialize>(&self, path: &str, data: &T) -> Result<()> {
-        fs::create_dir_all(self.path(path).parent().unwrap())
-            .context(format!("Creating parent directory for: {path}"))?;
-        let content = serde_json::to_string(data)?;
-        let mut f =
-            File::create(self.path(path)).context(format!("Creating cache file at: {path}"))?;
-        f.write_all(content.as_bytes())?;
+        let writer = BufWriter::new(
+            File::create(self.path(path)).context(format!("Creating cache file at: {path}"))?,
+        );
 
-        Ok(())
+        Ok(serde_json::to_writer(writer, data)?)
     }
 }

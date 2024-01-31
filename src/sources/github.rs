@@ -33,7 +33,7 @@ pub trait GithubWaitRatelimit<T> {
 
 impl GithubWaitRatelimit<reqwest::Response> for reqwest::Response {
     async fn wait_ratelimit(self) -> Result<Self> {
-        let res = if let Some(h) = self.headers().get("x-ratelimit-remaining") {
+        if let Some(h) = self.headers().get("x-ratelimit-remaining") {
             if String::from_utf8_lossy(h.as_bytes()) == "1" {
                 let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
                 let ratelimit_reset =
@@ -43,12 +43,11 @@ impl GithubWaitRatelimit<reqwest::Response> for reqwest::Response {
                 println!(" (!) Ratelimit exceeded. sleeping for {amount} seconds...");
                 sleep(Duration::from_secs(amount)).await;
             }
-            self
-        } else {
-            self.error_for_status()?
-        };
 
-        Ok(res)
+            Ok(self)
+        } else {
+            self.error_for_status()
+        }
     }
 }
 

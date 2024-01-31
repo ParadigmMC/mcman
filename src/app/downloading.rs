@@ -14,9 +14,10 @@ use crate::util::SelectItem;
 
 use super::{App, CacheStrategy, Prefix, ProgressPrefix, Resolvable, ResolvedFile};
 
-struct Bomb<T: FnMut()>(pub bool, pub T);
+struct Bomb<T>(pub bool, pub T);
 
-impl<T: FnMut()> Bomb<T> {
+impl<T> Bomb<T> {
+    #[inline(always)]
     pub fn defuse(&mut self) {
         self.0 = false;
     }
@@ -95,13 +96,11 @@ impl App {
         let hasher = Self::get_best_hash(&resolved.hashes);
 
         // if resolved has hashes, Some((hash name, dyndigest, hash value))
-        let mut hasher = if let Some((name, hash)) = hasher {
+        let mut hasher = hasher.map(|(name, hash)| {
             let digester: Box<dyn DynDigest> = App::create_hasher(&name);
 
-            Some((name, digester, hash))
-        } else {
-            None
-        };
+            (name, digester, hash)
+        });
 
         let validate_hash = |hasher: Option<(String, Box<dyn DynDigest>, String)>| {
             if let Some((hash_name, digest, resolved_hash)) = hasher {

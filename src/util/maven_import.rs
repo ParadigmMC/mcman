@@ -2,6 +2,17 @@ use anyhow::{anyhow, bail, Result};
 
 use crate::model::Downloadable;
 
+macro_rules! dependency {
+    ($xml:ident, $name:literal) => {
+        $xml.descendants()
+            .find(|t| t.tag_name().name() == $name)
+            .ok_or(anyhow!(concat!("dependency.", $name, " must be present")))?
+            .text()
+            .ok_or(anyhow!(concat!("dependency.", $name, " must be text")))?
+            .to_owned()
+    };
+}
+
 /// Example:
 /// ```xml
 /// <dependency>
@@ -14,29 +25,9 @@ use crate::model::Downloadable;
 pub fn import_from_maven_dependency_xml(url: &str, xml: &str) -> Result<Downloadable> {
     let xml = roxmltree::Document::parse(xml)?;
 
-    let group = xml
-        .descendants()
-        .find(|t| t.tag_name().name() == "groupId")
-        .ok_or(anyhow!("dependency.groupId must be present"))?
-        .text()
-        .ok_or(anyhow!("dependency.groupId must be text"))?
-        .to_owned();
-
-    let artifact = xml
-        .descendants()
-        .find(|t| t.tag_name().name() == "artifactId")
-        .ok_or(anyhow!("dependency.artifactId must be present"))?
-        .text()
-        .ok_or(anyhow!("dependency.artifactId must be text"))?
-        .to_owned();
-
-    let version = xml
-        .descendants()
-        .find(|t| t.tag_name().name() == "version")
-        .ok_or(anyhow!("dependency.version must be present"))?
-        .text()
-        .ok_or(anyhow!("dependency.version must be text"))?
-        .to_owned();
+    let group = dependency!(xml, "groupId");
+    let artifact = dependency!(xml, "artifactId");
+    let version = dependency!(xml, "version");
 
     Ok(Downloadable::Maven {
         url: url.to_owned(),
@@ -59,8 +50,9 @@ pub fn import_from_maven_dependency_xml(url: &str, xml: &str) -> Result<Download
 /// ```
 #[allow(unused)]
 pub fn import_from_gradle_dependency(url: &str, imp: &str) -> Result<Downloadable> {
-    let imp = imp.replace("implementation", "");
-    let imp = imp.replace([' ', '(', ')', '"'], "");
+    let imp = imp
+        .replace("implementation", "")
+        .replace([' ', '(', ')', '"'], "");
     let li = imp.trim().split(':').collect::<Vec<_>>();
 
     if li.len() != 3 {
@@ -82,8 +74,7 @@ pub fn import_from_gradle_dependency(url: &str, imp: &str) -> Result<Downloadabl
 /// ```
 #[allow(unused)]
 pub fn import_from_sbt(url: &str, sbt: &str) -> Result<Downloadable> {
-    let sbt = sbt.replace(char::is_whitespace, "");
-    let sbt = sbt.replace('"', "");
+    let sbt = sbt.replace(char::is_whitespace, "").replace('"', "");
     let li = sbt.split('%').filter(|x| !x.is_empty()).collect::<Vec<_>>();
 
     if li.len() != 3 {

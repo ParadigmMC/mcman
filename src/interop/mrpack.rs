@@ -244,26 +244,14 @@ impl<R: Read + Seek> MRPackReader<R> {
     }
 
     pub fn read_index(&mut self) -> Result<MRPackIndex> {
-        let mut entry = self.0.by_name(MRPACK_INDEX_FILE)?;
-        let mut zip_content = Vec::new();
-        entry
-            .read_to_end(&mut zip_content)
-            .context("Reading modrinth.index.json from zip archive")?;
-
-        let pack: MRPackIndex = serde_json::from_slice(&zip_content)?;
-
-        Ok(pack)
+        Ok(serde_json::from_reader(self.0.by_name(MRPACK_INDEX_FILE)?)?)
     }
 
     pub fn get_files(&self) -> HashMap<String, String> {
         let mut map = HashMap::new();
 
-        for filename in self.0.file_names() {
-            if filename.ends_with('/') {
-                continue; // folder
-            }
-
-            if filename.starts_with("overrides") {
+        for filename in self.0.file_names().filter(|f| !f.ends_with('/')) {
+            if filename.starts_with("overrides/") {
                 let relative = filename.strip_prefix("overrides/").unwrap();
 
                 if map.contains_key(relative) {
@@ -279,9 +267,7 @@ impl<R: Read + Seek> MRPackReader<R> {
                         .to_owned(),
                     filename.to_owned(),
                 );
-            } else {
-                continue;
-            };
+            }
         }
 
         map

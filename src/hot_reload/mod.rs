@@ -62,17 +62,17 @@ pub enum Command {
 async fn try_read_line(
     opt: &mut Option<tokio::io::Lines<BufReader<tokio::process::ChildStdout>>>,
 ) -> Result<Option<String>> {
-    match opt {
-        Some(lines) => Ok(lines.next_line().await?),
-        None => Ok(None),
-    }
+    Ok(match opt {
+        Some(lines) => Some(lines.next_line().await?),
+        None => None,
+    })
 }
 
 async fn try_wait_child(opt: &mut Option<Child>) -> Result<Option<ExitStatus>> {
-    match opt {
-        Some(c) => Ok(Some(c.wait().await?)),
-        None => Ok(None),
-    }
+    Ok(match opt {
+        Some(c) => Some(c.wait().await?),
+        None => None,
+    })
 }
 
 #[derive(Debug, PartialEq, Clone)]
