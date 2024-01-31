@@ -12,6 +12,7 @@ mod sources;
 mod util;
 
 #[derive(clap::Parser)]
+#[clap(name = "mcman", version)]
 #[command(author = "ParadigmMC", color = clap::ColorChoice::Always)]
 #[command(about = "Powerful Minecraft Server Manager CLI")]
 #[command(after_help = "To start building servers, try 'mcman init'")]

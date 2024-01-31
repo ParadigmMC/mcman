@@ -10,7 +10,7 @@ use crate::app::BaseApp;
 pub struct Args {
     /// Only print the version
     #[arg(long)]
-    plain: bool,
+    pub plain: bool,
 }
 
 pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
