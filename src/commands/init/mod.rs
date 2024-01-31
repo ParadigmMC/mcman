@@ -173,8 +173,8 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
         InitType::MRPack(src) => {
             let tmp_dir = Builder::new().prefix("mcman-mrpack-import").tempdir()?;
 
-            let f = File::open(if Path::new(&src).exists() {
-                src
+            let f = if Path::new(&src).exists() {
+                File::open(src)?
             } else {
                 let dl = app.dl_from_string(src).await?;
                 let resolved = app
@@ -185,8 +185,8 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                     )
                     .await?;
 
-                tmp_dir.path().join(resolved.filename)
-            })?;
+                File::open(tmp_dir.path().join(resolved.filename))?
+            }
 
             app.mrpack()
                 .import_all(MRPackReader::from_reader(f)?, None)
