@@ -63,7 +63,7 @@ async fn try_read_line(
     opt: &mut Option<tokio::io::Lines<BufReader<tokio::process::ChildStdout>>>,
 ) -> Result<Option<String>> {
     Ok(match opt {
-        Some(lines) => Some(lines.next_line().await?),
+        Some(lines) => lines.next_line().await?,
         None => None,
     })
 }

@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     fs::{read_to_string, File},
-    io::{BufWriter, Write},
+    io::BufWriter,
     path::{Path, PathBuf},
     time::SystemTime,
 };
@@ -56,7 +56,7 @@ impl Lockfile {
     pub fn save(&self) -> Result<()> {
         let writer = BufWriter::new(File::create(&self.path)?);
 
-        serde_json::to_writer_pretty(writer, cfg_str)
+        Ok(serde_json::to_writer_pretty(writer, &self)?)
     }
 }
 
