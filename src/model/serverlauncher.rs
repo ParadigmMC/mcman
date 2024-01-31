@@ -145,8 +145,15 @@ impl Default for ServerLauncher {
         Self {
             preset_flags: PresetFlags::None,
             nogui: true,
+            jvm_args: String::new(),
+            game_args: String::new(),
+            disable: false,
             eula_args: true,
-            ..Default::default()
+            memory: String::new(),
+            properties: HashMap::default(),
+            prelaunch: vec![],
+            postlaunch: vec![],
+            java_version: None,
         }
     }
 }
