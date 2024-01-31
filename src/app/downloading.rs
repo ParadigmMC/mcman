@@ -16,7 +16,7 @@ use super::{App, CacheStrategy, Prefix, ProgressPrefix, Resolvable, ResolvedFile
 
 struct Bomb<T: FnMut()>(pub bool, pub T);
 
-impl<T> Bomb<T> {
+impl<T: FnMut()> Bomb<T> {
     #[inline(always)]
     pub fn defuse(&mut self) {
         self.0 = false;
