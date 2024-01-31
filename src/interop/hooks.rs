@@ -5,7 +5,10 @@ use console::style;
 use indicatif::{ProgressBar, ProgressStyle};
 use tokio::{io::AsyncBufReadExt, process::Command};
 
-use crate::{app::App, model::{HookEvent, HookFailBehavior}};
+use crate::{
+    app::App,
+    model::{HookEvent, HookFailBehavior},
+};
 
 pub struct HooksAPI<'a>(pub &'a App);
 
@@ -45,7 +48,8 @@ impl<'a> HooksAPI<'a> {
                     continue;
                 }
 
-                let spinner = self.0
+                let spinner = self
+                    .0
                     .multi_progress
                     .add(
                         ProgressBar::new_spinner().with_style(ProgressStyle::with_template(
@@ -54,10 +58,11 @@ impl<'a> HooksAPI<'a> {
                     );
 
                 spinner.enable_steady_tick(Duration::from_millis(200));
-                spinner.set_prefix(format!(
-                    "Running hook {}",
-                    style(filename.clone()).blue()
-                ));
+                spinner.set_prefix(format!("Running hook {}", style(filename.clone()).blue()));
+
+                if hook.show_output {
+                    self.0.log_dev(format!("Running {filename}"));
+                }
 
                 let mut cmd = Command::new(path);
                 cmd.kill_on_drop(true)
@@ -68,8 +73,7 @@ impl<'a> HooksAPI<'a> {
                     cmd.env(k, v);
                 }
 
-                let mut child = cmd.spawn()
-                    .context(format!("Spawning hook {filename}"))?;
+                let mut child = cmd.spawn().context(format!("Spawning hook {filename}"))?;
 
                 let stdout = child.stdout.take().unwrap();
                 let mut lines = tokio::io::BufReader::new(stdout).lines();
@@ -78,23 +82,21 @@ impl<'a> HooksAPI<'a> {
                     spinner.set_message(line.clone());
                     if hook.show_output {
                         self.0.multi_progress.suspend(|| {
-                            println!(
-                                "{}{}",
-                                style("| ").bold(),
-                                line.trim()
-                            );
+                            println!("{}{}", style("| ").bold(), line.trim());
                         });
                     }
                 }
 
-                let status = child.wait().await
+                let status = child
+                    .wait()
+                    .await
                     .context(format!("waiting hook {filename}"))?;
                 spinner.finish_and_clear();
                 if status.success() {
                     self.0.success(format!("Hook {filename}"));
                 } else {
                     match hook.onfail {
-                        HookFailBehavior::Ignore => {},
+                        HookFailBehavior::Ignore => {}
                         HookFailBehavior::Warn => self.0.warn(format!("Hook {filename} failed")),
                         HookFailBehavior::Error => bail!("Hook {filename} failed"),
                     }

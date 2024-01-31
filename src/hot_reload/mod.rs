@@ -128,6 +128,7 @@ impl<'a> DevSession<'a> {
 
     #[allow(unused_assignments)]
     #[allow(clippy::too_many_lines)]
+    #[allow(clippy::await_holding_lock)]
     async fn handle_commands(
         mut self,
         mut rx: mpsc::Receiver<Command>,
