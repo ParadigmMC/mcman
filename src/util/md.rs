@@ -102,7 +102,7 @@ impl MarkdownTable {
             li.extend(
                 self.rows
                     .iter()
-                    .map(|row| row.get(idx).unwrap_or_default().len()),
+                    .map(|row| row.get(idx).unwrap_or(&String::new()).len()),
             );
 
             col_lengths.push(li.into_iter().max().expect("col lengths iter max none"));

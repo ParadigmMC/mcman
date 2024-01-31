@@ -75,7 +75,7 @@ impl<'a> BuildContext<'a> {
                     mcver,
                 ];
 
-                buildtools_args.extend_from_slice(&args);
+                buildtools_args.extend(args.iter().map(|s| s.as_str()));
 
                 InstallMethod::Installer {
                     name: "BuildTools",
@@ -140,7 +140,7 @@ impl<'a> BuildContext<'a> {
 
                     let mut cmd_args = vec!["-jar", &installer_jar];
 
-                    cmd_args.extend(args.iter().map(|s| &s));
+                    cmd_args.extend(args.iter().map(|s| s.as_str()));
 
                     let java = std::env::var("JAVA_BIN").unwrap_or("java".to_owned());
 
