@@ -1,6 +1,6 @@
 # `mcman build`
 
-See the page for [Building](../tutorials/building.md) for more info
+See the page for [Building](../concepts/building.md) for more info
 
 ## `--force`
 

@@ -7,9 +7,9 @@ Welcome to the `mcman` docs! Here, have some tea and make yourself comfortable. 
 ## Quick Start
 
 - [Installation](./installation.md)
-- [Getting Started](./tutorials/getting-started.md)
-- [Building, Running and Developing](./tutorials/building.md)
-- [Variables and Bootstrapping](./tutorials/variables.md)
+- [Getting Started](./concepts/getting-started.md)
+- [Building, Running and Developing](./concepts/building.md)
+- [Variables and Bootstrapping](./concepts/variables.md)
 - [Commands](./commands)
 - [Reference](./reference/server.toml.md)
 

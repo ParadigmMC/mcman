@@ -3,7 +3,7 @@
 
 # Installation
 
-Here are a few ways to install mcman. [Whats Next? ->](./tutorials/getting-started.md)
+Here are a few ways to install mcman. [Whats Next? ->](./concepts/getting-started.md)
 
 === "Github Releases"
     You can use the links below to get the mcman executable.

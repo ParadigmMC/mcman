@@ -6,7 +6,7 @@ While it's primary purpose is to be a cache and speed up building, it also makes
 
 ## Disabling
 
-See [Options/Disabling lockfiles](../tutorials/options.md#disabling-lockfiles)
+See [Options/Disabling lockfiles](../concepts/options.md#disabling-lockfiles)
 
 ## Format
 

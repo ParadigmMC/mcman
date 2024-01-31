@@ -1,6 +1,6 @@
 # `mcman run`
 
-See [here](../tutorials/building.md) for more info
+See [here](../concepts/building.md) for more info
 
 Supports the same arguments as [mcman build](./build.md)
 

@@ -4,16 +4,16 @@ repo_name: ParadigmMC/mcman
 nav:
   - Home: index.md
   - Installation: installation.md
-  - Tutorials:
-    - tutorials/getting-started.md
-    - tutorials/importing-modpacks.md
-    - tutorials/building.md
-    - tutorials/variables.md
-    - tutorials/dev.md
-    - tutorials/using-worlds.md
-    - tutorials/network.md
-    - tutorials/caching.md
-    - tutorials/options.md
+  - Concepts:
+    - concepts/getting-started.md
+    - concepts/importing-modpacks.md
+    - concepts/building.md
+    - concepts/variables.md
+    - concepts/dev.md
+    - concepts/using-worlds.md
+    - concepts/network.md
+    - concepts/caching.md
+    - concepts/options.md
   - Commands:
     - commands/index.md
     - init: commands/init.md
@@ -36,6 +36,8 @@ nav:
       - reference/markdown-options.md
       - reference/server-launcher.md
       - reference/clientsidemod.md
+    - network.toml: reference/network.toml.md
+    - Hook: reference/hook.md
     - Server Type:
       - reference/servertype/index.md
       - reference/servertype/vanilla.md

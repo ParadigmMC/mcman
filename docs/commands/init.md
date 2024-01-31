@@ -4,7 +4,7 @@ Initializes a new server in the current directory.
 
 This command is interactive. Just run `mcman init`!
 
-See the [getting started](../tutorials/getting-started.md) tutorial for what to do next
+See the [getting started](../concepts/getting-started.md) tutorial for what to do next
 
 > **Full Command:** `mcman init [--name <name>] [--mrpack <source> | --packwiz <source>]`
 

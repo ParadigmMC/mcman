@@ -2,7 +2,7 @@
 
 Each `server.toml` file defines a differient server.
 
-To generate one, you can use the [`mcman init`](../commands/init.md) command (see [Getting Started](../tutorials/getting-started.md))
+To generate one, you can use the [`mcman init`](../commands/init.md) command (see [Getting Started](../concepts/getting-started.md))
 
 !!! note
     If you are in your server's sub-directories, mcman will be able to find the `server.toml` file recursively.
@@ -54,11 +54,11 @@ type = "purpur"
 
 `variables`: Map<string, string>
 
-:   Define server variables to use in `config/` here. For more information about how this works, read the [Bootstrapping](../tutorials/variables.md) section.
+:   Define server variables to use in `config/` here. For more information about how this works, read the [Bootstrapping](../concepts/variables.md) section.
 
 `worlds`: Map<string, [World](./world.md)>
 
-:   A table of [World](./world.md)s. [How can I use worlds?](../tutorials/using-worlds.md)
+:   A table of [World](./world.md)s. [How can I use worlds?](../concepts/using-worlds.md)
 
 `markdown`: [MarkdownOptions](./markdown-options.md)
 
