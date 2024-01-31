@@ -186,7 +186,7 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                     .await?;
 
                 File::open(tmp_dir.path().join(resolved.filename))?
-            }
+            };
 
             app.mrpack()
                 .import_all(MRPackReader::from_reader(f)?, None)
