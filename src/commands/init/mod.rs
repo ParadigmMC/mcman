@@ -266,31 +266,20 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
 
     if let InitType::Network = ty {
         println!(
-            " > {} {} {}",
+            " > {} {} {}\n > {}\n   {}\n   {}\n   {}",
             style("Network").green(),
             style(&app.network.unwrap().name).bold(),
-            style("has been created!").green()
-        );
-
-        println!(
-            " > {}",
-            style("Initialize servers in this network using").cyan()
-        );
-        println!(
-            "   {}\n   {}\n   {}",
+            style("has been created!").green(),
+            style("Initialize servers in this network using").cyan(),
             style("cd servers").bold(),
             style("mkdir myserver").bold(),
             style("mcman init").bold(),
         );
     } else {
         println!(
-            " > {} {}",
+            " > {} {}\n > {} {}",
             style(&app.server.name).bold(),
-            style("has been initialized!").green()
-        );
-
-        println!(
-            " > {} {}",
+            style("has been initialized!").green(),
             style("Build using").cyan(),
             style("mcman build").bold()
         );

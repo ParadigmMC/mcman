@@ -31,7 +31,7 @@ impl MarkdownTable {
     pub fn add_from_map(&mut self, map: IndexMap<&'static str, String>) -> &mut Self {
         let mut row = vec![];
 
-        for header in self.headers.iter() {
+        for header in &self.headers {
             row.push(match map.get(header) {
                 Some(value) => value.clone(),
                 None => String::new(),
@@ -83,7 +83,6 @@ impl MarkdownTable {
 
         lines.extend(self.rows.iter().map(|row| {
             let cols = (0..row.len())
-                .into_iter()
                 .map(|idx| format!("{:width$}", row[idx], width = col_lengths[idx]))
                 .collect::<Vec<_>>();
 

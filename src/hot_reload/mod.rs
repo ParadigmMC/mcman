@@ -423,8 +423,7 @@ impl<'a> DevSession<'a> {
                             pb.finish_and_clear();
                             self.builder.app.log("  - Logs uploaded to mclo.gs");
                             mp.suspend(|| {
-                                println!();
-                                println!(" latest.log [ {} ]", log.url);
+                                println!("\n latest.log [ {} ]", log.url);
                                 if let Some(log) = crash_log {
                                     println!(" crash report [ {} ]", log.url);
                                 }

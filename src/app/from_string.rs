@@ -210,7 +210,7 @@ impl App {
 
                         let version = self.select(
                             "Select a release",
-                            &vec![SelectItem(
+                            &[SelectItem(
                                 "latest".to_owned(),
                                 Cow::Borrowed("Always use latest release"),
                             )]
@@ -241,7 +241,7 @@ impl App {
                     } else {
                         match self.select(
                             "Which asset to use?",
-                            &vec![SelectItem(
+                            &[SelectItem(
                                 Some("first".to_owned()),
                                 Cow::Owned(format!(
                                     "Use the first asset ('{}' for '{}')",

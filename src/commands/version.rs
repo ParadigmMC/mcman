@@ -18,15 +18,12 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
         println!("{}", env!("CARGO_PKG_VERSION"));
     } else {
         println!(
-            " > {} by {}",
+            " > {} by {}\n   version {}\n\n {}",
             style(env!("CARGO_PKG_NAME")).green().bold(),
-            style(env!("CARGO_PKG_AUTHORS")).magenta().bold()
+            style(env!("CARGO_PKG_AUTHORS")).magenta().bold(),
+            style(env!("CARGO_PKG_VERSION")).bold(),
+            style("> checking for updates...").dim()
         );
-        println!("   version {}", style(env!("CARGO_PKG_VERSION")).bold());
-
-        println!();
-
-        println!(" {}", style("> checking for updates...").dim());
 
         let repo_name: String = env!("CARGO_PKG_REPOSITORY").chars().skip(19).collect();
 
@@ -44,15 +41,12 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                 println!(" {}", style("> version is newer (dev/unreleased)").yellow());
             }
             Ordering::Less => {
-                println!(" {}", style("> A new version is available!").cyan());
                 println!(
-                    " {} {} => {}",
+                    " {}\n {} {} => {}\n {} {}",
+                    style("> A new version is available!").cyan(),
                     style("|").cyan(),
                     style(env!("CARGO_PKG_VERSION")).red(),
                     style(&latest_ver).green().bold(),
-                );
-                println!(
-                    " {} {}",
                     style("|").cyan(),
                     env!("CARGO_PKG_REPOSITORY").to_owned()
                         + "/releases/tag/"

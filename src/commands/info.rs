@@ -25,7 +25,7 @@ pub fn run(app: &App) -> Result<()> {
         .0
         .len();
 
-    for (k, v) in server_info.iter() {
+    for (k, v) in &server_info {
         let k_styled = style(format!("{k:pad_keys$}")).cyan().bold();
 
         println!(" {k_styled}: {v}");
@@ -41,7 +41,7 @@ pub fn run(app: &App) -> Result<()> {
 
         let mut table = MarkdownTable::new();
 
-        for plugin in server.plugins.iter() {
+        for plugin in &server.plugins {
             table.add_from_map(plugin.fields_to_map());
         }
 
@@ -60,7 +60,7 @@ pub fn run(app: &App) -> Result<()> {
 
         let mut table = MarkdownTable::new();
 
-        for addon in server.mods.iter() {
+        for addon in &server.mods {
             table.add_from_map(addon.fields_to_map());
         }
 
