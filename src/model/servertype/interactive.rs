@@ -32,14 +32,14 @@ impl ServerType {
                     SelectItem(
                         Self::BuildTools {
                             args: vec![],
-                            software: "spigot",
+                            software: Cow::Borrowed("spigot"),
                         },
                         Cow::Borrowed("Spigot"),
                     ),
                     SelectItem(
                         Self::BuildTools {
                             args: vec![],
-                            software: "craftbukkit",
+                            software: Cow::Borrowed("craftbukkit"),
                         },
                         Cow::Borrowed("CraftBukkit"),
                     ),

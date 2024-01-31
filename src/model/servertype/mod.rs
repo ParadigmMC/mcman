@@ -1,6 +1,7 @@
 use crate::app::{App, Resolvable, ResolvedFile};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 
 use crate::model::Downloadable;
 
@@ -62,7 +63,7 @@ pub enum ServerType {
 
     BuildTools {
         #[serde(default = "spigot")]
-        software: &'static str,
+        software: Cow<'static, str>,
         #[serde(skip_serializing_if = "Vec::is_empty")]
         #[serde(default = "Vec::new")]
         args: Vec<String>,
@@ -200,8 +201,8 @@ fn latest() -> String {
     "latest".to_owned()
 }
 
-const fn spigot() -> &'static str {
-    "spigot"
+const fn spigot() -> Cow<'static, str> {
+    Cow::Borrowed("spigot")
 }
 
 static BUNGEECORD_JENKINS: &str = "https://ci.md-5.net";

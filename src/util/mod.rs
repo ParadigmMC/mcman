@@ -11,7 +11,10 @@ pub struct SelectItem<T>(pub T, pub Cow<'static, str>);
 
 impl<T> ToString for SelectItem<T> {
     fn to_string(&self) -> String {
-        self.1.into_owned()
+        match self.1 {
+            Cow::Borrowed(s) => s.to_string(),
+            Cow::Owned(s) => s.clone(),
+        }
     }
 }
 
