@@ -11,6 +11,8 @@ mod model;
 mod sources;
 mod util;
 
+use std::env;
+
 #[derive(clap::Parser)]
 #[clap(name = "mcman", version)]
 #[command(author = "ParadigmMC", color = clap::ColorChoice::Always)]
@@ -75,7 +77,7 @@ enum Commands {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    if std::env::var("CI") == Ok("true".to_owned()) {
+    if env::var("CI") == Ok("true".to_owned()) {
         println!("::endgroup::");
     }
 

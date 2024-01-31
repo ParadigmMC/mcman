@@ -5,6 +5,7 @@ use console::style;
 use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::app::Cache;
+use std::fs;
 
 #[derive(clap::Subcommand, Clone, Copy)]
 pub enum Commands {
@@ -38,9 +39,9 @@ pub fn run(commands: Commands) -> Result<()> {
 
                     let mut namespaces = 0;
                     let mut all = 0;
-                    for entry in std::fs::read_dir(&cache_folder)? {
+                    for entry in fs::read_dir(&cache_folder)? {
                         let entry = entry?;
-                        let count = std::fs::read_dir(entry.path())?.count();
+                        let count = fs::read_dir(entry.path())?.count();
                         println!(
                             " {} {} {} {count} entries",
                             style("=>").cyan(),
@@ -49,7 +50,7 @@ pub fn run(commands: Commands) -> Result<()> {
                         );
 
                         if detailed {
-                            for entry in std::fs::read_dir(entry.path())? {
+                            for entry in fs::read_dir(entry.path())? {
                                 let entry = entry?;
                                 println!(
                                     "    {} {}",
@@ -78,12 +79,12 @@ pub fn run(commands: Commands) -> Result<()> {
                         .with_prefix("Deleting");
                     pb.enable_steady_tick(Duration::from_millis(250));
 
-                    for entry in std::fs::read_dir(&cache_folder)? {
+                    for entry in fs::read_dir(&cache_folder)? {
                         let entry = entry?;
 
                         pb.set_message(entry.file_name().to_string_lossy().to_string());
 
-                        std::fs::remove_dir_all(entry.path())?;
+                        fs::remove_dir_all(entry.path())?;
                     }
 
                     pb.finish_and_clear();

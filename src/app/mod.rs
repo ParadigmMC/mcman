@@ -17,6 +17,9 @@ pub use resolvable::*;
 use crate::model::{AppConfig, Downloadable, Network, Server};
 use crate::sources;
 
+use core::fmt::{self, Display, Formatter};
+use std::env;
+
 pub const APP_USER_AGENT: &str = concat!(
     env!("CARGO_PKG_NAME"),
     "/",
@@ -40,8 +43,8 @@ impl AddonType {
     }
 }
 
-impl std::fmt::Display for AddonType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for AddonType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             Self::Plugin => "plugin",
             Self::Mod => "mod",
@@ -132,20 +135,16 @@ impl App {
             "SERVER_NAME" => Some(self.server.name.clone()),
             "SERVER_VERSION" | "mcver" | "mcversion" => Some(self.server.mc_version.clone()),
 
-            "SERVER_PORT" => std::env::var(format!("PORT_{}", self.server.name))
-                .ok()
-                .or(self
-                    .network
-                    .as_ref()
-                    .and_then(|nw| nw.servers.get(&self.server.name))
-                    .map(|s| s.port.to_string())),
-            "SERVER_IP" => std::env::var(format!("IP_{}", self.server.name))
-                .ok()
-                .or(self
-                    .network
-                    .as_ref()
-                    .and_then(|nw| nw.servers.get(&self.server.name))
-                    .and_then(|s| s.ip_address.clone())),
+            "SERVER_PORT" => env::var(format!("PORT_{}", self.server.name)).ok().or(self
+                .network
+                .as_ref()
+                .and_then(|nw| nw.servers.get(&self.server.name))
+                .map(|s| s.port.to_string())),
+            "SERVER_IP" => env::var(format!("IP_{}", self.server.name)).ok().or(self
+                .network
+                .as_ref()
+                .and_then(|nw| nw.servers.get(&self.server.name))
+                .and_then(|s| s.ip_address.clone())),
 
             "PLUGIN_COUNT" => Some(self.server.plugins.len().to_string()),
             "MOD_COUNT" => Some(self.server.mods.len().to_string()),
@@ -164,11 +163,11 @@ impl App {
                         .map(|(name, serv)| {
                             format!(
                                 "{name} = \"{}:{}\"",
-                                std::env::var(format!("IP_{name}"))
+                                env::var(format!("IP_{name}"))
                                     .ok()
                                     .or(serv.ip_address.clone())
                                     .unwrap_or("127.0.0.1".to_owned()),
-                                std::env::var(format!("PORT_{name}"))
+                                env::var(format!("PORT_{name}"))
                                     .ok()
                                     .unwrap_or(serv.port.to_string()),
                             )
@@ -186,10 +185,10 @@ impl App {
                             format!(
                             "  {name}:\n    motd: {}\n    address: {}:{}\n    restricted: false",
                             self.var("MOTD").unwrap_or("a mcman-powered server".to_owned()),
-                            std::env::var(format!("IP_{name}")).ok()
+                            env::var(format!("IP_{name}")).ok()
                                 .or(serv.ip_address.clone())
                                 .unwrap_or("127.0.0.1".to_owned()),
-                            std::env::var(format!("PORT_{name}")).ok()
+                            env::var(format!("PORT_{name}")).ok()
                                 .unwrap_or(serv.port.to_string()),
                         )
                         })
@@ -202,7 +201,7 @@ impl App {
             "denizs_gf" => Some("ily may".to_owned()),
 
             k => {
-                if let Ok(v) = std::env::var(k) {
+                if let Ok(v) = env::var(k) {
                     Some(v)
                 } else if k.starts_with("NW_") {
                     if let Some(nw) = &self.network {
@@ -212,12 +211,12 @@ impl App {
 
                             let serv = nw.servers.get(&name.to_lowercase())?;
 
-                            let ip = std::env::var(format!("IP_{name}"))
+                            let ip = env::var(format!("IP_{name}"))
                                 .ok()
                                 .or(serv.ip_address.clone())
                                 .unwrap_or("127.0.0.1".to_owned());
 
-                            let port = std::env::var(format!("PORT_{name}"))
+                            let port = env::var(format!("PORT_{name}"))
                                 .ok()
                                 .unwrap_or(serv.port.to_string());
 

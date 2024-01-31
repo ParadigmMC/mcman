@@ -3,7 +3,8 @@ use indicatif::{ProgressBar, ProgressFinish, ProgressIterator, ProgressStyle};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
-    io::{Read, Seek, Write},
+    fs::{self, File},
+    io::{self, Read, Seek, Write},
     time::Duration,
 };
 use zip::{read::ZipFile, write::FileOptions, ZipArchive, ZipWriter};
@@ -88,7 +89,7 @@ impl<'a> MRPackInterop<'a> {
             let zip_file = mrpack.get_file(zip_path)?;
             let target_path = self.0.server.path.join("config").join(relative_path);
 
-            std::fs::create_dir_all(target_path.parent().unwrap())?;
+            fs::create_dir_all(target_path.parent().unwrap())?;
 
             // TODO mrpack import: is target_path exists prompt
 
@@ -97,8 +98,8 @@ impl<'a> MRPackInterop<'a> {
                 .multi_progress
                 .insert_after(&progress_bar, ProgressBar::new(zip_file.size()));
 
-            let mut target_file = std::fs::File::create(&target_path)?;
-            std::io::copy(&mut pb.wrap_read(zip_file), &mut target_file)?;
+            let mut target_file = File::create(&target_path)?;
+            io::copy(&mut pb.wrap_read(zip_file), &mut target_file)?;
 
             pb.finish_and_clear();
         }

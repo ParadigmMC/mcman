@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use indexmap::IndexMap;
 use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
 use regex::Regex;
-use tokio::io::AsyncWriteExt;
+use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::{
     app::{App, Prefix},
@@ -101,7 +101,7 @@ impl<'a> MarkdownAPI<'a> {
                     .to_string();
             }
 
-            let mut f = tokio::fs::File::create(&path).await?;
+            let mut f = File::create(&path).await?;
             f.write_all(content.as_bytes()).await?;
 
             self.0.notify(Prefix::Rendered, filename.to_string());

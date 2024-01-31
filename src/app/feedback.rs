@@ -1,4 +1,5 @@
-use std::borrow::Cow;
+use core::fmt::Display;
+use std::{borrow::Cow, env};
 
 use anyhow::Result;
 use console::{style, StyledObject};
@@ -96,44 +97,44 @@ impl From<Prefix> for Cow<'static, str> {
 }
 
 impl App {
-    pub fn println<S: std::fmt::Display>(&self, message: S) {
+    pub fn println<S: Display>(&self, message: S) {
         self.multi_progress.suspend(|| println!("{message}"));
     }
 
-    pub fn success<S: std::fmt::Display>(&self, message: S) {
+    pub fn success<S: Display>(&self, message: S) {
         self.println(format!(
             "  {} {message}",
             ColorfulTheme::default().success_prefix
         ));
     }
 
-    pub fn log<S: std::fmt::Display>(&self, message: S) {
+    pub fn log<S: Display>(&self, message: S) {
         self.println(format!("  {message}"));
     }
 
-    pub fn log_dev<S: std::fmt::Display>(&self, message: S) {
+    pub fn log_dev<S: Display>(&self, message: S) {
         self.println(format!("🛈 {message}"));
     }
 
-    pub fn notify<S: std::fmt::Display>(&self, prefix: Prefix, message: S) {
+    pub fn notify<S: Display>(&self, prefix: Prefix, message: S) {
         self.println(format!("{} {message}", prefix.styled()));
     }
 
-    pub fn warn<S: std::fmt::Display>(&self, message: S) {
+    pub fn warn<S: Display>(&self, message: S) {
         self.notify(Prefix::Warning, message);
     }
 
     #[allow(dead_code)]
-    pub fn error<S: std::fmt::Display>(&self, message: S) {
+    pub fn error<S: Display>(&self, message: S) {
         self.notify(Prefix::Error, message);
     }
 
-    pub fn info<S: std::fmt::Display>(&self, message: S) {
+    pub fn info<S: Display>(&self, message: S) {
         self.notify(Prefix::Info, message);
     }
 
-    pub fn dbg<S: std::fmt::Display>(&self, message: S) {
-        if std::env::var("MCMAN_DEBUG") == Ok("true".to_owned()) {
+    pub fn dbg<S: Display>(&self, message: S) {
+        if env::var("MCMAN_DEBUG") == Ok("true".to_owned()) {
             self.notify(Prefix::Debug, message);
         }
     }
@@ -150,7 +151,7 @@ impl App {
 
     #[allow(clippy::unused_self)]
     pub fn is_ci(&self) -> bool {
-        std::env::var("CI").ok() == Some("true".to_owned())
+        env::var("CI").ok() == Some("true".to_owned())
     }
 
     pub fn ci(&self, cmd: &str) {

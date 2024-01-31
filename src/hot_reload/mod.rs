@@ -1,6 +1,8 @@
 use std::{
     collections::HashSet,
+    env,
     path::PathBuf,
+    process,
     process::{ExitStatus, Stdio},
     sync::{Arc, Mutex},
     time::Duration,
@@ -93,7 +95,7 @@ pub const LINE_CRASHED: &str = "]: Crashed! The full crash report has been saved
 
 impl<'a> DevSession<'a> {
     pub async fn spawn_child(&mut self) -> Result<Child> {
-        let platform = if std::env::consts::FAMILY == "windows" {
+        let platform = if env::consts::FAMILY == "windows" {
             "windows"
         } else {
             "linux"
@@ -109,7 +111,7 @@ impl<'a> DevSession<'a> {
             .app
             .dbg(format!("Running: {java} {}", args.join(" ")));
 
-        let cwd = std::env::current_dir()?.canonicalize()?;
+        let cwd = env::current_dir()?.canonicalize()?;
         // because jre is stupid
         let dir = diff_paths(&self.builder.output_dir, cwd).unwrap();
 
@@ -339,7 +341,7 @@ impl<'a> DevSession<'a> {
             match test_result {
                 TestResult::Success => {
                     self.builder.app.success("Test passed");
-                    std::process::exit(0);
+                    process::exit(0);
                 }
                 TestResult::Crashed | TestResult::Failed => {
                     mp.suspend(|| {
@@ -440,7 +442,7 @@ impl<'a> DevSession<'a> {
                         }
                     }
 
-                    std::process::exit(1);
+                    process::exit(1);
                 }
             }
         }

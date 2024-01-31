@@ -1,4 +1,9 @@
-use std::{path::PathBuf, time::Duration};
+use std::{
+    fs::{self, File},
+    io,
+    path::PathBuf,
+    time::Duration,
+};
 
 use anyhow::{Context, Result};
 use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
@@ -66,7 +71,7 @@ impl<'a> BuildContext<'a> {
         }
 
         if !world.datapacks.is_empty() {
-            std::fs::create_dir_all(self.output_dir.join(name).join("datapacks"))
+            fs::create_dir_all(self.output_dir.join(name).join("datapacks"))
                 .context(format!("Failed to create {name}/datapacks directory"))?;
 
             self.process_datapacks(progress_bar, name, world)
@@ -89,7 +94,7 @@ impl<'a> BuildContext<'a> {
     pub fn world_exists_in_output(&self, name: &str) -> Result<bool> {
         match self.output_dir.join(name).metadata() {
             Ok(meta) => Ok(meta.is_dir()),
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+            Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(false),
             Err(e) => Err(e.into()),
         }
     }
@@ -119,7 +124,7 @@ impl<'a> BuildContext<'a> {
 }
 
 pub fn unzip(zipfile: &PathBuf, output: &PathBuf) -> Result<()> {
-    let file = std::fs::File::open(zipfile)?;
+    let file = File::open(zipfile)?;
     let mut archive = zip::ZipArchive::new(file)?;
 
     archive.extract(output)?;

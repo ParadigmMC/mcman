@@ -1,4 +1,4 @@
-use std::{borrow::Cow, fmt::Debug, path::PathBuf, time::Duration};
+use std::{borrow::Cow, fmt::Debug, fs, path::PathBuf, time::Duration};
 
 use anyhow::{bail, Context, Result};
 use digest::{Digest, DynDigest};
@@ -185,7 +185,7 @@ impl App {
         // this bomb will explode (delete target_file) if its not defused (fn exits with Err)
         let mut bomb = Bomb(true, || {
             // i mean, atleast try right
-            let _ = std::fs::remove_file(&file_path);
+            let _ = fs::remove_file(&file_path);
         });
 
         if let Some((cached, cached_size)) = match &cached_file_path {

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{borrow::ToOwned, collections::HashMap};
+use std::{borrow::ToOwned, collections::HashMap, env};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 #[serde(rename_all = "lowercase")]
@@ -66,11 +66,11 @@ impl ServerLauncher {
         if let Some(Some(path)) = self
             .java_version
             .as_ref()
-            .map(|v| std::env::var(format!("JAVA_{v}_BIN")).ok())
+            .map(|v| env::var(format!("JAVA_{v}_BIN")).ok())
         {
             path
         } else {
-            std::env::var("JAVA_BIN").unwrap_or(String::from("java"))
+            env::var("JAVA_BIN").unwrap_or(String::from("java"))
         }
     }
 
@@ -97,8 +97,8 @@ impl ServerLauncher {
             .map(ToOwned::to_owned)
             .collect::<Vec<_>>();
 
-        if std::env::var("MC_MEMORY").is_ok() || !self.memory.is_empty() {
-            let m = std::env::var("MC_MEMORY").unwrap_or(self.memory.clone());
+        if env::var("MC_MEMORY").is_ok() || !self.memory.is_empty() {
+            let m = env::var("MC_MEMORY").unwrap_or(self.memory.clone());
             args.extend([format!("-Xms{m}"), format!("-Xmx{m}")]);
         }
 

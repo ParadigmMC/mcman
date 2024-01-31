@@ -3,7 +3,14 @@ use console::style;
 use dialoguer::{theme::ColorfulTheme, Input};
 use indicatif::ProgressBar;
 use rpackwiz::model::Pack;
-use std::{borrow::Cow, ffi::OsStr, fs::File, io::Write, path::Path};
+use std::{
+    borrow::Cow,
+    env,
+    ffi::OsStr,
+    fs::{self, File},
+    io::Write,
+    path::Path,
+};
 use tempfile::Builder;
 
 use crate::{
@@ -42,7 +49,7 @@ pub enum InitType {
 
 #[allow(clippy::too_many_lines)]
 pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
-    let current_dir = std::env::current_dir()?;
+    let current_dir = env::current_dir()?;
     let name = if let Some(name) = args.name {
         name.clone()
     } else {
@@ -166,8 +173,8 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
         InitType::MRPack(src) => {
             let tmp_dir = Builder::new().prefix("mcman-mrpack-import").tempdir()?;
 
-            let f = if Path::new(&src).exists() {
-                std::fs::File::open(src)?
+            let f = File::open(if Path::new(&src).exists() {
+                src
             } else {
                 let dl = app.dl_from_string(src).await?;
                 let resolved = app
@@ -177,9 +184,9 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                         ProgressBar::new_spinner(),
                     )
                     .await?;
-                let path = tmp_dir.path().join(resolved.filename);
-                std::fs::File::open(path)?
-            };
+
+                tmp_dir.path().join(resolved.filename)
+            })?;
 
             app.mrpack()
                 .import_all(MRPackReader::from_reader(f)?, None)
@@ -223,9 +230,9 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
 
     //env
     if let InitType::Network = ty {
-        std::fs::create_dir_all("./servers")?;
+        fs::create_dir_all("./servers")?;
     } else {
-        std::fs::create_dir_all("./config")?;
+        fs::create_dir_all("./config")?;
 
         if app.server.jar.get_software_type() != SoftwareType::Proxy {
             let mut f = File::create("./config/server.properties")?;

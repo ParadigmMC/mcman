@@ -1,4 +1,6 @@
 use std::{
+    fs::{self, File},
+    io,
     path::{Path, PathBuf},
     time::Duration,
 };
@@ -42,7 +44,7 @@ impl<'a> WorldsAPI<'a> {
 
     #[allow(clippy::unused_self)]
     pub fn unzip(&self, zip_archive_path: &PathBuf, output: &Path) -> Result<()> {
-        let file = std::fs::File::open(zip_archive_path)
+        let file = File::open(zip_archive_path)
             .context(format!("Opening zip file: {}", zip_archive_path.display()))?;
         let mut archive = zip::ZipArchive::new(file).context("Opening zip archive")?;
 
@@ -59,9 +61,9 @@ impl<'a> WorldsAPI<'a> {
             let mut zip_file = archive.by_name(&filename)?;
             let target_path = output.join(filename);
 
-            std::fs::create_dir_all(target_path.parent().unwrap())?;
-            let mut target_file = std::fs::File::create(&target_path)?;
-            std::io::copy(&mut zip_file, &mut target_file)?;
+            fs::create_dir_all(target_path.parent().unwrap())?;
+            let mut target_file = File::create(&target_path)?;
+            io::copy(&mut zip_file, &mut target_file)?;
         }
 
         Ok(())
@@ -83,8 +85,8 @@ impl<'a> WorldsAPI<'a> {
             .path
             .join("worlds")
             .join(format!("{world}.zip"));
-        std::fs::create_dir_all(self.0.server.path.join("worlds"))?;
-        let output_file = std::fs::File::create(output_path)?;
+        fs::create_dir_all(self.0.server.path.join("worlds"))?;
+        let output_file = File::create(output_path)?;
 
         let mut zip = zip::ZipWriter::new(output_file);
 
@@ -109,9 +111,9 @@ impl<'a> WorldsAPI<'a> {
 
             zip.start_file(diffed_paths.to_string_lossy(), FileOptions::default())?;
 
-            let mut input_file = std::fs::File::open(source)?;
+            let mut input_file = File::open(source)?;
 
-            std::io::copy(&mut input_file, &mut zip)?;
+            io::copy(&mut input_file, &mut zip)?;
         }
 
         spinner.finish();

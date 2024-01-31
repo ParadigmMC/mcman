@@ -1,5 +1,7 @@
 use std::{
+    env,
     io::{BufRead, BufReader},
+    process::Command,
     process::Stdio,
     time::Duration,
 };
@@ -75,7 +77,7 @@ impl<'a> BuildContext<'a> {
                     mcver,
                 ];
 
-                buildtools_args.extend(args.iter().map(|s| s.as_str()));
+                buildtools_args.extend(args.iter().map(String::as_str));
 
                 InstallMethod::Installer {
                     name: "BuildTools",
@@ -140,9 +142,9 @@ impl<'a> BuildContext<'a> {
 
                     let mut cmd_args = vec!["-jar", &installer_jar];
 
-                    cmd_args.extend(args.iter().map(|s| s.as_str()));
+                    cmd_args.extend(args.iter().map(String::as_str));
 
-                    let java = std::env::var("JAVA_BIN").unwrap_or("java".to_owned());
+                    let java = env::var("JAVA_BIN").unwrap_or("java".to_owned());
 
                     self.execute_child((&java, cmd_args.clone()), name, label)
                         .await
@@ -204,12 +206,12 @@ impl<'a> BuildContext<'a> {
         tag: &str,
     ) -> Result<()> {
         // because jre cant understand UNC
-        let dir = diff_paths(&self.output_dir, std::env::current_dir()?.canonicalize()?).unwrap();
+        let dir = diff_paths(&self.output_dir, env::current_dir()?.canonicalize()?).unwrap();
 
         let args: Vec<String> = cmd.1.iter().map(|a| self.app.server.format(a)).collect();
         self.app.dbg(args.join(" "));
 
-        let mut child = std::process::Command::new(cmd.0)
+        let mut child = Command::new(cmd.0)
             .args(args)
             .current_dir(dir)
             .stdout(Stdio::piped())

@@ -2,6 +2,7 @@ use std::{
     fs::{self, File},
     io::Write,
     path::{Path, PathBuf},
+    process::Command,
 };
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -142,7 +143,7 @@ pub fn get_docker_version() -> Result<String> {
 }
 
 pub fn run_command(prog: &str, args: Vec<&str>) -> Result<String> {
-    let output = std::process::Command::new(prog).args(args).output()?;
+    let output = Command::new(prog).args(args).output()?;
 
     if output.status.success() {
         let path = String::from_utf8_lossy(output.stdout.as_slice())
