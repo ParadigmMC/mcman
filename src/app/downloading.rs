@@ -14,7 +14,7 @@ use crate::util::SelectItem;
 
 use super::{App, CacheStrategy, Prefix, ProgressPrefix, Resolvable, ResolvedFile};
 
-struct Bomb<T>(pub bool, pub T);
+struct Bomb<T: FnMut()>(pub bool, pub T);
 
 impl<T> Bomb<T> {
     #[inline(always)]
