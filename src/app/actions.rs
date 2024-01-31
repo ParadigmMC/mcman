@@ -44,7 +44,7 @@ impl App {
         self.add_addon(addon_type, addon)
     }
 
-    pub fn add_addon(&mut self, addon_type: AddonType, addon: &Downloadable) -> Result<()> {
+    pub fn add_addon(&mut self, addon_type: AddonType, addon: Downloadable) -> Result<()> {
         let existing = match addon_type {
             AddonType::Plugin => self.server.plugins.iter(),
             AddonType::Mod => self.server.mods.iter(),
@@ -65,7 +65,7 @@ impl App {
             AddonType::Plugin => &mut self.server.plugins,
             AddonType::Mod => &mut self.server.mods,
         }
-        .push(addon.clone());
+        .push(addon);
 
         Ok(())
     }
