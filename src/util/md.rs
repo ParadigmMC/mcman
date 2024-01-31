@@ -38,7 +38,7 @@ impl MarkdownTable {
             });
         }
 
-        let hack = self.headers.clone();
+        let hack = &self.headers;
 
         for (k, v) in map.iter().filter(|(k, _)| !hack.contains(k)) {
             self.headers.push(k.clone());
