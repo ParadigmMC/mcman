@@ -226,11 +226,7 @@ impl<'a> MarkdownAPI<'a> {
     }
 
     pub async fn table_world(&self, world: &World) -> Result<MarkdownTable> {
-        let mut table = MarkdownTable::with_headers(vec![
-            "Name".to_owned(),
-            "Description".to_owned(),
-            "Version".to_owned(),
-        ]);
+        let mut table = MarkdownTable::with_headers(vec!["Name", "Description", "Version"]);
 
         if let Some(dl) = &world.download {
             let mut map = self.fetch_downloadable_info(dl).await?;

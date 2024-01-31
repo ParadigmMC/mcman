@@ -13,7 +13,7 @@ impl MarkdownTable {
         }
     }
 
-    pub fn with_headers(headers: Vec<String>) -> Self {
+    pub fn with_headers(headers: Vec<&'static str>) -> Self {
         Self {
             headers,
             rows: vec![],
