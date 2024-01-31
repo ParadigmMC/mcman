@@ -14,7 +14,7 @@ pub struct RunArgs {
 }
 
 impl RunArgs {
-    pub fn create_dev_session<'a>(self, app: &'a App) -> Result<DevSession<'a>> {
+    pub fn create_dev_session(self, app: &App) -> Result<DevSession<'_>> {
         let builder = self.build_args.create_build_context(app)?;
 
         Ok(DevSession {

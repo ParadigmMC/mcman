@@ -19,7 +19,6 @@ pub struct MarkdownOptions {
 }
 
 impl Default for MarkdownOptions {
-    #[inline(always)]
     fn default() -> Self {
         Self {
             files: vec!["README.md".to_owned()],
@@ -29,7 +28,6 @@ impl Default for MarkdownOptions {
 }
 
 impl MarkdownOptions {
-    #[inline(always)]
     pub fn is_empty(&self) -> bool {
         self.files.is_empty()
     }

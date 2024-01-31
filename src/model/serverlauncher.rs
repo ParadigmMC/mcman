@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
+use std::{borrow::ToOwned, collections::HashMap};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 #[serde(rename_all = "lowercase")]
@@ -95,7 +94,7 @@ impl ServerLauncher {
         let mut args = self
             .jvm_args
             .split_whitespace()
-            .map(|x| x.to_owned())
+            .map(ToOwned::to_owned)
             .collect::<Vec<_>>();
 
         if std::env::var("MC_MEMORY").is_ok() || !self.memory.is_empty() {
@@ -134,7 +133,7 @@ impl ServerLauncher {
             args.push(String::from("--nogui"));
         }
 
-        args.extend(self.game_args.split_whitespace().map(|x| x.to_owned()));
+        args.extend(self.game_args.split_whitespace().map(ToOwned::to_owned));
 
         args
     }
