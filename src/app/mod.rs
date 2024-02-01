@@ -37,7 +37,7 @@ pub enum AddonType {
 }
 
 impl AddonType {
-    pub fn folder(self) -> &'static str {
+    pub const fn folder(self) -> &'static str {
         match self {
             Self::Mod => "mods",
             Self::Plugin => "plugins",
@@ -297,52 +297,49 @@ impl App {
 }
 
 macro_rules! api_methods {
-    ($name:ident, $t:ident) => {
-        pub fn $name(&'a self) -> sources::$name::$t<'a> {
+    ($(
+        name:ident => $t:ident,
+    )*) => {$(
+        pub fn $name<'a>(&'a self) -> sources::$name::$t<'a> {
             sources::$name::$t(&self)
         }
-    };
+    )*};
 }
 
-impl<'a> App {
-    api_methods!(vanilla, VanillaAPI);
+macro_rules! interop_methods {
+    ($(
+        name:ident => $t:ident,
+    )*) => {$(
+        pub fn $name<'a>(&'a self) -> crate::interop::$name::$t<'a> {
+            crate::interop::$name::$t(self)
+        }
+    )*};
+}
 
-    api_methods!(github, GithubAPI);
-    api_methods!(maven, MavenAPI);
-    api_methods!(jenkins, JenkinsAPI);
-
-    api_methods!(modrinth, ModrinthAPI);
-    api_methods!(curserinth, CurserinthAPI);
-
-    api_methods!(neoforge, NeoforgeAPI);
-    api_methods!(forge, ForgeAPI);
-    api_methods!(fabric, FabricAPI);
-    api_methods!(quilt, QuiltAPI);
-
-    api_methods!(papermc, PaperMCAPI);
-    api_methods!(hangar, HangarAPI);
-    api_methods!(purpur, PurpurAPI);
-    api_methods!(spigot, SpigotAPI);
-
-    api_methods!(mclogs, MCLogsAPI);
-
-    pub fn markdown(&'a self) -> crate::interop::markdown::MarkdownAPI<'a> {
-        crate::interop::markdown::MarkdownAPI(self)
+impl App {
+    api_methods! {
+        vanilla => VanillaAPI,
+        github => GithubAPI,
+        maven => MavenAPI,
+        jenkins => JenkinsAPI,
+        modrinth => ModrinthAPI,
+        curserinth => CurserinthAPI,
+        neoforge => NeoforgeAPI,
+        forge => ForgeAPI,
+        fabric => FabricAPI,
+        quilt => QuiltAPI,
+        papermc => PaperMCAPI,
+        hangar => HangarAPI,
+        purpur => PurpurAPI,
+        spigot => SpigotAPI,
+        mclogs => MCLogsAPI,
     }
 
-    pub fn packwiz(&'a mut self) -> crate::interop::packwiz::PackwizInterop<'a> {
-        crate::interop::packwiz::PackwizInterop(self)
-    }
-
-    pub fn mrpack(&'a mut self) -> crate::interop::mrpack::MRPackInterop<'a> {
-        crate::interop::mrpack::MRPackInterop(self)
-    }
-
-    pub fn worlds(&'a self) -> crate::interop::worlds::WorldsAPI<'a> {
-        crate::interop::worlds::WorldsAPI(self)
-    }
-
-    pub fn hooks(&'a self) -> crate::interop::hooks::HooksAPI<'a> {
-        crate::interop::hooks::HooksAPI(self)
+    interop_methods! {
+        markdown => MarkdownAPI,
+        packwiz => PackwizInterop,
+        mrpack => MRPackInterop,
+        worlds => WorldsAPI,
+        hooks => HooksAPI,
     }
 }

@@ -252,7 +252,7 @@ impl App {
             validate_hash(hasher)?;
 
             progress_bar.finish_and_clear();
-            self.notify(Prefix::Copied, resolved.filename.clone());
+            self.notify(Prefix::Copied, &resolved.filename);
         } else {
             progress_bar.set_prefix(ProgressPrefix::Fetching);
             progress_bar.set_message(resolved.filename.clone());
@@ -331,7 +331,7 @@ impl App {
             }
 
             progress_bar.finish_and_clear();
-            self.notify(Prefix::Downloaded, resolved.filename.clone());
+            self.notify(Prefix::Downloaded, &resolved.filename);
         }
 
         // succeeded, so defuse
