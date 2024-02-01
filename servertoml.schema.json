@@ -3,10 +3,10 @@
     "$id": "https://raw.githubusercontent.com/ParadigmMC/mcman/main/servertoml.schema.json",
     "definitions": {
         "ServerType": {
-            "anyOf": [
+            "oneOf": [
                 {
                     "type": "object",
-                    "anyOf": [
+                    "oneOf": [
                         {
                             "properties": {
                                 "type": {
@@ -40,7 +40,7 @@
                         {
                             "properties": {
                                 "type": {
-                                    "anyOf": [
+                                    "oneOf": [
                                         {
                                             "const": "quilt"
                                         },
@@ -65,7 +65,7 @@
                         {
                             "properties": {
                                 "type": {
-                                    "anyOf": [
+                                    "oneOf": [
                                         {
                                             "const": "neoforge"
                                         },
@@ -106,7 +106,7 @@
                         {
                             "properties": {
                                 "type": {
-                                    "anyOf": [
+                                    "oneOf": [
                                         {
                                             "const": "paper"
                                         },
@@ -135,7 +135,7 @@
         },
         "Downloadable": {
             "type": "object",
-            "anyOf": [
+            "oneOf": [
                 {
                     "properties": {
                         "type": {
@@ -159,7 +159,7 @@
                 {
                     "properties": {
                         "type": {
-                            "anyOf": [
+                            "oneOf": [
                                 {
                                     "const": "modrinth"
                                 },
@@ -181,7 +181,7 @@
                 {
                     "properties": {
                         "type": {
-                            "anyOf": [
+                            "oneOf": [
                                 {
                                     "const": "curserinth"
                                 },

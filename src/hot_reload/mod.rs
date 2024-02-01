@@ -58,7 +58,7 @@ pub enum Command {
     SendCommand(String),
     Log(String),
     WaitUntilExit,
-    Bootstrap(PathBuf),
+    Bootstrap(PathBuf, PathBuf),
 }
 
 async fn try_read_line(
@@ -248,12 +248,13 @@ impl<'a> DevSession<'a> {
                                 }
                             }
                         }
-                        Command::Bootstrap(rel_path) => {
+                        Command::Bootstrap(full_path, rel_path) => {
                             //self.builder.app.log_dev(format!("Bootstrapping: {}", rel_path.to_string_lossy().trim()));
-                            if let Err(e) = self.builder.bootstrap_file(&rel_path, None).await {
+                            if let Err(e) = self.builder.bootstrap_file(&full_path, &rel_path, None).await {
                                 self.builder.app.warn(format!("Error while bootstrapping:
                                 - Path: {}
-                                - Err: {e}", rel_path.to_string_lossy()));
+                                - Relative: {}
+                                - Err: {e}", full_path.display(), rel_path.display()));
                             }
                         }
                         Command::EndSession => {
@@ -516,7 +517,7 @@ impl<'a> DevSession<'a> {
 
                         let rel_path = diff_paths(&path, &base).expect("Cannot diff paths");
 
-                        tx.blocking_send(Command::Bootstrap(rel_path.clone()))
+                        tx.blocking_send(Command::Bootstrap(path.clone(), rel_path.clone()))
                             .unwrap();
 
                         let guard = config.lock().unwrap();

@@ -35,7 +35,52 @@ impl<'a> BuildContext<'a> {
         .map(|e| (e.path.clone(), e.date))
         .collect::<HashMap<_, _>>(); */
 
-        for entry in WalkDir::new(self.app.server.path.join("config")) {
+        // wtf i have to clone it sorry null
+        if let Some(nw) = self.app.network.clone() {
+            self.bootstrap_folder(
+                nw.path.join("groups").join("global").join("config")
+            ).await?;
+
+            if self.app.server.name == nw.proxy {
+                for group_name in &nw.proxy_groups {
+                    self.bootstrap_folder(
+                        nw.path.join("groups").join(group_name).join("config")
+                    ).await?;
+                }
+            }
+
+            if let Some(entry) = nw.servers.get(&self.app.server.name) {
+                for group_name in &entry.groups {
+                    self.bootstrap_folder(
+                        nw.path.join("groups").join(group_name).join("config")
+                    ).await?;
+                }
+            }
+        }
+
+        self.bootstrap_folder(
+            self.app.server.path.join("config")
+        ).await?;
+
+        pb.disable_steady_tick();
+        pb.finish_and_clear();
+        self.app.success("Bootstrapping complete");
+
+        self.app.ci("::endgroup::");
+
+        Ok(())
+    }
+
+    pub async fn bootstrap_folder(
+        &mut self,
+        from_path: PathBuf,
+    ) -> Result<()> {
+        if !from_path.exists() {
+            self.app.dbg(format!("skipped bootstrapping {} because it doesnt exist", from_path.display()));
+            return Ok(());
+        }
+
+        for entry in WalkDir::new(&from_path) {
             let entry = entry.map_err(|e| {
                 anyhow!(
                     "Can't walk directory/file: {}",
@@ -48,12 +93,13 @@ impl<'a> BuildContext<'a> {
             }
 
             let source = entry.path();
-            let diffed_paths = diff_paths(source, self.app.server.path.join("config"))
+            let diffed_paths = diff_paths(source, &from_path)
                 .ok_or(anyhow!("Cannot diff paths"))?;
 
-            pb.set_message(diffed_paths.to_string_lossy().to_string());
+            //pb.set_message(diffed_paths.to_string_lossy().to_string());
 
             self.bootstrap_file(
+                &source.to_path_buf(),
                 &diffed_paths,
                 None, /* lockfile_entries.get(&diffed_paths) */
             )
@@ -66,12 +112,6 @@ impl<'a> BuildContext<'a> {
                 diffed_paths.display()
             ))?;
         }
-
-        pb.disable_steady_tick();
-        pb.finish_and_clear();
-        self.app.success("Bootstrapping complete");
-
-        self.app.ci("::endgroup::");
 
         Ok(())
     }
@@ -107,12 +147,13 @@ impl<'a> BuildContext<'a> {
 
     pub async fn bootstrap_file(
         &mut self,
+        full_path: &PathBuf,
         rel_path: &PathBuf,
         cache: Option<&SystemTime>,
     ) -> Result<()> {
         let pretty_path = rel_path.display();
 
-        let source = self.app.server.path.join("config").join(rel_path);
+        let source = full_path;
         let dest = self.output_dir.join(rel_path);
 
         let metadata = fs::metadata(&source).await.context(format!(
@@ -161,9 +202,9 @@ impl<'a> BuildContext<'a> {
                 ))?;
             }
 
-            self.app.log(format!("  -> {pretty_path}"));
+            self.app.log_dev(format!("=> {pretty_path}"));
         } else {
-            self.app.log(format!("  unchanged: {pretty_path}"));
+            self.app.log_dev(format!("   {pretty_path}"));
         }
 
         if let Ok(source_time) = modified {

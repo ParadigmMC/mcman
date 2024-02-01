@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{Downloadable, Hook, MarkdownOptions};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(default)]
 pub struct Network {
     #[serde(skip)]
@@ -39,7 +39,16 @@ pub struct Network {
     pub groups: HashMap<String, Group>,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
+#[serde(default)]
+pub struct ServerEntry {
+    pub port: u16,
+    pub ip_address: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub groups: Vec<String>,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize, Clone)]
 #[serde(default)]
 pub struct Group {
     #[serde(default)]
@@ -118,11 +127,4 @@ impl Default for Network {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Default)]
-#[serde(default)]
-pub struct ServerEntry {
-    pub port: u16,
-    pub ip_address: Option<String>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub groups: Vec<String>,
-}
+
