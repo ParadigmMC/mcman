@@ -197,7 +197,7 @@ impl Server {
 impl Default for Server {
     fn default() -> Self {
         let mut vars = HashMap::new();
-        vars.insert("PORT".to_owned(), "25565".to_owned());
+        vars.insert("SERVER_PORT".to_owned(), "25565".to_owned());
         Self {
             path: PathBuf::from("."),
             name: String::new(),

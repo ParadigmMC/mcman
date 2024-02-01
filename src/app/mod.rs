@@ -17,8 +17,7 @@ pub use resolvable::*;
 use crate::model::{AppConfig, Downloadable, Network, Server};
 use crate::sources;
 
-use core::fmt::{self, Display, Formatter};
-use std::env;
+use std::{fmt::{self, Display, Formatter}, env};
 
 pub const APP_USER_AGENT: &str = concat!(
     env!("CARGO_PKG_NAME"),
@@ -110,19 +109,60 @@ impl App {
         self.server.mc_version.clone()
     }
 
+    pub fn reload_server(&mut self) -> Result<()> {
+        self.server = Server::load().context("Loading server.toml")?;
+        Ok(())
+    }
+
     pub fn get_addons(&self, ty: AddonType) -> Vec<Downloadable> {
         match ty {
             AddonType::Plugin => {
                 let mut list = self.server.plugins.clone();
                 if let Some(nw) = &self.network {
-                    list.extend_from_slice(&nw.plugins);
+                    if let Some(entry) = nw.servers.get(&self.server.name) {
+                        for group_name in &entry.groups {
+                            if let Some(group) = nw.groups.get(group_name) {
+                                list.extend_from_slice(&group.plugins);
+                            }
+                        }
+                    }
+
+                    if self.server.name == nw.proxy {
+                        for group_name in &nw.proxy_groups {
+                            if let Some(group) = nw.groups.get(group_name) {
+                                list.extend_from_slice(&group.plugins);
+                            }
+                        }
+                    }
+
+                    if let Some(global) = nw.groups.get("global") {
+                        list.extend_from_slice(&global.plugins);
+                    }
                 }
                 list
             }
             AddonType::Mod => {
-                let mut list = self.server.mods.clone();
+                let mut list: Vec<Downloadable> = self.server.mods.clone();
                 if let Some(nw) = &self.network {
-                    list.extend_from_slice(&nw.mods);
+                    if let Some(entry) = nw.servers.get(&self.server.name) {
+                        for group_name in &entry.groups {
+                            if let Some(group) = nw.groups.get(group_name) {
+                                list.extend_from_slice(&group.mods);
+                            }
+                        }
+                    }
+
+                    if self.server.name == nw.proxy {
+                        for group_name in &nw.proxy_groups {
+                            if let Some(group) = nw.groups.get(group_name) {
+                                list.extend_from_slice(&group.mods);
+                            }
+                        }
+                    }
+
+                    if let Some(global) = nw.groups.get("global") {
+                        list.extend_from_slice(&global.mods);
+                    }
                 }
                 list
             }
@@ -200,16 +240,17 @@ impl App {
             "TECHNOBLADE" => Some("Technoblade never dies".to_owned()),
             "denizs_gf" => Some("ily may".to_owned()),
 
-            k => {
-                if let Ok(v) = env::var(k) {
-                    Some(v)
-                } else if k.starts_with("NW_") {
-                    if let Some(nw) = &self.network {
-                        if k.starts_with("NW_SERVER_") {
-                            let (name, ty) =
-                                k.strip_prefix("NW_SERVER_").unwrap().split_once('_')?;
+            _ => None,
+        }.or_else(|| {
+            if let Ok(v) = std::env::var(k) {
+                Some(v)
+            } else if k.starts_with("NW_") {
+                if let Some(nw) = &self.network {
+                    if k.starts_with("NW_SERVER_") {
+                        let (name, ty) =
+                            k.strip_prefix("NW_SERVER_").unwrap().split_once('_')?;
 
-                            let serv = nw.servers.get(&name.to_lowercase())?;
+                        let serv = nw.servers.get(&name.to_lowercase())?;
 
                             let ip = env::var(format!("IP_{name}"))
                                 .ok()
@@ -220,23 +261,22 @@ impl App {
                                 .ok()
                                 .unwrap_or(serv.port.to_string());
 
-                            match ty.to_lowercase().as_str() {
-                                "ip" => Some(ip),
-                                "port" => Some(port),
-                                "address" => Some(format!("{ip}:{port}")),
-                                _ => None,
-                            }
-                        } else {
-                            nw.variables.get(k.strip_prefix("NW_").unwrap()).cloned()
+                        match ty.to_lowercase().as_str() {
+                            "ip" => Some(ip),
+                            "port" => Some(port),
+                            "address" => Some(format!("{ip}:{port}")),
+                            _ => None,
                         }
                     } else {
-                        None
+                        nw.variables.get(k.strip_prefix("NW_").unwrap()).cloned()
                     }
                 } else {
-                    self.server.variables.get(k).cloned()
+                    None
                 }
+            } else {
+                self.server.variables.get(k).cloned()
             }
-        }
+        })
     }
 
     pub fn get_cache(&self, ns: &str) -> Option<Cache> {

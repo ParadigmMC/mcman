@@ -9,7 +9,7 @@ use std::{
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use super::{ClientSideMod, Downloadable, Hook, MarkdownOptions};
+use super::{Downloadable, Hook, MarkdownOptions};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]
@@ -19,10 +19,14 @@ pub struct Network {
 
     pub name: String,
     pub proxy: String,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub proxy_groups: Vec<String>,
     pub port: u16,
     pub servers: HashMap<String, ServerEntry>,
     pub variables: HashMap<String, String>,
 
+    #[serde(default)]
     #[serde(skip_serializing_if = "MarkdownOptions::is_empty")]
     pub markdown: MarkdownOptions,
 
@@ -30,12 +34,20 @@ pub struct Network {
     #[serde(skip_serializing_if = "HashMap::is_empty")]
     pub hooks: HashMap<String, Hook>,
 
+    #[serde(default)]
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    pub groups: HashMap<String, Group>,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
+pub struct Group {
+    #[serde(default)]
+    pub variables: HashMap<String, String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub plugins: Vec<Downloadable>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub mods: Vec<Downloadable>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub clientsidemods: Vec<ClientSideMod>,
 }
 
 impl Network {
@@ -95,14 +107,13 @@ impl Default for Network {
             path: PathBuf::from("."),
             name: String::new(),
             proxy: "proxy".to_owned(),
+            proxy_groups: vec![],
             port: 25565,
             servers: HashMap::new(),
             variables: HashMap::new(),
             markdown: MarkdownOptions::default(),
             hooks: HashMap::new(),
-            plugins: vec![],
-            mods: vec![],
-            clientsidemods: vec![],
+            groups: HashMap::new(),
         }
     }
 }

@@ -16,7 +16,7 @@ pub struct DevArgs {
 }
 
 impl DevArgs {
-    pub fn create_dev_session(self, app: &App) -> Result<DevSession<'_>> {
+    pub fn create_dev_session(self, app: &mut App) -> Result<DevSession<'_>> {
         let config_path = app.server.path.join("hotreload.toml");
 
         let config = if config_path.exists() {
@@ -42,8 +42,8 @@ impl DevArgs {
     }
 }
 
-pub async fn run(app: App, args: DevArgs) -> Result<()> {
-    let dev_session = args.create_dev_session(&app)?;
+pub async fn run(mut app: App, args: DevArgs) -> Result<()> {
+    let dev_session = args.create_dev_session(&mut app)?;
     dev_session.start().await?;
 
     println!();

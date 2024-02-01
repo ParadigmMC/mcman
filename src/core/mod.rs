@@ -18,7 +18,7 @@ pub mod worlds;
 
 #[derive(Debug)]
 pub struct BuildContext<'a> {
-    pub app: &'a App,
+    pub app: &'a mut App,
 
     pub output_dir: PathBuf,
     pub lockfile: Lockfile,
@@ -68,12 +68,12 @@ impl<'a> BuildContext<'a> {
         let server_jar = self.download_server_jar().await?;
         self.app.ci("::endgroup::");
 
-        if !self.app.server.plugins.is_empty() && !self.skip_stages.contains(&"plugins".to_owned())
+        if !self.skip_stages.contains(&"plugins".to_owned())
         {
             self.download_addons(AddonType::Plugin).await?;
         }
 
-        if !self.app.server.mods.is_empty() && !self.skip_stages.contains(&"mods".to_owned()) {
+        if !self.skip_stages.contains(&"mods".to_owned()) {
             self.download_addons(AddonType::Mod).await?;
         }
 

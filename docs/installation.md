@@ -29,12 +29,11 @@ Here are a few ways to install mcman. [Whats Next? ->](./concepts/getting-starte
     https://aur.archlinux.org/mcman-bin.git
     ```
 
-=== "Linux: wget"
-    Install to `/usr/bin` using `wget`:
+=== "Linux: curl"
+    Install to `/usr/bin` using `curl`:
 
     ```sh
-    wget https://github.com/ParadigmMC/mcman/releases/latest/download/mcman
-    sudo mv ./mcman /usr/bin/
+    sudo curl -L -o /usr/bin/mcman https://github.com/ParadigmMC/mcman/releases/latest/download/mcman
     sudo chmod +x /usr/bin/mcman
     ```
 

@@ -14,7 +14,7 @@ pub struct RunArgs {
 }
 
 impl RunArgs {
-    pub fn create_dev_session(self, app: &App) -> Result<DevSession<'_>> {
+    pub fn create_dev_session(self, app: &mut App) -> Result<DevSession<'_>> {
         let builder = self.build_args.create_build_context(app)?;
 
         Ok(DevSession {
@@ -26,8 +26,8 @@ impl RunArgs {
     }
 }
 
-pub async fn run(app: App, args: RunArgs) -> Result<()> {
-    let dev_session = args.create_dev_session(&app)?;
+pub async fn run(mut app: App, args: RunArgs) -> Result<()> {
+    let dev_session = args.create_dev_session(&mut app)?;
     dev_session.start().await?;
 
     println!();

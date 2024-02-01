@@ -18,7 +18,7 @@ pub struct BuildArgs {
 }
 
 impl BuildArgs {
-    pub fn create_build_context(self, app: &App) -> Result<BuildContext<'_>> {
+    pub fn create_build_context(self, app: &mut App) -> Result<BuildContext<'_>> {
         let default_output = app.server.path.join("server");
         let output_dir = self.output.unwrap_or(default_output);
 
@@ -36,8 +36,8 @@ impl BuildArgs {
     }
 }
 
-pub async fn run(app: App, args: BuildArgs) -> Result<()> {
-    let mut ctx = args.create_build_context(&app)?;
+pub async fn run(mut app: App, args: BuildArgs) -> Result<()> {
+    let mut ctx = args.create_build_context(&mut app)?;
 
     ctx.build_all().await?;
 

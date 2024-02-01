@@ -27,13 +27,13 @@ impl ServerType {
         }
     }
 
-    pub fn get_metadata(&self) -> IndexMap<&'static str, String> {
+    pub fn get_metadata(&self) -> IndexMap<String, String> {
         let mut map = IndexMap::new();
 
         match self {
             Self::Fabric { loader, installer } | Self::Quilt { loader, installer } => {
                 map.insert(
-                    "Loader",
+                    "Loader".to_owned(),
                     match loader.as_str() {
                         "latest" => "*Latest*".to_owned(),
                         id => format!("`{id}`"),
@@ -41,13 +41,13 @@ impl ServerType {
                 );
 
                 if installer != "latest" {
-                    map.insert("Installer", format!("`{installer}`"));
+                    map.insert("Installer".to_owned(), format!("`{installer}`"));
                 }
             }
 
             Self::NeoForge { loader } | Self::Forge { loader } => {
                 map.insert(
-                    "Loader",
+                    "Loader".to_owned(),
                     match loader.as_str() {
                         "latest" => "*Latest*".to_owned(),
                         id => format!("`{id}`"),
@@ -57,7 +57,7 @@ impl ServerType {
 
             Self::PaperMC { build, .. } | Self::Purpur { build } => {
                 map.insert(
-                    "Build",
+                    "Build".to_owned(),
                     match build.as_str() {
                         "latest" => "*Latest*".to_owned(),
                         id => format!("`#{id}`"),
@@ -70,7 +70,7 @@ impl ServerType {
                     build, artifact, ..
                 } => {
                     map.insert(
-                        "Build",
+                        "Build".to_owned(),
                         match build.as_str() {
                             "latest" => "*Latest*".to_owned(),
                             id => format!("`#{id}`"),
@@ -78,12 +78,12 @@ impl ServerType {
                     );
 
                     if artifact != "first" {
-                        map.insert("Artifact", format!("`{artifact}`"));
+                        map.insert("Artifact".to_owned(), format!("`{artifact}`"));
                     }
                 }
                 Downloadable::GithubRelease { tag, asset, .. } => {
                     map.insert(
-                        "Release",
+                        "Release".to_owned(),
                         match tag.as_str() {
                             "latest" => "*Latest*".to_owned(),
                             id => format!("`{id}`"),
@@ -91,7 +91,7 @@ impl ServerType {
                     );
 
                     if asset != "first" {
-                        map.insert("Asset", format!("`{asset}`"));
+                        map.insert("Asset".to_owned(), format!("`{asset}`"));
                     }
                 }
 

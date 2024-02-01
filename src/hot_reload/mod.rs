@@ -222,6 +222,7 @@ impl<'a> DevSession<'a> {
                             is_stopping = false;
                             child = None;
                             stdout_lines = None;
+                            child_stdin = None;
                             self.builder.app.log_dev("Server process ended");
                         }
                         Command::Rebuild => {
@@ -229,7 +230,23 @@ impl<'a> DevSession<'a> {
                             let mut lock = state.lock().unwrap();
                             *lock = State::Building;
                             drop(lock);
-                            self.jar_name = Some(self.builder.build_all().await?);
+                            match self.builder.app.reload_server() {
+                                Ok(()) => {
+                                    match self.builder.build_all().await {
+                                        Ok(jar_name) => {
+                                            self.jar_name = Some(jar_name);
+                                        }
+                                        Err(e) => {
+                                            self.builder.app.error("Error while building");
+                                            self.builder.app.error(e);
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    self.builder.app.error("Error while reloading server.toml");
+                                    self.builder.app.error(e);
+                                }
+                            }
                         }
                         Command::Bootstrap(rel_path) => {
                             //self.builder.app.log_dev(format!("Bootstrapping: {}", rel_path.to_string_lossy().trim()));
@@ -554,7 +571,6 @@ impl<'a> DevSession<'a> {
                     tx.blocking_send(Command::WaitUntilExit)
                         .expect("tx send err");
                     tx.blocking_send(Command::Rebuild).expect("tx send err");
-                    tx.blocking_send(Command::Start).expect("tx send err");
                 }
             },
         )?)

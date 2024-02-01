@@ -12,6 +12,17 @@ impl<'a> BuildContext<'a> {
     pub async fn download_addons(&mut self, addon_type: AddonType) -> Result<()> {
         let server_list = self.app.get_addons(addon_type);
 
+        let existing_files = match addon_type {
+            AddonType::Plugin => self.lockfile.plugins.iter(),
+            AddonType::Mod => self.lockfile.mods.iter(),
+        }
+        .map(|(_, res)| res.filename.clone())
+        .collect::<HashSet<_>>();
+
+        if server_list.is_empty() && existing_files.is_empty() {
+            return Ok(());
+        }
+
         self.app.print_job(&format!(
             "Processing {} {addon_type}{}...{}",
             server_list.len(),
@@ -46,13 +57,6 @@ impl<'a> BuildContext<'a> {
             }
             .push((addon.clone(), resolved));
         }
-
-        let existing_files = match addon_type {
-            AddonType::Plugin => self.lockfile.plugins.iter(),
-            AddonType::Mod => self.lockfile.mods.iter(),
-        }
-        .map(|(_, res)| res.filename.clone())
-        .collect::<HashSet<_>>();
 
         pb.set_style(ProgressStyle::with_template(
             "{spinner:.blue} {prefix:.yellow} {msg}",
