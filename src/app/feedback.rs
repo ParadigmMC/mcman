@@ -1,5 +1,4 @@
-use core::fmt::Display;
-use std::{borrow::Cow, env};
+use std::{borrow::Cow, env, fmt::Display};
 
 use anyhow::Result;
 use console::{style, StyledObject};
@@ -19,16 +18,27 @@ pub enum ProgressPrefix {
     Exporting,
 }
 
+macro_rules! enum_to_string {
+    ($input:ident,$($value:ident,)*) => {
+        match $input {
+            $(
+                Self::$value => $stringify($value),
+            )*
+        }
+    };
+}
+
 impl From<ProgressPrefix> for Cow<'static, str> {
     fn from(val: ProgressPrefix) -> Self {
-        Cow::Borrowed(match val {
-            ProgressPrefix::Resolving => "Resolving",
-            ProgressPrefix::Checking => "Checking",
-            ProgressPrefix::Downloading => "Downloading",
-            ProgressPrefix::Copying => "Copying",
-            ProgressPrefix::Fetching => "Fetching",
-            ProgressPrefix::Exporting => "Exporting",
-        })
+        Cow::Borrowed(enum_to_string!(
+            val,
+            Resolving,
+            Checking,
+            Downloading,
+            Copying,
+            Fetching,
+            Exporting
+        ))
     }
 }
 
@@ -53,46 +63,46 @@ pub enum Prefix {
 }
 
 impl Prefix {
-    pub fn as_str(self) -> &'static str {
+    pub const fn as_str(self) -> &'static str {
         match self {
-            Prefix::Copied => "      Copied",
-            Prefix::Skipped => "     Skipped",
-            Prefix::SkippedWarning => "   ! Skipped",
-            Prefix::Downloaded => "  Downloaded",
+            Self::Copied => "      Copied",
+            Self::Skipped => "     Skipped",
+            Self::SkippedWarning => "   ! Skipped",
+            Self::Downloaded => "  Downloaded",
 
-            Prefix::Imported => "    Imported",
-            Prefix::Exported => "    Exported",
-            Prefix::Rendered => "    Rendered",
-            Prefix::Unpacked => "    Unpacked",
-            Prefix::Packed => "      Packed",
+            Self::Imported => "    Imported",
+            Self::Exported => "    Exported",
+            Self::Rendered => "    Rendered",
+            Self::Unpacked => "    Unpacked",
+            Self::Packed => "      Packed",
 
-            Prefix::Error => "     ⚠ Error",
-            Prefix::Warning => "      ⚠ Warn",
-            Prefix::Info => "      🛈 Info",
-            Prefix::Debug => "       debug",
+            Self::Error => "     ⚠ Error",
+            Self::Warning => "      ⚠ Warn",
+            Self::Info => "      🛈 Info",
+            Self::Debug => "       debug",
         }
     }
 
     pub fn styled(self) -> StyledObject<&'static str> {
         match self {
-            Prefix::Downloaded
-            | Prefix::Imported
-            | Prefix::Exported
-            | Prefix::Rendered
-            | Prefix::Packed
-            | Prefix::Unpacked => style(self.as_str()).green().bold(),
-            Prefix::Copied | Prefix::Skipped => style(self.as_str()).green(),
-            Prefix::Error => style(self.as_str()).red().bold(),
-            Prefix::Warning | Prefix::SkippedWarning => style(self.as_str()).yellow().bold(),
-            Prefix::Info => style(self.as_str()).bold(),
-            Prefix::Debug => style(self.as_str()).dim(),
+            Self::Downloaded
+            | Self::Imported
+            | Self::Exported
+            | Self::Rendered
+            | Self::Packed
+            | Self::Unpacked => style(self.as_str()).green().bold(),
+            Self::Copied | Self::Skipped => style(self.as_str()).green(),
+            Self::Error => style(self.as_str()).red().bold(),
+            Self::Warning | Self::SkippedWarning => style(self.as_str()).yellow().bold(),
+            Self::Info => style(self.as_str()).bold(),
+            Self::Debug => style(self.as_str()).dim(),
         }
     }
 }
 
 impl From<Prefix> for Cow<'static, str> {
     fn from(val: Prefix) -> Self {
-        Cow::Borrowed(val.as_str().trim())
+        Cow::Borrowed(val.as_str().trim_start())
     }
 }
 
@@ -134,7 +144,10 @@ impl App {
     }
 
     pub fn dbg<S: Display>(&self, message: S) {
-        if env::var("MCMAN_DEBUG") == Ok("true".to_owned()) {
+        if env::var("MCMAN_DEBUG")
+            .map(|s| s.as_str() == "true")
+            .unwrap_or_default()
+        {
             self.notify(Prefix::Debug, message);
         }
     }
@@ -151,7 +164,9 @@ impl App {
 
     #[allow(clippy::unused_self)]
     pub fn is_ci(&self) -> bool {
-        env::var("CI").ok() == Some("true".to_owned())
+        env::var("CI")
+            .map(|s| s.as_str() == "true")
+            .unwrap_or_default()
     }
 
     pub fn ci(&self, cmd: &str) {
@@ -197,16 +212,7 @@ impl App {
     }
 
     pub fn select<T: Clone>(&self, prompt: &str, items: &[SelectItem<T>]) -> Result<T> {
-        let item = &items[self.multi_progress.suspend(|| {
-            Select::with_theme(&ColorfulTheme::default())
-                .items(items)
-                .with_prompt(prompt)
-                .default(0)
-                .max_length(5)
-                .interact()
-        })?];
-
-        Ok(item.0.clone())
+        self.select_with_default(prompt, items, 0)
     }
 
     pub fn select_with_default<T: Clone>(

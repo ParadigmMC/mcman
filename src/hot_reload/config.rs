@@ -22,7 +22,7 @@ pub enum HotReloadAction {
 impl TryFrom<String> for HotReloadAction {
     type Error = anyhow::Error;
 
-    fn try_from(value: String) -> core::result::Result<Self, Self::Error> {
+    fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
         if value.starts_with('/') {
             Ok(Self::RunCommand(
                 value.strip_prefix('/').unwrap().to_string(),

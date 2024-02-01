@@ -126,5 +126,3 @@ impl Default for Network {
         }
     }
 }
-
-
