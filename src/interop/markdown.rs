@@ -287,10 +287,8 @@ impl<'a> MarkdownAPI<'a> {
                 let (name, desc) = self.0.spigot().fetch_info(id).await?;
 
                 (
-                    format!(
-                        "[{name}](https://www.spigotmc.org/resources/{id})",
-                        sanitize(&desc)?
-                    ),
+                    format!("[{name}](https://www.spigotmc.org/resources/{id})"),
+                    sanitize(&desc)?,
                     version.clone(),
                 )
             }

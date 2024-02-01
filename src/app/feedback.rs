@@ -37,7 +37,7 @@ impl From<ProgressPrefix> for Cow<'static, str> {
             Downloading,
             Copying,
             Fetching,
-            Exporting
+            Exporting,
         ))
     }
 }

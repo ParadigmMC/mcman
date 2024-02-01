@@ -36,10 +36,6 @@ impl MarkdownTable {
             .map(|header| map.get(header).cloned().unwrap_or_default())
             .collect::<Vec<_>>();
 
-        for header in &self.headers {
-            row.push();
-        }
-
         let hack = self.headers.clone();
 
         for (k, v) in map.into_iter().filter(|(k, _)| !hack.contains(&k)) {

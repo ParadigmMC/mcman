@@ -5,9 +5,9 @@ use std::borrow::Cow;
 
 macro_rules! version_id {
     ($loader:ident, |$id:ident| $id_format:literal) => {
-        match loader.as_str() {
+        match $loader.as_str() {
             "latest" => "*Latest*".to_owned(),
-            id => format!("`{id}`"),
+            $id => format!($id_format),
         }
     };
 
