@@ -22,7 +22,7 @@ macro_rules! enum_to_string {
     ($input:ident,$enum_type:ty,$($value:ident,)*) => {
         match $input {
             $(
-                $enum_type::$value => stringify!($value),
+                <$enum_type>::$value => stringify!($value),
             )*
         }
     };
