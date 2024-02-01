@@ -316,6 +316,16 @@ macro_rules! interop_methods {
     )*};
 }
 
+macro_rules! interop_methods_mut {
+    ($(
+        name:ident => $t:ident,
+    )*) => {$(
+        pub fn $name<'a>(&'a mut self) -> crate::interop::$name::$t<'a> {
+            crate::interop::$name::$t(self)
+        }
+    )*};
+}
+
 impl App {
     api_methods! {
         vanilla => VanillaAPI,
@@ -337,9 +347,12 @@ impl App {
 
     interop_methods! {
         markdown => MarkdownAPI,
-        packwiz => PackwizInterop,
-        mrpack => MRPackInterop,
         worlds => WorldsAPI,
         hooks => HooksAPI,
+    }
+    
+    interop_methods_mut! {
+        packwiz => PackwizInterop,
+        mrpack => MRPackInterop,
     }
 }
