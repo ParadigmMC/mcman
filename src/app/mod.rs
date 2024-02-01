@@ -300,7 +300,7 @@ macro_rules! api_methods {
     ($(
         $name:ident => $t:ident,
     )*) => {$(
-        pub fn $name<'a>(&'a self) -> sources::$name::$t<'a> {
+        pub fn $name(&self) -> sources::$name::$t<'_> {
             sources::$name::$t(&self)
         }
     )*};
@@ -310,7 +310,7 @@ macro_rules! interop_methods {
     ($(
         $name:ident => $t:ident,
     )*) => {$(
-        pub fn $name<'a>(&'a self) -> crate::interop::$name::$t<'a> {
+        pub fn $name(&self) -> crate::interop::$name::$t<'_> {
             crate::interop::$name::$t(self)
         }
     )*};
@@ -320,7 +320,7 @@ macro_rules! interop_methods_mut {
     ($(
         $name:ident => $t:ident,
     )*) => {$(
-        pub fn $name<'a>(&'a mut self) -> crate::interop::$name::$t<'a> {
+        pub fn $name(&mut self) -> crate::interop::$name::$t<'_> {
             crate::interop::$name::$t(self)
         }
     )*};
