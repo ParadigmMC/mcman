@@ -1,4 +1,4 @@
-use std::{fs::File, io::Write, time::Duration};
+use std::{borrow::Cow, fs::File, io::Write, time::Duration};
 
 use anyhow::{Context, Result};
 use indexmap::IndexMap;
@@ -22,8 +22,7 @@ pub struct MarkdownAPI<'a>(pub &'a App);
 impl<'a> MarkdownAPI<'a> {
     pub fn init_server(&self) -> Result<()> {
         let mut f = File::create(self.0.server.path.join("README.md"))?;
-        let readme_content = include_str!("../../res/default_readme");
-        let readme_content = readme_content
+        let readme_content = include_str!("../../res/default_readme")
             .replace("{SERVER_NAME}", &self.0.server.name)
             .replace(
                 "{ADDON_HEADER}",
@@ -41,9 +40,8 @@ impl<'a> MarkdownAPI<'a> {
 
     pub fn init_network(&self) -> Result<()> {
         let mut f = File::create(self.0.network.as_ref().unwrap().path.join("README.md"))?;
-        let readme_content = include_str!("../../res/default_readme_network");
-        let readme_content =
-            readme_content.replace("{NETWORK_NAME}", &self.0.network.as_ref().unwrap().name);
+        let readme_content = include_str!("../../res/default_readme_network")
+            .replace("{NETWORK_NAME}", &self.0.network.as_ref().unwrap().name);
 
         f.write_all(readme_content.as_bytes())?;
 
@@ -70,6 +68,7 @@ impl<'a> MarkdownAPI<'a> {
             .iter()
             .map(|f| (false, self.0.server.path.join(f)))
             .collect::<Vec<_>>();
+
         if let Some(nw) = &self.0.network {
             files.extend(nw.markdown.files.iter().map(|f| (true, nw.path.join(f))));
         }
@@ -91,6 +90,7 @@ impl<'a> MarkdownAPI<'a> {
                     r"(<!--start:mcman-{id}-->)([\w\W]*)(<!--end:mcman-{id}-->)"
                 ))
                 .unwrap();
+
                 content = re
                     .replace_all(&content, |_caps: &regex::Captures| {
                         format!(
@@ -167,8 +167,8 @@ impl<'a> MarkdownAPI<'a> {
     pub fn table_server(&self) -> MarkdownTable {
         let mut map = IndexMap::new();
 
-        map.insert("Version".to_owned(), self.0.server.mc_version.clone());
-        map.insert("Type".to_owned(), self.0.server.jar.get_md_link());
+        map.insert(Cow::Borrowed("Version"), self.0.server.mc_version.clone());
+        map.insert(Cow::Borrowed("Type"), self.0.server.jar.get_md_link());
 
         map.extend(self.0.server.jar.get_metadata());
 
@@ -182,8 +182,11 @@ impl<'a> MarkdownAPI<'a> {
             for (name, serv) in &nw.servers {
                 let mut map = IndexMap::new();
 
-                map.insert("Name".to_owned(), format!("[`{name}`](./servers/{name}/)"));
-                map.insert("Port".to_owned(), serv.port.to_string());
+                map.insert(
+                    Cow::Borrowed("Name"),
+                    format!("[`{name}`](./servers/{name}/)"),
+                );
+                map.insert(Cow::Borrowed("Port"), serv.port.to_string());
 
                 table.add_from_map(map);
             }
@@ -226,11 +229,18 @@ impl<'a> MarkdownAPI<'a> {
     }
 
     pub async fn table_world(&self, world: &World) -> Result<MarkdownTable> {
-        let mut table = MarkdownTable::with_headers(vec!["Name".to_owned(), "Description".to_owned(), "Version".to_owned()]);
+        let mut table = MarkdownTable::with_headers(vec![
+            Cow::Borrowed("Name"),
+            Cow::Borrowed("Description"),
+            Cow::Borrowed("Version"),
+        ]);
 
         if let Some(dl) = &world.download {
             let mut map = self.fetch_downloadable_info(dl).await?;
-            map.insert("Name".to_owned(), format!("**(World Download)** {}", map["Name"]));
+            map.insert(
+                Cow::Borrowed("Name"),
+                format!("**(World Download)** {}", map["Name"]),
+            );
             table.add_from_map(map);
         }
 
@@ -255,70 +265,56 @@ impl<'a> MarkdownAPI<'a> {
     pub async fn fetch_downloadable_info(
         &self,
         dl: &Downloadable,
-    ) -> Result<IndexMap<String, String>> {
-        let map = match dl {
+    ) -> Result<IndexMap<Cow<'static, str>, String>> {
+        let (name, description, version) = match dl {
             Downloadable::Modrinth { id, version } => {
                 let proj = self.0.modrinth().fetch_project(id).await?;
 
-                IndexMap::from([
-                    (
-                        "Name".to_owned(),
-                        format!("[{}](https://modrinth.com/mod/{})", proj.title, proj.slug),
-                    ),
-                    ("Description".to_owned(), sanitize(&proj.description)?),
-                    ("Version".to_owned(), version.clone()),
-                ])
+                (
+                    format!("[{}](https://modrinth.com/mod/{})", proj.title, proj.slug),
+                    sanitize(&proj.description)?,
+                    version.clone(),
+                )
             }
 
             Downloadable::CurseRinth { id, version } => {
                 let proj = self.0.curserinth().fetch_project(id).await?;
 
-                IndexMap::from([(
-                    "Name".to_owned(),
-                    format!("{} <sup>[CF](https://www.curseforge.com/minecraft/mc-mods/{id}) [CR](https://curserinth.kuylar.dev/mod/{id})</sup>", proj.title, id = proj.slug),
-                ),
-                ("Description".to_owned(), sanitize(&proj.description)?),
-                ("Version".to_owned(), version.clone())])
+                (format!("{} <sup>[CF](https://www.curseforge.com/minecraft/mc-mods/{id}) [CR](https://curserinth.kuylar.dev/mod/{id})</sup>", proj.title, id = proj.slug), sanitize(&proj.description)?, version.clone())
             }
 
             Downloadable::Spigot { id, version } => {
                 let (name, desc) = self.0.spigot().fetch_info(id).await?;
 
-                IndexMap::from([
-                    (
-                        "Name".to_owned(),
-                        format!("[{name}](https://www.spigotmc.org/resources/{id})"),
-                    ),
-                    ("Description".to_owned(), sanitize(&desc)?),
-                    ("Version".to_owned(), version.clone()),
-                ])
+                (
+                    format!("[{name}](https://www.spigotmc.org/resources/{id})"),
+                    sanitize(&desc)?,
+                    version.clone(),
+                )
             }
 
             Downloadable::Hangar { id, version } => {
                 let proj = mcapi::hangar::fetch_project(&self.0.http_client, id).await?;
 
-                IndexMap::from([
-                    (
-                        "Name".to_owned(),
-                        format!(
-                            "[{}](https://hangar.papermc.io/{})",
-                            proj.name,
-                            proj.namespace.to_string()
-                        ),
+                (
+                    format!(
+                        "[{}](https://hangar.papermc.io/{})",
+                        proj.name,
+                        proj.namespace.to_string()
                     ),
-                    ("Description".to_owned(), sanitize(&proj.description)?),
-                    ("Version".to_owned(), version.clone()),
-                ])
+                    sanitize(&proj.description)?,
+                    version.clone(),
+                )
             }
 
             Downloadable::GithubRelease { repo, tag, asset } => {
                 let desc = self.0.github().fetch_repo_description(repo).await?;
 
-                IndexMap::from([
-                    ("Name".to_owned(), dl.get_md_link()),
-                    ("Description".to_owned(), sanitize(&desc)?),
-                    ("Version".to_owned(), format!("{tag} / `{asset}`")),
-                ])
+                (
+                    dl.get_md_link(),
+                    sanitize(&desc)?,
+                    format!("{tag} / `{asset}`"),
+                )
             }
 
             Downloadable::Jenkins {
@@ -329,43 +325,37 @@ impl<'a> MarkdownAPI<'a> {
             } => {
                 let desc = self.0.jenkins().fetch_description(url, job).await?;
 
-                IndexMap::from([
-                    ("Name".to_owned(), dl.get_md_link()),
-                    ("Description".to_owned(), sanitize(&desc)?),
-                    ("Version".to_owned(), format!("{build} / `{artifact}`")),
-                ])
+                (
+                    dl.get_md_link(),
+                    sanitize(&desc)?,
+                    format!("{build} / `{artifact}`"),
+                )
             }
 
             Downloadable::Maven {
                 version, artifact, ..
-            } => IndexMap::from([
-                ("Name".to_owned(), artifact.clone()),
-                ("Description".to_owned(), dl.get_md_link()),
-                ("Version".to_owned(), version.clone()),
-            ]),
+            } => (artifact.clone(), dl.get_md_link(), version.clone()),
 
             Downloadable::Url {
                 url,
                 filename,
                 desc,
-            } => IndexMap::from([
-                (
-                    "Name".to_owned(),
-                    format!(
-                        "`{}`",
-                        filename.as_ref().unwrap_or(&"Custom URL".to_owned())
-                    ),
+            } => (
+                format!(
+                    "`{}`",
+                    filename.as_ref().unwrap_or(&"Custom URL".to_owned())
                 ),
-                (
-                    "Description".to_owned(),
-                    desc.as_ref()
-                        .unwrap_or(&"*No description provided*".to_owned())
-                        .clone(),
-                ),
-                ("Version".to_owned(), format!("[URL]({url})")),
-            ]),
+                desc.as_ref()
+                    .unwrap_or(&"*No description provided*".to_owned())
+                    .clone(),
+                format!("[URL]({url})"),
+            ),
         };
 
-        Ok(map)
+        Ok(IndexMap::from([
+            (Cow::Borrowed("Name"), name),
+            (Cow::Borrowed("Description"), description),
+            (Cow::Borrowed("Version"), version),
+        ]))
     }
 }

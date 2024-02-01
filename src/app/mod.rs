@@ -17,7 +17,10 @@ pub use resolvable::*;
 use crate::model::{AppConfig, Downloadable, Network, Server};
 use crate::sources;
 
-use std::{fmt::{self, Display, Formatter}, env};
+use std::{
+    env,
+    fmt::{self, Display, Formatter},
+};
 
 pub const APP_USER_AGENT: &str = concat!(
     env!("CARGO_PKG_NAME"),
@@ -246,25 +249,25 @@ impl App {
             "denizs_gf" => Some("ily may".to_owned()),
 
             _ => None,
-        }.or_else(|| {
+        }
+        .or_else(|| {
             if let Ok(v) = std::env::var(k) {
                 Some(v)
             } else if k.starts_with("NW_") {
                 if let Some(nw) = &self.network {
                     if k.starts_with("NW_SERVER_") {
-                        let (name, ty) =
-                            k.strip_prefix("NW_SERVER_").unwrap().split_once('_')?;
+                        let (name, ty) = k.strip_prefix("NW_SERVER_").unwrap().split_once('_')?;
 
                         let serv = nw.servers.get(&name.to_lowercase())?;
 
-                            let ip = env::var(format!("IP_{name}"))
-                                .ok()
-                                .or(serv.ip_address.clone())
-                                .unwrap_or("127.0.0.1".to_owned());
+                        let ip = env::var(format!("IP_{name}"))
+                            .ok()
+                            .or(serv.ip_address.clone())
+                            .unwrap_or("127.0.0.1".to_owned());
 
-                            let port = env::var(format!("PORT_{name}"))
-                                .ok()
-                                .unwrap_or(serv.port.to_string());
+                        let port = env::var(format!("PORT_{name}"))
+                            .ok()
+                            .unwrap_or(serv.port.to_string());
 
                         match ty.to_lowercase().as_str() {
                             "ip" => Some(ip),

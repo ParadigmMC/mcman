@@ -1,9 +1,8 @@
 use anyhow::{Context, Result};
-use core::marker::Unpin;
 use digest::{Digest, DynDigest};
 use indicatif::ProgressBar;
 use sha2::Sha256;
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, marker::Unpin, path::PathBuf};
 use tokio::{
     fs::File,
     io::{AsyncRead, AsyncWrite},

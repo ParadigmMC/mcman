@@ -1,6 +1,20 @@
 use indexmap::IndexMap;
 
 use super::{Downloadable, ServerType};
+use std::borrow::Cow;
+
+macro_rules! version_id {
+    ($loader:ident, |$id:ident| $id_format:literal) => {
+        match $loader.as_str() {
+            "latest" => "*Latest*".to_owned(),
+            $id => format!($id_format),
+        }
+    };
+
+    ($loader:ident) => {
+        version_id!($loader, |id| "`{id}`")
+    };
+}
 
 impl ServerType {
     pub fn get_md_link(&self) -> String {
@@ -27,71 +41,42 @@ impl ServerType {
         }
     }
 
-    pub fn get_metadata(&self) -> IndexMap<String, String> {
+    pub fn get_metadata(&self) -> IndexMap<Cow<'static, str>, String> {
         let mut map = IndexMap::new();
 
         match self {
             Self::Fabric { loader, installer } | Self::Quilt { loader, installer } => {
-                map.insert(
-                    "Loader".to_owned(),
-                    match loader.as_str() {
-                        "latest" => "*Latest*".to_owned(),
-                        id => format!("`{id}`"),
-                    },
-                );
+                map.insert(Cow::Borrowed("Loader"), version_id!(loader));
 
                 if installer != "latest" {
-                    map.insert("Installer".to_owned(), format!("`{installer}`"));
+                    map.insert(Cow::Borrowed("Installer"), format!("`{installer}`"));
                 }
             }
 
             Self::NeoForge { loader } | Self::Forge { loader } => {
-                map.insert(
-                    "Loader".to_owned(),
-                    match loader.as_str() {
-                        "latest" => "*Latest*".to_owned(),
-                        id => format!("`{id}`"),
-                    },
-                );
+                map.insert(Cow::Borrowed("Loader"), version_id!(loader));
             }
 
             Self::PaperMC { build, .. } | Self::Purpur { build } => {
-                map.insert(
-                    "Build".to_owned(),
-                    match build.as_str() {
-                        "latest" => "*Latest*".to_owned(),
-                        id => format!("`#{id}`"),
-                    },
-                );
+                map.insert(Cow::Borrowed("Build"), version_id!(build, |id| "`#{id}`"));
             }
 
             Self::Downloadable { inner } => match inner {
                 Downloadable::Jenkins {
                     build, artifact, ..
                 } => {
-                    map.insert(
-                        "Build".to_owned(),
-                        match build.as_str() {
-                            "latest" => "*Latest*".to_owned(),
-                            id => format!("`#{id}`"),
-                        },
-                    );
+                    map.insert(Cow::Borrowed("Build"), version_id!(build, |id| "`#{id}`"));
 
                     if artifact != "first" {
-                        map.insert("Artifact".to_owned(), format!("`{artifact}`"));
+                        map.insert(Cow::Borrowed("Artifact"), format!("`{artifact}`"));
                     }
                 }
+
                 Downloadable::GithubRelease { tag, asset, .. } => {
-                    map.insert(
-                        "Release".to_owned(),
-                        match tag.as_str() {
-                            "latest" => "*Latest*".to_owned(),
-                            id => format!("`{id}`"),
-                        },
-                    );
+                    map.insert(Cow::Borrowed("Release"), version_id!(tag));
 
                     if asset != "first" {
-                        map.insert("Asset".to_owned(), format!("`{asset}`"));
+                        map.insert(Cow::Borrowed("Asset"), format!("`{asset}`"));
                     }
                 }
 

@@ -1,6 +1,7 @@
 use indexmap::IndexMap;
 
 use crate::{model::Downloadable, sources::jenkins::JenkinsAPI};
+use std::borrow::Cow;
 
 impl Downloadable {
     pub fn get_md_link(&self) -> String {
@@ -52,44 +53,37 @@ impl Downloadable {
         .to_owned()
     }
 
-    pub fn fields_to_map(&self) -> IndexMap<String, String> {
+    pub fn fields_to_map(&self) -> IndexMap<Cow<'static, str>, String> {
         let mut map = IndexMap::new();
 
-        map.insert("Type".to_owned(), self.get_type_name());
+        map.insert(Cow::Borrowed("Type"), self.get_type_name());
 
-        match self {
-            Self::Url { url, filename, .. } => {
-                map.insert("Project/URL".to_owned(), url.clone());
-                map.insert(
-                    "Asset/File".to_owned(),
-                    filename.as_ref().unwrap_or(&String::new()).clone(),
-                );
-            }
+        let (project_url, asset, version) = match self {
+            Self::Url { url, filename, .. } => (
+                url.clone(),
+                Some(filename.as_ref().unwrap_or(&String::new()).clone()),
+                None,
+            ),
 
             Self::GithubRelease { repo, tag, asset } => {
-                map.insert("Project/URL".to_owned(), repo.clone());
-                map.insert("Version/Release".to_owned(), tag.clone());
-                map.insert("Asset/File".to_owned(), asset.clone());
+                (repo.clone(), Some(asset.clone()), Some(tag.clone()))
             }
 
             Self::Modrinth { id, version }
             | Self::CurseRinth { id, version }
             | Self::Hangar { id, version }
-            | Self::Spigot { id, version } => {
-                map.insert("Project/URL".to_owned(), id.clone());
-                map.insert("Version/Release".to_owned(), version.clone());
-            }
+            | Self::Spigot { id, version } => (id.clone(), None, Some(version.clone())),
 
             Self::Jenkins {
                 url,
                 job,
                 build,
                 artifact,
-            } => {
-                map.insert("Project/URL".to_owned(), format!("{job} - ({url})"));
-                map.insert("Version/Release".to_owned(), build.clone());
-                map.insert("Asset/File".to_owned(), artifact.clone());
-            }
+            } => (
+                format!("{job} - ({url})"),
+                Some(artifact.clone()),
+                Some(build.clone()),
+            ),
 
             Self::Maven {
                 url,
@@ -97,11 +91,21 @@ impl Downloadable {
                 artifact,
                 version,
                 filename,
-            } => {
-                map.insert("Project/URL".to_owned(), format!("{group}.{artifact} - ({url})"));
-                map.insert("Version/Release".to_owned(), version.clone());
-                map.insert("Asset/File".to_owned(), filename.clone());
-            }
+            } => (
+                format!("{group}.{artifact} - ({url})"),
+                Some(filename.clone()),
+                Some(version.clone()),
+            ),
+        };
+
+        map.insert(Cow::Borrowed("Project/URL"), project_url.clone());
+
+        if let Some(version) = version {
+            map.insert(Cow::Borrowed("Version/Release"), version);
+        }
+
+        if let Some(asset) = asset {
+            map.insert(Cow::Borrowed("Asset/File"), asset);
         }
 
         map

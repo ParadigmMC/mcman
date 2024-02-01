@@ -68,8 +68,7 @@ impl<'a> BuildContext<'a> {
         let server_jar = self.download_server_jar().await?;
         self.app.ci("::endgroup::");
 
-        if !self.skip_stages.contains(&"plugins".to_owned())
-        {
+        if !self.skip_stages.contains(&"plugins".to_owned()) {
             self.download_addons(AddonType::Plugin).await?;
         }
 

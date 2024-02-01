@@ -1,5 +1,12 @@
 use std::{
-    collections::HashSet, env, ffi::OsStr, path::{Component, PathBuf}, process, process::{ExitStatus, Stdio}, sync::{Arc, Mutex}, time::Duration
+    collections::HashSet,
+    env,
+    ffi::OsStr,
+    path::{Component, PathBuf},
+    process,
+    process::{ExitStatus, Stdio},
+    sync::{Arc, Mutex},
+    time::Duration,
 };
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -258,18 +265,8 @@ impl<'a> DevSession<'a> {
                         }
                         Command::BootstrapGroup(group_name, full_path, rel_path) => {
                             let should = group_name == "global" || self.builder.app.network.as_ref().is_some_and(|nw| {
-                                if self.builder.app.server.name == nw.proxy {
-                                    if nw.proxy_groups.contains(&group_name) {
-                                        return true;
-                                    }
-                                }
-
-                                if nw.servers.get(&self.builder.app.server.name)
-                                    .is_some_and(|serv| serv.groups.contains(&group_name)) {
-                                    return true;
-                                }
-
-                                false
+                                (self.builder.app.server.name == nw.proxy && nw.proxy_groups.contains(&group_name)) || nw.servers.get(&self.builder.app.server.name)
+                                    .is_some_and(|serv| serv.groups.contains(&group_name))
                             });
 
                             if should {
@@ -603,7 +600,8 @@ impl<'a> DevSession<'a> {
                             continue;
                         }
 
-                        let g_rel_path = diff_paths(&path, &groups_path).expect("Cannot diff paths");
+                        let g_rel_path =
+                            diff_paths(&path, &groups_path).expect("Cannot diff paths");
 
                         let mut comps = g_rel_path.components();
 
@@ -617,8 +615,12 @@ impl<'a> DevSession<'a> {
 
                         let rel_path = comps.collect::<PathBuf>();
 
-                        tx.blocking_send(Command::BootstrapGroup(group_name.to_string_lossy().into_owned(), path.clone(), rel_path.clone()))
-                            .unwrap();
+                        tx.blocking_send(Command::BootstrapGroup(
+                            group_name.to_string_lossy().into_owned(),
+                            path.clone(),
+                            rel_path.clone(),
+                        ))
+                        .unwrap();
 
                         let guard = config.lock().unwrap();
                         let Some(file) = guard
@@ -694,10 +696,12 @@ impl<'a> DevSession<'a> {
         let mut network_groups_watcher = Self::create_network_groups_watcher(
             cfg_mutex_w.clone(),
             tx.clone(),
-            self.builder.app.network
+            self.builder
+                .app
+                .network
                 .as_ref()
                 .map(|nw| nw.path.join("groups"))
-                .unwrap_or_default()
+                .unwrap_or_default(),
         )?;
 
         if self.hot_reload.is_some() {
@@ -723,8 +727,12 @@ impl<'a> DevSession<'a> {
             )?;
 
             if let Some(nw) = &self.builder.app.network {
-                self.builder.app.log_dev("Watching [network.toml] groups/*/config/**");
-                network_groups_watcher.watcher().watch(&nw.path.join("groups"), RecursiveMode::Recursive)?;
+                self.builder
+                    .app
+                    .log_dev("Watching [network.toml] groups/*/config/**");
+                network_groups_watcher
+                    .watcher()
+                    .watch(&nw.path.join("groups"), RecursiveMode::Recursive)?;
                 networktoml_watcher.watcher().watch(
                     nw.path.join("network.toml").as_path(),
                     RecursiveMode::NonRecursive,

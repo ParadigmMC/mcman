@@ -37,30 +37,26 @@ impl<'a> BuildContext<'a> {
 
         // wtf i have to clone it sorry null
         if let Some(nw) = self.app.network.clone() {
-            self.bootstrap_folder(
-                nw.path.join("groups").join("global").join("config")
-            ).await?;
+            self.bootstrap_folder(nw.path.join("groups").join("global").join("config"))
+                .await?;
 
             if self.app.server.name == nw.proxy {
                 for group_name in &nw.proxy_groups {
-                    self.bootstrap_folder(
-                        nw.path.join("groups").join(group_name).join("config")
-                    ).await?;
+                    self.bootstrap_folder(nw.path.join("groups").join(group_name).join("config"))
+                        .await?;
                 }
             }
 
             if let Some(entry) = nw.servers.get(&self.app.server.name) {
                 for group_name in &entry.groups {
-                    self.bootstrap_folder(
-                        nw.path.join("groups").join(group_name).join("config")
-                    ).await?;
+                    self.bootstrap_folder(nw.path.join("groups").join(group_name).join("config"))
+                        .await?;
                 }
             }
         }
 
-        self.bootstrap_folder(
-            self.app.server.path.join("config")
-        ).await?;
+        self.bootstrap_folder(self.app.server.path.join("config"))
+            .await?;
 
         pb.disable_steady_tick();
         pb.finish_and_clear();
@@ -71,12 +67,12 @@ impl<'a> BuildContext<'a> {
         Ok(())
     }
 
-    pub async fn bootstrap_folder(
-        &mut self,
-        from_path: PathBuf,
-    ) -> Result<()> {
+    pub async fn bootstrap_folder(&mut self, from_path: PathBuf) -> Result<()> {
         if !from_path.exists() {
-            self.app.dbg(format!("skipped bootstrapping {} because it doesnt exist", from_path.display()));
+            self.app.dbg(format!(
+                "skipped bootstrapping {} because it doesnt exist",
+                from_path.display()
+            ));
             return Ok(());
         }
 
@@ -93,8 +89,8 @@ impl<'a> BuildContext<'a> {
             }
 
             let source = entry.path();
-            let diffed_paths = diff_paths(source, &from_path)
-                .ok_or(anyhow!("Cannot diff paths"))?;
+            let diffed_paths =
+                diff_paths(source, &from_path).ok_or(anyhow!("Cannot diff paths"))?;
 
             //pb.set_message(diffed_paths.to_string_lossy().to_string());
 
