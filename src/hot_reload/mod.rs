@@ -1,11 +1,5 @@
 use std::{
-    collections::HashSet,
-    env,
-    path::PathBuf,
-    process,
-    process::{ExitStatus, Stdio},
-    sync::{Arc, Mutex},
-    time::Duration,
+    collections::HashSet, env, ffi::OsStr, path::{Component, PathBuf}, process, process::{ExitStatus, Stdio}, sync::{Arc, Mutex}, time::Duration
 };
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -59,6 +53,7 @@ pub enum Command {
     Log(String),
     WaitUntilExit,
     Bootstrap(PathBuf, PathBuf),
+    BootstrapGroup(String, PathBuf, PathBuf),
 }
 
 async fn try_read_line(
@@ -235,6 +230,7 @@ impl<'a> DevSession<'a> {
                                     match self.builder.build_all().await {
                                         Ok(jar_name) => {
                                             self.jar_name = Some(jar_name);
+                                            tx.send(Command::Start).await?;
                                         }
                                         Err(e) => {
                                             self.builder.app.error("Error while building");
@@ -246,6 +242,26 @@ impl<'a> DevSession<'a> {
                                     self.builder.app.error("Error while reloading server.toml");
                                     self.builder.app.error(e);
                                 }
+                            }
+                        }
+                        Command::BootstrapGroup(group_name, full_path, rel_path) => {
+                            let should = group_name == "global" || self.builder.app.network.as_ref().is_some_and(|nw| {
+                                if self.builder.app.server.name == nw.proxy {
+                                    if nw.proxy_groups.contains(&group_name) {
+                                        return true;
+                                    }
+                                }
+
+                                if nw.servers.get(&self.builder.app.server.name)
+                                    .is_some_and(|serv| serv.groups.contains(&group_name)) {
+                                    return true;
+                                }
+
+                                false
+                            });
+
+                            if should {
+                                tx.send(Command::Bootstrap(full_path, rel_path)).await?;
                             }
                         }
                         Command::Bootstrap(full_path, rel_path) => {
@@ -556,6 +572,78 @@ impl<'a> DevSession<'a> {
         )?)
     }
 
+    pub fn create_network_groups_watcher(
+        config: Arc<Mutex<HotReloadConfig>>,
+        tx: mpsc::Sender<Command>,
+        groups_path: PathBuf,
+    ) -> Result<Debouncer<RecommendedWatcher, FileIdMap>> {
+        Ok(new_debouncer(
+            Duration::from_secs(1),
+            None,
+            move |e: DebounceEventResult| {
+                if let Ok(e) = e {
+                    for path in e
+                        .into_iter()
+                        .flat_map(|e| e.paths.clone())
+                        .collect::<HashSet<_>>()
+                    {
+                        if path.is_dir() || !path.exists() {
+                            continue;
+                        }
+
+                        let g_rel_path = diff_paths(&path, &groups_path).expect("Cannot diff paths");
+
+                        let mut comps = g_rel_path.components();
+
+                        let Some(Component::Normal(group_name)) = comps.next() else {
+                            continue;
+                        };
+
+                        if comps.next() != Some(Component::Normal(OsStr::new("config"))) {
+                            continue;
+                        }
+
+                        let rel_path = comps.collect::<PathBuf>();
+
+                        tx.blocking_send(Command::BootstrapGroup(group_name.to_string_lossy().into_owned(), path.clone(), rel_path.clone()))
+                            .unwrap();
+
+                        let guard = config.lock().unwrap();
+                        let Some(file) = guard
+                            .files
+                            .iter()
+                            .find(|f| f.path.matches_path(&rel_path))
+                            .cloned()
+                        else {
+                            continue;
+                        };
+                        drop(guard);
+
+                        match &file.action {
+                            HotReloadAction::Reload => {
+                                tx.blocking_send(Command::SendCommand(
+                                    "reload confirm\n".to_owned(),
+                                ))
+                                .expect("tx send err");
+                            }
+                            HotReloadAction::Restart => {
+                                tx.blocking_send(Command::SendCommand("stop\nend\n".to_owned()))
+                                    .expect("tx send err");
+                                tx.blocking_send(Command::WaitUntilExit)
+                                    .expect("tx send err");
+                                tx.blocking_send(Command::Start).expect("tx send err");
+                            }
+                            HotReloadAction::RunCommand(cmd) => {
+                                tx.blocking_send(Command::SendCommand(format!("{cmd}\n")))
+                                    .expect("tx send err");
+                            }
+                        }
+                    }
+                }
+            },
+        )?)
+    }
+
     pub fn create_servertoml_watcher(
         tx: mpsc::Sender<Command>,
     ) -> Result<Debouncer<RecommendedWatcher, FileIdMap>> {
@@ -590,16 +678,27 @@ impl<'a> DevSession<'a> {
         let mut hotreload_watcher =
             Self::create_hotreload_watcher(cfg_mutex_w.clone(), tx.clone())?;
         let mut servertoml_watcher = Self::create_servertoml_watcher(tx.clone())?;
+        let mut network_groups_watcher = Self::create_network_groups_watcher(
+            cfg_mutex_w.clone(),
+            tx.clone(),
+            self.builder.app.network
+                .as_ref()
+                .map(|nw| nw.path.join("groups"))
+                .unwrap_or_default()
+        )?;
 
         if self.hot_reload.is_some() {
+            self.builder.app.log_dev("Watching config/**");
             config_watcher.watcher().watch(
                 self.builder.app.server.path.join("config").as_path(),
                 RecursiveMode::Recursive,
             )?;
+            self.builder.app.log_dev("Watching server.toml");
             servertoml_watcher.watcher().watch(
                 self.builder.app.server.path.join("server.toml").as_path(),
                 RecursiveMode::NonRecursive,
             )?;
+            self.builder.app.log_dev("Watching hotrload.toml");
             hotreload_watcher.watcher().watch(
                 self.builder
                     .app
@@ -609,10 +708,14 @@ impl<'a> DevSession<'a> {
                     .as_path(),
                 RecursiveMode::NonRecursive,
             )?;
+
+            if let Some(nw) = &self.builder.app.network {
+                self.builder.app.log_dev("Watching [network.toml] groups/*/config/**");
+                network_groups_watcher.watcher().watch(&nw.path.join("groups"), RecursiveMode::Recursive)?;
+            }
         }
 
         tx.send(Command::Rebuild).await?;
-        tx.send(Command::Start).await?;
 
         self.handle_commands(rx, tx.clone()).await?;
 
