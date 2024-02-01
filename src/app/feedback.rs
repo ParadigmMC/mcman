@@ -19,10 +19,10 @@ pub enum ProgressPrefix {
 }
 
 macro_rules! enum_to_string {
-    ($input:ident,$($value:ident,)*) => {
+    ($input:ident,$enum_type:ty,$($value:ident,)*) => {
         match $input {
             $(
-                Self::$value => stringify!($value),
+                $enum_type::$value => stringify!($value),
             )*
         }
     };
@@ -32,6 +32,7 @@ impl From<ProgressPrefix> for Cow<'static, str> {
     fn from(val: ProgressPrefix) -> Self {
         Cow::Borrowed(enum_to_string!(
             val,
+            ProgressPrefix,
             Resolving,
             Checking,
             Downloading,
