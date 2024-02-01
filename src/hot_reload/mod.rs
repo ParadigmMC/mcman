@@ -225,24 +225,36 @@ impl<'a> DevSession<'a> {
                             let mut lock = state.lock().unwrap();
                             *lock = State::Building;
                             drop(lock);
+
                             match self.builder.app.reload_server() {
-                                Ok(()) => {
-                                    match self.builder.build_all().await {
-                                        Ok(jar_name) => {
-                                            self.jar_name = Some(jar_name);
-                                            tx.send(Command::Start).await?;
-                                        }
-                                        Err(e) => {
-                                            self.builder.app.error("Error while building");
-                                            self.builder.app.error(e);
-                                        }
-                                    }
-                                }
+                                Ok(()) => {},
                                 Err(e) => {
                                     self.builder.app.error("Error while reloading server.toml");
                                     self.builder.app.error(e);
+                                    return Ok(());
                                 }
-                            }
+                            };
+
+                            match self.builder.app.reload_network() {
+                                Ok(()) => {},
+                                Err(e) => {
+                                    self.builder.app.error("Error while reloading network.toml");
+                                    self.builder.app.error(e);
+                                    return Ok(());
+                                }
+                            };
+
+                            match self.builder.build_all().await {
+                                Ok(jar_name) => {
+                                    self.jar_name = Some(jar_name);
+                                    tx.send(Command::Start).await?;
+                                },
+                                Err(e) => {
+                                    self.builder.app.error("Error while building");
+                                    self.builder.app.error(e);
+                                    return Ok(());
+                                }
+                            };
                         }
                         Command::BootstrapGroup(group_name, full_path, rel_path) => {
                             let should = group_name == "global" || self.builder.app.network.as_ref().is_some_and(|nw| {
@@ -644,7 +656,7 @@ impl<'a> DevSession<'a> {
         )?)
     }
 
-    pub fn create_servertoml_watcher(
+    pub fn create_restarter_watcher(
         tx: mpsc::Sender<Command>,
     ) -> Result<Debouncer<RecommendedWatcher, FileIdMap>> {
         Ok(new_debouncer(
@@ -677,7 +689,8 @@ impl<'a> DevSession<'a> {
         )?;
         let mut hotreload_watcher =
             Self::create_hotreload_watcher(cfg_mutex_w.clone(), tx.clone())?;
-        let mut servertoml_watcher = Self::create_servertoml_watcher(tx.clone())?;
+        let mut servertoml_watcher = Self::create_restarter_watcher(tx.clone())?;
+        let mut networktoml_watcher = Self::create_restarter_watcher(tx.clone())?;
         let mut network_groups_watcher = Self::create_network_groups_watcher(
             cfg_mutex_w.clone(),
             tx.clone(),
@@ -712,6 +725,10 @@ impl<'a> DevSession<'a> {
             if let Some(nw) = &self.builder.app.network {
                 self.builder.app.log_dev("Watching [network.toml] groups/*/config/**");
                 network_groups_watcher.watcher().watch(&nw.path.join("groups"), RecursiveMode::Recursive)?;
+                networktoml_watcher.watcher().watch(
+                    nw.path.join("network.toml").as_path(),
+                    RecursiveMode::NonRecursive,
+                )?;
             }
         }
 

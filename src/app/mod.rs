@@ -114,6 +114,11 @@ impl App {
         Ok(())
     }
 
+    pub fn reload_network(&mut self) -> Result<()> {
+        self.network = Network::load().context("Loading network.toml")?;
+        Ok(())
+    }
+
     pub fn get_addons(&self, ty: AddonType) -> Vec<Downloadable> {
         match ty {
             AddonType::Plugin => {
