@@ -265,18 +265,8 @@ impl<'a> DevSession<'a> {
                         }
                         Command::BootstrapGroup(group_name, full_path, rel_path) => {
                             let should = group_name == "global" || self.builder.app.network.as_ref().is_some_and(|nw| {
-                                if self.builder.app.server.name == nw.proxy {
-                                    if nw.proxy_groups.contains(&group_name) {
-                                        return true;
-                                    }
-                                }
-
-                                if nw.servers.get(&self.builder.app.server.name)
-                                    .is_some_and(|serv| serv.groups.contains(&group_name)) {
-                                    return true;
-                                }
-
-                                false
+                                self.builder.app.server.name == nw.proxy && nw.proxy_groups.contains(&group_name) && nw.servers.get(&self.builder.app.server.name)
+                                    .is_some_and(|serv| serv.groups.contains(&group_name))
                             });
 
                             if should {

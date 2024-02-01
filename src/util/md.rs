@@ -38,7 +38,7 @@ impl MarkdownTable {
 
         let hack = self.headers.clone();
 
-        for (k, v) in map.into_iter().filter(|(k, _)| !hack.contains(&k)) {
+        for (k, v) in map.into_iter().filter(|(k, _)| !hack.contains(k)) {
             self.headers.push(k);
             row.push(v);
         }
