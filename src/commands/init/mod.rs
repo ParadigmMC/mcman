@@ -193,7 +193,7 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                 .await?;
         }
         InitType::Packwiz(src) => {
-            app.packwiz().import_from_source(src).await?;
+            app.packwiz().import_from_source(src.clone()).await?;
         }
     }
 
