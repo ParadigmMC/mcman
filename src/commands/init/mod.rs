@@ -73,7 +73,7 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
     };
 
     // toml checks and init
-    if let InitType::Network = ty {
+    if matches!(ty, InitType::Network) {
         if let Some(_nw) = Network::load()? {
             bail!("network.toml already exists");
         }
@@ -193,7 +193,7 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                 .await?;
         }
         InitType::Packwiz(src) => {
-            app.packwiz().import_from_source(src.clone()).await?;
+            app.packwiz().import_from_source(src).await?;
         }
     }
 
@@ -229,7 +229,7 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
     }
 
     //env
-    if let InitType::Network = ty {
+    if matches!(ty, InitType::Network) {
         fs::create_dir_all("./servers")?;
     } else {
         fs::create_dir_all("./config")?;
@@ -264,7 +264,7 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
 
     initialize_environment()?;
 
-    if let InitType::Network = ty {
+    if matches!(ty, InitType::Network) {
         println!(
             " > {} {} {}\n > {}\n   {}\n   {}\n   {}",
             style("Network").green(),

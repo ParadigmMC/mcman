@@ -90,7 +90,7 @@ impl App {
 
                     let version = self.select(
                         "Select a version",
-                        versions
+                        &versions
                             .iter()
                             .map(|v| {
                                 SelectItem(
@@ -126,7 +126,7 @@ impl App {
 
                     let version = self.select(
                         "Select a version",
-                        versions
+                        &versions
                             .iter()
                             .map(|v| {
                                 SelectItem(
@@ -165,7 +165,7 @@ impl App {
 
                     let version = self.select(
                         "Select a version",
-                        versions
+                        &versions
                             .iter()
                             .map(|v| {
                                 SelectItem(

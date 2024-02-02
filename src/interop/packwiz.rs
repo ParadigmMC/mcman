@@ -21,12 +21,12 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-pub enum FileProvider {
+pub enum FileProvider<'a> {
     LocalFolder(PathBuf),
-    RemoteURL(reqwest::Client, reqwest::Url),
+    RemoteURL(&'a reqwest::Client, reqwest::Url),
 }
 
-impl FileProvider {
+impl FileProvider<'_> {
     pub async fn parse_toml<T: DeserializeOwned>(&self, path: &str) -> Result<T> {
         match self {
             Self::LocalFolder(folder) => {
@@ -51,19 +51,21 @@ impl FileProvider {
 pub struct PackwizInterop<'a>(pub &'a mut App);
 
 impl<'a> PackwizInterop<'a> {
-    pub fn get_file_provider(&self, s: &str) -> Result<FileProvider> {
+    pub fn get_file_provider(&'a self, s: &str) -> Result<FileProvider<'a>> {
         Ok(if s.starts_with("http") {
-            FileProvider::RemoteURL(self.0.http_client.clone(), s.try_into()?)
+            FileProvider::RemoteURL(&self.0.http_client, s.try_into()?)
         } else {
             FileProvider::LocalFolder(s.into())
         })
     }
 
     pub async fn import_all(&mut self, from: &str) -> Result<()> {
-        self.import_from_source(self.get_file_provider(from)?).await
+        let provider = self.get_file_provider(from)?;
+      
+        self.import_from_source(&provider).await
     }
 
-    pub async fn import_from_source(&mut self, source: FileProvider) -> Result<()> {
+    pub async fn import_from_source(&'a mut self, source: &'a FileProvider<'a>) -> Result<()> {
         let progress_bar = self.0.multi_progress.add(ProgressBar::new_spinner());
         progress_bar.set_style(ProgressStyle::with_template("{spinner:.blue} {msg}")?);
         progress_bar.set_message("Reading pack.toml...");
