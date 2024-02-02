@@ -226,8 +226,7 @@ impl<'a> BuildContext<'a> {
         spinner.enable_steady_tick(Duration::from_millis(200));
         spinner.set_prefix(format!("[{tag}]"));
 
-        let mut log_file =
-            File::create(self.output_dir.join(".".to_owned() + tag + ".mcman.log")).await?;
+        let mut log_file = File::create(self.output_dir.join(format!(".{tag}.mcman.log"))).await?;
 
         log_file
             .write_all(format!("=== mcman {tag} / {label} output ===\n\n").as_bytes())

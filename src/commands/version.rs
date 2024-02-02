@@ -42,15 +42,13 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
             }
             Ordering::Less => {
                 println!(
-                    " {}\n {} {} => {}\n {} {}",
+                    " {}\n {} {} => {}\n {} {}/releases/tag/{latest_ver}",
                     style("> A new version is available!").cyan(),
                     style("|").cyan(),
                     style(env!("CARGO_PKG_VERSION")).red(),
                     style(&latest_ver).green().bold(),
                     style("|").cyan(),
-                    env!("CARGO_PKG_REPOSITORY").to_owned()
-                        + "/releases/tag/"
-                        + &latest_ver.to_string()
+                    env!("CARGO_PKG_REPOSITORY"),
                 );
             }
         }

@@ -198,7 +198,7 @@ impl<'a> MavenAPI<'a> {
         let file = if file.contains('.') {
             file
         } else {
-            file + ".jar"
+            format!("{file}.jar")
         };
 
         let download_url = format!(
