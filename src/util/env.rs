@@ -124,7 +124,7 @@ pub fn get_git_branch() -> Result<String> {
 }
 
 pub fn git_command<I, S>(args: I) -> Result<String>
-where:
+where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
@@ -148,7 +148,7 @@ pub fn get_docker_version() -> Result<String> {
 }
 
 pub fn run_command<I, S>(prog: &str, args: Vec<&str>) -> Result<String>
-where:
+where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
