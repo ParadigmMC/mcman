@@ -43,7 +43,7 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
     };
 
     if !args.keep {
-        app.server.mods = vec![];
+        app.server.mods.clear();
         app.info("cleared mods list");
     }
 

@@ -77,7 +77,10 @@ enum Commands {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    if env::var("CI") == Ok("true".to_owned()) {
+    if env::var("CI")
+        .map(|s| s.as_str() == "true")
+        .unwrap_or_default()
+    {
         println!("::endgroup::");
     }
 

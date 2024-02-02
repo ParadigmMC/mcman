@@ -350,7 +350,7 @@ impl App {
         worlds => WorldsAPI,
         hooks => HooksAPI,
     }
-    
+
     interop_methods_mut! {
         packwiz => PackwizInterop,
         mrpack => MRPackInterop,

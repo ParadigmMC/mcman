@@ -179,16 +179,16 @@ impl<'a> PackwizInterop<'a> {
                 _ => return Ok(None),
             };
 
-            Ok(
-                self.0.modrinth()
-                    .version_from_hash(&down.hash, fmt)
-                    .await
-                    .map(|ver| Downloadable::Modrinth {
-                        id: ver.project_id.clone(),
-                        version: ver.id.clone(),
-                    })
-                    .ok()
-            )
+            Ok(self
+                .0
+                .modrinth()
+                .version_from_hash(&down.hash, fmt)
+                .await
+                .map(|ver| Downloadable::Modrinth {
+                    id: ver.project_id.clone(),
+                    version: ver.id.clone(),
+                })
+                .ok())
         }
     }
 

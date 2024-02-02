@@ -63,8 +63,7 @@ pub fn get_latest_semver(list: &[String]) -> Option<String> {
 
 /// ci.luckto.me => ci-lucko-me
 pub fn url_to_folder(url: &str) -> String {
-    url
-        .replace("https://", "")
+    url.replace("https://", "")
         .replace("http://", "")
         .replace('/', " ")
         .trim()
