@@ -163,8 +163,8 @@ impl<'a> MavenAPI<'a> {
             id => {
                 let id = id
                     .replace("${artifact}", artifact_id)
-                    .replace("${mcversion}", &self.0.mc_version())
-                    .replace("${mcver}", &self.0.mc_version());
+                    .replace("${mcversion}", self.0.mc_version())
+                    .replace("${mcver}", self.0.mc_version());
                 versions
                     .iter()
                     .find(|v| *v == &id)
@@ -192,8 +192,8 @@ impl<'a> MavenAPI<'a> {
         let file = file
             .replace("${artifact}", artifact_id)
             .replace("${version}", &version)
-            .replace("${mcversion}", &self.0.mc_version())
-            .replace("${mcver}", &self.0.mc_version());
+            .replace("${mcversion}", self.0.mc_version())
+            .replace("${mcver}", self.0.mc_version());
 
         let file = if file.contains('.') {
             file

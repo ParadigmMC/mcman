@@ -24,7 +24,7 @@ use super::BuildContext;
 
 impl<'a> BuildContext<'a> {
     pub async fn get_install_method(&self) -> Result<InstallMethod> {
-        let mcver = &self.app.mc_version();
+        let mcver = self.app.mc_version();
         Ok(match self.app.server.jar.clone() {
             ServerType::Quilt { loader, .. } => {
                 let mut args = vec!["install", "server", mcver];
@@ -146,7 +146,7 @@ impl<'a> BuildContext<'a> {
 
                     let java = env::var("JAVA_BIN").unwrap_or("java".to_owned());
 
-                    self.execute_child((&java, cmd_args.clone()), name, label)
+                    self.execute_child((&java, &cmd_args), name, label)
                         .await
                         .context(format!("Executing command: 'java {}'", cmd_args.join(" ")))
                         .context(format!("Running installer: {name}"))?;
@@ -199,12 +199,7 @@ impl<'a> BuildContext<'a> {
         Ok(serverjar_name)
     }
 
-    pub async fn execute_child(
-        &self,
-        cmd: (&str, Vec<&str>),
-        label: &str,
-        tag: &str,
-    ) -> Result<()> {
+    pub async fn execute_child(&self, cmd: (&str, &[&str]), label: &str, tag: &str) -> Result<()> {
         // because jre cant understand UNC
         let dir = diff_paths(&self.output_dir, env::current_dir()?.canonicalize()?).unwrap();
 

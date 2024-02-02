@@ -415,9 +415,8 @@ impl App {
 
                         let suggest = format!("{repo}/{}", group.replace('.', "/"));
 
-                        let artifact = match artifact_id {
-                            Some(r) => r,
-                            None => self.prompt_string_filled(
+                        let artifact = artifact_id.unwrap_or_else(|| {
+                            self.prompt_string_filled(
                                 "Artifact?",
                                 if urlstr.starts_with(&suggest) {
                                     urlstr
@@ -425,12 +424,12 @@ impl App {
                                         .unwrap()
                                         .split('/')
                                         .find(|x| !x.is_empty())
-                                        .unwrap_or("")
+                                        .unwrap_or_default()
                                 } else {
                                     ""
                                 },
-                            )?,
-                        };
+                            )
+                        });
 
                         let mut versions = vec![SelectItem(
                             "latest".to_owned(),

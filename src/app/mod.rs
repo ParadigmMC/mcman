@@ -108,8 +108,8 @@ impl App {
         })
     }
 
-    pub fn mc_version(&self) -> String {
-        self.server.mc_version.clone()
+    pub fn mc_version(&self) -> &str {
+        self.server.mc_version.as_str()
     }
 
     pub fn reload_server(&mut self) -> Result<()> {

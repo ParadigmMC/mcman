@@ -113,8 +113,8 @@ impl<'a> JenkinsAPI<'a> {
             .context("Fetching jenkins artifacts")?;
 
         let artifact = artifact
-            .replace("${mcver}", &self.0.mc_version())
-            .replace("${mcversion}", &self.0.mc_version())
+            .replace("${mcver}", self.0.mc_version())
+            .replace("${mcversion}", self.0.mc_version())
             .replace("${build}", &selected_build.number.to_string());
 
         let selected_artifact = match artifact.as_str() {

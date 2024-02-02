@@ -30,8 +30,8 @@ impl<'a> HangarAPI<'a> {
                     .await?;
 
             let version = version
-                .replace("${mcver}", &self.0.mc_version())
-                .replace("${mcversion}", &self.0.mc_version());
+                .replace("${mcver}", self.0.mc_version())
+                .replace("${mcversion}", self.0.mc_version());
 
             versions
                 .result

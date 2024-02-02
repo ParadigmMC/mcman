@@ -113,7 +113,7 @@ impl ServerLauncher {
                 "-D{}={}",
                 key,
                 if value.contains(char::is_whitespace) {
-                    "\"".to_owned() + value + "\""
+                    format!("\"{value}\"")
                 } else {
                     value.clone()
                 }

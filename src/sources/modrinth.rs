@@ -166,8 +166,8 @@ impl<'a> ModrinthAPI<'a> {
         let all_versions = self.fetch_all_versions(id).await?;
         let versions = self.filter_versions(&all_versions);
 
-        let ver = version.replace("${mcver}", &self.0.mc_version());
-        let ver = ver.replace("${mcversion}", &self.0.mc_version());
+        let ver = version.replace("${mcver}", self.0.mc_version());
+        let ver = ver.replace("${mcversion}", self.0.mc_version());
 
         let version_data = if let Some(v) = match ver.as_str() {
             "latest" => versions.first(),
@@ -244,7 +244,7 @@ impl<'a> ModrinthAPI<'a> {
         let is_proxy = self.0.server.jar.get_software_type() == SoftwareType::Proxy;
         let is_vanilla = matches!(self.0.server.jar, ServerType::Vanilla {});
 
-        let mcver = &self.0.mc_version();
+        let mcver = self.0.mc_version();
         let loader = self.get_modrinth_name();
 
         list.iter()

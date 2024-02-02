@@ -160,7 +160,7 @@ impl ToString for ServerType {
 
 impl Resolvable for ServerType {
     async fn resolve_source(&self, app: &App) -> Result<ResolvedFile> {
-        let version = &app.mc_version();
+        let version = app.mc_version();
 
         match self {
             ServerType::Vanilla {} => app.vanilla().resolve_source(version).await,

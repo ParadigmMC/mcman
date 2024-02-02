@@ -9,7 +9,7 @@ use super::BuildContext;
 
 impl<'a> BuildContext<'a> {
     pub async fn get_startup_method(&self, serverjar_name: &str) -> Result<StartupMethod> {
-        let mcver = &self.app.mc_version();
+        let mcver = self.app.mc_version();
         Ok(match &self.app.server.jar {
             ServerType::NeoForge { loader } => {
                 let l = self.app.neoforge().resolve_version(loader).await?;

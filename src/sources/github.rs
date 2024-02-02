@@ -166,8 +166,8 @@ impl<'a> GithubAPI<'a> {
     pub async fn fetch_release(&self, repo: &str, release_tag: &str) -> Result<GithubRelease> {
         let releases = self.fetch_releases(repo).await?;
 
-        let tag = release_tag.replace("${mcver}", &self.0.mc_version());
-        let tag = tag.replace("${mcversion}", &self.0.mc_version());
+        let tag = release_tag.replace("${mcver}", self.0.mc_version());
+        let tag = tag.replace("${mcversion}", self.0.mc_version());
 
         let release = match tag.as_str() {
             "latest" => releases.first(),
@@ -198,8 +198,8 @@ impl<'a> GithubAPI<'a> {
                     id.replace("${version}", &release.tag_name)
                         .replace("${tag}", &release.tag_name)
                         .replace("${release}", &release.tag_name)
-                        .replace("${mcver}", &self.0.mc_version())
-                        .replace("${mcversion}", &self.0.mc_version())
+                        .replace("${mcver}", self.0.mc_version())
+                        .replace("${mcversion}", self.0.mc_version())
                 } else {
                     id.to_owned()
                 };
