@@ -65,9 +65,7 @@ impl MarkdownTable {
             let cols = col_lengths
                 .iter()
                 .enumerate()
-                .map(|(idx, width)| {
-                    format!("{:width$}", self.headers[idx]))
-                })
+                .map(|(idx, width)| format!("{:width$}", self.headers[idx]))
                 .collect::<Vec<_>>();
 
             format!("| {} |", cols.join(" | "))
