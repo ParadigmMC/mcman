@@ -147,7 +147,7 @@ pub fn get_docker_version() -> Result<String> {
     run_command("docker", ["--version"])
 }
 
-pub fn run_command<I, S>(prog: &str, args: Vec<&str>) -> Result<String>
+pub fn run_command<I, S>(prog: &str, args: I) -> Result<String>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
