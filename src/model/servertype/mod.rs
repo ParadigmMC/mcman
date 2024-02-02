@@ -112,7 +112,7 @@ impl ServerType {
         }
     }
 
-    pub fn get_modrinth_name(&self) -> Option<String> {
+    pub fn get_modrinth_name(&self) -> Option<&str> {
         match self {
             ServerType::Fabric { .. } => Some("fabric"),
             ServerType::Quilt { .. } => Some("quilt"),
@@ -127,7 +127,6 @@ impl ServerType {
             ServerType::PaperMC { project, .. } => Some(project.as_str()),
             _ => None,
         }
-        .map(ToOwned::to_owned)
     }
 
     pub fn is_modded(&self) -> bool {
