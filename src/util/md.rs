@@ -62,12 +62,15 @@ impl MarkdownTable {
         let mut lines = vec![];
 
         lines.push({
-            let mut cols = vec![];
-            for (idx, width) in col_lengths.iter().enumerate() {
-                cols.push(format!("{:width$}", self.headers[idx]));
-            }
+            let cols = col_lengths
+                .iter()
+                .enumerate()
+                .map(|(idx, width)| {
+                    format!("{:width$}", self.headers[idx]))
+                })
+                .collect::<Vec<_>>();
 
-            "| ".to_owned() + &cols.join(" | ") + " |"
+            format!("| {} |", cols.join(" | "))
         });
 
         lines.push({
@@ -76,7 +79,7 @@ impl MarkdownTable {
                 .map(|length| format!("{:-^width$}", "", width = length))
                 .collect::<Vec<_>>();
 
-            "| ".to_owned() + &cols.join(" | ") + " |"
+            format!("| {} |", cols.join(" | "))
         });
 
         lines.extend(self.rows.iter().map(|row| {
@@ -84,35 +87,36 @@ impl MarkdownTable {
                 .map(|idx| format!("{:width$}", row[idx], width = col_lengths[idx]))
                 .collect::<Vec<_>>();
 
-            "| ".to_owned() + &cols.join(" | ") + " |"
+            format!("| {} |", cols.join(" | "))
         }));
 
         lines.join("\n")
     }
 
     pub fn render_ascii_lines(&self, headers: bool) -> Vec<String> {
-        let mut col_lengths = vec![];
+        let col_lengths = (0..self.headers.len())
+            .map(|idx| {
+                let mut li = vec![self.headers[idx].len()];
 
-        for idx in 0..self.headers.len() {
-            let mut li = vec![self.headers[idx].len()];
+                li.extend(
+                    self.rows
+                        .iter()
+                        .map(|row| row.get(idx).unwrap_or(&String::new()).len()),
+                );
 
-            li.extend(
-                self.rows
-                    .iter()
-                    .map(|row| row.get(idx).unwrap_or(&String::new()).len()),
-            );
-
-            col_lengths.push(li.into_iter().max().expect("col lengths iter max none"));
-        }
+                li.into_iter().max().expect("col lengths iter max none")
+            })
+            .collect::<Vec<_>>();
 
         let mut lines = vec![];
 
         if headers {
             lines.push({
-                let mut cols = vec![];
-                for (idx, width) in col_lengths.iter().enumerate() {
-                    cols.push(format!("{:width$}", self.headers[idx]));
-                }
+                let cols = col_lengths
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, width)| format!("{:width$}", self.headers[idx]))
+                    .collect::<Vec<_>>();
 
                 cols.join(" ")
             });
