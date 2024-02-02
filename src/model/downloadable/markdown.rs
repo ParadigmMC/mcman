@@ -98,7 +98,7 @@ impl Downloadable {
             ),
         };
 
-        map.insert(Cow::Borrowed("Project/URL"), project_url.clone());
+        map.insert(Cow::Borrowed("Project/URL"), project_url);
 
         if let Some(version) = version {
             map.insert(Cow::Borrowed("Version/Release"), version);
