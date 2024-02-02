@@ -425,6 +425,7 @@ impl App {
                                         .unwrap()
                                         .split('/')
                                         .find(|x| !x.is_empty())
+                                        .unwrap_or_default()
                                 } else {
                                     ""
                                 },
