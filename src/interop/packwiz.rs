@@ -180,13 +180,14 @@ impl<'a> PackwizInterop<'a> {
             };
 
             Ok(
-                match self.0.modrinth().version_from_hash(&down.hash, fmt).await {
-                    Ok(ver) => Some(Downloadable::Modrinth {
+                self.0.modrinth()
+                    .version_from_hash(&down.hash, fmt)
+                    .await
+                    .map(|ver| Downloadable::Modrinth {
                         id: ver.project_id.clone(),
                         version: ver.id.clone(),
-                    }),
-                    _ => None,
-                },
+                    })
+                    .ok()
             )
         }
     }
