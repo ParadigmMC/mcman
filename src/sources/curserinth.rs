@@ -72,7 +72,7 @@ impl<'a> CurserinthAPI<'a> {
             .await
     }
 
-    pub fn get_modrinth_name(&self) -> Option<String> {
+    pub fn get_modrinth_name(&self) -> Option<&str> {
         self.0.server.jar.get_modrinth_name()
     }
 
