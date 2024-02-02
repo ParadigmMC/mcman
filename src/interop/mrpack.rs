@@ -59,7 +59,7 @@ impl<'a> MRPackInterop<'a> {
 
             let dl = match dl {
                 Some(dl) => dl,
-                _ => self.0.dl_from_url(&file.downloads[0].clone()).await?,
+                _ => self.0.dl_from_url(&file.downloads[0]).await?,
             };
 
             self.0.notify(Prefix::Imported, dl.to_short_string());
