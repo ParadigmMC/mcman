@@ -1,4 +1,5 @@
 use std::{
+    ffi::OsStr,
     fs::{self, File},
     io::Write,
     path::{Path, PathBuf},
@@ -28,15 +29,15 @@ pub fn try_get_url(folder: &Path) -> Result<String> {
     let parent_paths = if parent_paths.is_empty() {
         parent_paths
     } else {
-        "/".to_owned() + &parent_paths
+        format!("/{parent_paths}")
     };
 
-    Ok(repo.to_owned() + "/" + &branch + &parent_paths)
+    Ok(format!("{repo}/{branch}{parent_paths}"))
 }
 
 pub fn get_git_remote() -> Result<String> {
     let path =
-        git_command(vec!["remote", "get-url", "origin"]).context("Couldn't get git repo origin")?;
+        git_command(["remote", "get-url", "origin"]).context("Couldn't get git repo origin")?;
 
     Ok(path
         .strip_suffix(".git")
@@ -115,14 +116,18 @@ pub fn write_gitattributes() -> Result<PathBuf> {
 }
 
 pub fn get_git_root() -> Result<String> {
-    git_command(vec!["rev-parse", "--show-toplevel"])
+    git_command(["rev-parse", "--show-toplevel"])
 }
 
 pub fn get_git_branch() -> Result<String> {
-    git_command(vec!["rev-parse", "--abbrev-ref", "HEAD"])
+    git_command(["rev-parse", "--abbrev-ref", "HEAD"])
 }
 
-pub fn git_command(args: Vec<&str>) -> Result<String> {
+pub fn git_command<I, S>(args: I) -> Result<String>
+where:
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>,
+{
     run_command("git", args)
 }
 
@@ -139,10 +144,14 @@ pub fn write_dockerignore(folder: &Path) -> Result<()> {
 }
 
 pub fn get_docker_version() -> Result<String> {
-    run_command("docker", vec!["--version"])
+    run_command("docker", ["--version"])
 }
 
-pub fn run_command(prog: &str, args: Vec<&str>) -> Result<String> {
+pub fn run_command<I, S>(prog: &str, args: Vec<&str>) -> Result<String>
+where:
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>,
+{
     let output = Command::new(prog).args(args).output()?;
 
     if output.status.success() {
