@@ -248,14 +248,14 @@ impl<'a> ModrinthAPI<'a> {
         let loader = self.get_modrinth_name();
 
         list.iter()
-            .filter(|v| is_proxy || v.game_versions.contains(mcver))
+            .filter(|v| is_proxy || v.game_versions.iter().any(|s| s.as_str() == mcver))
             .filter(|v| {
                 if let Some(n) = loader {
                     v.loaders
                         .iter()
                         .any(|l| l == "datapack" || l == n || (l == "fabric" && n == "quilt"))
                 } else if is_vanilla {
-                    v.loaders.contains(&"datapack".to_owned())
+                    v.loaders.iter().any(|s| s.as_str() == "datapack")
                 } else {
                     true
                 }

@@ -428,7 +428,7 @@ impl App {
                                 } else {
                                     ""
                                 },
-                            )
+                            )?
                         });
 
                         let mut versions = vec![SelectItem(

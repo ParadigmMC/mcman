@@ -76,11 +76,7 @@ impl<'a> HangarAPI<'a> {
     pub fn get_versions_filter(&self) -> mcapi::hangar::VersionsFilter {
         let platform = self.get_platform();
         mcapi::hangar::VersionsFilter {
-            platform_version: if platform.is_some() {
-                Some(self.0.mc_version())
-            } else {
-                None
-            },
+            platform_version: platform.map(|_| self.0.mc_version().to_owned()),
             platform,
             ..Default::default()
         }
