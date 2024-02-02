@@ -88,7 +88,7 @@ impl<'a> CurserinthAPI<'a> {
                 .iter()
                 .filter(|v| {
                     if let Some(loader) = self.get_modrinth_name() {
-                        v.loaders.contains(&loader)
+                        v.loaders.any(|l| l.as_str() == loader)
                     } else {
                         true
                     }
