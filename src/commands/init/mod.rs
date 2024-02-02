@@ -56,7 +56,7 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
         current_dir
             .file_name()
             .and_then(OsStr::to_str)
-            .unwrap_or("")
+            .unwrap_or_default()
             .to_owned()
     };
 
