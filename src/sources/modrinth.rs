@@ -219,7 +219,7 @@ impl<'a> ModrinthAPI<'a> {
         ))
     }
 
-    pub fn get_modrinth_name(&self) -> Option<String> {
+    pub fn get_modrinth_name(&self) -> Option<&str> {
         self.0.server.jar.get_modrinth_name()
     }
 
@@ -245,12 +245,12 @@ impl<'a> ModrinthAPI<'a> {
         let is_vanilla = matches!(self.0.server.jar, ServerType::Vanilla {});
 
         let mcver = &self.0.mc_version();
-        let loader = self.0.server.jar.get_modrinth_name();
+        let loader = self.get_modrinth_name();
 
         list.iter()
             .filter(|v| is_proxy || v.game_versions.contains(mcver))
             .filter(|v| {
-                if let Some(n) = &loader {
+                if let Some(n) = loader {
                     v.loaders
                         .iter()
                         .any(|l| l == "datapack" || l == n || (l == "fabric" && n == "quilt"))
