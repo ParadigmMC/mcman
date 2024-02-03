@@ -77,7 +77,7 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
             .collect::<Vec<_>>(),
     )?;
 
-    match if version.loaders.contains(&"datapack".to_owned()) {
+    match if version.loaders.iter().any(|s| s.as_str() == "datapack") {
         if version.loaders.len() > 1 {
             app.select(
                 "Import as...",

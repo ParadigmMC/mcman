@@ -68,20 +68,22 @@ impl<'a> BuildContext<'a> {
         let server_jar = self.download_server_jar().await?;
         self.app.ci("::endgroup::");
 
-        if !self.skip_stages.contains(&"plugins".to_owned()) {
+        if self.skip_stages.iter().all(|s| s.as_str() != "plugins") {
             self.download_addons(AddonType::Plugin).await?;
         }
 
-        if !self.skip_stages.contains(&"mods".to_owned()) {
+        if self.skip_stages.iter().all(|s| s.as_str() != "mods") {
             self.download_addons(AddonType::Mod).await?;
         }
 
-        if !self.app.server.worlds.is_empty() && !self.skip_stages.contains(&"worlds".to_owned()) {
+        if !self.app.server.worlds.is_empty()
+            && self.skip_stages.iter().all(|s| s.as_str() != "worlds")
+        {
             self.process_worlds().await?;
         }
 
         if self.app.server.path.join("config").exists()
-            && !self.skip_stages.contains(&"bootstrap".to_owned())
+            && self.skip_stages.iter().any(|s| s.as_str() == "bootstrap")
         {
             self.bootstrap_files().await?;
         }

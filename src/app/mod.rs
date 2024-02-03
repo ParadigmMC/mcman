@@ -288,7 +288,7 @@ impl App {
     }
 
     pub fn get_cache(&self, ns: &str) -> Option<Cache> {
-        if self.config.disable_cache.contains(&ns.to_owned()) {
+        if self.config.disable_cache.iter().any(|s| s.as_str() == ns) {
             None
         } else {
             Cache::get_cache(ns)

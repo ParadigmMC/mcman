@@ -138,7 +138,8 @@ impl<'a> BuildContext<'a> {
                 .server
                 .options
                 .bootstrap_exts
-                .contains(&ext.to_string())
+                .iter()
+                .any(|s| s.as_str() == ext)
     }
 
     pub async fn bootstrap_file(
