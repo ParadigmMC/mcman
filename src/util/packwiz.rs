@@ -356,7 +356,7 @@ pub async fn export_packwiz(
     let len = metafiles.len();
     let idx_w = len.to_string().len();
     for (idx, (name, metafile)) in metafiles.iter().enumerate() {
-        let rel_path = "mods/".to_owned() + name;
+        let rel_path = format!("mods/{name}");
         let path = folder.join(&rel_path);
         let contents = toml::to_string_pretty(metafile).context("serializing pw mod")?;
         fs::create_dir_all(path.parent().expect("parent of dest present")).await?;

@@ -176,9 +176,9 @@ impl<'a> BuildContext<'a> {
                     self.app.log(format!(
                         "  Server jar installed successfully ({})",
                         style(if rename_from.is_some() {
-                            jar_name.clone()
+                            jar_name.as_str()
                         } else {
-                            "<in libraries>".to_owned()
+                            "<in libraries>"
                         })
                         .dim()
                     ));
@@ -212,7 +212,7 @@ impl<'a> BuildContext<'a> {
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
             .spawn()
-            .context("Running ".to_owned() + label)?;
+            .context(format!("Running {label}"))?;
 
         let spinner = self
             .app
