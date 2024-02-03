@@ -59,8 +59,8 @@ impl<'a> BuildContext<'a> {
             files_list.insert(resolved.filename.clone());
 
             match addon_type {
-                AddonType::Plugin => &mut self.lockfile.plugins,
-                AddonType::Mod => &mut self.lockfile.mods,
+                AddonType::Plugin => &mut self.new_lockfile.plugins,
+                AddonType::Mod => &mut self.new_lockfile.mods,
             }
             .push((addon.clone(), resolved));
         }
