@@ -11,13 +11,18 @@ use super::BuildContext;
 impl<'a> BuildContext<'a> {
     pub async fn download_addons(&mut self, addon_type: AddonType) -> Result<()> {
         let server_list = self.app.get_addons(addon_type);
+        let addons = match addon_type {
+            AddonType::Plugin => &self.lockfile.plugins,
+            AddonType::Mod => &self.lockfile.mods,
+        };
 
-        let existing_files = match addon_type {
-            AddonType::Plugin => self.lockfile.plugins.iter(),
-            AddonType::Mod => self.lockfile.mods.iter(),
-        }
-        .map(|(_, res)| res.filename.clone())
-        .collect::<HashSet<_>>();
+        let existing_files = addons.iter().fold(
+            HashSet::with_capacity(addons.len()),
+            |mut hash_set, (_, res)| {
+                hash_set.insert(res.filename.clone());
+                hash_set
+            },
+        );
 
         if server_list.is_empty() && existing_files.is_empty() {
             return Ok(());
@@ -36,14 +41,16 @@ impl<'a> BuildContext<'a> {
 
         self.app.ci(&format!("::group::Processing {addon_type}s"));
 
-        let mut files_list = HashSet::new();
+        let mut files_list = HashSet::with_capacity(server_list.len());
 
         let pb = ProgressBar::new(server_list.len() as u64)
             .with_style(ProgressStyle::with_template(
                 "{msg} [{wide_bar:.cyan/blue}] {pos}/{len}",
             )?)
             .with_message(format!("Processing {addon_type}s"));
+
         let pb = self.app.multi_progress.add(pb);
+
         for addon in server_list.iter().progress_with(pb.clone()) {
             let (_path, resolved) = self
                 .downloadable(addon, addon_type.folder(), Some(&pb))
@@ -52,8 +59,8 @@ impl<'a> BuildContext<'a> {
             files_list.insert(resolved.filename.clone());
 
             match addon_type {
-                AddonType::Plugin => &mut self.new_lockfile.plugins,
-                AddonType::Mod => &mut self.new_lockfile.mods,
+                AddonType::Plugin => &mut self.lockfile.plugins,
+                AddonType::Mod => &mut self.lockfile.mods,
             }
             .push((addon.clone(), resolved));
         }
@@ -63,12 +70,14 @@ impl<'a> BuildContext<'a> {
         )?);
         pb.set_prefix("Deleting");
         pb.enable_steady_tick(Duration::from_micros(250));
+
         for removed_file in existing_files.difference(&files_list) {
             pb.set_message(removed_file.clone());
             fs::remove_file(self.output_dir.join(addon_type.folder()).join(removed_file)).await?;
         }
 
         pb.finish_and_clear();
+
         if files_list.len() >= 10 {
             self.app.success(format!(
                 "Processed {} {addon_type}{} in {}",
