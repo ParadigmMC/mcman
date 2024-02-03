@@ -83,7 +83,7 @@ impl<'a> BuildContext<'a> {
         }
 
         if self.app.server.path.join("config").exists()
-            && self.skip_stages.iter().any(|s| s.as_str() == "bootstrap")
+            && self.skip_stages.iter().all(|s| s.as_str() != "bootstrap")
         {
             self.bootstrap_files().await?;
         }
