@@ -71,6 +71,7 @@ pub enum DependencyType {
     Incompatible,
     Embedded,
     Unsupported,
+    Unknown,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
