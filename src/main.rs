@@ -2,6 +2,7 @@ use anyhow::Result;
 use app::BaseApp;
 use clap::Parser;
 
+mod api;
 mod app;
 mod commands;
 mod core;
