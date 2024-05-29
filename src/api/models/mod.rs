@@ -6,6 +6,7 @@ mod env;
 pub mod addon;
 pub mod packwiz;
 pub mod mrpack;
+pub mod unsup;
 pub mod network;
 
 pub use server::*;
