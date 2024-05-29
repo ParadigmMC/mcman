@@ -5,10 +5,10 @@ use super::AddonSource;
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(default)]
 pub struct Server {
-    name: String,
-    port: Option<i32>,
+    pub name: String,
+    pub port: Option<i32>,
 
-    sources: Vec<AddonSource>,
+    pub sources: Vec<AddonSource>,
 }
 
 impl Default for Server {

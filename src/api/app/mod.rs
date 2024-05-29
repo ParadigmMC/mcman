@@ -1,4 +1,11 @@
+use std::sync::Arc;
+
 use anyhow::{Context, Result};
+use tokio::sync::RwLock;
+
+use super::models::{network::Network, Addon, Server};
+
+pub mod actions;
 
 pub const APP_USER_AGENT: &str = concat!(
     env!("CARGO_PKG_NAME"),
@@ -10,6 +17,9 @@ pub const APP_USER_AGENT: &str = concat!(
 
 pub struct App {
     http_client: reqwest::Client,
+    server: Option<Arc<RwLock<Server>>>,
+    network: Option<Arc<RwLock<Network>>>,
+    ci: bool,
 }
 
 impl App {
@@ -21,6 +31,23 @@ impl App {
 
         Ok(Self {
             http_client,
+            server: None,
+            network: None,
+            ci: false,
         })
+    }
+
+    pub async fn collect_addons(&self) -> Result<Vec<Addon>> {
+        let mut addons = vec![];
+
+        if let Some(lock) = &self.server {
+            let server = lock.read().await;
+
+            for source in &server.sources {
+                addons.append(&mut source.resolve().await?);
+            }
+        }
+
+        Ok(addons)
     }
 }
