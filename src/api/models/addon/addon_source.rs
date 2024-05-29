@@ -1,7 +1,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::api::models::ModpackSource;
+use crate::api::{app::App, models::ModpackSource};
 use super::Addon;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -20,7 +20,19 @@ pub enum AddonSource {
 }
 
 impl AddonSource {
-    pub async fn resolve(&self) -> Result<Vec<Addon>> {
-        Ok(vec![])
+    pub async fn resolve(&self, app: &App) -> Result<Vec<Addon>> {
+        match self {
+            AddonSource::File { path } => {
+                Ok(vec![])
+            }
+
+            AddonSource::Folder { path } => {
+                Ok(vec![])
+            }
+
+            AddonSource::Modpack { modpack } => {
+                Ok(vec![])
+            }
+        }
     }
 }

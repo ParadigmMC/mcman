@@ -44,7 +44,7 @@ impl App {
             let server = lock.read().await;
 
             for source in &server.sources {
-                addons.append(&mut source.resolve().await?);
+                addons.append(&mut source.resolve(&self).await?);
             }
         }
 

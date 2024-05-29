@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::api::models::{Environment, HashFormat};
+use crate::api::{models::Environment, utils::hashing::HashFormat};
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash, Default)]
 #[serde(default)]
