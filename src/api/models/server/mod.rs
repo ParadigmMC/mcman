@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use super::AddonSource;
+use super::Source;
 
 mod server_type;
 mod server_flavor;
@@ -14,7 +14,7 @@ pub struct Server {
     pub name: String,
     pub port: Option<i32>,
 
-    pub sources: Vec<AddonSource>,
+    pub sources: Vec<Source>,
 }
 
 impl Default for Server {

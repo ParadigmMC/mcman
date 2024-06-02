@@ -5,7 +5,8 @@ use crate::api::{app::App, models::ModpackSource};
 use super::Addon;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum AddonSource {
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum Source {
     File {
         path: String,
     },
@@ -15,22 +16,23 @@ pub enum AddonSource {
     },
 
     Modpack {
+        #[serde(flatten)]
         modpack: ModpackSource,
     },
 }
 
-impl AddonSource {
+impl Source {
     pub async fn resolve(&self, app: &App) -> Result<Vec<Addon>> {
         match self {
-            AddonSource::File { path } => {
+            Source::File { path } => {
                 Ok(vec![])
             }
 
-            AddonSource::Folder { path } => {
+            Source::Folder { path } => {
                 Ok(vec![])
             }
 
-            AddonSource::Modpack { modpack } => {
+            Source::Modpack { modpack } => {
                 Ok(vec![])
             }
         }

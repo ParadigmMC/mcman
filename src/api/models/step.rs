@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -18,20 +18,18 @@ pub enum Step {
     Execute,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum CacheStrategy {
     File {
-        namespace: String,
+        namespace: Cow<'static, str>,
         path: String,
     },
     Indexed {
-        index_path: String,
+        namespace: Cow<'static, str>,
+        path: Option<String>,
         key: String,
-        value: String,
     },
-    #[default]
-    None,
 }
 
 pub enum StepResult {

@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
+use reqwest::Url;
+use serde::de::DeserializeOwned;
 use tokio::sync::RwLock;
 
 use super::models::{network::Network, Addon, server::Server};
@@ -16,10 +18,10 @@ pub const APP_USER_AGENT: &str = concat!(
 );
 
 pub struct App {
-    http_client: reqwest::Client,
-    server: Option<Arc<RwLock<Server>>>,
-    network: Option<Arc<RwLock<Network>>>,
-    ci: bool,
+    pub http_client: reqwest::Client,
+    pub server: Option<Arc<RwLock<Server>>>,
+    pub network: Option<Arc<RwLock<Network>>>,
+    pub ci: bool,
 }
 
 impl App {
@@ -35,6 +37,17 @@ impl App {
             network: None,
             ci: false,
         })
+    }
+
+    pub async fn http_get_json<T: DeserializeOwned>(&self, url: impl Into<Url>) -> Result<T> {
+        Ok(self.http_client
+            .get(url.into())
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?
+        )
     }
 
     pub async fn collect_addons(&self) -> Result<Vec<Addon>> {
