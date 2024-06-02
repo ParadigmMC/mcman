@@ -2,6 +2,12 @@ use serde::{Serialize, Deserialize};
 
 use super::AddonSource;
 
+mod server_type;
+mod server_flavor;
+
+pub use server_type::*;
+pub use server_flavor::*;
+
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(default)]
 pub struct Server {

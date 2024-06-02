@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use tokio::sync::RwLock;
 
-use super::models::{network::Network, Addon, Server};
+use super::models::{network::Network, Addon, server::Server};
 
 pub mod actions;
 
