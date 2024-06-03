@@ -1,4 +1,4 @@
-use std::{ffi::OsString, fs::DirEntry, io::{Read, Seek}, path::PathBuf};
+use std::{io::Seek, path::PathBuf};
 
 use anyhow::{anyhow, Result};
 use serde::de::DeserializeOwned;

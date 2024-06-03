@@ -12,7 +12,7 @@ pub enum Step {
     Download {
         url: String,
         filename: String,
-        size: Option<i32>,
+        size: Option<u64>,
         hashes: HashMap<HashFormat, String>,
     },
     Execute,

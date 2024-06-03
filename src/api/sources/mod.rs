@@ -5,6 +5,7 @@ use anyhow::Result;
 use super::{app::App, models::{CacheStrategy, Step}, utils::url::get_filename_from_url};
 
 pub mod vanilla;
+pub mod modrinth;
 
 pub async fn resolve_steps_for_url(
     app: &App,

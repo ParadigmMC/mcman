@@ -1,11 +1,12 @@
-pub const MRPACK_INDEX_FILE: &str = "modrinth.index.json";
+use anyhow::Result;
 
 mod mrpack_index;
 mod mrpack_file;
 
-use anyhow::Result;
 pub use mrpack_index::*;
 pub use mrpack_file::*;
+
+pub const MRPACK_INDEX_FILE: &str = "modrinth.index.json";
 
 use crate::api::{app::App, utils::accessor::Accessor};
 
@@ -13,11 +14,17 @@ use super::Addon;
 
 pub async fn resolve_mrpack_addons(
     app: &App,
-    accessor: Accessor,
+    mut accessor: Accessor,
 ) -> Result<Vec<Addon>> {
-    
+    let mut addons = vec![];
 
-    todo!()
+    let index: MRPackIndex = accessor.json(app, MRPACK_INDEX_FILE).await?;
+
+    for file in index.files {
+        addons.push(file.into_addon().await?);
+    }
+
+    Ok(addons)
 }
 
 impl MRPackFile {
