@@ -28,7 +28,8 @@ pub struct PackwizPackIndex {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 #[serde(rename_all = "kebab-case")]
 pub struct PackwizPackFile {
-    pub file: String,
+    #[serde(rename = "file")]
+    pub path: String,
     pub hash: String,
     pub hash_format: Option<String>,
 

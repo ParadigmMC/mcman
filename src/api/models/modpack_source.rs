@@ -18,10 +18,12 @@ pub enum ModpackSource {
 
 impl ModpackSource {
     pub fn accessor(&self) -> Result<Accessor> {
-        match self {
-            Self::Local { path, .. } => Ok(Accessor::Local(path.into())),
-            Self::Remote { url, .. } => Ok(Accessor::Remote(reqwest::Url::parse(url)?)),
-        }
+        let str = match self {
+            Self::Local { path, .. } => path,
+            Self::Remote { url, .. } => url,
+        };
+
+        Ok(Accessor::from(str)?)
     }
 
     pub fn modpack_type(&self) -> ModpackType {
