@@ -2,16 +2,16 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::api::utils::hashing::HashFormat;
+use crate::api::{models::Environment, utils::hashing::HashFormat};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MRPackFile {
-    path: String,
-    hashes: HashMap<HashFormat, String>,
-    env: Option<Env>,
-    file_size: u64,
-    downloads: Vec<String>,
+    pub path: String,
+    pub hashes: HashMap<HashFormat, String>,
+    pub env: Option<Env>,
+    pub file_size: u64,
+    pub downloads: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

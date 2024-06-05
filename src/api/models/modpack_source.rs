@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::api::utils::accessor::Accessor;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(untagged)]
 pub enum ModpackSource {
     Local {
         modpack_type: ModpackType,

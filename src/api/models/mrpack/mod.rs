@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 mod mrpack_index;
 mod mrpack_file;
@@ -10,7 +10,7 @@ pub const MRPACK_INDEX_FILE: &str = "modrinth.index.json";
 
 use crate::api::{app::App, utils::accessor::Accessor};
 
-use super::Addon;
+use super::{Addon, AddonTarget, AddonType, Environment};
 
 pub async fn resolve_mrpack_addons(
     app: &App,
@@ -29,6 +29,10 @@ pub async fn resolve_mrpack_addons(
 
 impl MRPackFile {
     pub async fn into_addon(&self) -> Result<Addon> {
-        todo!()
+        Ok(Addon {
+            environment: self.env.as_ref().map(|e| e.clone().into()),
+            addon_type: AddonType::Url { url: self.downloads.first().ok_or(anyhow!("No downloads"))?.clone() },
+            target: AddonTarget::from_path(&self.path),
+        })
     }
 }

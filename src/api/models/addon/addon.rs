@@ -47,7 +47,7 @@ impl Addon {
         match &self.addon_type {
             AddonType::Url { url } => resolve_steps_for_url(app, url, None).await,
             AddonType::Modrinth { id, version } => app.modrinth().resolve_steps(id, version).await,
-            _ => todo!(),
+            _ => Ok(vec![]),
         }
     }
 }

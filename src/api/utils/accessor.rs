@@ -20,7 +20,7 @@ impl Accessor {
     pub fn from(str: &str) -> Result<Self> {
         if str.starts_with("http://") || str.starts_with("https://") {
             Ok(Self::Remote(Url::parse(str)?))
-        } else if str.ends_with(".zip") {
+        } else if str.ends_with(".zip") || str.ends_with(".mrpack") {
             let file = std::fs::File::open(str)?;
             let archive = ZipArchive::new(file)?;
             Ok(Self::ZipLocal(archive))

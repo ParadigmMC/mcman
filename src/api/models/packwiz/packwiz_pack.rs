@@ -16,8 +16,6 @@ pub struct PackwizPack {
     pub versions: HashMap<String, String>,
 }
 
-pub static PACK_TOML: &str = "pack.toml";
-
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 #[serde(rename_all = "kebab-case")]
 pub struct PackwizPackIndex {

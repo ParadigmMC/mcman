@@ -2,7 +2,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 use crate::api::{app::App, models::ModpackSource};
-use super::Addon;
+use super::{mrpack::resolve_mrpack_addons, packwiz::resolve_packwiz_addons, Addon, ModpackType};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", rename_all = "lowercase")]
@@ -22,7 +22,7 @@ pub enum Source {
 }
 
 impl Source {
-    pub async fn resolve(&self, app: &App) -> Result<Vec<Addon>> {
+    pub async fn resolve_addons(&self, app: &App) -> Result<Vec<Addon>> {
         match self {
             Source::File { path } => {
                 Ok(vec![])
@@ -33,7 +33,12 @@ impl Source {
             }
 
             Source::Modpack { modpack } => {
-                Ok(vec![])
+                let accessor = modpack.accessor()?;
+                match modpack.modpack_type() {
+                    ModpackType::MRPack => resolve_mrpack_addons(app, accessor).await,
+                    ModpackType::Packwiz => resolve_packwiz_addons(app, accessor).await,
+                    ModpackType::Unsup => todo!(),
+                }
             }
         }
     }

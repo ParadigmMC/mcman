@@ -10,6 +10,7 @@ pub mod unsup;
 pub mod network;
 pub mod server;
 pub mod lockfile;
+pub mod loader;
 
 pub use modpack_source::*;
 pub use step::*;

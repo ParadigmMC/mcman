@@ -12,7 +12,9 @@ pub struct Args {
 
 
 pub async fn run(mut app: App, args: Args) -> Result<()> {
-    
+    let addons = app.collect_addons().await?;
+
+    println!("{addons:#?}");
 
     Ok(())
 }

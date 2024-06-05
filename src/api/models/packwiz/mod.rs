@@ -3,11 +3,13 @@ mod packwiz_pack;
 
 use std::path::Path;
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 pub use packwiz_pack::*;
 pub use packwiz_mod::*;
 
 use crate::api::{app::App, models::AddonType, utils::accessor::Accessor};
+
+pub static PACK_TOML: &str = "pack.toml";
 
 use super::{Addon, AddonTarget};
 
@@ -37,10 +39,16 @@ impl PackwizMod {
         let addon_type = if let Some(update) = &self.update {
             match update {
                 PackwizModUpdate::Modrinth { mod_id, version } => AddonType::Modrinth { id: mod_id.clone(), version: version.clone() },
-                PackwizModUpdate::Curseforge { file_id, project_id } => todo!(),
+                PackwizModUpdate::Curseforge { file_id, project_id } => AddonType::Curseforge { id: project_id.to_string(), version: file_id.to_string() },
             }
         } else {
-            todo!()
+            let Some(url) = &self.download.url else {
+                bail!("Packwiz mod {self:?} has neither `url` or Curseforge metadata");
+            };
+
+            AddonType::Url {
+                url: url.clone()
+            }
         };
         
         let addon = Addon {

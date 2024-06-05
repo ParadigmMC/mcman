@@ -1,6 +1,5 @@
 use std::{
-    sync::Arc,
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    path::PathBuf, sync::Arc, time::{Duration, SystemTime, UNIX_EPOCH}
 };
 
 use anyhow::{Context, Result};
@@ -9,7 +8,7 @@ use reqwest::{IntoUrl, Response};
 use serde::de::DeserializeOwned;
 use tokio::{sync::RwLock, time::sleep};
 
-use super::models::{network::Network, server::Server, Addon};
+use super::{models::{network::{Network, NETWORK_TOML}, server::{Server, SERVER_TOML}, Addon}, utils::{try_find_toml_upwards, write_toml}};
 
 pub mod actions;
 pub mod cache;
@@ -25,7 +24,9 @@ pub const APP_USER_AGENT: &str = concat!(
 
 pub struct App {
     pub http_client: reqwest::Client,
+    pub server_path: Option<PathBuf>,
     pub server: Option<Arc<RwLock<Server>>>,
+    pub network_path: Option<PathBuf>,
     pub network: Option<Arc<RwLock<Network>>>,
     pub cache: Cache,
     pub ci: bool,
@@ -40,13 +41,32 @@ impl App {
 
         let cache = Cache::new(dirs::cache_dir());
 
+        let (server_path, server) = try_find_toml_upwards::<Server>(SERVER_TOML)?.unzip();
+        let (network_path, network) = try_find_toml_upwards::<Network>(NETWORK_TOML)?.unzip();
+
         Ok(Self {
             http_client,
-            server: None,
-            network: None,
+            server_path,
+            server: server.map(|s| Arc::new(RwLock::new(s))),
+            network_path,
+            network: network.map(|nw| Arc::new(RwLock::new(nw))),
             cache,
             ci: false,
         })
+    }
+
+    pub async fn save_changes(&self) -> Result<()> {
+        if let Some((path, server)) = self.server_path.as_ref().zip(self.server.as_ref()) {
+            let server = server.read().await;
+            write_toml(&path, SERVER_TOML, &*server)?;
+        }
+
+        if let Some((path, network)) = self.network_path.as_ref().zip(self.network.as_ref()) {
+            let network = network.read().await;
+            write_toml(&path, NETWORK_TOML, &*network)?;
+        }
+
+        Ok(())
     }
 
     pub async fn http_get(&self, url: impl IntoUrl) -> Result<Response> {
@@ -96,7 +116,7 @@ impl App {
             let server = lock.read().await;
 
             for source in &server.sources {
-                addons.append(&mut source.resolve(&self).await?);
+                addons.append(&mut source.resolve_addons(&self).await?);
             }
         }
 
