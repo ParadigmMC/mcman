@@ -8,7 +8,7 @@ use reqwest::{IntoUrl, Response};
 use serde::de::DeserializeOwned;
 use tokio::{sync::RwLock, time::sleep};
 
-use super::{models::{network::{Network, NETWORK_TOML}, server::{Server, SERVER_TOML}, Addon}, utils::{try_find_toml_upwards, write_toml}};
+use super::{models::{network::{Network, NETWORK_TOML}, server::{Server, SERVER_TOML}, Addon, Source}, utils::{try_find_toml_upwards, write_toml}};
 
 pub mod actions;
 pub mod cache;
@@ -109,15 +109,23 @@ impl App {
         Ok(res.json().await?)
     }
 
-    pub async fn collect_addons(&self) -> Result<Vec<Addon>> {
-        let mut addons = vec![];
+    pub async fn collect_sources(&self) -> Result<Vec<Source>> {
+        let mut sources = vec![];
 
         if let Some(lock) = &self.server {
             let server = lock.read().await;
 
-            for source in &server.sources {
-                addons.append(&mut source.resolve_addons(&self).await?);
-            }
+            sources.append(&mut server.sources.clone());
+        }
+
+        Ok(sources)
+    }
+
+    pub async fn collect_addons(&self) -> Result<Vec<Addon>> {
+        let mut addons = vec![];
+
+        for source in self.collect_sources().await? {
+            addons.append(&mut source.resolve_addons(&self).await?);
         }
 
         Ok(addons)

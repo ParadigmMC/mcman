@@ -19,6 +19,8 @@ struct Cli {
 #[derive(clap::Subcommand)]
 enum Commands {
     Init(commands::init::Args),
+    #[command(subcommand)]
+    Sources(commands::sources::Commands),
 }
 
 #[tokio::main]
@@ -28,5 +30,6 @@ async fn main() -> Result<()> {
 
     match args.command {
         Commands::Init(args) => commands::init::run(app, args).await,
+        Commands::Sources(args) => commands::sources::run(app, args).await,
     }
 }
