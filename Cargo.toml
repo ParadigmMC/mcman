@@ -62,3 +62,4 @@ cliclack = "0.2.5"
 os_info = { version = "3.7", default-features = false }
 lazy_static = "1.4"
 bytes = "1.6"
+murmur2 = "0.1.0"

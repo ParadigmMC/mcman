@@ -2,10 +2,9 @@ use anyhow::{anyhow, Result};
 use models::{ModrinthFile, ModrinthProject, ModrinthVersion};
 use serde::de::DeserializeOwned;
 
-use crate::api::{app::App, step::{CacheStrategy, Step}};
+use crate::api::{app::App, step::{CacheLocation, FileMeta, Step}};
 
 mod models;
-mod ratelimit;
 
 pub struct ModrinthAPI<'a>(pub &'a App);
 
@@ -94,16 +93,18 @@ impl<'a> ModrinthAPI<'a> {
     pub async fn resolve_steps(&self, id: &str, version: &str) -> Result<Vec<Step>> {
         let (file, version) = self.fetch_file(id, version).await?;
 
+        let metadata = FileMeta {
+            cache: Some(CacheLocation("modrinth".into(), format!("{id}/{}/{}", version.id, file.filename))),
+            filename: file.filename,
+            size: Some(file.size),
+            hashes: file.hashes,
+        };
+
         Ok(vec![
-            Step::CacheCheck(CacheStrategy::File {
-                namespace: "modrinth".into(),
-                path: format!("{id}/{}/{}", version.id, file.filename),
-            }),
+            Step::CacheCheck(metadata.clone()),
             Step::Download {
                 url: file.url,
-                filename: file.filename,
-                size: Some(file.size),
-                hashes: file.hashes,
+                metadata,
             },
         ])
     }

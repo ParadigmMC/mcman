@@ -2,8 +2,6 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::api::{step::{CacheStrategy, Step}, utils::hashing::HashFormat};
-
 use super::VersionType;
 
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]
@@ -31,26 +29,6 @@ pub struct VersionInfo {
     pub version_type: VersionType,
     pub time: String,
     pub release_time: String,
-}
-
-impl VersionInfo {
-    pub fn into_step(&self, ty: DownloadType) -> Option<Vec<Step>> {
-        let file = self.downloads.get(&ty)?;
-
-        let filename = format!("{}-{ty:?}.jar", self.id);
-        
-        Some(vec![
-            Step::CacheCheck(CacheStrategy::File { namespace: "pistonmeta".into(), path: filename.clone() }),
-            Step::Download {
-                url: file.url.clone(),
-                filename: filename,
-                size: Some(file.size),
-                hashes: HashMap::from([
-                    (HashFormat::Sha1, file.sha1.clone())
-                ]),
-            },
-        ])
-    }
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, Hash, PartialEq, Eq)]

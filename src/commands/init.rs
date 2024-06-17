@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use anyhow::Result;
 
 use crate::api::app::App;
@@ -12,9 +14,7 @@ pub struct Args {
 
 
 pub async fn run(mut app: App, args: Args) -> Result<()> {
-    let addons = app.collect_addons().await?;
-
-    println!("{addons:#?}");
+    app.action_install_addons(Path::new("./output/server")).await?;
 
     Ok(())
 }

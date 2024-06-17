@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
@@ -34,5 +34,9 @@ impl AddonTarget {
 
     pub fn from_path(path: &str) -> Self {
         Self::from_str(&Path::new(path).parent().map(|p| p.to_string_lossy().into_owned()).unwrap_or(".".to_owned()))
+    }
+
+    pub fn to_path(&self) -> PathBuf {
+        PathBuf::from(self.as_str())
     }
 }

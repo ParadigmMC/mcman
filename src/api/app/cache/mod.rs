@@ -7,11 +7,18 @@ use std::{
 use anyhow::{Context, Result};
 use serde::de::DeserializeOwned;
 
+use crate::api::step::CacheLocation;
+
 pub struct Cache(pub Option<PathBuf>);
 
 impl Cache {
     pub fn new(path: Option<PathBuf>) -> Self {
         Self(path)
+    }
+
+    pub fn loc(&self, loc: Option<&CacheLocation>) -> Option<PathBuf> {
+        let loc = loc?;
+        self.join(&format!("{}/{}", loc.0, loc.1))
     }
 
     pub fn join(&self, path: &str) -> Option<PathBuf> {

@@ -13,6 +13,7 @@ use super::{models::{network::{Network, NETWORK_TOML}, server::{Server, SERVER_T
 pub mod actions;
 pub mod cache;
 pub mod options;
+pub mod step;
 
 pub const APP_USER_AGENT: &str = concat!(
     env!("CARGO_PKG_NAME"),
@@ -39,7 +40,7 @@ impl App {
             .build()
             .context("Initializing http_client")?;
 
-        let cache = Cache::new(dirs::cache_dir());
+        let cache = Cache::new(dirs::cache_dir().map(|p| p.join("mcman")));
 
         let (server_path, server) = try_find_toml_upwards::<Server>(SERVER_TOML)?.unzip();
         let (network_path, network) = try_find_toml_upwards::<Network>(NETWORK_TOML)?.unzip();

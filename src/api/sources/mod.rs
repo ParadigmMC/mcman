@@ -1,11 +1,10 @@
-use std::collections::HashMap;
-
 use anyhow::Result;
 
-use super::{app::App, step::{CacheStrategy, Step}, utils::url::get_filename_from_url};
+use super::{app::App, step::{FileMeta, Step}, utils::url::get_filename_from_url};
 
 pub mod vanilla;
 pub mod modrinth;
+pub mod curseforge;
 
 pub async fn resolve_steps_for_url(
     app: &App,
@@ -18,17 +17,16 @@ pub async fn resolve_steps_for_url(
         get_filename_from_url(&url)
     });
 
+    let metadata = FileMeta {
+        cache: None,
+        filename,
+        ..Default::default()
+    };
+
     Ok(vec![
-        Step::CacheCheck(CacheStrategy::Indexed {
-            namespace: "url".into(),
-            path: None,
-            key: url.clone(),
-        }),
         Step::Download {
             url: url.into(),
-            filename,
-            size: None,
-            hashes: HashMap::new(),
+            metadata,
         }
     ])
 }

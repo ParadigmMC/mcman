@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use anyhow::{anyhow, bail, Result};
 
-use crate::api::{app::App, models::Environment, step::Step};
+use crate::api::{app::App, models::Environment, step::{CacheLocation, FileMeta, Step}, utils::hashing::HashFormat};
 
 mod assets;
 mod manifest;
@@ -8,6 +10,31 @@ mod version;
 mod rulematcher;
 
 pub use self::{assets::*, manifest::*, version::*, rulematcher::*};
+
+impl VersionInfo {
+    pub fn into_step(&self, ty: DownloadType) -> Option<Vec<Step>> {
+        let file = self.downloads.get(&ty)?;
+
+        let filename = format!("{}-{ty:?}.jar", self.id);
+
+        let metadata = FileMeta {
+            filename: filename.clone(),
+            cache: Some(CacheLocation("pistonmeta".into(), filename)),
+            size: Some(file.size),
+            hashes: HashMap::from([
+                (HashFormat::Sha1, file.sha1.clone())
+            ]),
+        };
+        
+        Some(vec![
+            Step::CacheCheck(metadata.clone()),
+            Step::Download {
+                url: file.url.clone(),
+                metadata,
+            },
+        ])
+    }
+}
 
 pub struct VanillaAPI<'a>(pub &'a App);
 
