@@ -1,6 +1,6 @@
 use anyhow::{anyhow, bail, Result};
 
-use crate::api::{app::App, models::{Environment, Step}};
+use crate::api::{app::App, models::Environment, step::Step};
 
 mod assets;
 mod manifest;

@@ -1,5 +1,4 @@
 mod modpack_source;
-mod step;
 mod env;
 mod source;
 
@@ -13,7 +12,6 @@ pub mod lockfile;
 pub mod loader;
 
 pub use modpack_source::*;
-pub use step::*;
 pub use addon::*;
 pub use env::*;
 pub use source::*;

@@ -1,5 +1,23 @@
 //! https://github.com/Manishearth/pathdiff
 
+pub trait DiffTo {
+    fn diff_to<P>(&self, path: P) -> Option<PathBuf>
+    where
+        P: AsRef<Path>,
+        Self: AsRef<Path>;
+}
+
+impl<B> DiffTo for B
+where
+    B: AsRef<Path> {
+    fn diff_to<P>(&self, path: P) -> Option<PathBuf>
+        where
+            P: AsRef<Path>,
+            Self: AsRef<Path> {
+        diff_paths(path, self)
+    }
+}
+
 use std::path::*;
 
 /// Construct a relative path from a provided base directory path to the provided path.

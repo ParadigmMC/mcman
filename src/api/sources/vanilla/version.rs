@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::api::{models::{CacheStrategy, Step}, utils::hashing::HashFormat};
+use crate::api::{step::{CacheStrategy, Step}, utils::hashing::HashFormat};
 
 use super::VersionType;
 

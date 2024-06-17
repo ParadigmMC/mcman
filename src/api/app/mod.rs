@@ -80,8 +80,7 @@ impl App {
         if res
             .headers()
             .get("x-ratelimit-remaining")
-            .map(|x| String::from_utf8_lossy(x.as_bytes()))
-            == Some("1".into())
+            .is_some_and(|x| String::from_utf8_lossy(x.as_bytes()) == "1")
         {
             let ratelimit_reset =
                 String::from_utf8_lossy(res.headers()["x-ratelimit-reset"].as_bytes())

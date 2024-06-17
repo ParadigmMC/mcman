@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use models::{ModrinthFile, ModrinthProject, ModrinthVersion};
 use serde::de::DeserializeOwned;
 
-use crate::api::{app::App, models::{CacheStrategy, Step}};
+use crate::api::{app::App, step::{CacheStrategy, Step}};
 
 mod models;
 mod ratelimit;

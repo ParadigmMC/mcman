@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 
-use super::{app::App, models::{CacheStrategy, Step}, utils::url::get_filename_from_url};
+use super::{app::App, step::{CacheStrategy, Step}, utils::url::get_filename_from_url};
 
 pub mod vanilla;
 pub mod modrinth;

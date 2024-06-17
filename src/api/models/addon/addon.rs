@@ -1,7 +1,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::api::{app::App, models::{Environment, Step}, sources::resolve_steps_for_url};
+use crate::api::{app::App, models::Environment, step::Step, sources::resolve_steps_for_url};
 
 use super::{AddonType, AddonTarget};
 
