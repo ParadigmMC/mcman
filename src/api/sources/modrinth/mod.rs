@@ -8,6 +8,7 @@ use crate::api::{
 };
 
 mod models;
+pub use models::*;
 
 pub struct ModrinthAPI<'a>(pub &'a App);
 

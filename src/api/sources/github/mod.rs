@@ -10,8 +10,8 @@ use crate::api::{
     step::{CacheLocation, FileMeta, Step},
 };
 
-pub mod models;
-use models::*;
+mod models;
+pub use models::*;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct CachedData<T: Serialize> {

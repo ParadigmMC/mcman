@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::api::app::App;
 
-pub mod models;
-use models::*;
+mod models;
+pub use models::*;
 
 const API_V1: &str = "https://api.mclo.gs/1";
 

@@ -4,3 +4,4 @@ pub mod modrinth;
 pub mod url;
 pub mod vanilla;
 pub mod mclogs;
+pub mod papermc;
