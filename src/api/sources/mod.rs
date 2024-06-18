@@ -5,3 +5,4 @@ pub mod url;
 pub mod vanilla;
 pub mod mclogs;
 pub mod papermc;
+pub mod maven;
