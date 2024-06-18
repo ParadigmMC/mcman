@@ -6,8 +6,6 @@ use crate::api::{app::App, models::Addon};
 
 impl App {
     pub async fn action_install_jar(&self) -> Result<()> {
-        
-        
         Ok(())
     }
 
@@ -24,7 +22,7 @@ impl App {
         for addon in &addons {
             self.action_install_addon(base, addon).await?;
         }
-        
+
         Ok(())
     }
 }

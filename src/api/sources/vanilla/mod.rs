@@ -2,14 +2,19 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, bail, Result};
 
-use crate::api::{app::App, models::Environment, step::{CacheLocation, FileMeta, Step}, utils::hashing::HashFormat};
+use crate::api::{
+    app::App,
+    models::Environment,
+    step::{CacheLocation, FileMeta, Step},
+    utils::hashing::HashFormat,
+};
 
 mod assets;
 mod manifest;
-mod version;
 mod rulematcher;
+mod version;
 
-pub use self::{assets::*, manifest::*, version::*, rulematcher::*};
+pub use self::{assets::*, manifest::*, rulematcher::*, version::*};
 
 impl VersionInfo {
     pub fn into_step(&self, ty: DownloadType) -> Option<Vec<Step>> {
@@ -21,11 +26,9 @@ impl VersionInfo {
             filename: filename.clone(),
             cache: Some(CacheLocation("pistonmeta".into(), filename)),
             size: Some(file.size),
-            hashes: HashMap::from([
-                (HashFormat::Sha1, file.sha1.clone())
-            ]),
+            hashes: HashMap::from([(HashFormat::Sha1, file.sha1.clone())]),
         };
-        
+
         Some(vec![
             Step::CacheCheck(metadata.clone()),
             Step::Download {
@@ -44,10 +47,7 @@ impl<'a> VanillaAPI<'a> {
     }
 
     pub async fn fetch_latest_mcver(&self) -> Result<String> {
-        Ok(self.fetch_manifest()
-            .await?
-            .latest
-            .release)
+        Ok(self.fetch_manifest().await?.latest.release)
     }
 
     pub async fn resolve_steps(&self, version: &str, env: Environment) -> Result<Vec<Step>> {
@@ -59,11 +59,17 @@ impl<'a> VanillaAPI<'a> {
 
         let manifest = self.fetch_manifest().await?;
 
-        let indexed = manifest.versions.into_iter().find(|v| v.id == version).ok_or(anyhow!("Cant find version '{version}'"))?;
+        let indexed = manifest
+            .versions
+            .into_iter()
+            .find(|v| v.id == version)
+            .ok_or(anyhow!("Cant find version '{version}'"))?;
 
         let version: VersionInfo = self.0.http_get_json(indexed.url).await?;
 
-        let steps = version.into_step(env).ok_or(anyhow!("Cant find download"))?;
+        let steps = version
+            .into_step(env)
+            .ok_or(anyhow!("Cant find download"))?;
 
         Ok(steps)
     }

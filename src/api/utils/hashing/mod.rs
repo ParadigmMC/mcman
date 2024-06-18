@@ -35,7 +35,7 @@ impl HashFormat {
 
 impl TryFrom<String> for HashFormat {
     type Error = anyhow::Error;
-    
+
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match value.as_str() {
             "sha256" => Ok(HashFormat::Sha256),

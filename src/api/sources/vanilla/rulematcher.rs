@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 
-use regex::Regex;
 use lazy_static::lazy_static;
+use regex::Regex;
 
-use super::{ArgumentValue, PistonArgument, PistonFile, PistonLibrary, PistonOs, PistonRule, PistonRuleConstraints};
+use super::{
+    ArgumentValue, PistonArgument, PistonFile, PistonLibrary, PistonOs, PistonRule,
+    PistonRuleConstraints,
+};
 
 /// `PistonRuleMatcher` is an utility for matching argument and library rules
 pub struct PistonRuleMatcher {
@@ -121,7 +124,9 @@ impl PistonRuleMatcher {
                 return false;
             }
 
-            if !os.version.is_empty() && !Regex::new(&os.version).unwrap().is_match(&self.os.version) {
+            if !os.version.is_empty()
+                && !Regex::new(&os.version).unwrap().is_match(&self.os.version)
+            {
                 return false;
             }
         }

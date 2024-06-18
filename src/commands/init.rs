@@ -11,10 +11,9 @@ pub struct Args {
     name: Option<String>,
 }
 
-
-
 pub async fn run(mut app: App, args: Args) -> Result<()> {
-    app.action_install_addons(Path::new("./output/server")).await?;
+    app.action_install_addons(Path::new("./output/server"))
+        .await?;
 
     Ok(())
 }

@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Default)]
 pub enum AddonMetadataSource {
     Modrinth,

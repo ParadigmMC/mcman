@@ -1,13 +1,16 @@
-use std::{io::Write, path::{Path, PathBuf}};
+use std::{
+    io::Write,
+    path::{Path, PathBuf},
+};
 
-use anyhow::Result;
 use ::serde::{de::DeserializeOwned, Serialize};
+use anyhow::Result;
 
-pub mod hashing;
 pub mod accessor;
+pub mod hashing;
+pub mod pathdiff;
 pub mod serde;
 pub mod url;
-pub mod pathdiff;
 
 pub fn try_find_toml_upwards<T: DeserializeOwned>(filename: &str) -> Result<Option<(PathBuf, T)>> {
     let mut path = std::env::current_dir()?;

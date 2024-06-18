@@ -1,4 +1,4 @@
-use digest::{Digest, DynDigest, Update, Reset, FixedOutput, OutputSizeUser, FixedOutputReset};
+use digest::{Digest, DynDigest, FixedOutput, FixedOutputReset, OutputSizeUser, Reset, Update};
 
 #[derive(Clone)]
 pub struct CurseforgeHasher(Vec<u8>);
@@ -11,7 +11,11 @@ impl CurseforgeHasher {
 
 impl Update for CurseforgeHasher {
     fn update(&mut self, data: &[u8]) {
-        self.0.extend(data.iter().copied().filter(|&e| e != 9 && e != 10 && e != 13 && e != 32))
+        self.0.extend(
+            data.iter()
+                .copied()
+                .filter(|&e| e != 9 && e != 10 && e != 13 && e != 32),
+        )
     }
 }
 

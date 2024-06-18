@@ -1,5 +1,7 @@
 use std::{
-    path::PathBuf, sync::Arc, time::{Duration, SystemTime, UNIX_EPOCH}
+    path::PathBuf,
+    sync::Arc,
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use anyhow::{Context, Result};
@@ -8,7 +10,14 @@ use reqwest::{IntoUrl, Response};
 use serde::de::DeserializeOwned;
 use tokio::{sync::RwLock, time::sleep};
 
-use super::{models::{network::{Network, NETWORK_TOML}, server::{Server, SERVER_TOML}, Addon, Source}, utils::{try_find_toml_upwards, write_toml}};
+use super::{
+    models::{
+        network::{Network, NETWORK_TOML},
+        server::{Server, SERVER_TOML},
+        Addon, Source,
+    },
+    utils::{try_find_toml_upwards, write_toml},
+};
 
 pub mod actions;
 pub mod cache;
@@ -70,13 +79,16 @@ impl App {
         Ok(())
     }
 
-    pub async fn http_get(&self, url: impl IntoUrl) -> Result<Response> {
-        let res = self
-            .http_client
-            .get(url.as_str())
-            .send()
-            .await?
-            .error_for_status()?;
+    pub async fn http_get_with<F: FnOnce(reqwest::RequestBuilder) -> reqwest::RequestBuilder>(
+        &self,
+        url: impl IntoUrl,
+        f: F,
+    ) -> Result<Response> {
+        let req = self.http_client.get(url.as_str());
+
+        let req = f(req);
+
+        let res = req.send().await?.error_for_status()?;
 
         if res
             .headers()
@@ -102,6 +114,10 @@ impl App {
         }
 
         Ok(res)
+    }
+
+    pub async fn http_get(&self, url: impl IntoUrl) -> Result<Response> {
+        self.http_get_with(url, |x| x).await
     }
 
     pub async fn http_get_json<T: DeserializeOwned>(&self, url: impl IntoUrl) -> Result<T> {
@@ -146,5 +162,6 @@ impl App {
     api_methods! {
         vanilla => VanillaAPI,
         modrinth => ModrinthAPI,
+        github => GithubAPI,
     }
 }

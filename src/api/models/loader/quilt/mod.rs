@@ -2,7 +2,13 @@ use std::{collections::HashMap, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{api::{models::Environment, utils::serde::{str_default, string_or_struct, SingleOrArray}}, generate_de_vec};
+use crate::{
+    api::{
+        models::Environment,
+        utils::serde::{str_default, string_or_struct, SingleOrArray},
+    },
+    generate_de_vec,
+};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct QuiltModJson {
@@ -11,7 +17,7 @@ pub struct QuiltModJson {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct  QuiltEntrypoint {
+pub struct QuiltEntrypoint {
     #[serde(default = "str_default")]
     pub adapter: String,
     pub value: String,
@@ -74,9 +80,7 @@ pub struct QuiltModJsonLoader {
     pub jars: Vec<String>,
     #[serde(default = "HashMap::new")]
     pub language_adapters: HashMap<String, String>,
-
 }
-
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct QuiltModJsonMinecraft {

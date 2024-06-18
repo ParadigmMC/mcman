@@ -1,5 +1,11 @@
+use crate::api::{
+    app::App,
+    models::{AddonType, Environment},
+    step::Step,
+    utils::serde::*,
+};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use crate::api::utils::serde::*;
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -10,11 +16,16 @@ pub enum BuildToolsFlavor {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct ServerJar {
+    pub mc_version: String,
+    #[serde(flatten)]
+    pub server_type: ServerType,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum ServerType {
-    Vanilla {
-        mc_version: String,
-    },
+    Vanilla {},
 
     PaperMC {
         project: String,
@@ -61,13 +72,24 @@ pub enum ServerType {
         args: Vec<String>,
     },
 
-    Paper {},
-    Velocity {},
-    Waterfall {},
-    BungeeCord {},
-
-    Downloadable {
-        //#[serde(flatten)]
-        //inner: Downloadable,
+    Custom {
+        #[serde(flatten)]
+        inner: AddonType,
     },
+}
+
+impl ServerJar {
+    pub async fn resolve_steps(&self, app: &App, env: Environment) -> Result<Vec<Step>> {
+        match &self.server_type {
+            ServerType::Vanilla {} => app.vanilla().resolve_steps(&self.mc_version, env).await,
+            ServerType::PaperMC { project, build } => todo!(),
+            ServerType::Purpur { build } => todo!(),
+            ServerType::Fabric { loader, installer } => todo!(),
+            ServerType::Quilt { loader, installer } => todo!(),
+            ServerType::NeoForge { loader } => todo!(),
+            ServerType::Forge { loader } => todo!(),
+            ServerType::BuildTools { software, args } => todo!(),
+            ServerType::Custom { inner } => todo!(),
+        }
+    }
 }

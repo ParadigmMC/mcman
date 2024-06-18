@@ -1,6 +1,9 @@
 use std::{collections::HashMap, fmt, hash::Hash, marker::PhantomData, str::FromStr};
 
-use serde::{de::{self, MapAccess, Visitor}, Deserialize, Deserializer, Serialize};
+use serde::{
+    de::{self, MapAccess, Visitor},
+    Deserialize, Deserializer, Serialize,
+};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum SingleOrArray<T> {

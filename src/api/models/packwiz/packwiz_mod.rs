@@ -44,13 +44,7 @@ pub enum PackwizDownloadMode {
 #[serde(rename_all = "lowercase")]
 pub enum PackwizModUpdate {
     #[serde(rename_all = "kebab-case")]
-    Modrinth {
-        mod_id: String,
-        version: String,
-    },
+    Modrinth { mod_id: String, version: String },
     #[serde(rename_all = "kebab-case")]
-    Curseforge {
-        file_id: u64,
-        project_id: u64,
-    },
+    Curseforge { file_id: u64, project_id: u64 },
 }

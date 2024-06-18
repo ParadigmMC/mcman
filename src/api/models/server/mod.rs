@@ -1,12 +1,12 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::Source;
 
-mod server_type;
 mod server_flavor;
+mod server_type;
 
-pub use server_type::*;
 pub use server_flavor::*;
+pub use server_type::*;
 
 pub const SERVER_TOML: &str = "server.toml";
 
@@ -15,6 +15,8 @@ pub const SERVER_TOML: &str = "server.toml";
 pub struct Server {
     pub name: String,
     pub port: Option<i32>,
+
+    pub jar: Option<ServerJar>,
 
     #[serde(default = "Vec::new")]
     pub sources: Vec<Source>,
@@ -25,6 +27,11 @@ impl Default for Server {
         Self {
             name: String::from("server"),
             port: None,
+
+            jar: Some(ServerJar {
+                mc_version: String::from("1.20.4"),
+                server_type: ServerType::Vanilla {},
+            }),
 
             sources: vec![],
         }

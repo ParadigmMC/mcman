@@ -31,14 +31,14 @@ impl Cache {
                 let fullpath = base.join(path);
 
                 if !fullpath.exists() {
-                    return Ok(None)
+                    return Ok(None);
                 }
 
                 let file = File::open(fullpath)?;
                 let reader = BufReader::new(file);
-        
+
                 Ok(serde_json::from_reader(reader)?)
-            },
+            }
 
             None => Ok(None),
         }
@@ -51,15 +51,15 @@ impl Cache {
 
                 let writer = BufWriter::new(
                     File::create(&fullpath)
-                    .context(format!("Creating cache file at: {}", fullpath.display()))?,
+                        .context(format!("Creating cache file at: {}", fullpath.display()))?,
                 );
 
                 serde_json::to_writer(writer, data)?;
-        
+
                 Ok(())
             }
 
-            _ => Ok(())
+            _ => Ok(()),
         }
     }
 }

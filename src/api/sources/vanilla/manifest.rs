@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-pub const VERSION_MANIFEST_URL: &str = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
+pub const VERSION_MANIFEST_URL: &str =
+    "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
 
 /// The version manifest, from piston-meta
 #[derive(Debug, Clone, Deserialize, Serialize)]

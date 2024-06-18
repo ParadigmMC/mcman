@@ -2,7 +2,10 @@ use anyhow::{anyhow, Result};
 use models::{ModrinthFile, ModrinthProject, ModrinthVersion};
 use serde::de::DeserializeOwned;
 
-use crate::api::{app::App, step::{CacheLocation, FileMeta, Step}};
+use crate::api::{
+    app::App,
+    step::{CacheLocation, FileMeta, Step},
+};
 
 mod models;
 
@@ -20,8 +23,7 @@ impl<'a> ModrinthAPI<'a> {
     }
 
     pub async fn fetch_all_versions(&self, id: &str) -> Result<Vec<ModrinthVersion>> {
-        self.fetch_api(format!("project/{id}/version"))
-            .await
+        self.fetch_api(format!("project/{id}/version")).await
     }
 
     pub async fn fetch_versions(&self, id: &str) -> Result<Vec<ModrinthVersion>> {
@@ -94,7 +96,10 @@ impl<'a> ModrinthAPI<'a> {
         let (file, version) = self.fetch_file(id, version).await?;
 
         let metadata = FileMeta {
-            cache: Some(CacheLocation("modrinth".into(), format!("{id}/{}/{}", version.id, file.filename))),
+            cache: Some(CacheLocation(
+                "modrinth".into(),
+                format!("{id}/{}/{}", version.id, file.filename),
+            )),
             filename: file.filename,
             size: Some(file.size),
             hashes: file.hashes,

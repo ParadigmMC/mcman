@@ -11,10 +11,7 @@ use super::utils::hashing::get_best_hash;
 #[serde(tag = "type")]
 pub enum Step {
     CacheCheck(FileMeta),
-    Download {
-        url: String,
-        metadata: FileMeta,
-    },
+    Download { url: String, metadata: FileMeta },
     Execute,
 }
 
@@ -32,14 +29,12 @@ pub struct FileMeta {
 impl FileMeta {
     pub fn does_match<P: AsRef<Path>>(&self, file: P) -> Result<bool> {
         let metadata = std::fs::metadata(file.as_ref())?;
-        
+
         if self.size.is_some_and(|size| metadata.len() != size) {
             return Ok(false);
         }
 
-        if let Some((format, hash)) = get_best_hash(&self.hashes) {
-            
-        }
+        if let Some((format, hash)) = get_best_hash(&self.hashes) {}
 
         Ok(true)
     }

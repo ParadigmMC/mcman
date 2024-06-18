@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::api::{models::Environment, utils::serde::{SingleOrArray, SingleOrHashMap}};
+use crate::api::{
+    models::Environment,
+    utils::serde::{SingleOrArray, SingleOrHashMap},
+};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Person {
@@ -59,5 +62,3 @@ pub struct FabricModJson {
 
     pub custom: HashMap<String, serde_json::Value>,
 }
-
-

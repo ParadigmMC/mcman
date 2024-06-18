@@ -9,11 +9,13 @@ pub trait DiffTo {
 
 impl<B> DiffTo for B
 where
-    B: AsRef<Path> {
+    B: AsRef<Path>,
+{
     fn diff_to<P>(&self, path: P) -> Option<PathBuf>
-        where
-            P: AsRef<Path>,
-            Self: AsRef<Path> {
+    where
+        P: AsRef<Path>,
+        Self: AsRef<Path>,
+    {
         diff_paths(path, self)
     }
 }
