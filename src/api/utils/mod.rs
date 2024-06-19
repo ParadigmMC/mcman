@@ -27,9 +27,13 @@ pub fn try_find_toml_upwards<T: DeserializeOwned>(filename: &str) -> Result<Opti
         }
     };
 
-    let data: T = toml::from_str(&std::fs::read_to_string(&found_path)?)?;
+    read_toml(&found_path).map(|data| Some((found_path, data)))
+}
 
-    Ok(Some((found_path, data)))
+pub fn read_toml<T: DeserializeOwned>(path: &Path) -> Result<T> {
+    let data: T = toml::from_str(&std::fs::read_to_string(&path)?)?;
+
+    Ok(data)
 }
 
 pub fn write_toml<T: Serialize>(path: &Path, filename: &str, value: &T) -> Result<()> {

@@ -1,8 +1,10 @@
+use std::path::PathBuf;
+
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use super::{mrpack::resolve_mrpack_addons, packwiz::resolve_packwiz_addons, Addon, ModpackType};
-use crate::api::{app::App, models::ModpackSource};
+use super::{mrpack::resolve_mrpack_addons, packwiz::resolve_packwiz_addons, Addon, AddonListFile, ModpackType};
+use crate::api::{app::App, models::ModpackSource, utils::read_toml};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", rename_all = "lowercase")]
@@ -24,7 +26,14 @@ pub enum Source {
 impl Source {
     pub async fn resolve_addons(&self, app: &App) -> Result<Vec<Addon>> {
         match self {
-            Source::File { path } => Ok(vec![]),
+            Source::File { path } => {
+                let file: AddonListFile = read_toml(&PathBuf::from(if path.ends_with(".toml") {
+                    path.clone()
+                } else {
+                    format!("{path}.toml")
+                }))?;
+                Ok(file.flatten())
+            },
 
             Source::Folder { path } => Ok(vec![]),
 
