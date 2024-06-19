@@ -15,6 +15,28 @@ pub enum BuildToolsFlavor {
     CraftBukkit,
 }
 
+#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum PaperMCProject {
+    #[default]
+    #[serde(alias = "PAPER")]
+    Paper,
+    #[serde(alias = "VELOCITY")]
+    Velocity,
+    #[serde(alias = "WATERFALL")]
+    Waterfall,
+}
+
+impl ToString for PaperMCProject {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Paper => "paper".to_owned(),
+            Self::Waterfall => "waterfall".to_owned(),
+            Self::Velocity => "velocity".to_owned(),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct ServerJar {
     pub mc_version: String,
@@ -28,7 +50,7 @@ pub enum ServerType {
     Vanilla {},
 
     PaperMC {
-        project: String,
+        project: PaperMCProject,
         #[serde(default = "str_latest")]
         build: String,
     },
@@ -82,7 +104,7 @@ impl ServerJar {
     pub async fn resolve_steps(&self, app: &App, env: Environment) -> Result<Vec<Step>> {
         match &self.server_type {
             ServerType::Vanilla {} => app.vanilla().resolve_steps(&self.mc_version, env).await,
-            ServerType::PaperMC { project, build } => app.papermc().resolve_steps(project, &self.mc_version, build).await,
+            ServerType::PaperMC { project, build } => app.papermc().resolve_steps(&project.to_string(), &self.mc_version, build).await,
             ServerType::Purpur { build } => todo!(),
             ServerType::Fabric { loader, installer } => app.fabric().resolve_steps(&self.mc_version, loader, installer, &env).await,
             ServerType::Quilt { loader, installer } => todo!(),

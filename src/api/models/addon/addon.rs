@@ -23,7 +23,7 @@ impl Addon {
             AddonType::Hangar { id, version } => todo!(),
             AddonType::GithubRelease { repo, version, filename } => app.github().resolve_steps(repo, version, filename).await,
             AddonType::Jenkins { url, job, build, artifact } => todo!(),
-            AddonType::MavenArtifact { url, group, artifact, version, filename } => todo!(),
+            AddonType::MavenArtifact { url, group, artifact, version, filename } => app.maven().resolve_steps(url, group, artifact, version, filename).await,
         }
     }
 }

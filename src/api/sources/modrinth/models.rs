@@ -5,6 +5,11 @@ use serde::{Deserialize, Serialize};
 use crate::api::utils::hashing::HashFormat;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ModrinthProjectCheckResponse {
+    pub id: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ModrinthProject {
     pub slug: String,
     pub title: String,

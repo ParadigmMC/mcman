@@ -7,3 +7,4 @@ pub mod mclogs;
 pub mod papermc;
 pub mod maven;
 pub mod fabric;
+pub mod hangar;

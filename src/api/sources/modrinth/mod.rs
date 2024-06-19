@@ -44,6 +44,11 @@ impl<'a> ModrinthAPI<'a> {
         Ok(version_data)
     }
 
+    pub async fn get_id(&self, slug: &str) -> Result<String> {
+        let res: ModrinthProjectCheckResponse = self.fetch_api(format!("project/{slug}/check")).await?;
+        Ok(res.id)
+    }
+
     pub async fn fetch_file(
         &self,
         id: &str,
@@ -94,7 +99,8 @@ impl<'a> ModrinthAPI<'a> {
     }
 
     pub async fn resolve_steps(&self, id: &str, version: &str) -> Result<Vec<Step>> {
-        let (file, version) = self.fetch_file(id, version).await?;
+        let id = self.get_id(id).await?;
+        let (file, version) = self.fetch_file(&id, version).await?;
 
         let metadata = FileMeta {
             cache: Some(CacheLocation(
