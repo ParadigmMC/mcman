@@ -21,6 +21,7 @@ enum Commands {
     Init(commands::init::Args),
     #[command(subcommand)]
     Sources(commands::sources::Commands),
+    Build(commands::build::Args),
 }
 
 #[tokio::main]
@@ -31,5 +32,6 @@ async fn main() -> Result<()> {
     match args.command {
         Commands::Init(args) => commands::init::run(app, args).await,
         Commands::Sources(args) => commands::sources::run(app, args).await,
+        Commands::Build(args) => commands::build::run(app, args).await,
     }
 }

@@ -163,5 +163,6 @@ impl App {
         vanilla => VanillaAPI,
         modrinth => ModrinthAPI,
         github => GithubAPI,
+        papermc => PaperMCAPI,
     }
 }

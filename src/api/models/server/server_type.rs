@@ -82,7 +82,7 @@ impl ServerJar {
     pub async fn resolve_steps(&self, app: &App, env: Environment) -> Result<Vec<Step>> {
         match &self.server_type {
             ServerType::Vanilla {} => app.vanilla().resolve_steps(&self.mc_version, env).await,
-            ServerType::PaperMC { project, build } => todo!(),
+            ServerType::PaperMC { project, build } => app.papermc().resolve_steps(project, &self.mc_version, build).await,
             ServerType::Purpur { build } => todo!(),
             ServerType::Fabric { loader, installer } => todo!(),
             ServerType::Quilt { loader, installer } => todo!(),
