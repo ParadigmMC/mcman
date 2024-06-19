@@ -224,7 +224,7 @@ impl PlatformVersionDownload {
 #[serde(rename_all = "camelCase")]
 pub struct FileInfo {
     pub name: String,
-    pub size_bytes: i64,
+    pub size_bytes: u64,
     pub sha256_hash: String,
 }
 
@@ -292,93 +292,4 @@ impl Default for VersionsFilter {
 pub struct ProjectVersionsResponse {
     pub pagination: Pagination,
     pub result: Vec<ProjectVersion>,
-}
-
-pub async fn fetch_project_versions(
-    http_client: &reqwest::Client,
-    id: &str,
-    filter: Option<VersionsFilter>,
-) -> Result<ProjectVersionsResponse> {
-    let filter = filter.unwrap_or_default();
-
-    Ok(http_client
-        .get(format!(
-            "{API_V1}/projects/{}/versions",
-            if let Some((_, post)) = id.split_once('/') {
-                post
-            } else {
-                id
-            }
-        ))
-        .query(&filter)
-        .send()
-        .await?
-        .error_for_status()?
-        .json()
-        .await?)
-}
-
-pub async fn fetch_project_version(
-    http_client: &reqwest::Client,
-    id: &str,
-    name: &str,
-) -> Result<ProjectVersion> {
-    Ok(http_client
-        .get(format!(
-            "{API_V1}/projects/{}/versions/{name}",
-            if let Some((_, post)) = id.split_once('/') {
-                post
-            } else {
-                id
-            }
-        ))
-        .send()
-        .await?
-        .error_for_status()?
-        .json()
-        .await?)
-}
-
-pub async fn fetch_latest_project_version(
-    http_client: &reqwest::Client,
-    id: &str,
-    channel: &str,
-) -> Result<String> {
-    Ok(http_client
-        .get(format!("{API_V1}/projects/{id}/latest"))
-        .query(&[("channel", channel)])
-        .send()
-        .await?
-        .error_for_status()?
-        .text()
-        .await?)
-}
-
-pub async fn fetch_latest_project_release(
-    http_client: &reqwest::Client,
-    id: &str,
-) -> Result<String> {
-    Ok(http_client
-        .get(format!("{API_V1}/projects/{id}/latestrelease"))
-        .send()
-        .await?
-        .error_for_status()?
-        .text()
-        .await?)
-}
-
-pub async fn download_project_version(
-    http_client: &reqwest::Client,
-    id: &str,
-    name: &str,
-    platform: &Platform,
-) -> Result<reqwest::Response> {
-    Ok(http_client
-        .get(format!(
-            "{API_V1}/projects/{id}/versions/{name}/{}/download",
-            platform.to_string()
-        ))
-        .send()
-        .await?
-        .error_for_status()?)
 }
