@@ -1,6 +1,7 @@
 use std::{borrow::Cow, collections::HashMap, path::Path};
 
 use anyhow::Result;
+use digest::DynDigest;
 use serde::{Deserialize, Serialize};
 
 use crate::api::utils::hashing::HashFormat;
@@ -27,16 +28,8 @@ pub struct FileMeta {
 }
 
 impl FileMeta {
-    pub fn does_match<P: AsRef<Path>>(&self, file: P) -> Result<bool> {
-        let metadata = std::fs::metadata(file.as_ref())?;
-
-        if self.size.is_some_and(|size| metadata.len() != size) {
-            return Ok(false);
-        }
-
-        if let Some((format, hash)) = get_best_hash(&self.hashes) {}
-
-        Ok(true)
+    pub fn get_hasher(&self) -> Option<(HashFormat, Box<dyn DynDigest>, String)> {
+        get_best_hash(&self.hashes).map(|(format, content)| (format, format.get_digest(), content))
     }
 }
 
