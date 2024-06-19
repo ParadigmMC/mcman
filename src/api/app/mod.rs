@@ -164,5 +164,6 @@ impl App {
         modrinth => ModrinthAPI,
         github => GithubAPI,
         papermc => PaperMCAPI,
+        fabric => FabricAPI,
     }
 }

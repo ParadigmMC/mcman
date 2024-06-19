@@ -84,7 +84,7 @@ impl ServerJar {
             ServerType::Vanilla {} => app.vanilla().resolve_steps(&self.mc_version, env).await,
             ServerType::PaperMC { project, build } => app.papermc().resolve_steps(project, &self.mc_version, build).await,
             ServerType::Purpur { build } => todo!(),
-            ServerType::Fabric { loader, installer } => todo!(),
+            ServerType::Fabric { loader, installer } => app.fabric().resolve_steps(&self.mc_version, loader, installer, &env).await,
             ServerType::Quilt { loader, installer } => todo!(),
             ServerType::NeoForge { loader } => todo!(),
             ServerType::Forge { loader } => todo!(),
