@@ -1,6 +1,6 @@
 use crate::api::{
     app::App,
-    models::{AddonType, Environment},
+    models::{Addon, AddonTarget, AddonType, Environment},
     step::Step,
     utils::serde::*,
 };
@@ -89,7 +89,13 @@ impl ServerJar {
             ServerType::NeoForge { loader } => todo!(),
             ServerType::Forge { loader } => todo!(),
             ServerType::BuildTools { software, args } => todo!(),
-            ServerType::Custom { inner } => todo!(),
+            ServerType::Custom { inner } => {
+                Addon {
+                    environment: Some(env),
+                    addon_type: inner.clone(),
+                    target: AddonTarget::Custom(String::from(".")),
+                }.resolve_steps(app).await
+            },
         }
     }
 }
