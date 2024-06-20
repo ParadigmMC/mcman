@@ -1,4 +1,5 @@
 use std::{path::Path, sync::Arc};
+use futures::stream::{self, StreamExt, TryStreamExt};
 
 use anyhow::Result;
 
@@ -23,19 +24,18 @@ impl App {
         let addons = self.collect_addons().await?;
         let base = Arc::new(base.to_owned());
 
-        let mut handles = vec![];
+        const MAX_CONCURRENT_TASKS: usize = 20;
 
-        for addon in addons {
-            let app = self.clone();
-            let base = base.clone();
-            handles.push(tokio::spawn(async move {
-                app.action_install_addon(&base, &addon).await
-            }));
-        }
-
-        for handle in handles {
-            handle.await??;
-        }
+        stream::iter(addons).map(Ok).try_for_each_concurrent(
+            Some(MAX_CONCURRENT_TASKS),
+            move |addon| {
+                let app = self.clone();
+                let base = base.clone();
+                async move {
+                    app.action_install_addon(&base, &addon).await
+                }
+            }
+        ).await?;
 
         Ok(())
     }

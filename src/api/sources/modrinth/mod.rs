@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use anyhow::{anyhow, Result};
 use models::{ModrinthFile, ModrinthProject, ModrinthVersion};
 use serde::de::DeserializeOwned;
@@ -45,7 +47,20 @@ impl<'a> ModrinthAPI<'a> {
     }
 
     pub async fn get_id(&self, slug: &str) -> Result<String> {
+        let path = "modrinth/ids.json";
+        let store = self.0.cache.try_get_json::<HashMap<String, String>>(path)?;
+
+        if let Some(id) = store.as_ref().map(|ids| ids.get(slug)).flatten() {
+            return Ok(id.to_owned());
+        }
+
         let res: ModrinthProjectCheckResponse = self.fetch_api(format!("project/{slug}/check")).await?;
+
+        if let Some(mut ids) = store {
+            ids.insert(slug.to_owned(), res.id.clone());
+            self.0.cache.try_write_json(path, &ids)?;
+        }
+
         Ok(res.id)
     }
 

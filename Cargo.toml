@@ -1,6 +1,6 @@
 [package]
 name = "mcman"
-version = "0.4.5"
+version = "0.5.0"
 edition = "2021"
 rust-version = "1.75"
 repository = "https://github.com/ParadigmMC/mcman"
@@ -62,4 +62,5 @@ cliclack = "0.2.5"
 os_info = { version = "3.7", default-features = false }
 lazy_static = "1.4"
 bytes = "1.6"
-murmur2 = "0.1.0"
+murmur2 = "0.1"
+futures = "0.3"
