@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 use anyhow::Result;
 
@@ -11,7 +11,7 @@ pub struct Args {
     name: Option<String>,
 }
 
-pub async fn run(mut app: App, args: Args) -> Result<()> {
+pub async fn run(app: Arc<App>, args: Args) -> Result<()> {
     app.action_install_addons(Path::new("./output/server"))
         .await?;
 

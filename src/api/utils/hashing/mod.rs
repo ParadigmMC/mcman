@@ -22,7 +22,7 @@ pub enum HashFormat {
 }
 
 impl HashFormat {
-    pub fn get_digest(&self) -> Box<dyn DynDigest> {
+    pub fn get_digest(&self) -> Box<dyn DynDigest + Send> {
         match self {
             HashFormat::Sha256 => Box::new(sha2::Sha256::new()),
             HashFormat::Sha512 => Box::new(sha2::Sha512::new()),

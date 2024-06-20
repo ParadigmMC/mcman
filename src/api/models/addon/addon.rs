@@ -18,7 +18,7 @@ impl Addon {
         match &self.addon_type {
             AddonType::Url { url } => resolve_steps_for_url(app, url, None).await,
             AddonType::Modrinth { id, version } => app.modrinth().resolve_steps(id, version).await,
-            AddonType::Curseforge { id, version } => todo!(),
+            AddonType::Curseforge { id, version } => Ok(vec![]),
             AddonType::Spigot { id, version } => todo!(),
             AddonType::Hangar { id, version } => todo!(),
             AddonType::GithubRelease { repo, version, filename } => app.github().resolve_steps(repo, version, filename).await,

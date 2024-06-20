@@ -28,7 +28,7 @@ pub struct FileMeta {
 }
 
 impl FileMeta {
-    pub fn get_hasher(&self) -> Option<(HashFormat, Box<dyn DynDigest>, String)> {
+    pub fn get_hasher(&self) -> Option<(HashFormat, Box<dyn DynDigest + Send>, String)> {
         get_best_hash(&self.hashes).map(|(format, content)| (format, format.get_digest(), content))
     }
 }

@@ -64,7 +64,8 @@ impl App {
                         tokio::fs::remove_file(&output_path).await?;
                         //return Ok(StepResult::Continue);
                     } else {
-                        if let Some((format, mut hasher, content)) = metadata.get_hasher() {
+                        let hasher = metadata.get_hasher();
+                        if let Some((format, mut hasher, content)) = hasher {
                             let output_file = File::open(&output_path).await?;
                             let mut stream = ReaderStream::new(output_file);
     

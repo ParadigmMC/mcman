@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use api::app::App;
 use clap::Parser;
@@ -27,7 +29,7 @@ enum Commands {
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Cli::parse();
-    let app = App::new()?;
+    let app = Arc::new(App::new()?);
 
     match args.command {
         Commands::Init(args) => commands::init::run(app, args).await,

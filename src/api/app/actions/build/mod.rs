@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 use anyhow::Result;
 
@@ -19,17 +19,28 @@ impl App {
         Ok(())
     }
 
-    pub async fn action_install_addons(&self, base: &Path) -> Result<()> {
+    pub async fn action_install_addons(self: Arc<Self>, base: &Path) -> Result<()> {
         let addons = self.collect_addons().await?;
+        let base = Arc::new(base.to_owned());
 
-        for addon in &addons {
-            self.action_install_addon(base, addon).await?;
+        let mut handles = vec![];
+
+        for addon in addons {
+            let app = self.clone();
+            let base = base.clone();
+            handles.push(tokio::spawn(async move {
+                app.action_install_addon(&base, &addon).await
+            }));
+        }
+
+        for handle in handles {
+            handle.await??;
         }
 
         Ok(())
     }
 
-    pub async fn action_install_addon(&self, base: &Path, addon: &Addon) -> Result<()> {
+    pub async fn action_install_addon(self: Arc<Self>, base: &Path, addon: &Addon) -> Result<()> {
         let steps = addon.resolve_steps(&self).await?;
         let dir = base.join(addon.target.as_str());
         self.execute_steps(&dir, &steps).await?;
