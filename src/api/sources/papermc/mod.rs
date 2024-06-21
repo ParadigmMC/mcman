@@ -8,7 +8,6 @@ pub use models::*;
 
 pub struct PaperMCAPI<'a>(pub &'a App);
 
-const PAPERMC_URL: &str = "https://api.papermc.io/v2";
 const CACHE_DIR: &str = "papermc";
 
 impl<'a> PaperMCAPI<'a> {
@@ -16,7 +15,7 @@ impl<'a> PaperMCAPI<'a> {
         &self,
         url: String,
     ) -> Result<T> {
-        self.0.http_get_json(format!("{PAPERMC_URL}/{url}")).await
+        self.0.http_get_json(format!("{}/{url}", self.0.options.api_urls.papermc)).await
     }
 
     pub async fn fetch_versions(&self, project: &str) -> Result<Vec<String>> {
@@ -81,7 +80,8 @@ impl<'a> PaperMCAPI<'a> {
         };
 
         let url = format!(
-            "{PAPERMC_URL}/projects/{project}/versions/{version}/builds/{}/downloads/{}",
+            "{}/projects/{project}/versions/{version}/builds/{}/downloads/{}",
+            self.0.options.api_urls.papermc,
             resolved_build.build, download.name
         );
 

@@ -899,6 +899,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "indextree"
+version = "4.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a6f7e29c1619ec492f411b021ac9f30649d5f522ca6f287f2467ee48c8dfe10"
+
+[[package]]
 name = "indicatif"
 version = "0.17.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1062,6 +1068,7 @@ dependencies = [
  "glob",
  "hex",
  "indexmap",
+ "indextree",
  "indicatif",
  "lazy_static",
  "md-5",

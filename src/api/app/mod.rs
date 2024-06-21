@@ -2,6 +2,8 @@ use std::{path::PathBuf, sync::Arc};
 
 use anyhow::{Context, Result};
 use cache::Cache;
+use confique::Config;
+use options::AppOptions;
 use tokio::sync::RwLock;
 
 use super::models::{network::Network, server::Server};
@@ -18,8 +20,7 @@ pub const APP_USER_AGENT: &str = concat!(
     env!("CARGO_PKG_NAME"),
     "/",
     env!("CARGO_PKG_VERSION"),
-    " - ",
-    env!("CARGO_PKG_REPOSITORY"),
+    " - https://mcman.deniz.blue",
 );
 
 pub struct App {
@@ -29,6 +30,7 @@ pub struct App {
     pub network_path: Option<PathBuf>,
     pub network: Option<Arc<RwLock<Network>>>,
     pub cache: Cache,
+    pub options: AppOptions,
     pub ci: bool,
 }
 
@@ -39,7 +41,23 @@ impl App {
             .build()
             .context("Initializing http_client")?;
 
-        let cache = Cache::new(dirs::cache_dir().map(|p| p.join("mcman")));
+        let ci = std::env::var("CI").is_ok_and(|v| v == "true");
+
+        let options = AppOptions::builder()
+            .env()
+            .file(".mcman.toml")
+            .file(
+                dirs::config_dir()
+                    .unwrap_or_default()
+                    .join("mcman/.mcman.toml"),
+            )
+            .load()?;
+
+        let cache = Cache::new(if options.disable_cache {
+            None
+        } else {
+            dirs::cache_dir().map(|p| p.join("mcman"))
+        });
 
         let mut app = Self {
             http_client,
@@ -48,7 +66,8 @@ impl App {
             network_path: None,
             network: None,
             cache,
-            ci: false,
+            options,
+            ci,
         };
 
         app.try_read_files()?;

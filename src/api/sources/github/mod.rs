@@ -21,7 +21,6 @@ pub struct CachedData<T: Serialize> {
 
 static CACHE_DIR: &str = "github";
 static GITHUB_API_VERSION: &str = "2022-11-28";
-static GITHUB_API_URL: &str = "2022-11-28";
 
 pub struct GithubAPI<'a>(pub &'a App);
 
@@ -45,7 +44,7 @@ impl<'a> GithubAPI<'a> {
 
         let response = self
             .0
-            .http_get_with(format!("{GITHUB_API_URL}/{url}"), |req| {
+            .http_get_with(format!("{}/{url}", self.0.options.api_urls.github), |req| {
                 req.headers(headers)
             })
             .await?;

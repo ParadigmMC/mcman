@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap};
+use std::collections::HashMap;
 
 use anyhow::{anyhow, Context, Result};
 
@@ -8,13 +8,11 @@ use serde::de::DeserializeOwned;
 
 use crate::api::{app::App, step::{CacheLocation, FileMeta, Step}, utils::hashing::HashFormat};
 
-const HANGAR_API_URL: &str = "https://hangar.papermc.io/api/v1";
-
 pub struct HangarAPI<'a>(pub &'a App);
 
 impl<'a> HangarAPI<'a> {
     pub async fn fetch_api<T: DeserializeOwned>(&self, url: String) -> Result<T> {
-        self.0.http_get_json(format!("{HANGAR_API_URL}/{url}")).await
+        self.0.http_get_json(format!("{}/{url}", self.0.options.api_urls.hangar)).await
     }
 
     pub async fn fetch_project(&self, id: &str) -> Result<Project> {
@@ -31,7 +29,8 @@ impl<'a> HangarAPI<'a> {
 
     pub fn get_download_url(&self, id: &str, version: &str, platform: &str) -> String {
         format!(
-            "{HANGAR_API_URL}/projects/{id}/versions/{version}/{platform}/download"
+            "{}/projects/{id}/versions/{version}/{platform}/download",
+            self.0.options.api_urls.hangar
         )
     }
 
