@@ -11,7 +11,11 @@ pub use cache_location::*;
 pub enum Step {
     CacheCheck(FileMeta),
     Download { url: String, metadata: FileMeta },
-    Execute,
+    ExecuteJava {
+        args: Vec<String>,
+        java_version: Option<String>,
+        label: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
