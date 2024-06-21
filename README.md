@@ -8,9 +8,12 @@
 ![GitHub Repo stars](https://img.shields.io/github/stars/ParadigmMC/mcman?logo=github)
 [![quiltmc featured](https://img.shields.io/badge/quiltmc-featured-8A2BE2)](https://tech.lgbt/@quiltmc/110690787441497920)
 ![downloads](https://img.shields.io/github/downloads/ParadigmMC/mcman/total?logo=github)
-[![discord server](https://img.shields.io/discord/1108817072814817410?logo=discord)](https://discord.gg/YFuxNmKvSr)
+[![discord server](https://img.shields.io/discord/1197520507617153064?logo=discord)](https://discord.com/invite/QrBzpDxUyB)
 
 Powerful Minecraft Server Manager CLI. Manage your servers using git - easily install jars (server, plugins & mods); manage config files, worlds, entire networks, and more.
+
+> [!NOTE]
+> A rewrite which fixes a ton of flaws is underway, join discussion on the discord to be updated of the progress. It can be found under the `v2` branch
 
 ## Getting Started
 
