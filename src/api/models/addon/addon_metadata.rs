@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
@@ -5,13 +7,15 @@ use crate::api::{app::App, sources::maven::maven_artifact_url, utils::url::get_f
 
 use super::{Addon, AddonType};
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum AddonMetadataSource {
     Modrinth,
     Curseforge,
     Hangar,
     Github,
     Spigot,
+    Jenkins,
+    Maven,
     #[default]
     Other,
 }
@@ -24,8 +28,14 @@ impl AddonMetadataSource {
             AddonMetadataSource::Spigot => "spigot",
             AddonMetadataSource::Other => "other",
             AddonMetadataSource::Github => "github",
+            AddonMetadataSource::Jenkins => "jenkins",
+            AddonMetadataSource::Maven => "maven",
             AddonMetadataSource::Curseforge => "curseforge",
         }
+    }
+
+    pub fn icon_url(&self) -> String {
+        format!("https://raw.githubusercontent.com/ParadigmMC/mcman/main/res/icons/{}.png", self.into_str())
     }
 }
 
@@ -104,7 +114,7 @@ impl Addon {
                     name: artifact.to_owned(),
                     link: Some(maven_artifact_url(url, group, artifact)),
                     description: None,
-                    source: AddonMetadataSource::Other,
+                    source: AddonMetadataSource::Maven,
                     version: Some(version.to_owned()),
                 })
             },

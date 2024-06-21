@@ -95,5 +95,6 @@ impl App {
         fabric => FabricAPI,
         maven => MavenAPI,
         hangar => HangarAPI,
+        jenkins => JenkinsAPI,
     }
 }
