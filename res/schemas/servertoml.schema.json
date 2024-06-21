@@ -1,6 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
-    "$id": "https://raw.githubusercontent.com/ParadigmMC/mcman/main/servertoml.schema.json",
+    "$id": "https://raw.githubusercontent.com/ParadigmMC/mcman/main/res/schemas/servertoml.schema.json",
     "definitions": {
         "ServerType": {
             "oneOf": [
