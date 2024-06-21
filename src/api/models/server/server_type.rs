@@ -7,6 +7,8 @@ use crate::api::{
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
+use super::ServerFlavor;
+
 #[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum BuildToolsFlavor {
@@ -97,10 +99,27 @@ pub enum ServerType {
     Custom {
         #[serde(flatten)]
         inner: AddonType,
+
+        #[serde(default)]
+        flavor: ServerFlavor,
     },
 }
 
 impl ServerJar {
+    pub fn flavor(&self) -> ServerFlavor {
+        match &self.server_type {
+            ServerType::BuildTools { .. }
+            | ServerType::PaperMC { .. }
+            | ServerType::Purpur { .. } => ServerFlavor::Patched,
+            ServerType::Custom { flavor, .. } => flavor.clone(),
+            ServerType::Fabric { .. }
+            | ServerType::Forge { .. }
+            | ServerType::Quilt { .. }
+            | ServerType::NeoForge { .. } => ServerFlavor::Modded,
+            ServerType::Vanilla {  } => ServerFlavor::Vanilla,
+        }
+    }
+
     pub async fn resolve_steps(&self, app: &App, env: Environment) -> Result<Vec<Step>> {
         match &self.server_type {
             ServerType::Vanilla {} => app.vanilla().resolve_steps(&self.mc_version, env).await,
@@ -111,7 +130,7 @@ impl ServerJar {
             ServerType::NeoForge { loader } => todo!(),
             ServerType::Forge { loader } => todo!(),
             ServerType::BuildTools { software, args } => todo!(),
-            ServerType::Custom { inner } => {
+            ServerType::Custom { inner, .. } => {
                 Addon {
                     environment: Some(env),
                     addon_type: inner.clone(),

@@ -12,7 +12,7 @@ pub struct Args {
 }
 
 pub async fn run(app: Arc<App>, args: Args) -> Result<()> {
-    app.action_install_addons(Path::new("./output/server"))
+    app.action_init_server()
         .await?;
 
     Ok(())

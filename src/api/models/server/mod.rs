@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::Source;
+use super::{markdown::MarkdownOptions, Source};
 
 mod server_flavor;
 mod server_type;
@@ -17,6 +17,8 @@ pub struct Server {
     pub port: Option<i32>,
 
     pub jar: Option<ServerJar>,
+    #[serde(default)]
+    pub markdown: MarkdownOptions,
 
     #[serde(default = "Vec::new")]
     pub sources: Vec<Source>,
@@ -32,6 +34,8 @@ impl Default for Server {
                 mc_version: String::from("1.20.4"),
                 server_type: ServerType::Vanilla {},
             }),
+
+            markdown: MarkdownOptions::default(),
 
             sources: vec![],
         }

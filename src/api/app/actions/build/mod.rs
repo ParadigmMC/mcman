@@ -7,14 +7,12 @@ use crate::api::{app::App, models::{Addon, Environment}};
 
 impl App {
     pub async fn action_install_jar(&self, base: &Path) -> Result<()> {
-        if let Some(server) = &self.server {
-            let server = server.read().await;
+        if let Some(jar) = self.server.read().await.as_ref().map(|(_, server)| {
+            server.jar.clone()
+        }).flatten() {
+            let steps = jar.resolve_steps(&self, Environment::Server).await?;
 
-            if let Some(jar) = &server.jar {
-                let steps = jar.resolve_steps(&self, Environment::Server).await?;
-
-                self.execute_steps(base, &steps).await?;
-            }
+            self.execute_steps(base, &steps).await?;
         }
 
         Ok(())

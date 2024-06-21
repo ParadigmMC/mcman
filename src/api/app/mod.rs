@@ -25,10 +25,8 @@ pub const APP_USER_AGENT: &str = concat!(
 
 pub struct App {
     pub http_client: reqwest::Client,
-    pub server_path: Option<PathBuf>,
-    pub server: Option<Arc<RwLock<Server>>>,
-    pub network_path: Option<PathBuf>,
-    pub network: Option<Arc<RwLock<Network>>>,
+    pub server: Arc<RwLock<Option<(PathBuf, Server)>>>,
+    pub network: Arc<RwLock<Option<(PathBuf, Network)>>>,
     pub cache: Cache,
     pub options: AppOptions,
     pub ci: bool,
@@ -61,10 +59,8 @@ impl App {
 
         let mut app = Self {
             http_client,
-            server_path: None,
-            server: None,
-            network_path: None,
-            network: None,
+            server: Arc::new(RwLock::new(None)),
+            network: Arc::new(RwLock::new(None)),
             cache,
             options,
             ci,

@@ -10,6 +10,7 @@ pub mod network;
 pub mod packwiz;
 pub mod server;
 pub mod unsup;
+pub mod markdown;
 
 pub use addon::*;
 pub use env::*;

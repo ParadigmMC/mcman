@@ -8,10 +8,8 @@ impl App {
     pub async fn collect_sources(&self) -> Result<Vec<Source>> {
         let mut sources = vec![];
 
-        if let Some(lock) = &self.server {
-            let server = lock.read().await;
-
-            sources.append(&mut server.sources.clone());
+        if let Some((_, server)) = &*self.server.read().await {
+            sources.extend_from_slice(&server.sources);
         }
 
         Ok(sources)
@@ -21,7 +19,7 @@ impl App {
         let mut addons = vec![];
 
         for source in self.collect_sources().await? {
-            addons.append(&mut source.resolve_addons(&self).await?);
+            addons.extend_from_slice(&source.resolve_addons(&self).await?);
         }
 
         Ok(addons)

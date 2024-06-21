@@ -1,40 +1,56 @@
-use std::sync::Arc;
+use std::path::PathBuf;
 
 use anyhow::Result;
-use cliclack::{input, intro};
-use tokio::sync::RwLock;
 
 use crate::api::{
     app::App,
-    models::{network::Network, server::Server},
+    models::{network::Network, server::{Server, SERVER_TOML}},
 };
 
 impl App {
-    pub async fn init_server(&mut self) -> Result<()> {
-        intro("initializing server")?;
+    pub async fn action_init_server(&self) -> Result<()> {
+        cliclack::intro("Creating a new server...")?;
 
-        let name: String = input("Name of the server?").interact()?;
+        let path = PathBuf::from(".").join(SERVER_TOML);
+
+        if let Some((_, server)) = &*self.server.read().await {
+            let con = cliclack::confirm(format!("Server with name '{}' found! Continue?", server.name))
+                .initial_value(false)
+                .interact()?;
+
+            if con {
+                cliclack::note("Warning", "Current server might get overwritten")?;
+            } else {
+                cliclack::outro_cancel("Cancelled")?;
+                return Ok(());
+            }
+        }
+
+        let name: String = cliclack::input("Name of the server?").interact()?;
 
         let mut server = Server {
             name,
-            port: None,
-            jar: None,
-            sources: vec![],
+            ..Default::default()
         };
 
-        self.server = Some(Arc::new(RwLock::new(server)));
+        {
+            let mut wg = self.server.write().await;
+            *wg = Some((path, server));
+        }
+
+        cliclack::outro("Saved!")?;
 
         Ok(())
     }
 
-    pub async fn init_network(&mut self) -> Result<()> {
-        intro("initializing network")?;
+    pub async fn action_init_network(&self) -> Result<()> {
+        cliclack::intro("initializing network")?;
 
-        let name: String = input("Name of the network?").interact()?;
+        let name: String = cliclack::input("Name of the network?").interact()?;
 
         let mut nw = Network { name };
 
-        self.network = Some(Arc::new(RwLock::new(nw)));
+        //self.network = Some(Arc::new(RwLock::new(nw)));
 
         Ok(())
     }

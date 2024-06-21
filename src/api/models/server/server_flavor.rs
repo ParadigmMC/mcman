@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
 pub enum ServerFlavor {
+    #[default]
     Vanilla,
     Modded,
     Patched,
