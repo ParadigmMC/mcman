@@ -7,10 +7,17 @@ use crate::api::{app::App, step::{CacheLocation, FileMeta, Step}, utils::url::ur
 
 pub struct MavenAPI<'a>(pub &'a App);
 
+pub fn maven_artifact_url(url: &str, group_id: &str, artifact_id: &str) -> String {
+    format!(
+        "{url}/{}/{artifact_id}",
+        group_id.replace(['.', ':'], "/")
+    )
+}
+
 pub fn maven_metadata_url(url: &str, group_id: &str, artifact_id: &str) -> String {
     format!(
-        "{url}/{}/{artifact_id}/maven-metadata.xml",
-        group_id.replace(['.', ':'], "/")
+        "{}/maven-metadata.xml",
+        maven_artifact_url(url, group_id, artifact_id)
     )
 }
 

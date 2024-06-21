@@ -94,5 +94,6 @@ impl App {
         papermc => PaperMCAPI,
         fabric => FabricAPI,
         maven => MavenAPI,
+        hangar => HangarAPI,
     }
 }
