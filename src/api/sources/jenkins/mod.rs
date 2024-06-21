@@ -1,7 +1,6 @@
-use std::{borrow::Cow, collections::HashMap};
+use std::collections::HashMap;
 
 use anyhow::{anyhow, Context, Result};
-use serde::{Deserialize, Serialize};
 
 mod models;
 pub use models::*;
@@ -10,7 +9,7 @@ use crate::api::{app::App, step::{CacheLocation, FileMeta, Step}, utils::{hashin
 
 static SUCCESS_STR: &str = "SUCCESS";
 
-pub fn get_job_url(url: &str, job: &str) -> String {
+pub fn jenkins_job_url(url: &str, job: &str) -> String {
     job.split('/')
         .fold(url.strip_suffix('/').unwrap_or(url).to_owned(), |acc, j| {
             format!("{acc}/job/{j}")
@@ -25,7 +24,7 @@ impl<'a> JenkinsAPI<'a> {
             .0
             .http_get_json::<JenkinsBuildsResponse>(format!(
                 "{}/api/json?tree=builds[*[url,number,result]]",
-                get_job_url(url, job)
+                jenkins_job_url(url, job)
             ))
             .await?
             .builds)
@@ -142,7 +141,7 @@ impl<'a> JenkinsAPI<'a> {
             .0
             .http_get_json::<JenkinsJobResponse>(format!(
                 "{}/api/json?tree=description",
-                get_job_url(url, job)
+                jenkins_job_url(url, job)
             ))
             .await?
             .description)

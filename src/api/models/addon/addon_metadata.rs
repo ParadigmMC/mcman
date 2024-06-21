@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::api::{app::App, sources::maven::maven_artifact_url, utils::url::get_filename_from_url};
+use crate::api::{app::App, sources::{jenkins::jenkins_job_url, maven::maven_artifact_url}, utils::url::get_filename_from_url};
 
 use super::{Addon, AddonType};
 
@@ -102,7 +102,17 @@ impl Addon {
                 job,
                 build,
                 artifact,
-            } => todo!(),
+            } => {
+                let description = app.jenkins().fetch_description(url, job).await?;
+
+                Ok(AddonMetadata {
+                    name: artifact.to_owned(),
+                    link: Some(jenkins_job_url(url, job)),
+                    description,
+                    source: AddonMetadataSource::Jenkins,
+                    version: Some(build.to_owned()),
+                })
+            },
             AddonType::MavenArtifact {
                 url,
                 group,
