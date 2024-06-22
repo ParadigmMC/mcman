@@ -9,3 +9,4 @@ pub mod maven;
 pub mod fabric;
 pub mod hangar;
 pub mod jenkins;
+pub mod spigot;

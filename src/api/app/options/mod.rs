@@ -22,7 +22,7 @@ pub struct ApiUrls {
     pub cursetools: String,
     #[config(default = "", env = "API_URL_CURSERINTH")]
     pub curserinth: String,
-    #[config(default = "", env = "API_URL_SPIGET")]
+    #[config(default = "https://api.spiget.org/v2", env = "API_URL_SPIGET")]
     pub spiget: String,
     #[config(default = "https://hangar.papermc.io/api/v1", env = "API_URL_HANGAR")]
     pub hangar: String,
