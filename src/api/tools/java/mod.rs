@@ -4,12 +4,21 @@ pub type JavaVersion = u32;
 mod installation;
 mod find;
 mod check;
+use futures::StreamExt;
 pub use installation::*;
-pub use find::*;
 pub use check::*;
 
-pub fn get_java_installations() -> Vec<JavaInstallation> {
-    let paths = collect_possible_java_paths();
+pub struct JavaProcess {
+    
+}
 
-    paths.into_iter().filter_map(|path| check_java(&path)).collect()
+pub async fn get_java_installations() -> Vec<JavaInstallation> {
+    let paths = find::collect_possible_java_paths();
+
+    futures::stream::iter(paths)
+        .filter_map(|path| async move {
+            check_java(&path)
+        })
+        .collect()
+        .await
 }

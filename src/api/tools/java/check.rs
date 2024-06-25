@@ -1,19 +1,19 @@
 use std::{collections::HashMap, path::Path, process::Command};
 
-use super::{extract_java_majorminor_version, JavaInstallation, JAVA_BIN};
+use super::{JavaInstallation, JAVA_BIN};
 
 pub fn check_java(path: &Path) -> Option<JavaInstallation> {
     let Ok(path) = std::fs::canonicalize(path) else {
         return None;
     };
 
-    let java = if path.file_name()?.to_str()? != JAVA_BIN {
+    let path = if path.file_name()?.to_str()? != JAVA_BIN {
         path.join(JAVA_BIN)
     } else {
         path.clone()
     };
 
-    if !java.exists() {
+    if !path.exists() {
         return None;
     };
 
@@ -21,7 +21,7 @@ pub fn check_java(path: &Path) -> Option<JavaInstallation> {
     let file_path = tempdir.join("JavaInfo.class");
     std::fs::write(&file_path, include_bytes!("../../../../res/java/JavaInfo.class")).ok()?;
 
-    let output = Command::new(&java)
+    let output = Command::new(&path)
         .arg("-cp")
         .arg(file_path.parent().unwrap())
         .arg("JavaInfo")
@@ -42,7 +42,7 @@ pub fn check_java(path: &Path) -> Option<JavaInstallation> {
 
     Some(JavaInstallation {
         path,
-        version: extract_java_majorminor_version(info.get("java.version")?).ok()?.1,
+        version: JavaInstallation::get_version_from(info.get("java.version")?).ok()?,
         architecture: info.get("os.arch")?.clone(),
         vendor: info.get("java.vendor")?.clone(),
     })

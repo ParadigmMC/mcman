@@ -53,4 +53,9 @@ impl App {
         let res = self.http_get(url).await?;
         Ok(res.json().await?)
     }
+
+    pub async fn http_get_json_with<T: DeserializeOwned, F: FnOnce(reqwest::RequestBuilder) -> reqwest::RequestBuilder>(&self, url: impl IntoUrl, f: F) -> Result<T> {
+        let res = self.http_get_with(url, f).await?;
+        Ok(res.json().await?)
+    }
 }

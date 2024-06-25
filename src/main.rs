@@ -24,6 +24,8 @@ enum Commands {
     #[command(subcommand)]
     Sources(commands::sources::Commands),
     Build(commands::build::Args),
+    #[command(subcommand)]
+    Java(commands::java::Commands),
 }
 
 #[tokio::main]
@@ -35,5 +37,6 @@ async fn main() -> Result<()> {
         Commands::Init(args) => commands::init::run(app, args).await,
         Commands::Sources(args) => commands::sources::run(app, args).await,
         Commands::Build(args) => commands::build::run(app, args).await,
+        Commands::Java(args) => commands::java::run(app, args).await,
     }
 }
