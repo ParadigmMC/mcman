@@ -99,6 +99,7 @@ impl<'a> JenkinsAPI<'a> {
         job: &str,
         build: &str,
         artifact: &str,
+        custom_filename: Option<String>,
     ) -> Result<Vec<Step>> {
         let (build, artifact) = self
             .fetch_artifact(url, job, build, artifact)
@@ -124,7 +125,8 @@ impl<'a> JenkinsAPI<'a> {
                 artifact.file_name,
             ))),
             hashes,
-            filename: artifact.file_name,
+            filename: custom_filename.unwrap_or(artifact.file_name)
+                .replace("${build}", build.number.to_string().as_str()),
             ..Default::default()
         };
 

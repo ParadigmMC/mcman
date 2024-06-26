@@ -4,13 +4,13 @@ pub type JavaVersion = u32;
 mod installation;
 mod find;
 mod check;
-use std::{path::Path, process::Stdio};
+use std::{path::Path, process::{ExitStatus, Stdio}};
 
 use anyhow::{anyhow, Result};
-use futures::StreamExt;
+use futures::{Future, StreamExt};
 pub use installation::*;
 pub use check::*;
-use tokio::process::{Child, Command};
+use tokio::{io::{AsyncBufReadExt, BufReader}, process::{Child, Command}};
 
 use crate::api::utils::pathdiff::diff_paths;
 
@@ -24,6 +24,7 @@ impl JavaProcess {
         java: &Path,
         args: &[&str],
     ) -> Result<Self> {
+        // JRE is stupid
         let dir = diff_paths(dir, std::env::current_dir()?)
             .ok_or(anyhow!("Couldn't diff paths"))?;
 
@@ -38,6 +39,27 @@ impl JavaProcess {
         Ok(Self {
             child,
         })
+    }
+
+    pub fn lines<F>(&mut self, f: F) -> ()
+    where
+        F: Fn(&str) + Send + 'static
+    {
+        let stdout = self.child.stdout
+            .take()
+            .expect("Child to have stdout");
+
+        let mut lines = BufReader::new(stdout).lines();
+        
+        tokio::spawn(async move {
+            while let Ok(Some(line)) = lines.next_line().await {
+                f(line.trim());
+            }
+        });
+    }
+
+    pub async fn wait(&mut self) -> Result<ExitStatus> {
+        Ok(self.child.wait().await?)
     }
 }
 

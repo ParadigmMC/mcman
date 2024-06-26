@@ -10,3 +10,4 @@ pub mod fabric;
 pub mod hangar;
 pub mod jenkins;
 pub mod spigot;
+pub mod buildtools;

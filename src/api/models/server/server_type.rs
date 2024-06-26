@@ -1,21 +1,10 @@
 use crate::api::{
-    app::App,
-    models::{Addon, AddonTarget, AddonType, Environment},
-    step::Step,
-    utils::serde::*,
+    app::App, models::{Addon, AddonTarget, AddonType, Environment}, sources::buildtools, step::Step, utils::serde::*
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 use super::ServerFlavor;
-
-#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
-#[serde(rename_all = "lowercase")]
-pub enum BuildToolsFlavor {
-    #[default]
-    Spigot,
-    CraftBukkit,
-}
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -89,8 +78,8 @@ pub enum ServerType {
     },
 
     BuildTools {
-        #[serde(default = "BuildToolsFlavor::default")]
-        software: BuildToolsFlavor,
+        #[serde(default)]
+        craftbukkit: bool,
         #[serde(skip_serializing_if = "Vec::is_empty")]
         #[serde(default = "Vec::new")]
         args: Vec<String>,
@@ -129,7 +118,9 @@ impl ServerJar {
             ServerType::Quilt { loader, installer } => todo!(),
             ServerType::NeoForge { loader } => todo!(),
             ServerType::Forge { loader } => todo!(),
-            ServerType::BuildTools { software, args } => todo!(),
+            ServerType::BuildTools { craftbukkit, args } => {
+                buildtools::resolve_steps(app, *craftbukkit, args, &self.mc_version).await
+            },
             ServerType::Custom { inner, .. } => {
                 Addon {
                     environment: Some(env),

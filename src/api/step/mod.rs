@@ -6,6 +6,8 @@ mod cache_location;
 pub use filemeta::*;
 pub use cache_location::*;
 
+use super::tools::java::JavaVersion;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum Step {
@@ -13,7 +15,7 @@ pub enum Step {
     Download { url: String, metadata: FileMeta },
     ExecuteJava {
         args: Vec<String>,
-        java_version: Option<String>,
+        java_version: Option<JavaVersion>,
         label: String,
     },
 }

@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use futures::TryStreamExt;
 
 use crate::api::{app::App, step::{FileMeta, StepResult}};
@@ -33,7 +33,8 @@ impl App {
         tokio::fs::create_dir_all(target_destination.parent().ok_or(anyhow!("No parent"))?)
             .await?;
 
-        let target_file = tokio::fs::File::create(&target_destination).await?;
+        let target_file = tokio::fs::File::create(&target_destination).await
+            .with_context(|| format!("Creating file: {}", target_destination.display()))?;
         let mut target_writer = tokio::io::BufWriter::new(target_file);
 
         while let Some(item) = stream.try_next().await? {
@@ -41,7 +42,8 @@ impl App {
                 digest.update(&item);
             }
 
-            tokio::io::copy(&mut item.as_ref(), &mut target_writer).await?;
+            tokio::io::copy(&mut item.as_ref(), &mut target_writer)
+                .await?;
         }
 
         if let Some((_, hasher, content)) = hasher {
@@ -56,7 +58,8 @@ impl App {
             tokio::fs::create_dir_all(
                 output_destination.parent().ok_or(anyhow!("No parent"))?,
             )
-            .await?;
+            .await
+            .with_context(|| format!("Create parent dirs: {}", output_destination.display()))?;
             tokio::fs::copy(&cache_destination, &output_destination).await?;
         }
 
