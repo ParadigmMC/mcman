@@ -38,7 +38,7 @@ pub async fn resolve_steps_jar(
 
 /// Resolve steps for using BuildTools to compile a server jar
 pub async fn resolve_steps_build(
-    app: &App,
+    _app: &App,
     jar_name: &str,
     craftbukkit: bool,
     custom_args: &Vec<String>,
@@ -50,6 +50,8 @@ pub async fn resolve_steps_build(
         String::from("--compile-if-changed"),
         String::from("--rev"),
         mc_version.to_owned(),
+        String::from("--final-name"),
+        String::from("server.jar"),
     ];    
 
     if craftbukkit {
@@ -59,7 +61,15 @@ pub async fn resolve_steps_build(
 
     args.extend(custom_args.clone());
 
+    //let build_number = jar_name.split(&['-', '.']).nth(1).unwrap().parse::<i32>()?;
+
     Ok(vec![
+        /* Step::CacheCheck(FileMeta {
+            cache: Some(CacheLocation("buildtools".into(), format!(
+                "",
+            ))),
+            ..Default::default()
+        }), */
         Step::ExecuteJava {
             args,
             java_version: Some(get_java_version_for(mc_version)?),

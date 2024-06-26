@@ -115,7 +115,7 @@ impl ServerJar {
             ServerType::PaperMC { project, build } => app.papermc().resolve_steps(&project.to_string(), &self.mc_version, build).await,
             ServerType::Purpur { build } => todo!(),
             ServerType::Fabric { loader, installer } => app.fabric().resolve_steps(&self.mc_version, loader, installer, &env).await,
-            ServerType::Quilt { loader, installer } => todo!(),
+            ServerType::Quilt { loader, installer } => app.quilt().resolve_steps(&self.mc_version, installer, loader, &env).await,
             ServerType::NeoForge { loader } => todo!(),
             ServerType::Forge { loader } => todo!(),
             ServerType::BuildTools { craftbukkit, args } => {
@@ -128,6 +128,39 @@ impl ServerJar {
                     target: AddonTarget::Custom(String::from(".")),
                 }.resolve_steps(app).await
             },
+        }
+    }
+
+    pub async fn update(&mut self, app: &App) -> Result<bool> {
+        match self.server_type.clone() {
+            ServerType::Vanilla {  } => Ok(false),
+            ServerType::PaperMC { project, build } => {
+                let new_build = app.papermc().fetch_builds(&project.to_string(), &self.mc_version).await?
+                    .builds
+                    .into_iter()
+                    .map(|b| b.build)
+                    .max()
+                    .unwrap()
+                    .to_string();
+
+                self.server_type = ServerType::PaperMC { project: project.clone(), build: new_build.clone() };
+
+                Ok(new_build != build)
+            },
+            ServerType::Purpur { build } => todo!(),
+            ServerType::Fabric { loader, installer } => {
+                let latest_loader = app.fabric().fetch_loaders().await?.first().unwrap().version.clone();
+                let latest_installer = app.fabric().fetch_installers().await?.first().unwrap().version.clone();
+
+                self.server_type = ServerType::Fabric { loader: latest_loader.clone(), installer: latest_installer.clone() };
+
+                Ok(loader != latest_loader || installer != latest_installer)
+            },
+            ServerType::Quilt { loader, installer } => todo!(),
+            ServerType::NeoForge { loader } => todo!(),
+            ServerType::Forge { loader } => todo!(),
+            ServerType::BuildTools { .. } => Ok(false),
+            ServerType::Custom { inner, flavor } => todo!(),
         }
     }
 }

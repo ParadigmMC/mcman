@@ -92,5 +92,6 @@ impl App {
         maven => MavenAPI,
         hangar => HangarAPI,
         jenkins => JenkinsAPI,
+        quilt => QuiltAPI,
     }
 }

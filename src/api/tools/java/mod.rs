@@ -12,7 +12,7 @@ pub use installation::*;
 pub use check::*;
 use tokio::{io::{AsyncBufReadExt, BufReader}, process::{Child, Command}};
 
-use crate::api::utils::pathdiff::diff_paths;
+use crate::api::utils::pathdiff::{diff_paths, DiffTo};
 
 pub struct JavaProcess {
     child: Child,
@@ -25,7 +25,8 @@ impl JavaProcess {
         args: &[&str],
     ) -> Result<Self> {
         // JRE is stupid
-        let dir = diff_paths(dir, std::env::current_dir()?)
+        let dir = std::env::current_dir()?
+            .diff_to(dir)
             .ok_or(anyhow!("Couldn't diff paths"))?;
 
         let child = Command::new(java)

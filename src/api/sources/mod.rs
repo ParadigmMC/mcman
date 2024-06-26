@@ -11,3 +11,4 @@ pub mod hangar;
 pub mod jenkins;
 pub mod spigot;
 pub mod buildtools;
+pub mod quilt;

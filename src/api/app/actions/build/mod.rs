@@ -10,7 +10,11 @@ impl App {
         if let Some(jar) = self.server.read().await.as_ref().map(|(_, server)| {
             server.jar.clone()
         }).flatten() {
+            println!("Installing server jar");
+
             let steps = jar.resolve_steps(&self, Environment::Server).await?;
+
+            println!("{steps:#?}");
 
             self.execute_steps(base, &steps).await?;
         }
