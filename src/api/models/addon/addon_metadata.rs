@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::api::{app::App, sources::{jenkins::jenkins_job_url, maven::maven_artifact_url}, utils::url::get_filename_from_url};
@@ -19,6 +19,27 @@ pub enum AddonMetadataSource {
 }
 
 impl AddonMetadataSource {
+    pub fn all() -> Vec<Self> {
+        vec![
+            AddonMetadataSource::Modrinth,
+            AddonMetadataSource::Hangar,
+            AddonMetadataSource::Spigot,
+            AddonMetadataSource::Other,
+            AddonMetadataSource::Github,
+            AddonMetadataSource::Jenkins,
+            AddonMetadataSource::Maven,
+            AddonMetadataSource::Curseforge,
+        ]
+    }
+
+    pub fn get_markdown_header() -> String {
+        Self::all()
+            .into_iter()
+            .map(|src| format!("[{}]: {}", src.into_str(), src.icon_url()))
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
     pub fn into_str(&self) -> &'static str {
         match self {
             AddonMetadataSource::Modrinth => "modrinth",
@@ -32,8 +53,17 @@ impl AddonMetadataSource {
         }
     }
 
+    pub fn markdown_tag(&self) -> String {
+        format!("![{}]", self.into_str())
+    }
+
+    pub fn html(&self) -> String {
+        format!("<img src='{}'>", self.icon_url())
+    }
+
     pub fn icon_url(&self) -> String {
-        format!("https://raw.githubusercontent.com/ParadigmMC/mcman/main/res/icons/{}.png", self.into_str())
+        // TODO !!!!!!!!!!!!!!!!!!!!!
+        format!("https://raw.githubusercontent.com/ParadigmMC/mcman/v2/res/icons/{}.png", self.into_str())
     }
 }
 
@@ -67,7 +97,7 @@ impl Addon {
                     source: AddonMetadataSource::Modrinth,
                 })
             },
-            AddonType::Curseforge { id, version } => todo!(),
+            AddonType::Curseforge { id, version } => bail!("Unimplemented"),
             AddonType::Spigot { id, version } => todo!(),
             AddonType::Hangar { id, version } => {
                 let proj = app.hangar().fetch_project(id).await?;

@@ -19,10 +19,10 @@ impl Addon {
             AddonType::Url { url } => resolve_steps_for_url(app, url, None).await,
             AddonType::Modrinth { id, version } => app.modrinth().resolve_steps(id, version).await,
             AddonType::Curseforge { id, version } => Ok(vec![]),
-            AddonType::Spigot { id, version } => todo!(),
-            AddonType::Hangar { id, version } => todo!(),
+            AddonType::Spigot { id, version } => app.spigot().resolve_steps(id, version).await,
+            AddonType::Hangar { id, version } => app.hangar().resolve_steps(id, version).await,
             AddonType::GithubRelease { repo, version, filename } => app.github().resolve_steps(repo, version, filename).await,
-            AddonType::Jenkins { url, job, build, artifact } => todo!(),
+            AddonType::Jenkins { url, job, build, artifact } => app.jenkins().resolve_steps(url, job, build, artifact, None).await,
             AddonType::MavenArtifact { url, group, artifact, version, filename } => app.maven().resolve_steps(url, group, artifact, version, filename).await,
         }
     }

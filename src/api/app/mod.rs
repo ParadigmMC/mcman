@@ -93,5 +93,6 @@ impl App {
         hangar => HangarAPI,
         jenkins => JenkinsAPI,
         quilt => QuiltAPI,
+        spigot => SpigotAPI,
     }
 }

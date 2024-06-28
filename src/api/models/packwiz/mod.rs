@@ -1,13 +1,13 @@
 mod packwiz_mod;
 mod packwiz_pack;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Result};
 pub use packwiz_mod::*;
 pub use packwiz_pack::*;
 
-use crate::api::{app::App, models::AddonType, utils::accessor::Accessor};
+use crate::api::{app::App, models::AddonType, step::Step, utils::{accessor::Accessor, url::get_filename_from_url}};
 
 pub static PACK_TOML: &str = "pack.toml";
 
@@ -31,7 +31,38 @@ pub async fn resolve_packwiz_addons(app: &App, mut accessor: Accessor) -> Result
     Ok(addons)
 }
 
+impl PackwizModUpdate {
+    pub fn from_addon_type(addon_type: &AddonType) -> Result<Option<Self>> {
+        match addon_type.clone() {
+            AddonType::Modrinth { id, version } => Ok(Some(Self::Modrinth { mod_id: id, version })),
+            AddonType::Curseforge { id, version } => Ok(Some(Self::Curseforge { file_id: version.parse()?, project_id: id.parse()? })),
+            _ => Ok(None),
+        }
+    }
+}
+
+impl PackwizModDownload {
+    pub async fn from_steps(steps: &Vec<Step>) -> Self {
+        todo!()
+    }
+}
+
 impl PackwizMod {
+    // TODO: incomplete
+    pub async fn from_addon(app: &App, addon: &Addon) -> Result<(PathBuf, Self)> {
+        let steps = addon.resolve_steps(app).await?;
+
+        let update = PackwizModUpdate::from_addon_type(&addon.addon_type)?;
+
+        let m = Self {
+            update,
+            side: addon.environment.unwrap_or_default(),
+            ..Default::default()
+        };
+
+        Ok((addon.target.to_path(), m))
+    }
+
     pub async fn into_addon(&self, app: &App, target: AddonTarget) -> Result<Addon> {
         let addon_type = if let Some(update) = &self.update {
             match update {
