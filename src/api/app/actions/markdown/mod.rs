@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 
-use crate::api::{app::App, models::{markdown::{MarkdownOptions, MarkdownOutput}, AddonMetadata, AddonMetadataSource}};
+use crate::api::{app::App, models::{markdown::{MarkdownOptions, MarkdownOutput}, metadata::{AddonMetadata, AddonMetadataSource}}};
 
 impl App {
     pub async fn get_markdown_options(&self) -> Option<MarkdownOptions> {

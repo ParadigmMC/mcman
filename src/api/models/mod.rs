@@ -11,6 +11,8 @@ pub mod packwiz;
 pub mod server;
 pub mod unsup;
 pub mod markdown;
+pub mod metadata;
+pub mod launcher;
 
 pub use addon::*;
 pub use env::*;

@@ -34,6 +34,10 @@ pub fn str_default() -> String {
     "default".to_owned()
 }
 
+pub fn is_default<T: Default + PartialEq>(t: &T) -> bool {
+    t == &T::default()
+}
+
 #[macro_export]
 macro_rules! generate_de_vec {
     ($t:ty, $name:ident, $with:literal) => {

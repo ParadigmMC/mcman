@@ -1,9 +1,7 @@
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::api::{app::App, sources::{jenkins::jenkins_job_url, maven::maven_artifact_url}, utils::url::get_filename_from_url};
-
-use super::{Addon, AddonType};
+use crate::api::{app::App, models::{Addon, AddonType}, sources::{jenkins::jenkins_job_url, maven::maven_artifact_url}, utils::url::get_filename_from_url};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum AddonMetadataSource {

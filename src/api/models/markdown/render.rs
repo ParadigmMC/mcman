@@ -1,4 +1,4 @@
-use crate::api::{models::AddonMetadata, utils::markdown::{HeaderAlignment, MarkdownHeader, MarkdownTable}};
+use crate::api::{models::metadata::AddonMetadata, utils::markdown::{HeaderAlignment, MarkdownHeader, MarkdownTable}};
 
 use super::{MarkdownOptions, MarkdownOutput, MdColumn};
 

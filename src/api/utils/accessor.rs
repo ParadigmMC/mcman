@@ -19,6 +19,16 @@ pub enum Accessor {
     //Zip(ZipArchive<Box<dyn ReadSeek>>),
 }
 
+impl ToString for Accessor {
+    fn to_string(&self) -> String {
+        match self {
+            Accessor::Local(path) => path.to_string_lossy().into_owned(),
+            Accessor::Remote(url) => url.to_string(),
+            Accessor::ZipLocal(zip) => String::from("a zip archive"),
+        }
+    }
+}
+
 impl Accessor {
     pub fn from(str: &str) -> Result<Self> {
         if str.starts_with("http://") || str.starts_with("https://") {

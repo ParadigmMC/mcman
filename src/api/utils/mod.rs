@@ -13,6 +13,7 @@ pub mod serde;
 pub mod url;
 pub mod console;
 pub mod markdown;
+pub mod script;
 
 pub fn try_find_toml_upwards<T: DeserializeOwned>(filename: &str) -> Result<Option<(PathBuf, T)>> {
     let mut path = std::env::current_dir()?;

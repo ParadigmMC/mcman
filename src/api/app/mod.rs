@@ -16,6 +16,8 @@ mod io;
 pub mod options;
 mod step;
 
+pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 pub const APP_USER_AGENT: &str = concat!(
     env!("CARGO_PKG_NAME"),
     "/",
