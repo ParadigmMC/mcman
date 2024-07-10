@@ -91,6 +91,9 @@ pub enum ServerType {
 
         #[serde(default)]
         flavor: ServerFlavor,
+        
+        #[serde(default)]
+        exec: Option<String>,
     },
 }
 
@@ -131,6 +134,18 @@ impl ServerJar {
         }
     }
 
+    pub fn get_exec_arguments(&self) -> Vec<String> {
+        match &self.server_type {
+            ServerType::Forge { .. } => todo!(),
+            ServerType::Custom { exec, .. } => exec.clone()
+                .unwrap_or(String::from("-jar server.jar"))
+                .split_whitespace()
+                .map(ToOwned::to_owned)
+                .collect::<Vec<_>>(),
+            _ => vec![String::from("-jar"), String::from("server.jar")],
+        }
+    }
+
     pub async fn update(&mut self, app: &App) -> Result<bool> {
         match self.server_type.clone() {
             ServerType::Vanilla {  } => Ok(false),
@@ -160,7 +175,7 @@ impl ServerJar {
             ServerType::NeoForge { loader } => todo!(),
             ServerType::Forge { loader } => todo!(),
             ServerType::BuildTools { .. } => Ok(false),
-            ServerType::Custom { inner, flavor } => todo!(),
+            ServerType::Custom { .. } => todo!(),
         }
     }
 }

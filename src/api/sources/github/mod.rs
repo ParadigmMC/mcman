@@ -47,14 +47,16 @@ impl<'a> GithubAPI<'a> {
             .http_get_with(format!("{}/{url}", self.0.options.api_urls.github), |req| {
                 req.headers(headers)
             })
-            .await?;
+            .await
+            .with_context(|| format!("Github: HTTP GET /{url}"))?;
 
         if response.status() == StatusCode::NOT_MODIFIED {
             Ok(cached_data.unwrap().data)
         } else {
             let etag = response.headers().get("etag").cloned();
 
-            let json: T = response.json().await?;
+            let json: T = response.json().await
+                .with_context(|| format!("Github: JSON decoding: {url}"))?;
 
             if let Some(etag) = etag {
                 self.0.cache.try_write_json(
@@ -96,8 +98,7 @@ impl<'a> GithubAPI<'a> {
             "latest" => releases.first(),
             tag => releases
                 .iter()
-                .find(|r| r.tag_name == tag)
-                .or_else(|| releases.iter().find(|r| r.tag_name.contains(tag))),
+                .find(|r| r.tag_name == tag),
         }
         .ok_or(anyhow!(
             "Github release '{tag}' not found on repository '{repo}'"
@@ -118,9 +119,7 @@ impl<'a> GithubAPI<'a> {
             "" | "first" | "any" => release.assets.first(),
             id => {
                 let id = if id.contains('$') {
-                    id.replace("${version}", &release.tag_name)
-                        .replace("${tag}", &release.tag_name)
-                        .replace("${release}", &release.tag_name)
+                    id.replace("${tag}", release_tag)
                 } else {
                     id.to_owned()
                 };

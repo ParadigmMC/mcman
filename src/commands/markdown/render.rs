@@ -8,7 +8,7 @@ use crate::api::app::App;
 pub struct Args {}
 
 pub async fn run(app: Arc<App>, args: Args) -> Result<()> {
-    
+    app.render_markdown_and_save().await?;
 
     Ok(())
 }

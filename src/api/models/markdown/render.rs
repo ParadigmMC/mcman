@@ -3,7 +3,11 @@ use crate::api::{models::metadata::AddonMetadata, utils::markdown::{HeaderAlignm
 use super::{MarkdownOptions, MarkdownOutput, MdColumn};
 
 impl MarkdownOptions {
-    pub fn render(&self, list: Vec<AddonMetadata>, output: MarkdownOutput) -> MarkdownTable {
+    pub fn render_addons(&self, list: Vec<AddonMetadata>) -> String {
+        self.table_addons(list, self.output_type).render(self.output_type)
+    }
+
+    pub fn table_addons(&self, list: Vec<AddonMetadata>, output: MarkdownOutput) -> MarkdownTable {
         let mut table = MarkdownTable::new();
 
         for column in &self.columns {

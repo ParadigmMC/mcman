@@ -30,7 +30,8 @@ impl WebsocketServer {
         let listener = TcpListener::bind(addr).await
         .with_context(|| format!("Listening to addr: {addr}"))?;
 
-        while let Ok((stream, _)) = listener.accept().await {
+        while let Ok((stream, addr)) = listener.accept().await {
+            println!("New connection: {addr:?}");
             tokio::spawn(self.clone().handle_connection(stream));
         }
 

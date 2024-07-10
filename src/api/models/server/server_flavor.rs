@@ -33,4 +33,18 @@ impl ServerFlavor {
             ServerFlavor::Proxy => true,
         }
     }
+
+    pub fn supports_nogui(&self) -> bool {
+        match self {
+            ServerFlavor::Proxy => false,
+            _ => true,
+        }
+    }
+
+    pub fn supports_eula_args(&self) -> bool {
+        match self {
+            ServerFlavor::Patched => true,
+            _ => false,
+        }
+    }
 }

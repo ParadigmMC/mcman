@@ -30,6 +30,7 @@ pub enum AddonType {
         version: String,
     },
 
+    #[serde(alias = "ghrel")]
     GithubRelease {
         #[serde(alias = "repository")]
         repo: String,

@@ -11,7 +11,7 @@ pub struct GithubRelease {
 pub struct GithubAsset {
     pub url: String,
     pub name: String,
-    pub label: String,
+    pub label: Option<String>,
     pub size: u64,
     pub download_count: u64,
 }
