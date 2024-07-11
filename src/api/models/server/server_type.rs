@@ -134,7 +134,7 @@ impl ServerJar {
         }
     }
 
-    pub fn get_exec_arguments(&self) -> Vec<String> {
+    pub fn get_execution_arguments(&self) -> Vec<String> {
         match &self.server_type {
             ServerType::Forge { .. } => todo!(),
             ServerType::Custom { exec, .. } => exec.clone()

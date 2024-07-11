@@ -1,7 +1,16 @@
 //! https://github.com/Manishearth/pathdiff
 
+use std::path::*;
+
+use anyhow::{anyhow, Result};
+
 pub trait DiffTo {
     fn diff_to<P>(&self, path: P) -> Option<PathBuf>
+    where
+        P: AsRef<Path>,
+        Self: AsRef<Path>;
+
+    fn try_diff_to<P>(&self, path: P) -> Result<PathBuf>
     where
         P: AsRef<Path>,
         Self: AsRef<Path>;
@@ -18,9 +27,18 @@ where
     {
         diff_paths(path, self)
     }
-}
 
-use std::path::*;
+    fn try_diff_to<P>(&self, path: P) -> anyhow::Result<PathBuf>
+        where
+            P: AsRef<Path>,
+            Self: AsRef<Path>
+    {
+        diff_paths(&path, self)
+            .ok_or(anyhow!("Can't diff paths
+Base: {}
+Path: {}", self.as_ref().display(), path.as_ref().display()))
+    }
+}
 
 /// Construct a relative path from a provided base directory path to the provided path.
 ///

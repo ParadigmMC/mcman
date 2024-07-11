@@ -28,6 +28,13 @@ impl Shell {
         }
     }
 
+    pub fn file_ext(&self) -> &'static str {
+        match self {
+            Shell::Sh => "sh",
+            Shell::Bat => "bat",
+        }
+    }
+
     pub fn line_sep(&self) -> &'static str {
         match self {
             Shell::Sh => "\n",
