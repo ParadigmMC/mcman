@@ -31,7 +31,7 @@ pub struct ServerLauncher {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub postlaunch: Vec<String>,
 
-    pub java_version: Option<String>,
+    pub java_version: Option<u32>,
 }
 
 impl ServerLauncher {

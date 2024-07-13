@@ -19,7 +19,7 @@ pub async fn run(_app: Arc<App>, args: Args) -> Result<()> {
         return Ok(());
     }
 
-    for install in &installs {
+    for install in installs {
         println!(
             "{}",
             style(format!("Java {}, {}", install.version, install.architecture))

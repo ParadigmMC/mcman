@@ -7,12 +7,11 @@ mod check;
 use std::{path::Path, process::{ExitStatus, Stdio}};
 
 use anyhow::{anyhow, Result};
-use futures::{Future, StreamExt};
 pub use installation::*;
 pub use check::*;
 use tokio::{io::{AsyncBufReadExt, BufReader}, process::{Child, Command}};
 
-use crate::api::utils::pathdiff::{diff_paths, DiffTo};
+use crate::api::utils::pathdiff::DiffTo;
 
 pub struct JavaProcess {
     child: Child,
@@ -62,22 +61,4 @@ impl JavaProcess {
     pub async fn wait(&mut self) -> Result<ExitStatus> {
         Ok(self.child.wait().await?)
     }
-}
-
-pub async fn get_java_installations() -> Vec<JavaInstallation> {
-    let paths = find::collect_possible_java_paths();
-
-    futures::stream::iter(paths)
-        .filter_map(|path| async move {
-            check_java(&path)
-        })
-        .collect()
-        .await
-}
-
-pub async fn get_java_installation_for(ver: JavaVersion) -> Option<JavaInstallation> {
-    get_java_installations()
-        .await
-        .into_iter()
-        .find(|v| v.version == ver)
 }
