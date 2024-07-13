@@ -1,6 +1,6 @@
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use reqwest::{IntoUrl, Response};
 use serde::de::DeserializeOwned;
 use tokio::time::sleep;
@@ -13,6 +13,8 @@ impl App {
         url: impl IntoUrl,
         f: F,
     ) -> Result<Response> {
+        println!("HTTP GET {}", url.as_str());
+
         let req = self.http_client.get(url.as_str());
 
         let req = f(req);
@@ -50,12 +52,15 @@ impl App {
     }
 
     pub async fn http_get_json<T: DeserializeOwned>(&self, url: impl IntoUrl) -> Result<T> {
-        let res = self.http_get(url).await?;
-        Ok(res.json().await?)
+        self.http_get_json_with(url, |x| x).await
     }
 
     pub async fn http_get_json_with<T: DeserializeOwned, F: FnOnce(reqwest::RequestBuilder) -> reqwest::RequestBuilder>(&self, url: impl IntoUrl, f: F) -> Result<T> {
         let res = self.http_get_with(url, f).await?;
-        Ok(res.json().await?)
+
+        let full = res.bytes().await?;
+
+        Ok(serde_json::from_slice(&full)
+            .with_context(|| format!("JSON parsing error: {}", String::from_utf8_lossy(&full)))?)
     }
 }

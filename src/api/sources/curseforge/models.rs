@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Data<T> {
@@ -54,7 +55,8 @@ pub struct CurseforgeDependency {
     pub relation_type: CurseforgeDependencyType,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, Clone)]
+#[repr(u8)]
 pub enum CurseforgeDependencyType {
     EmbeddedLibrary = 1,
     OptionalDependency = 2,
@@ -70,13 +72,15 @@ pub struct CurseforgeFileHash {
     pub algo: CurseforgeHashAlgo,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, Clone)]
+#[repr(u8)]
 pub enum CurseforgeHashAlgo {
     Sha1 = 1,
     Md5 = 2,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, Clone)]
+#[repr(u8)]
 pub enum FileReleaseType {
     Release = 1,
     Beta = 2,

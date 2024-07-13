@@ -56,10 +56,9 @@ impl<'a> ModrinthAPI<'a> {
 
         let res: ModrinthProjectCheckResponse = self.fetch_api(format!("project/{slug}/check")).await?;
 
-        if let Some(mut ids) = store {
-            ids.insert(slug.to_owned(), res.id.clone());
-            self.0.cache.try_write_json(path, &ids)?;
-        }
+        let mut ids = store.unwrap_or_default();
+        ids.insert(slug.to_owned(), res.id.clone());
+        self.0.cache.try_write_json(path, &ids)?;
 
         Ok(res.id)
     }
