@@ -6,7 +6,7 @@ use zip::{write::FileOptions, ZipArchive, ZipWriter};
 
 use crate::api::app::APP_VERSION;
 
-use super::pathdiff::DiffTo;
+use super::{fs::create_parents_sync, pathdiff::DiffTo};
 
 pub async fn unzip<T: Read + Seek>(reader: T, to: &Path, prefix: Option<String>) -> Result<()> {
     let mut archive = ZipArchive::new(reader)?;
@@ -31,7 +31,7 @@ pub async fn unzip<T: Read + Seek>(reader: T, to: &Path, prefix: Option<String>)
         let mut file = archive.by_name(&filename)?;
         let target_path = to.join(&filename);
 
-        std::fs::create_dir_all(target_path.parent().unwrap())?;
+        create_parents_sync(&target_path)?;
         let mut target_file = std::fs::File::create(&target_path)?;
 
         std::io::copy(&mut file, &mut target_file)?;

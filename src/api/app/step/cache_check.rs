@@ -5,7 +5,7 @@ use futures::{StreamExt, TryStreamExt};
 use tokio::{fs::File, io::BufWriter};
 use tokio_util::io::ReaderStream;
 
-use crate::api::{app::App, step::{FileMeta, StepResult}};
+use crate::api::{app::App, step::{FileMeta, StepResult}, utils::fs::create_parents};
 
 impl App {
     // cache | output | to do
@@ -30,7 +30,8 @@ impl App {
 
         let output_size = if output_path.try_exists()
             .context("Checking if output file exists")? {
-            let meta = output_path.metadata()?;
+            let meta = output_path.metadata()
+                .context("Checking metadata of output file")?;
             Some(meta.len())
         } else {
             None
@@ -48,14 +49,13 @@ impl App {
                 //return Ok(StepResult::Continue);
             } else {
                 let hasher = metadata.get_hasher();
-                if let Some((format, mut hasher, content)) = hasher {
-                    tokio::fs::create_dir_all(output_path.parent().ok_or(anyhow!("No parent"))?)
-                        .await?;
-                    let output_file = File::open(&output_path).await
+                if let Some((_format, mut hasher, content)) = hasher {
+                    let output_file = File::open(&output_path)
+                        .await
                         .with_context(|| format!("Opening file: {}", output_path.display()))?;
                     let mut stream = ReaderStream::new(output_file);
 
-                    while let Some(item) = stream.try_next().await? {
+                    while let Some(item) = stream.try_next().await.with_context(|| "Reading stream into hasher")? {
                         hasher.update(&item);
                     }
 
@@ -70,7 +70,7 @@ impl App {
                         // hash mismatch
                         // TODO: print warning
                         println!("WARNING Hash mismatch: {}", metadata.filename);
-                        tokio::fs::remove_file(&output_path).await?;
+                        tokio::fs::remove_file(&output_path).await.context("hash mismatch remove file")?;
                     }
                 } else {
                     // FileInfo doesn't have any hashes
@@ -109,6 +109,7 @@ impl App {
 
         let mut hasher = metadata.get_hasher();
 
+        create_parents(&output_path).await?;
         let target_file = File::create(&output_path).await?;
         let mut target_writer = BufWriter::new(target_file);
 

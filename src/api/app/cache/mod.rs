@@ -7,7 +7,7 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use serde::de::DeserializeOwned;
 
-use crate::api::step::CacheLocation;
+use crate::api::{step::CacheLocation, utils::fs::{create_parents, create_parents_sync}};
 
 pub struct Cache(pub Option<PathBuf>);
 
@@ -49,7 +49,7 @@ impl Cache {
             Some(base) => {
                 let fullpath = base.join(path);
 
-                std::fs::create_dir_all(fullpath.parent().ok_or(anyhow!("No parent"))?)?;
+                create_parents_sync(&fullpath)?;
 
                 let writer = BufWriter::new(
                     File::create(&fullpath)

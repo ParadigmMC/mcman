@@ -8,14 +8,22 @@ use crate::api::{app::App, step::{CacheLocation, FileMeta, Step}, utils::hashing
 mod models;
 pub use models::*;
 
-pub const CURSEFORGE_API_URL: &str = "https://api.curse.tools/v1/cf";
-
 pub struct CurseforgeAPI<'a>(pub &'a App);
 
 impl<'a> CurseforgeAPI<'a> {
     pub async fn fetch_api<T: DeserializeOwned>(&self, url: String) -> Result<T> {
         self.0
-            .http_get_json(format!("{CURSEFORGE_API_URL}/{url}"))
+            .http_get_json_with(format!("{}/{url}", if self.0.options.use_curseforge_api {
+                &self.0.options.api_urls.curseforge
+            } else {
+                &self.0.options.api_urls.cursetools
+            }), |req| {
+                if let Some(token) = &self.0.options.curseforge_token {
+                    req.header("x-api-key", token)
+                } else {
+                    req
+                }
+            })
             .await
     }
 

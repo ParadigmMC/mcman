@@ -15,7 +15,7 @@ impl App {
         let mut iter = steps.iter();
 
         while let Some(step) = iter.next() {
-            let res = self.execute_step(dir, step).await?;
+            let res = self.execute_step(dir, step).await.with_context(|| format!("Executing steps: {steps:#?}"))?;
             if res == StepResult::Skip {
                 _ = iter.next();
             }

@@ -3,7 +3,7 @@ use std::path::Path;
 use anyhow::{anyhow, bail, Context, Result};
 use futures::TryStreamExt;
 
-use crate::api::{app::App, step::{FileMeta, StepResult}};
+use crate::api::{app::App, step::{FileMeta, StepResult}, utils::fs::create_parents};
 
 impl App {
     // if FileMeta has cache location,
@@ -30,9 +30,8 @@ impl App {
         let mut hasher = metadata.get_hasher();
 
         let target_destination = cache_destination.as_ref().unwrap_or(&output_destination);
-        tokio::fs::create_dir_all(target_destination.parent().ok_or(anyhow!("No parent"))?)
-            .await?;
-
+        
+        create_parents(&target_destination).await?;
         let target_file = tokio::fs::File::create(&target_destination).await
             .with_context(|| format!("Creating file: {}", target_destination.display()))?;
         let mut target_writer = tokio::io::BufWriter::new(target_file);
@@ -55,11 +54,7 @@ impl App {
         }
 
         if let Some(cache_destination) = cache_destination {
-            tokio::fs::create_dir_all(
-                output_destination.parent().ok_or(anyhow!("No parent"))?,
-            )
-            .await
-            .with_context(|| format!("Create parent dirs: {}", output_destination.display()))?;
+            create_parents(&output_destination).await?;
             tokio::fs::copy(&cache_destination, &output_destination).await?;
         }
 

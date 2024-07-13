@@ -10,6 +10,11 @@ pub struct AppOptions {
 
     #[config(env = "GITHUB_API_TOKEN")]
     pub github_token: Option<String>,
+    #[config(env = "CF_API_TOKEN")]
+    pub curseforge_token: Option<String>,
+
+    #[config(default = false)]
+    pub use_curseforge_api: bool,
 }
 
 #[derive(Config)]
@@ -18,10 +23,10 @@ pub struct ApiUrls {
     pub github: String,
     #[config(default = "https://api.modrinth.com/v2", env = "API_URL_MODRINTH")]
     pub modrinth: String,
-    #[config(default = "https://curse.tools", env = "API_URL_CURSETOOLS")]
+    #[config(default = "https://api.curse.tools/v1/cf", env = "API_URL_CURSETOOLS")]
     pub cursetools: String,
-    #[config(default = "", env = "API_URL_CURSERINTH")]
-    pub curserinth: String,
+    #[config(default = "https://api.curseforge.com/v1", env = "API_URL_CURSEFORGE")]
+    pub curseforge: String,
     #[config(default = "https://api.spiget.org/v2", env = "API_URL_SPIGET")]
     pub spiget: String,
     #[config(default = "https://hangar.papermc.io/api/v1", env = "API_URL_HANGAR")]

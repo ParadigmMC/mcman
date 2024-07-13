@@ -12,11 +12,22 @@ pub struct CurseforgeMod {
     pub game_id: i32,
     pub name: String,
     pub slug: String,
+    pub links: CurseforgeModLinks,
     pub summary: String,
     pub download_count: i64,
     pub is_featured: bool,
     pub allow_mod_distribution: bool,
     pub latest_files: Vec<CurseforgeFile>,
+}
+
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CurseforgeModLinks {
+    pub website_url: String,
+    pub wiki_url: String,
+    pub issues_url: String,
+    pub source_url: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

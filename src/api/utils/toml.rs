@@ -3,6 +3,8 @@ use std::{io::Write, path::{Path, PathBuf}};
 use anyhow::Result;
 use serde::{de::DeserializeOwned, Serialize};
 
+use super::fs::create_parents_sync;
+
 pub fn try_find_toml_upwards<T: DeserializeOwned>(filename: &str) -> Result<Option<(PathBuf, T)>> {
     let mut path = std::env::current_dir()?;
 
@@ -28,7 +30,7 @@ pub fn read_toml<T: DeserializeOwned>(path: &Path) -> Result<T> {
 }
 
 pub fn write_toml<T: Serialize>(path: &Path, filename: &str, value: &T) -> Result<()> {
-    std::fs::create_dir_all(path)?;
+    create_parents_sync(path)?;
 
     let content = toml::to_string_pretty(value)?;
 

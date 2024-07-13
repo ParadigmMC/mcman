@@ -8,3 +8,4 @@ pub mod markdown;
 pub mod script;
 pub mod zip;
 pub mod toml;
+pub mod fs;

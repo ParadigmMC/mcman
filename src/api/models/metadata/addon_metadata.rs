@@ -95,8 +95,28 @@ impl Addon {
                     source: AddonMetadataSource::Modrinth,
                 })
             },
-            AddonType::Curseforge { id, version } => bail!("Unimplemented"),
-            AddonType::Spigot { id, version } => todo!(),
+            AddonType::Curseforge { id, version } => {
+                let m = app.curseforge().fetch_mod(id).await?;
+
+                Ok(AddonMetadata {
+                    name: m.name,
+                    description: Some(m.summary),
+                    version: Some(version.to_owned()),
+                    link: Some(m.links.website_url),
+                    source: AddonMetadataSource::Curseforge,
+                })
+            },
+            AddonType::Spigot { id, version } => {
+                let r = app.spigot().fetch_resource(id).await?;
+
+                Ok(AddonMetadata {
+                    name: r.name,
+                    description: Some(r.tag),
+                    version: Some(version.to_owned()),
+                    link: Some(format!("https://www.spigotmc.org/resources/{id}")),
+                    source: AddonMetadataSource::Curseforge,
+                })
+            },
             AddonType::Hangar { id, version } => {
                 let proj = app.hangar().fetch_project(id).await?;
 
