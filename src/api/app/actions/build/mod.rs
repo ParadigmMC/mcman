@@ -7,6 +7,7 @@ use crate::api::app::App;
 pub mod addons;
 pub mod server_jar;
 pub mod worlds;
+pub mod bootstrap;
 
 impl App {
     pub async fn action_build(self: Arc<Self>, base: &Path) -> Result<()> {

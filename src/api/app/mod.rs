@@ -88,6 +88,7 @@ impl App {
     api_methods! {
         vanilla => VanillaAPI,
         modrinth => ModrinthAPI,
+        curseforge => CurseforgeAPI,
         github => GithubAPI,
         papermc => PaperMCAPI,
         fabric => FabricAPI,
