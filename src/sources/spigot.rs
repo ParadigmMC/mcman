@@ -2,7 +2,7 @@ use std::{borrow::Cow, collections::HashMap};
 
 use anyhow::Result;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-
+use reqwest::Response;
 use crate::app::{App, CacheStrategy, ResolvedFile};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -18,21 +18,21 @@ pub const CACHE_DIR: &str = "spiget";
 
 impl<'a> SpigotAPI<'a> {
     pub async fn fetch_api<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
-        let response = loop {
-        let response: T = self
+        let response: T = loop {
+        let _response: Response = self
             .0
             .http_client
             .get(url)
             .send()
             .await?
-            .error_for_status()?
-        if response.status() == 429 {
+            .error_for_status()?;
+        if _response.status() == 429 {
             async_std::task::sleep(std::time::Duration::from_secs(5)).await;
             continue;
         }
-        let response = response.json().await?;
-        return Ok(response)
-        }
+        let _response = _response.json().await?;
+        return Ok(_response)
+        };
     }
 
     pub fn get_resource_id(res: &str) -> &str {
