@@ -61,4 +61,3 @@ tokio-util = { version = "0.7", features = ["io"] }
 toml = "0.8"
 walkdir = "2.4"
 zip = "0.6"
-async-std = "1.12.0"
