@@ -18,6 +18,7 @@ pub const CACHE_DIR: &str = "spiget";
 
 impl<'a> SpigotAPI<'a> {
     pub async fn fetch_api<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
+        let response = loop {
         let response: T = self
             .0
             .http_client
@@ -25,10 +26,13 @@ impl<'a> SpigotAPI<'a> {
             .send()
             .await?
             .error_for_status()?
-            .json()
-            .await?;
-
-        Ok(response)
+        if response.status() == 429 {
+            async_std::task::sleep(std::time::Duration::from_secs(5)).await;
+            continue;
+        }
+        let response = response.json().await?;
+        return Ok(response)
+        }
     }
 
     pub fn get_resource_id(res: &str) -> &str {
