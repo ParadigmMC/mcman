@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 use super::{launcher::ServerLauncher, markdown::MarkdownOptions, Source};
@@ -24,6 +26,9 @@ pub struct Server {
 
     #[serde(default = "Vec::new")]
     pub sources: Vec<Source>,
+    
+    #[serde(default = "HashMap::new")]
+    pub variables: HashMap<String, String>,
 }
 
 impl Default for Server {
@@ -41,6 +46,7 @@ impl Default for Server {
             launcher: ServerLauncher::default(),
 
             sources: vec![],
+            variables: HashMap::default(),
         }
     }
 }

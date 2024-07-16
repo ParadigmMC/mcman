@@ -48,7 +48,7 @@ impl App {
 
         let name: String = cliclack::input("Name of the network?").interact()?;
 
-        let mut nw = Network { name };
+        let mut nw = Network { name, ..Default::default() };
 
         //self.network = Some(Arc::new(RwLock::new(nw)));
 

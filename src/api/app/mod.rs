@@ -6,7 +6,7 @@ use confique::Config;
 use options::AppOptions;
 use tokio::sync::RwLock;
 
-use super::models::{network::Network, server::Server};
+use super::models::{lockfile::Lockfile, network::Network, server::Server};
 
 pub mod actions;
 pub mod cache;
@@ -15,6 +15,7 @@ mod http;
 mod io;
 pub mod options;
 mod step;
+mod vars;
 
 pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -29,6 +30,8 @@ pub struct App {
     pub http_client: reqwest::Client,
     pub server: Arc<RwLock<Option<(PathBuf, Server)>>>,
     pub network: Arc<RwLock<Option<(PathBuf, Network)>>>,
+    pub existing_lockfile: Arc<RwLock<Option<Lockfile>>>,
+    pub new_lockfile: Arc<RwLock<Lockfile>>,
     pub cache: Cache,
     pub options: AppOptions,
     pub ci: bool,
@@ -63,6 +66,8 @@ impl App {
             http_client,
             server: Arc::new(RwLock::new(None)),
             network: Arc::new(RwLock::new(None)),
+            existing_lockfile: Arc::new(RwLock::new(None)),
+            new_lockfile: Arc::new(RwLock::new(Lockfile::default())),
             cache,
             options,
             ci,
