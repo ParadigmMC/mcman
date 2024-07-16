@@ -80,7 +80,7 @@ impl<'a> SpigotAPI<'a> {
 
         Ok(ResolvedFile {
             url: format!(
-                "{API_URL}/resources/{}/versions/{version}/download",
+                "{API_URL}/resources/{}/versions/{version}/download/proxy",
                 Self::get_resource_id(id)
             ),
             filename,
