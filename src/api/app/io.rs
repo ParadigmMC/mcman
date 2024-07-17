@@ -20,11 +20,11 @@ impl App {
 
     pub async fn save_changes(&self) -> Result<()> {
         if let Some((path, server)) = &*self.server.read().await {
-            write_toml(&path, SERVER_TOML, &server)?;
+            write_toml(path.parent().unwrap(), SERVER_TOML, &server)?;
         }
 
         if let Some((path, network)) = &*self.network.read().await {
-            write_toml(&path, NETWORK_TOML, &network)?;
+            write_toml(path.parent().unwrap(), NETWORK_TOML, &network)?;
         }
 
         Ok(())

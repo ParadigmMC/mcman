@@ -34,7 +34,7 @@ pub fn write_toml<T: Serialize>(path: &Path, filename: &str, value: &T) -> Resul
 
     let content = toml::to_string_pretty(value)?;
 
-    let mut file = std::fs::File::open(path.join(filename))?;
+    let mut file = std::fs::File::create(path.join(filename))?;
     file.write_all(content.as_bytes())?;
 
     Ok(())

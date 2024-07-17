@@ -13,6 +13,8 @@ pub mod unsup;
 pub mod markdown;
 pub mod metadata;
 pub mod launcher;
+pub mod legacy;
+pub mod hooks;
 
 pub use addon::*;
 pub use env::*;

@@ -7,6 +7,7 @@ use super::{AddonTarget, AddonType};
 
 #[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq)]
 pub struct Addon {
+    #[serde(alias = "side")]
     pub environment: Option<Environment>,
     #[serde(flatten)]
     pub addon_type: AddonType,

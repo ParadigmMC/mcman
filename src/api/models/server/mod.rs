@@ -19,16 +19,18 @@ pub struct Server {
     pub port: Option<i32>,
 
     pub jar: Option<ServerJar>,
-    #[serde(default)]
-    pub markdown: MarkdownOptions,
-    #[serde(default)]
-    pub launcher: ServerLauncher,
 
     #[serde(default = "Vec::new")]
     pub sources: Vec<Source>,
-    
+
     #[serde(default = "HashMap::new")]
     pub variables: HashMap<String, String>,
+
+    #[serde(default)]
+    pub markdown: MarkdownOptions,    
+    
+    #[serde(default)]
+    pub launcher: ServerLauncher,
 }
 
 impl Default for Server {

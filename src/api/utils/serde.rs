@@ -34,6 +34,14 @@ pub fn str_default() -> String {
     "default".to_owned()
 }
 
+pub fn bool_true() -> bool {
+    true
+}
+
+pub fn is_true(b: &bool) -> bool {
+    *b
+}
+
 pub fn is_default<T: Default + PartialEq>(t: &T) -> bool {
     t == &T::default()
 }

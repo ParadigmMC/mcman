@@ -3,9 +3,10 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
 pub enum AddonTarget {
-    Plugin,
-    Mod,
+    Plugins,
+    Mods,
     Custom(String),
 }
 
@@ -18,16 +19,16 @@ impl Default for AddonTarget {
 impl AddonTarget {
     pub fn from_str(str: &str) -> Self {
         match str {
-            "mods" => AddonTarget::Mod,
-            "plugins" => AddonTarget::Plugin,
+            "mods" => AddonTarget::Mods,
+            "plugins" => AddonTarget::Plugins,
             other => AddonTarget::Custom(other.to_owned()),
         }
     }
 
     pub fn as_str(&self) -> &str {
         match self {
-            AddonTarget::Mod => "mods",
-            AddonTarget::Plugin => "plugins",
+            AddonTarget::Mods => "mods",
+            AddonTarget::Plugins => "plugins",
             AddonTarget::Custom(path) => path.as_str(),
         }
     }

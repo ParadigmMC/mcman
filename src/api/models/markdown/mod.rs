@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+use crate::api::utils::serde::*;
+
 pub mod render;
 
 #[derive(Debug, Clone, Copy, Default, Deserialize, Serialize, PartialEq)]
@@ -14,10 +16,15 @@ pub enum MarkdownOutput {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct MarkdownOptions {
     pub files: Vec<String>,
+    #[serde(skip_serializing_if = "is_default")]
     pub columns: Vec<MdColumn>,
+    #[serde(skip_serializing_if = "is_default")]
     pub titles: HashMap<MdColumn, String>,
+    #[serde(skip_serializing_if = "is_true")]
     pub name_includes_link: bool,
+    #[serde(skip_serializing_if = "is_default")]
     pub sort_by: MdSort,
+    #[serde(skip_serializing_if = "is_default")]
     pub output_type: MarkdownOutput,
 }
 

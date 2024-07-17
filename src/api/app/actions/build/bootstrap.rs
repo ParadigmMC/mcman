@@ -1,4 +1,4 @@
-use std::{collections::HashSet, path::Path, sync::Arc};
+use std::{path::Path, sync::Arc};
 
 use anyhow::{Context, Result};
 use futures::{StreamExt, TryStreamExt};
