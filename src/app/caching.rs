@@ -43,6 +43,7 @@ impl Cache {
     }
 
     pub fn write_json<T: serde::Serialize>(&self, path: &str, data: &T) -> Result<()> {
+        std::fs::create_dir_all(self.path(path).parent().unwrap())?;
         let writer = BufWriter::new(
             File::create(self.path(path)).context(format!("Creating cache file at: {path}"))?,
         );
