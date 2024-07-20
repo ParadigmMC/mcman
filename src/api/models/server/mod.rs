@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::{launcher::ServerLauncher, markdown::MarkdownOptions, Source};
@@ -12,7 +13,7 @@ pub use server_type::*;
 
 pub const SERVER_TOML: &str = "server.toml";
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, JsonSchema)]
 #[serde(default)]
 pub struct Server {
     pub name: String,
@@ -20,10 +21,10 @@ pub struct Server {
 
     pub jar: Option<ServerJar>,
 
-    #[serde(default = "Vec::new")]
+    #[serde(default = "Vec::<Source>::new")]
     pub sources: Vec<Source>,
 
-    #[serde(default = "HashMap::new")]
+    #[serde(default = "HashMap::<String, String>::new")]
     pub variables: HashMap<String, String>,
 
     #[serde(default)]

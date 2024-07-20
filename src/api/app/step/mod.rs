@@ -7,10 +7,13 @@ use crate::api::step::{Step, StepResult};
 mod cache_check;
 mod download;
 mod execute_java;
+mod remove_file;
 
 use super::App;
 
 impl App {
+    /// Execute a list of steps, taking care of their StepResult's.
+    /// Skips the next step when a step returns StepResult::Skip
     pub async fn execute_steps(&self, dir: &Path, steps: &[Step]) -> Result<()> {
         let mut iter = steps.iter();
 
@@ -24,6 +27,7 @@ impl App {
         Ok(())
     }
 
+    /// Execute a single step and return its result
     pub async fn execute_step(&self, dir: &Path, step: &Step) -> Result<StepResult> {
         match step {
             Step::CacheCheck(metadata) => self.execute_step_cache_check(dir, metadata).await
@@ -42,6 +46,10 @@ impl App {
                 label
             } => {
                 self.execute_step_execute_java(dir, args, *java_version, label).await
+            },
+
+            Step::RemoveFile(metadata) => {
+                self.execute_step_remove_file(dir, metadata).await
             },
         }
     }

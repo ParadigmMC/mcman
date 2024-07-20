@@ -4,10 +4,10 @@ use std::{
     path::PathBuf,
 };
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use serde::de::DeserializeOwned;
 
-use crate::api::{step::CacheLocation, utils::fs::{create_parents, create_parents_sync}};
+use crate::api::{step::CacheLocation, utils::fs::create_parents_sync};
 
 pub struct Cache(pub Option<PathBuf>);
 
@@ -25,6 +25,7 @@ impl Cache {
         Some(self.0.as_ref()?.join(path))
     }
 
+    /// Tries to read a json file from cache. Returns `None` if it's not in cache or there is not a cache folder
     pub fn try_get_json<T: DeserializeOwned>(&self, path: &str) -> Result<Option<T>> {
         match &self.0 {
             Some(base) => {
@@ -44,6 +45,7 @@ impl Cache {
         }
     }
 
+    /// Try to write a json file to cache. Does nothing if there is no cache folder
     pub fn try_write_json<T: serde::Serialize>(&self, path: &str, data: &T) -> Result<()> {
         match &self.0 {
             Some(base) => {

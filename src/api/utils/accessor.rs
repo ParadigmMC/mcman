@@ -1,7 +1,4 @@
-use std::{
-    io::{Read, Seek},
-    path::PathBuf,
-};
+use std::path::PathBuf;
 
 use anyhow::{anyhow, Result};
 use reqwest::Url;
@@ -10,13 +7,12 @@ use zip::ZipArchive;
 
 use crate::api::app::App;
 
-//pub trait ReadSeek: Read + Seek {}
-
+/// An `Accessor` allows for filesystem, remote or zip file access.
 pub enum Accessor {
     Local(PathBuf),
     Remote(reqwest::Url),
     ZipLocal(ZipArchive<std::fs::File>),
-    //Zip(ZipArchive<Box<dyn ReadSeek>>),
+    //ZipRemote(SomeSortOfTempFile, ZipArchive<std::fs::File>),
 }
 
 impl ToString for Accessor {
@@ -24,7 +20,7 @@ impl ToString for Accessor {
         match self {
             Accessor::Local(path) => path.to_string_lossy().into_owned(),
             Accessor::Remote(url) => url.to_string(),
-            Accessor::ZipLocal(zip) => String::from("a zip archive"),
+            Accessor::ZipLocal(_) => String::from("a zip archive"),
         }
     }
 }
@@ -42,6 +38,7 @@ impl Accessor {
         }
     }
 
+    /// Try listing a directory
     pub async fn dir(&self) -> Result<Vec<String>> {
         match self {
             Accessor::ZipLocal(zip) => Ok(zip.file_names().map(ToOwned::to_owned).collect()),
@@ -54,6 +51,7 @@ impl Accessor {
         }
     }
 
+    /// Read a JSON file
     pub async fn json<T: DeserializeOwned>(&mut self, app: &App, path: &str) -> Result<T> {
         match self {
             Accessor::Local(base) => Ok(serde_json::from_reader(std::fs::File::open(
@@ -64,6 +62,7 @@ impl Accessor {
         }
     }
 
+    /// Read a TOML file
     pub async fn toml<T: DeserializeOwned>(&mut self, app: &App, path: &str) -> Result<T> {
         match self {
             Accessor::Local(base) => Ok(toml::from_str(

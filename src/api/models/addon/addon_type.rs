@@ -1,6 +1,7 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq, JsonSchema)]
 #[serde(tag = "type", rename_all = "lowercase")]
 #[non_exhaustive]
 pub enum AddonType {

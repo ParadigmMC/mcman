@@ -1,6 +1,7 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Default)]
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Default, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum ServerFlavor {
     #[default]

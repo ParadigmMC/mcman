@@ -12,3 +12,4 @@ pub mod jenkins;
 pub mod spigot;
 pub mod buildtools;
 pub mod quilt;
+pub mod mcman_meta;

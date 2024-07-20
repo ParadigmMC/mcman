@@ -1,6 +1,6 @@
 use std::{io::{Read, Seek, Write}, path::Path};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use walkdir::WalkDir;
 use zip::{write::FileOptions, ZipArchive, ZipWriter};
 
@@ -8,6 +8,7 @@ use crate::api::app::APP_VERSION;
 
 use super::{fs::create_parents_sync, pathdiff::DiffTo};
 
+/// Unzip a zip archive to somewhere on the file system
 pub async fn unzip<T: Read + Seek>(reader: T, to: &Path, prefix: Option<String>) -> Result<()> {
     let mut archive = ZipArchive::new(reader)?;
 
@@ -40,6 +41,7 @@ pub async fn unzip<T: Read + Seek>(reader: T, to: &Path, prefix: Option<String>)
     Ok(())
 }
 
+/// Zip a folder from the filesystem into a writer
 pub async fn zip<T: Write + Seek>(writer: T, folder: &Path) -> Result<()> {
     let mut archive = ZipWriter::new(writer);
 

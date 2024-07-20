@@ -1,6 +1,7 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum PresetFlags {
     Aikars,

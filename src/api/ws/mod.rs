@@ -1,3 +1,5 @@
+//! WebSocket Server implementation for third party editors
+
 use std::sync::Arc;
 
 use anyhow::{Context, Result};

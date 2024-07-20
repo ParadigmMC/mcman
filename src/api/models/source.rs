@@ -1,18 +1,19 @@
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::{mrpack::resolve_mrpack_addons, packwiz::resolve_packwiz_addons, Addon, AddonListFile, ModpackType};
 use crate::api::{app::App, models::ModpackSource, utils::{accessor::Accessor, toml::read_toml}};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 pub struct Source {
     #[serde(flatten)]
     pub source_type: SourceType,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum SourceType {
     File {

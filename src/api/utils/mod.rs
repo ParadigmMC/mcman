@@ -9,3 +9,4 @@ pub mod script;
 pub mod zip;
 pub mod toml;
 pub mod fs;
+pub mod logger;

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use api::app::App;
+use api::{app::App, utils::logger::init_logger};
 use clap::Parser;
 
 mod api;
@@ -33,6 +33,7 @@ enum Commands {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    init_logger();
     let args = Cli::parse();
     let app = Arc::new(App::new()?);
 

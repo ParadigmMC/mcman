@@ -10,6 +10,7 @@ pub mod worlds;
 pub mod bootstrap;
 
 impl App {
+    /// Builds the entire server
     pub async fn action_build(self: Arc<Self>, base: &Path) -> Result<()> {
         self.action_install_jar(base).await?;
         self.clone().action_install_addons(base).await?;

@@ -2,11 +2,12 @@ use crate::api::{
     app::App, models::{Addon, AddonTarget, AddonType, Environment}, sources::buildtools, step::Step, utils::serde::*
 };
 use anyhow::Result;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::ServerFlavor;
 
-#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum PaperMCProject {
     #[default]
@@ -28,14 +29,14 @@ impl ToString for PaperMCProject {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, JsonSchema)]
 pub struct ServerJar {
     pub mc_version: String,
     #[serde(flatten)]
     pub server_type: ServerType,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, JsonSchema)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum ServerType {
     Vanilla {},
@@ -81,7 +82,7 @@ pub enum ServerType {
         #[serde(default)]
         craftbukkit: bool,
         #[serde(skip_serializing_if = "Vec::is_empty")]
-        #[serde(default = "Vec::new")]
+        #[serde(default = "Vec::<String>::new")]
         args: Vec<String>,
     },
 

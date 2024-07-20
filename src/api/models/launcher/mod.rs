@@ -1,3 +1,4 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{borrow::ToOwned, collections::HashMap, env};
 
@@ -6,7 +7,7 @@ use crate::api::utils::serde::*;
 mod preset_flags;
 pub use preset_flags::*;
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, JsonSchema)]
 #[serde(default)]
 pub struct ServerLauncher {
     pub eula_args: bool,

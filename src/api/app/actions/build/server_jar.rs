@@ -5,6 +5,7 @@ use anyhow::Result;
 use crate::api::{app::App, models::Environment};
 
 impl App {
+    /// Installs the server jar according to [`crate::api::models::server::Server::jar`]
     pub async fn action_install_jar(&self, base: &Path) -> Result<()> {
         if let Some(jar) = self.server.read().await.as_ref().map(|(_, server)| {
             server.jar.clone()

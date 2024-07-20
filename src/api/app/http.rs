@@ -13,7 +13,7 @@ impl App {
         url: impl IntoUrl,
         f: F,
     ) -> Result<Response> {
-        println!("HTTP GET {}", url.as_str());
+        log::trace!("GET {}", url.as_str());
 
         let req = self.http_client.get(url.as_str());
 
@@ -26,6 +26,8 @@ impl App {
             .get("x-ratelimit-remaining")
             .is_some_and(|x| String::from_utf8_lossy(x.as_bytes()) == "1")
         {
+            log::info!("Hit ratelimit");
+
             let ratelimit_reset =
                 String::from_utf8_lossy(res.headers()["x-ratelimit-reset"].as_bytes())
                     .parse::<u64>()?;
