@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use tokio::sync::RwLock;
 
-use crate::api::{models::{network::{Network, NETWORK_TOML}, server::{Server, SERVER_TOML}}, utils::toml::{try_find_toml_upwards, write_toml}};
+use crate::api::{models::{lockfile::Lockfile, network::{Network, NETWORK_TOML}, server::{Server, SERVER_TOML}}, utils::toml::{try_find_toml_upwards, write_toml}};
 
 use super::App;
 

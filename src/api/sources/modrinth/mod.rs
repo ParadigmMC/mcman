@@ -134,4 +134,13 @@ impl<'a> ModrinthAPI<'a> {
             },
         ])
     }
+
+    pub async fn resolve_remove_steps(&self, id: &str, version: &str) -> Result<Vec<Step>> {
+        let id = self.get_id(id).await?;
+        let (file, _) = self.fetch_file(&id, version).await?;
+
+        Ok(vec![
+            Step::RemoveFile(FileMeta::filename(file.filename))
+        ])
+    }
 }

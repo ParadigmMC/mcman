@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 
-use crate::api::{app::App, step::Step, tools::java::JavaVersion};
+use crate::api::{app::App, step::{FileMeta, Step}, tools::java::JavaVersion};
 
 pub const BUILDTOOLS_JENKINS_URL: &str = "https://hub.spigotmc.org/jenkins";
 pub const BUILDTOOLS_JENKINS_JOB: &str = "BuildTools";
@@ -12,21 +12,35 @@ pub async fn resolve_steps(
     custom_args: &Vec<String>,
     mc_version: &str,
 ) -> Result<Vec<Step>> {
-    let jar = resolve_steps_jar(app).await?;
+    let (url, metadata) = resolve_buildtools_jar(app).await?;
 
-    let meta = jar.iter().find_map(|v| if let Step::CacheCheck(meta) = v { Some(meta) } else { None }).unwrap();
+    let exec_steps = resolve_compile_steps(app, &metadata.filename, craftbukkit, custom_args, mc_version).await?;
 
-    let exec = resolve_steps_build(app, &meta.filename, craftbukkit, custom_args, mc_version).await?;
+    let mut steps = vec![
+        Step::CacheCheck(metadata.clone()),
+        Step::Download { url, metadata },
+    ];
 
-    Ok(vec![jar, exec].concat())
+    steps.extend(exec_steps);
+
+    Ok(steps)
 }
 
-/// Resolve steps for the BuildTools.jar
-pub async fn resolve_steps_jar(
-    app: &App,
+pub async fn resolve_remove_steps(
+    _app: &App,
+    _craftbukkit: bool,
+    _custom_args: &Vec<String>,
+    _mc_version: &str,
 ) -> Result<Vec<Step>> {
+    Ok(vec![Step::RemoveFile(FileMeta::filename(String::from("server.jar")))])
+}
+
+/// Resolve BuildTools.jar from jenkins
+pub async fn resolve_buildtools_jar(
+    app: &App,
+) -> Result<(String, FileMeta)> {
     app.jenkins()
-        .resolve_steps(
+        .resolve_artifact(
             BUILDTOOLS_JENKINS_URL,
             BUILDTOOLS_JENKINS_JOB,
             "latest",
@@ -37,7 +51,7 @@ pub async fn resolve_steps_jar(
 }
 
 /// Resolve steps for using BuildTools to compile a server jar
-pub async fn resolve_steps_build(
+pub async fn resolve_compile_steps(
     _app: &App,
     jar_name: &str,
     craftbukkit: bool,

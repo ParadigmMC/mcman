@@ -7,7 +7,7 @@ use crate::api::{
 };
 
 pub async fn resolve_steps_for_url(
-    app: &App,
+    _app: &App,
     url: impl Into<String>,
     filename: Option<String>,
 ) -> Result<Vec<Step>> {
@@ -25,4 +25,14 @@ pub async fn resolve_steps_for_url(
         url: url.into(),
         metadata,
     }])
+}
+
+pub async fn resolve_remove_steps_for_url(
+    _app: &App,
+    url: impl Into<String>,
+    filename: Option<String>,
+) -> Result<Vec<Step>> {
+    let filename = filename.unwrap_or_else(|| get_filename_from_url(&url.into()));
+
+    Ok(vec![Step::RemoveFile(FileMeta::filename(filename))])
 }

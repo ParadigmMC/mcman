@@ -93,14 +93,14 @@ impl<'a> JenkinsAPI<'a> {
         Ok((selected_build, selected_artifact))
     }
 
-    pub async fn resolve_steps(
+    pub async fn resolve_artifact(
         &self,
         url: &str,
         job: &str,
         build: &str,
         artifact: &str,
         custom_filename: Option<String>,
-    ) -> Result<Vec<Step>> {
+    ) -> Result<(String, FileMeta)> {
         let (build, artifact) = self
             .fetch_artifact(url, job, build, artifact)
             .await
@@ -132,10 +132,33 @@ impl<'a> JenkinsAPI<'a> {
 
         let url = format!("{}artifact/{}", build.url, artifact.relative_path);
 
-        Ok(vec![
-            Step::CacheCheck(metadata.clone()),
-            Step::Download { url, metadata },
-        ])
+        Ok((url, metadata))
+    }
+
+    pub async fn resolve_steps(
+        &self,
+        url: &str,
+        job: &str,
+        build: &str,
+        artifact: &str,
+        custom_filename: Option<String>,
+    ) -> Result<Vec<Step>> {
+        let (url, metadata) = self.resolve_artifact(url, job, build, artifact, custom_filename).await?;
+
+        Ok(vec![Step::CacheCheck(metadata.clone()), Step::Download { url, metadata }])
+    }
+
+    pub async fn resolve_remove_steps(
+        &self,
+        url: &str,
+        job: &str,
+        build: &str,
+        artifact: &str,
+        custom_filename: Option<String>,
+    ) -> Result<Vec<Step>> {
+        let (_, metadata) = self.resolve_artifact(url, job, build, artifact, custom_filename).await?;
+
+        Ok(vec![Step::RemoveFile(metadata)])
     }
 
     pub async fn fetch_description(&self, url: &str, job: &str) -> Result<Option<String>> {

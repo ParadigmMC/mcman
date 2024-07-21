@@ -67,6 +67,12 @@ impl<'a> SpigotAPI<'a> {
             Step::Download { url, metadata },
         ])
     }
+
+    pub async fn resolve_remove_steps(&self, id: &str, version: &str) -> Result<Vec<Step>> {
+        Ok(vec![
+            Step::RemoveFile(FileMeta::filename(format!("spigot-{}-{}.jar", resource_id(id), version)))
+        ])
+    }
 }
 
 

@@ -6,6 +6,8 @@ pub use bootstrapped_file::*;
 
 use super::Addon;
 
+pub const LOCKFILE: &str = ".mcman.lock";
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Lockfile {
     pub vars: HashMap<String, String>,

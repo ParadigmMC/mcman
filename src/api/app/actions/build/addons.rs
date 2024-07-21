@@ -3,13 +3,15 @@ use std::{collections::HashSet, path::Path, sync::Arc};
 use anyhow::{Context, Result};
 use futures::{stream, StreamExt, TryStreamExt};
 
-use crate::api::{app::App, models::Addon, step::Step};
+use crate::api::{app::App, models::Addon};
 
 impl App {
     /// Installs new addons and removes old removed addons
     pub async fn action_install_addons(self: Arc<Self>, base: &Path) -> Result<()> {
         let addons = self.collect_addons().await?;
         let base = Arc::new(base.to_owned());
+
+        println!("Found {} addons", addons.len());
 
         let (addons_to_add, addons_to_remove): (Vec<Addon>, Vec<Addon>) = if let Some(lockfile) = &*self.existing_lockfile.read().await {
             let mut old = HashSet::new();
@@ -23,6 +25,8 @@ impl App {
             (addons, vec![])
         };
 
+        println!("Installing {} addons, removing {} addons", addons_to_add.len(), addons_to_remove.len());
+
         for addon in &addons_to_remove {
             self.clone().action_remove_addon(&base, addon).await?;
         }
@@ -33,8 +37,14 @@ impl App {
                 let app = self.clone();
                 let base = base.clone();
                 async move {
-                    app.action_install_addon(&base, &addon).await
-                        .with_context(|| format!("{addon:#?}"))
+                    let x = app.clone().action_install_addon(&base, &addon).await
+                        .with_context(|| format!("{addon:#?}"));
+
+                    if x.is_ok() {
+                        app.add_addon_to_lockfile(addon).await;
+                    }
+
+                    x
                 }
             }
         ).await?;
@@ -52,21 +62,9 @@ impl App {
 
     /// Removes a single addon
     pub async fn action_remove_addon(self: Arc<Self>, base: &Path, addon: &Addon) -> Result<()> {
-        let steps = addon.resolve_steps(&self).await?;
+        let steps = addon.resolve_remove_steps(&self).await?;
         let dir = base.join(addon.target.as_str());
-
-        // TODO
-        
-        if let Some(meta) = steps.iter().find_map(|x| match x {
-            Step::CacheCheck(meta) => Some(meta),
-            Step::Download { metadata, .. } => Some(metadata),
-            _ => None,
-        }) {
-            tokio::fs::remove_file(dir.join(&meta.filename)).await?;
-        } else {
-            log::error!("Couldn't remove addon: {addon:#?}");
-        }
-
+        self.execute_steps(&dir, &steps).await?;
         Ok(())
     }
 }

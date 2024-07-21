@@ -10,7 +10,15 @@ impl App {
         dir: &Path,
         metadata: &FileMeta,
     ) -> Result<StepResult> {
-        
+        println!("Deleting {}", metadata.filename);
+
+        let path = dir.join(&metadata.filename);
+
+        if path.exists() {
+            tokio::fs::remove_file(path).await?;
+        } else {
+            println!("{path:?} does not exist, cant delete");
+        }
 
         Ok(StepResult::Continue)
     }

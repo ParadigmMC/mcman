@@ -80,14 +80,14 @@ impl<'a> MavenAPI<'a> {
         })
     }
 
-    pub async fn resolve_steps(
+    pub async fn resolve(
         &self,
         url: &str,
         group_id: &str,
         artifact_id: &str,
         version: &str,
         file: &str,
-    ) -> Result<Vec<Step>> {
+    ) -> Result<(String, FileMeta)> {
         let file = file
             .replace("${artifact}", artifact_id)
             .replace("${version}", version);
@@ -113,9 +113,35 @@ impl<'a> MavenAPI<'a> {
             ..Default::default()
         };
 
+        Ok((download_url, metadata))
+    }
+    
+    pub async fn resolve_steps(
+        &self,
+        url: &str,
+        group_id: &str,
+        artifact_id: &str,
+        version: &str,
+        file: &str,
+    ) -> Result<Vec<Step>> {
+        let (url, metadata) = self.resolve(url, group_id, artifact_id, version, file).await?;
+
         Ok(vec![
             Step::CacheCheck(metadata.clone()),
-            Step::Download { url: download_url, metadata },
+            Step::Download { url, metadata }
         ])
+    }
+
+    pub async fn resolve_remove_steps(
+        &self,
+        url: &str,
+        group_id: &str,
+        artifact_id: &str,
+        version: &str,
+        file: &str,
+    ) -> Result<Vec<Step>> {
+        let (_, metadata) = self.resolve(url, group_id, artifact_id, version, file).await?;
+
+        Ok(vec![Step::RemoveFile(metadata)])
     }
 }

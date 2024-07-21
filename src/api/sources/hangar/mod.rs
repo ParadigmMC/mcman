@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Context, Ok, Result};
 
 mod models;
 pub use models::*;
@@ -34,7 +34,7 @@ impl<'a> HangarAPI<'a> {
         )
     }
 
-    pub async fn resolve_steps(&self, id: &str, version_id: &str) -> Result<Vec<Step>> {
+    pub async fn resolve(&self, id: &str, version_id: &str) -> Result<(String, FileMeta)> {
         let version = self
             .fetch_project_version(id, version_id)
             .await
@@ -69,9 +69,21 @@ impl<'a> HangarAPI<'a> {
 
         let url = download.get_url();
 
+        Ok((url, metadata))
+    }
+
+    pub async fn resolve_steps(&self, id: &str, version_id: &str) -> Result<Vec<Step>> {
+        let (url, metadata) = self.resolve(id, version_id).await?;
+
         Ok(vec![
             Step::CacheCheck(metadata.clone()),
-            Step::Download { url, metadata },
+            Step::Download { url, metadata }
         ])
+    }
+
+    pub async fn resolve_remove_steps(&self, id: &str, version_id: &str) -> Result<Vec<Step>> {
+        let (_, metadata) = self.resolve(id, version_id).await?;
+
+        Ok(vec![Step::RemoveFile(metadata)])
     }
 }

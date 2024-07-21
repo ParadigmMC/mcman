@@ -138,12 +138,12 @@ impl<'a> GithubAPI<'a> {
         Ok((release, asset))
     }
 
-    pub async fn resolve_steps(
+    pub async fn resolve(
         &self,
         repo: &str,
         release_tag: &str,
         asset_name: &str,
-    ) -> Result<Vec<Step>> {
+    ) -> Result<(String, FileMeta)> {
         let (release, asset) = self.fetch_asset(repo, release_tag, asset_name).await?;
 
         let metadata = FileMeta {
@@ -161,12 +161,31 @@ impl<'a> GithubAPI<'a> {
             release.tag_name, asset.name
         );
 
+        Ok((url, metadata))
+    }
+
+    pub async fn resolve_steps(
+        &self,
+        repo: &str,
+        release_tag: &str,
+        asset_name: &str,
+    ) -> Result<Vec<Step>> {
+        let (url, metadata) = self.resolve(repo, release_tag, asset_name).await?;
+
         Ok(vec![
             Step::CacheCheck(metadata.clone()),
-            Step::Download {
-                url,
-                metadata: metadata.clone(),
-            },
+            Step::Download { url, metadata }
         ])
+    }
+
+    pub async fn resolve_remove_steps(
+        &self,
+        repo: &str,
+        release_tag: &str,
+        asset_name: &str,
+    ) -> Result<Vec<Step>> {
+        let (_, metadata) = self.resolve(repo, release_tag, asset_name).await?;
+
+        Ok(vec![Step::RemoveFile(metadata)])
     }
 }

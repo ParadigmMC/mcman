@@ -55,6 +55,22 @@ impl<'a> CurseforgeAPI<'a> {
             Step::Download { url: file.download_url, metadata }
         ])
     }
+
+    pub async fn resolve_remove_steps(&self, mod_id: &str, file_id: &str) -> Result<Vec<Step>> {
+        let file = self.fetch_file(mod_id, file_id).await?;
+
+        let metadata = FileMeta {
+            cache: Some(CacheLocation("curseforge".into(), format!("{mod_id}/{file_id}/{}", file.display_name))),
+            filename: file.display_name,
+            hashes: convert_hashes(file.hashes),
+            size: Some(file.file_length),
+            ..Default::default()
+        };
+
+        Ok(vec![
+            Step::RemoveFile(metadata)
+        ])
+    }
 }
 
 pub fn convert_hashes(hashes: Vec<CurseforgeFileHash>) -> HashMap<HashFormat, String> {
