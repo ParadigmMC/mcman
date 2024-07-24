@@ -1,4 +1,4 @@
-use std::{path::Path, sync::Arc};
+use std::{collections::HashSet, path::Path, sync::Arc};
 
 use anyhow::{Context, Result};
 use futures::{StreamExt, TryStreamExt};
@@ -12,21 +12,37 @@ impl App {
     pub async fn action_bootstrap(self: Arc<Self>, base: &Path) -> Result<()> {
         let mut list = vec![];
 
-        if let Some(path) = self.server.read().await.as_ref().map(|(path, _)| path.clone()) {
-            list.push(path.parent().unwrap().join("config"));
+        if let Some((server_path, server)) = &*self.server.read().await {
+            if let Some((network_path, network)) = &*self.network.read().await {
+                list.push(network_path.parent().unwrap().join("groups").join("global").join("config"));
+    
+                if let Some(entry) = network.servers.get(&server.name) {
+                    for group in &entry.groups {
+                        list.push(network_path.parent().unwrap().join("groups").join(group).join("config"));
+                    }
+                }
+            }
+
+            list.push(server_path.parent().unwrap().join("config"));
         }
 
-        // TODO: use self.network
+        let mut changed_variables = HashSet::new();
+
+        for (k, v) in &self.existing_lockfile.read().await.as_ref().map(|lock| lock.vars.clone()).unwrap_or_default() {
+            if !self.resolve_variable_value(k).await.is_some_and(|value| &value == v) {
+                changed_variables.insert(k.clone());
+            }
+        }
 
         for entry in list {
-            self.clone().action_bootstrap_recursive(base, &entry).await?;
+            self.clone().action_bootstrap_recursive(base, &entry, &changed_variables).await?;
         }
 
         Ok(())
     }
 
     /// Recursively walks through the directory and bootstraps every eccountered file
-    pub async fn action_bootstrap_recursive(self: Arc<Self>, output_base: &Path, input_base: &Path) -> Result<()> {
+    pub async fn action_bootstrap_recursive(self: Arc<Self>, output_base: &Path, input_base: &Path, changed_variables: &HashSet<String>) -> Result<()> {
         let output_base = Arc::new(output_base);
         let input_base = Arc::new(input_base);
         
@@ -51,7 +67,7 @@ impl App {
                         return Ok(());
                     }
 
-                    app.action_bootstrap_file(&output_base, &input_base, entry.path())
+                    app.action_bootstrap_file(&output_base, &input_base, entry.path(), &changed_variables)
                         .await
                         .with_context(|| format!("Bootstrapping file: {:?}", entry.path()))
                 }
@@ -83,10 +99,14 @@ impl App {
 
     /// Process a single file. Calls [`Self::should_bootstrap_file`] on the file to decide if it should process it
     /// or copy it.
-    pub async fn action_bootstrap_file(self: Arc<Self>, output_base: &Path, input_base: &Path, file: &Path) -> Result<()> {
-        let lockfile_entry = self.existing_lockfile.read().await.as_ref().map(|lock| lock.bootstrapped_files.get(file)).flatten().cloned();
-
-        // TODO: should cancel?
+    pub async fn action_bootstrap_file(
+        self: Arc<Self>,
+        output_base: &Path,
+        input_base: &Path,
+        file: &Path,
+        changed_variables: &HashSet<String>
+    ) -> Result<()> {
+        //let lockfile_entry = self.existing_lockfile.read().await.as_ref().map(|lock| lock.bootstrapped_files.get(file)).flatten().cloned();
 
         let relative = input_base.try_diff_to(file)?;
 

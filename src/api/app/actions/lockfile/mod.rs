@@ -12,6 +12,7 @@ impl App {
         Ok(())
     }
 
+    /// Read .mcman.lock from the output directory
     pub async fn read_existing_lockfile(&self, base: &Path) -> Result<()> {
         let path = base.join(LOCKFILE);
         
@@ -23,6 +24,7 @@ impl App {
         Ok(())
     }
 
+    /// Write contents of the newly generated lockfile into the output directory
     pub async fn write_lockfile(&self, base: &Path) -> Result<()> {
         let lockfile = self.new_lockfile.read().await;
 
@@ -31,8 +33,8 @@ impl App {
         Ok(())
     }
 
+    /// Adds an addon to the new_lockfile
     pub async fn add_addon_to_lockfile(self: Arc<Self>, addon: Addon) {
-        println!("Added Addon to lockfile");
         self.new_lockfile.write().await.addons.push(addon);
     }
 }

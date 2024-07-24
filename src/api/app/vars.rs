@@ -54,28 +54,28 @@ impl App {
         // TODO actual expressions like ternary
         // TODO recursive expansions
 
-        let value = self.resolve_variable_value(expr).await?;
+        let value = self.resolve_variable_value(expr).await;
 
         Ok((value.unwrap_or_else(|| expr.to_owned()), visited))
     }
 
-    pub async fn resolve_variable_value(&self, key: &str) -> Result<Option<String>> {
+    pub async fn resolve_variable_value(&self, key: &str) -> Option<String> {
         if let Some((_, server)) = &*self.server.read().await {
             if let Some(v) = server.variables.get(key).cloned() {
-                return Ok(Some(v));
+                return Some(v);
             }
         }
 
         if let Some((_, network)) = &*self.network.read().await {
             if let Some(v) = network.variables.get(&format!("network_{key}")).cloned() {
-                return Ok(Some(v));
+                return Some(v);
             }
         }
 
         if let Ok(v) = std::env::var(key) {
-            return Ok(Some(v));
+            return Some(v);
         }
         
-        Ok(None)
+        None
     }
 }

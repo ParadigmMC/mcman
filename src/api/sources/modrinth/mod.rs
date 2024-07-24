@@ -14,11 +14,9 @@ pub use models::*;
 
 pub struct ModrinthAPI<'a>(pub &'a App);
 
-static API_URL: &str = "https://api.modrinth.com/v2";
-
 impl<'a> ModrinthAPI<'a> {
     pub async fn fetch_api<T: DeserializeOwned>(&self, url: String) -> Result<T> {
-        self.0.http_get_json(&*format!("{API_URL}/{url}")).await
+        self.0.http_get_json(&*format!("{}/{url}", self.0.options.api_urls.modrinth)).await
     }
 
     pub async fn fetch_project(&self, id: &str) -> Result<ModrinthProject> {
@@ -102,7 +100,7 @@ impl<'a> ModrinthAPI<'a> {
 
     pub async fn version_from_hash(&self, hash: &str, algo: &str) -> Result<ModrinthVersion> {
         self.fetch_api(format!(
-            "{API_URL}/version_file/{hash}{}",
+            "version_file/{hash}{}",
             if algo.is_empty() || algo == "sha1" {
                 String::new()
             } else {
