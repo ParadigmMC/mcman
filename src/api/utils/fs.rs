@@ -23,3 +23,12 @@ pub fn some_if_exists<T: ?Sized + AsRef<OsStr>>(path: &T) -> Option<PathBuf> {
         None
     }
 }
+
+pub fn with_extension_if_none<T: ?Sized + AsRef<OsStr>>(path: &T, ext: &str) -> PathBuf {
+    let path = PathBuf::from(path);
+    if path.extension().is_some_and(|e| e == ext) {
+        path
+    } else {
+        path.with_extension(ext)
+    }
+}

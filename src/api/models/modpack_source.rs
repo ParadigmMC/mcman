@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use anyhow::Result;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -19,9 +21,9 @@ pub enum ModpackSource {
 }
 
 impl ModpackSource {
-    pub fn accessor(&self) -> Result<Accessor> {
+    pub fn accessor(&self, base: &Path) -> Result<Accessor> {
         let str = match self {
-            Self::Local { path, .. } => path,
+            Self::Local { path, .. } => &base.join(path).to_string_lossy().into_owned(),
             Self::Remote { url, .. } => url,
         };
 

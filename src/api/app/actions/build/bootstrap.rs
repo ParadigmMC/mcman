@@ -10,22 +10,6 @@ impl App {
     /// Collects a list of paths to boostrap from
     /// and calls [`Self::action_bootstrap_recursive`] for each folder root
     pub async fn action_bootstrap(self: Arc<Self>, base: &Path) -> Result<()> {
-        let mut list = vec![];
-
-        if let Some((server_path, server)) = &*self.server.read().await {
-            if let Some((network_path, network)) = &*self.network.read().await {
-                list.push(network_path.parent().unwrap().join("groups").join("global").join("config"));
-    
-                if let Some(entry) = network.servers.get(&server.name) {
-                    for group in &entry.groups {
-                        list.push(network_path.parent().unwrap().join("groups").join(group).join("config"));
-                    }
-                }
-            }
-
-            list.push(server_path.parent().unwrap().join("config"));
-        }
-
         let mut changed_variables = HashSet::new();
 
         for (k, v) in &self.existing_lockfile.read().await.as_ref().map(|lock| lock.vars.clone()).unwrap_or_default() {
@@ -34,6 +18,7 @@ impl App {
             }
         }
 
+        let list = self.collect_bootstrap_paths().await;
         for entry in list {
             self.clone().action_bootstrap_recursive(base, &entry, &changed_variables).await?;
         }

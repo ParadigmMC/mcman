@@ -33,7 +33,7 @@ enum Commands {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    init_logger();
+    init_logger()?;
     let args = Cli::parse();
     let app = Arc::new(App::new()?);
 
