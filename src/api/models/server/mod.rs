@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 
+use anyhow::{anyhow, Result};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use super::{launcher::ServerLauncher, markdown::MarkdownOptions, Source};
+use crate::api::{app::App, tools::java::get_java_installation_for};
+
+use super::{launcher::ServerLauncher, markdown::MarkdownOptions, mrpack::resolve_mrpack_serverjar, packwiz::resolve_packwiz_serverjar, ModpackType, Source, SourceType};
 
 mod server_flavor;
 mod server_type;
@@ -55,6 +58,33 @@ impl Default for Server {
 }
 
 impl Server {
+    /// Gets the ServerJar via `jar` OR `Source` where `type=modpack`
+    pub async fn get_jar(&self, app: &App) -> Result<ServerJar> {
+        let relative_to = app.server.read().await.as_ref().map(|(p, _)| p.clone());
+
+        if let Some(jar) = &self.jar {
+            Ok(jar.clone())
+        } else {
+            let source = self.sources.iter().find(|s| matches!(s.source_type, SourceType::Modpack { .. }))
+            .ok_or(anyhow!("Can't find a ServerJar type because no [jar] OR Source with type=modpack defined"))?;
+
+            let accessor = source.accessor(&relative_to.ok_or(anyhow!("relative_to error"))?)?;
+            match source.modpack_type().unwrap() {
+                ModpackType::MRPack => resolve_mrpack_serverjar(app, accessor).await,
+                ModpackType::Packwiz => resolve_packwiz_serverjar(app, accessor).await,
+                ModpackType::Unsup => todo!()
+            }
+        }
+    }
+
+    pub async fn get_java(&self) -> String {
+        if let Some(v) = self.launcher.java_version {
+            get_java_installation_for(v).await.map(|j| j.path.to_string_lossy().into_owned()).unwrap_or(String::from("java"))
+        } else {
+            String::from("java")
+        }
+    }
+
     pub fn get_execution_arguments(&self) -> Vec<String> {
         self.jar.as_ref().map(|s| s.get_execution_arguments()).unwrap_or_default()
     }
@@ -86,6 +116,6 @@ impl Server {
 
         args.extend(self.launcher.game_args.split_whitespace().map(ToOwned::to_owned));
 
-        args
+        args.into_iter().filter(|x| !x.is_empty()).collect()
     }
 }

@@ -16,12 +16,12 @@ pub type WebsocketSink = SplitSink<WebSocketStream<TcpStream>, Message>;
 pub type WebsocketStream = SplitStream<WebSocketStream<TcpStream>>;
 
 pub struct WebsocketServer {
-    app: App,
+    app: Arc<App>,
     clients: RwLock<Vec<WebsocketSink>>,
 }
 
 impl WebsocketServer {
-    pub fn new(app: App) -> Arc<Self> {
+    pub fn new(app: Arc<App>) -> Arc<Self> {
         Arc::new(Self {
             app,
             clients: RwLock::new(vec![]),

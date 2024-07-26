@@ -11,7 +11,10 @@ impl App {
         let mut sources = vec![];
 
         if let Some((server_path, server)) = &*self.server.read().await {
+            let server_path = server_path.parent().unwrap().to_path_buf();
             if let Some((network_path, network)) = &*self.network.read().await {
+                let network_path = network_path.parent().unwrap().to_path_buf();
+
                 if let Some(group) = network.groups.get("global") {
                     for source in &group.sources {
                         sources.push((network_path.clone(), source.clone()));

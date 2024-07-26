@@ -75,7 +75,7 @@ impl<'a> PaperMCAPI<'a> {
 
         let metadata = FileMeta {
             cache: Some(CacheLocation(CACHE_DIR.into(), format!("{project}/{}", download.name))),
-            filename: download.name.clone(),
+            filename: String::from("server.jar"),
             ..Default::default()
         };
 

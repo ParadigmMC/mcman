@@ -4,9 +4,9 @@ pub type JavaVersion = u32;
 mod installation;
 mod find;
 mod check;
-use std::{path::Path, process::{ExitStatus, Stdio}};
+use std::{ffi::OsStr, fmt::Debug, path::Path, process::{ExitStatus, Stdio}};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 pub use installation::*;
 pub use check::*;
 use tokio::{io::{AsyncBufReadExt, BufReader}, process::{Child, Command}};
@@ -18,23 +18,34 @@ pub struct JavaProcess {
 }
 
 impl JavaProcess {
-    pub fn new(
+    pub fn new<I: IntoIterator<Item = S1> + Debug, S1: AsRef<OsStr> + Debug, S2: AsRef<OsStr> + Debug>(
         dir: &Path,
-        java: &Path,
-        args: &[&str],
+        java: S2,
+        args: I,
     ) -> Result<Self> {
         // JRE is stupid
-        let dir = std::env::current_dir()?
-            .diff_to(dir)
-            .ok_or(anyhow!("Couldn't diff paths"))?;
+        let dir = if std::env::consts::OS == "windows" {
+            std::env::current_dir()?
+                .try_diff_to(dir)?
+        } else {
+            dir.to_path_buf()
+        };
 
-        let child = Command::new(java)
+        log::info!("Running java process");
+        log::info!("Cwd: {dir:?}");
+        log::info!("Java binary: {java:#?}");
+        log::info!("Arguments: {args:#?}");
+
+        let child = Command::new(&java)
             .args(args)
             .current_dir(dir)
             .stderr(Stdio::inherit())
             .stdout(Stdio::piped())
             .stdin(Stdio::piped())
-            .spawn()?;
+            .spawn()
+            .with_context(|| format!("Spawning java process"))?;
+        
+        log::info!("Child process spawned");
         
         Ok(Self {
             child,

@@ -16,7 +16,7 @@ pub struct JavaInstallation {
 }
 
 impl JavaInstallation {
-    pub fn get_version_from(version: &str) -> Result<JavaVersion> {
+    pub fn parse_version(version: &str) -> Result<JavaVersion> {
         let mut split = version.split('.');
 
         let str = match (split.next(), split.next()) {

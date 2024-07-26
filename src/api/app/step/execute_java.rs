@@ -20,9 +20,7 @@ impl App {
             .find(|j| j.version >= version.unwrap_or_default())
             .ok_or(anyhow!("Java with version {} or higher not found, cannot proceed", version.map(|v| v.to_string()).unwrap_or("any".to_owned())))?;
 
-        let args = args.iter().map(String::as_str).collect::<Vec<_>>();
-
-        let mut proc = JavaProcess::new(&dir.canonicalize()?, &java.path, &args)?;
+        let mut proc = JavaProcess::new(&dir.canonicalize()?, &java.path, args)?;
 
         fn on_line(line: &str) {
             println!("| {line}");

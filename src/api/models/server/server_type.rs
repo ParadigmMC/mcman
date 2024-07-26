@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use crate::api::{
     app::App, models::{Addon, AddonTarget, AddonType, Environment}, sources::buildtools, step::Step, utils::serde::*
 };
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -34,6 +36,43 @@ pub struct ServerJar {
     pub mc_version: String,
     #[serde(flatten)]
     pub server_type: ServerType,
+}
+
+impl TryFrom<HashMap<String, String>> for ServerJar {
+    type Error = anyhow::Error;
+
+    fn try_from(value: HashMap<String, String>) -> std::result::Result<Self, Self::Error> {
+        let mut server_type = None;
+
+        if let Some(v) = value.get("fabric").cloned() {
+            server_type = Some(ServerType::Fabric { loader: v, installer: String::from("latest") })
+        }
+
+        if let Some(v) = value.get("fabric-loader").cloned() {
+            server_type = Some(ServerType::Fabric { loader: v, installer: String::from("latest") })
+        }
+
+        if let Some(v) = value.get("quilt").cloned() {
+            server_type = Some(ServerType::Quilt { loader: v, installer: String::from("latest") })
+        }
+
+        if let Some(v) = value.get("quilt-loader").cloned() {
+            server_type = Some(ServerType::Quilt { loader: v, installer: String::from("latest") })
+        }
+
+        if let Some(v) = value.get("forge").cloned() {
+            server_type = Some(ServerType::Forge { loader: v })
+        }
+
+        if let Some(v) = value.get("neoforge").cloned() {
+            server_type = Some(ServerType::NeoForge { loader: v })
+        }
+
+        Ok(ServerJar {
+            mc_version: value.get("minecraft").ok_or(anyhow!("Can't resolve minecraft version"))?.clone(),
+            server_type: server_type.ok_or(anyhow!("Can't resolve a ServerType"))?,
+        })
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, JsonSchema)]

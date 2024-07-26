@@ -18,6 +18,7 @@ impl PresetFlags {
             Self::None => "",
         }
         .split(char::is_whitespace)
+        .filter(|x| !x.is_empty())
         .map(ToOwned::to_owned)
         .collect()
     }

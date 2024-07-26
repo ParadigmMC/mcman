@@ -42,7 +42,7 @@ pub fn check_java(path: &Path) -> Option<JavaInstallation> {
 
     Some(JavaInstallation {
         path,
-        version: JavaInstallation::get_version_from(info.get("java.version")?).ok()?,
+        version: JavaInstallation::parse_version(info.get("java.version")?).ok()?,
         architecture: info.get("os.arch")?.clone(),
         vendor: info.get("java.vendor")?.clone(),
     })

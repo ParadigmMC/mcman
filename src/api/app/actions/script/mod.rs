@@ -18,11 +18,7 @@ impl App {
 
         let mut args = vec![];
 
-        let java = if let Some(v) = &server.launcher.java_version {
-            get_java_installation_for(*v).await.map(|j| j.path.to_string_lossy().into_owned()).unwrap_or(String::from("java"))
-        } else {
-            String::from("java")
-        };
+        let java = server.get_java().await;
 
         args.push(java);
         args.extend(server.get_arguments());

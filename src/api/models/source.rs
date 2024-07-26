@@ -57,7 +57,9 @@ impl Source {
     pub async fn resolve_addons(&self, app: &App, relative_to: &Path) -> Result<Vec<Addon>> {
         match &self.source_type {
             SourceType::File { path } => {
-                let file: AddonListFile = read_toml(&with_extension_if_none(&relative_to.join(path), "toml")).with_context(|| format!("Source: File => {path}"))?;
+                let path = with_extension_if_none(&relative_to.join(path), "toml");
+                log::info!("Source: File => {path:?}");
+                let file: AddonListFile = read_toml(&path).with_context(|| format!("Source: File => {path:?}"))?;
                 Ok(file.flatten())
             },
 

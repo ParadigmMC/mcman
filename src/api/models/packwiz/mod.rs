@@ -1,17 +1,23 @@
 mod packwiz_mod;
 mod packwiz_pack;
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use anyhow::{bail, Result};
 pub use packwiz_mod::*;
 pub use packwiz_pack::*;
 
-use crate::api::{app::App, models::AddonType, step::Step, utils::{accessor::Accessor, url::get_filename_from_url}};
+use crate::api::{app::App, models::AddonType, step::Step, utils::accessor::Accessor};
 
 pub static PACK_TOML: &str = "pack.toml";
 
-use super::{Addon, AddonTarget};
+use super::{server::ServerJar, Addon, AddonTarget};
+
+pub async fn resolve_packwiz_serverjar(app: &App, mut accessor: Accessor) -> Result<ServerJar> {
+    let pack: PackwizPack = accessor.toml(app, PACK_TOML).await?;
+
+    Ok(ServerJar::try_from(pack.versions.clone())?)
+}
 
 pub async fn resolve_packwiz_addons(app: &App, mut accessor: Accessor) -> Result<Vec<Addon>> {
     let mut addons = vec![];

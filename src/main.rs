@@ -23,7 +23,8 @@ enum Commands {
     Init(commands::init::Args),
     #[command(subcommand)]
     Sources(commands::sources::Commands),
-    Build(commands::build::Args),
+    Build(commands::build::BuildArgs),
+    Run(commands::run::RunArgs),
     #[command(subcommand)]
     Java(commands::java::Commands),
     #[command(alias = "md", subcommand)]
@@ -41,8 +42,10 @@ async fn main() -> Result<()> {
         Commands::Init(args) => commands::init::run(app, args).await,
         Commands::Sources(args) => commands::sources::run(app, args).await,
         Commands::Build(args) => commands::build::run(app, args).await,
+        Commands::Run(args) => commands::run::run(app, args).await,
         Commands::Java(args) => commands::java::run(app, args).await,
         Commands::Markdown(args) => commands::markdown::run(app, args).await,
         Commands::Migrate(args) => commands::migrate::run(app, args).await,
+
     }
 }

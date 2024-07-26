@@ -1,26 +1,35 @@
 use std::{path::{Path, PathBuf}, sync::Arc};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use crate::api::app::App;
 
 #[derive(clap::Args)]
-pub struct Args {
+pub struct BuildArgs {
     #[arg(long, default_value = "output/server")]
     pub output: PathBuf,
 }
 
-pub async fn run(app: Arc<App>, args: Args) -> Result<()> {
-    let Some(server_path) = app.server.read().await.as_ref().map(|(path, _)| path.parent().unwrap().to_owned()) else {
-        log::error!("No `server.toml` found to build server");
-        return Ok(())
-    };
+impl BuildArgs {
+    pub async fn get_base_dir(&self, app: &App) -> Result<PathBuf> {
+        Ok(app.server
+            .read()
+            .await
+            .as_ref()
+            .ok_or(anyhow!("No `server.toml` found"))?
+            .0.parent().unwrap().to_owned()
+            .join(&self.output))
+    }
+}
 
-    let base = server_path.join(&args.output);
+pub async fn run(app: Arc<App>, args: BuildArgs) -> Result<()> {
+    let base = args.get_base_dir(&app).await?;
 
     log::info!("Build output: {base:?}");
     
     app.action_build(&base).await?;
+
+    log::info!("Build complete");
 
     Ok(())
 }
