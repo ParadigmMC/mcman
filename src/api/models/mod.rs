@@ -1,5 +1,6 @@
 mod env;
 mod modpack_source;
+mod modpack_type;
 mod source;
 
 pub mod addon;
@@ -19,4 +20,5 @@ pub mod hooks;
 pub use addon::*;
 pub use env::*;
 pub use modpack_source::*;
+pub use modpack_type::*;
 pub use source::*;

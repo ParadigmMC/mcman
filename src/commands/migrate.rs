@@ -78,6 +78,7 @@ pub async fn migrate_server() -> Result<()> {
     let server = Server {
         name: legacy_server.name,
         port: None,
+        version: legacy_server.variables.get("MODPACK_VERSION").cloned(),
         launcher: legacy_server.launcher,
         markdown: MarkdownOptions {
             files: legacy_server.markdown.files,

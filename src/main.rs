@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use api::{app::App, utils::logger::init_logger};
+use api::{app::App, models::{server::{Server, SERVER_TOML}, Source, SourceType}, utils::logger::init_logger};
 use clap::Parser;
 
 mod api;
@@ -16,6 +16,9 @@ mod commands;
 struct Cli {
     #[command(subcommand)]
     command: Commands,
+
+    #[arg(global = true, long)]
+    src: Vec<SourceType>,
 }
 
 #[derive(clap::Subcommand)]
@@ -38,6 +41,23 @@ async fn main() -> Result<()> {
     let args = Cli::parse();
     let app = Arc::new(App::new()?);
 
+    if let Err(e) = app.try_read_files().await {
+        println!("Error while reading files: {e:?}");
+    }
+
+    if !args.src.is_empty() {
+        let mut wg = app.server.write().await;
+        let (_, server) = wg.get_or_insert_with(|| (
+            std::env::current_dir().unwrap().join(SERVER_TOML),
+            Server::default()
+        ));
+        for source_type in args.src {
+            server.sources.push(Source {
+                source_type
+            });
+        }
+    }
+
     match args.command {
         Commands::Init(args) => commands::init::run(app, args).await,
         Commands::Sources(args) => commands::sources::run(app, args).await,
@@ -46,6 +66,5 @@ async fn main() -> Result<()> {
         Commands::Java(args) => commands::java::run(app, args).await,
         Commands::Markdown(args) => commands::markdown::run(app, args).await,
         Commands::Migrate(args) => commands::migrate::run(app, args).await,
-
     }
 }

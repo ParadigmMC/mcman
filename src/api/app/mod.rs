@@ -75,10 +75,6 @@ impl App {
             ci,
         };
 
-        if let Err(e) = app.try_read_files() {
-            println!("Error while reading files: {e:?}");
-        }
-
         Ok(app)
     }
 }

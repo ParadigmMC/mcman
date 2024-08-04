@@ -1,6 +1,6 @@
-use std::path::Path;
+use std::{path::Path, str::FromStr};
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -26,8 +26,24 @@ pub enum SourceType {
 
     Modpack {
         #[serde(flatten)]
-        modpack: ModpackSource,
+        modpack: ModpackSource,        
+        modpack_type: ModpackType,
     },
+}
+
+impl FromStr for SourceType {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        let (ty, val) = s.split_once(':').ok_or(anyhow!("Source identifier are in the format of '<type>:<path or url>'"))?;
+        
+        Ok(match ty {
+            "file" | "f" => SourceType::File { path: val.into() },
+            "packwiz" | "pw" => SourceType::Modpack { modpack: ModpackSource::from_str(val)?, modpack_type: ModpackType::Packwiz },
+            "mrpack" => SourceType::Modpack { modpack: ModpackSource::from_str(val)?, modpack_type: ModpackType::MRPack },
+            _ => bail!("Unknown source identifier type: {ty}"),
+        })
+    }
 }
 
 impl Source {
@@ -43,13 +59,13 @@ impl Source {
         match &self.source_type {
             SourceType::File { path } => Ok(Accessor::Local(path.into())),
             SourceType::Folder { path } => Ok(Accessor::Local(path.into())),
-            SourceType::Modpack { modpack } => modpack.accessor(relative_to),
+            SourceType::Modpack { modpack, .. } => modpack.accessor(relative_to),
         }
     }
 
     pub fn modpack_type(&self) -> Option<ModpackType> {
         match &self.source_type {
-            SourceType::Modpack { modpack } => Some(modpack.modpack_type()),
+            SourceType::Modpack { modpack_type, .. } => Some(modpack_type.clone()),
             _ => None,
         }
     }
@@ -65,13 +81,13 @@ impl Source {
 
             SourceType::Folder { .. } => Ok(vec![]),
 
-            SourceType::Modpack { modpack } => {
+            SourceType::Modpack { modpack, modpack_type } => {
                 let accessor = modpack.accessor(relative_to)?;
-                match modpack.modpack_type() {
+                match modpack_type {
                     ModpackType::MRPack => resolve_mrpack_addons(app, accessor).await,
                     ModpackType::Packwiz => resolve_packwiz_addons(app, accessor).await,
                     ModpackType::Unsup => todo!(),
-                }.with_context(|| format!("Source: Modpack/{} => {}", modpack.modpack_type().to_string(), modpack.accessor(relative_to).unwrap().to_string()))
+                }.with_context(|| format!("Source: Modpack/{} => {}", modpack_type.to_string(), modpack.accessor(relative_to).unwrap().to_string()))
             }
         }
     }

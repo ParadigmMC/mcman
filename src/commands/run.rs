@@ -1,6 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 
 use crate::api::{app::App, tools::java::{get_java_installation_for, JavaProcess}, ws::WebsocketServer};
 
@@ -14,12 +14,15 @@ pub async fn run(app: Arc<App>, args: RunArgs) -> Result<()> {
     let base = args.build_args.get_base_dir(&app).await?;
 
     super::build::run(app.clone(), args.build_args).await?;
-    
-    let rg = app.server.read().await;
-    let (_, server) = rg.as_ref().unwrap();
-    let java = server.get_java().await;
-    let args = server.get_arguments();
-    drop(rg);
+
+    let (java, args) = if let Some((_, server)) = &*app.server.read().await {
+        (
+            server.get_java().await,
+            server.get_arguments()
+        )
+    } else {
+        unreachable!();
+    };
 
     log::info!("Starting process...");
 
@@ -29,9 +32,17 @@ pub async fn run(app: Arc<App>, args: RunArgs) -> Result<()> {
         println!("| {line}");
     });
 
-    let e = process.wait().await?;
+    let exit_status = tokio::select! {
+        _ = tokio::signal::ctrl_c() => None,
+        Ok(e) = process.wait() => Some(e),
+    };
 
-    println!("{e:#?}");
+    if let Some(e) = exit_status {
+        println!("{e:#?}");
+    } else {
+        process.kill().await?;
+        println!("Killed process");
+    }
 
     Ok(())
 }

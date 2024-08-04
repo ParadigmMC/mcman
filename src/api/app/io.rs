@@ -8,12 +8,14 @@ use crate::api::{models::{lockfile::Lockfile, network::{Network, NETWORK_TOML}, 
 use super::App;
 
 impl App {
-    pub fn try_read_files(&mut self) -> Result<()> {
+    pub async fn try_read_files(&self) -> Result<()> {
         let server = try_find_toml_upwards::<Server>(SERVER_TOML)?;
         let network = try_find_toml_upwards::<Network>(NETWORK_TOML)?;
 
-        self.server = Arc::new(RwLock::new(server));
-        self.network = Arc::new(RwLock::new(network));
+        let mut swg = self.server.write().await;
+        *swg = server;
+        let mut nwg = self.network.write().await;
+        *nwg = network;
 
         Ok(())
     }

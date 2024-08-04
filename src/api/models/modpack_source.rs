@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{path::Path, str::FromStr};
 
 use anyhow::Result;
 use schemars::JsonSchema;
@@ -10,48 +10,34 @@ use crate::api::utils::accessor::Accessor;
 #[serde(untagged)]
 pub enum ModpackSource {
     Local {
-        modpack_type: ModpackType,
         path: String,
     },
 
     Remote {
-        modpack_type: ModpackType,
         url: String,
     },
+}
+
+impl FromStr for ModpackSource {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        if s.starts_with("http") {
+            Ok(ModpackSource::Remote { url: s.into() })
+        } else {
+            Ok(ModpackSource::Local { path: s.into() })
+        }
+    }
 }
 
 impl ModpackSource {
     pub fn accessor(&self, base: &Path) -> Result<Accessor> {
         let str = match self {
-            Self::Local { path, .. } => &base.join(path).to_string_lossy().into_owned(),
-            Self::Remote { url, .. } => url,
+            Self::Local { path } => &base.join(path).to_string_lossy().into_owned(),
+            Self::Remote { url } => url,
         };
 
         Ok(Accessor::from(str)?)
     }
-
-    pub fn modpack_type(&self) -> ModpackType {
-        match self {
-            Self::Local { modpack_type, .. } => *modpack_type,
-            Self::Remote { modpack_type, .. } => *modpack_type,
-        }
-    }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, JsonSchema)]
-#[serde(rename_all = "lowercase")]
-pub enum ModpackType {
-    Packwiz,
-    MRPack,
-    Unsup,
-}
-
-impl ToString for ModpackType {
-    fn to_string(&self) -> String {
-        match self {
-            ModpackType::Packwiz => String::from("Packwiz"),
-            ModpackType::MRPack => String::from("MRPack"),
-            ModpackType::Unsup => String::from("Unsup"),
-        }
-    }
-}

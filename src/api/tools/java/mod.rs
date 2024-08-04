@@ -69,6 +69,11 @@ impl JavaProcess {
         });
     }
 
+    pub async fn kill(&mut self) -> Result<()> {
+        self.child.kill().await?;
+        Ok(())
+    }
+
     pub async fn wait(&mut self) -> Result<ExitStatus> {
         Ok(self.child.wait().await?)
     }

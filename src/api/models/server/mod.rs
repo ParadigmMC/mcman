@@ -21,6 +21,7 @@ pub const SERVER_TOML: &str = "server.toml";
 pub struct Server {
     pub name: String,
     pub port: Option<i32>,
+    pub version: Option<String>,
 
     pub jar: Option<ServerJar>,
 
@@ -42,6 +43,7 @@ impl Default for Server {
         Self {
             name: String::from("server"),
             port: None,
+            version: None,
 
             jar: Some(ServerJar {
                 mc_version: String::from("1.20.4"),
