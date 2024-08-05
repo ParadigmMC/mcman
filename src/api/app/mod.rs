@@ -64,7 +64,7 @@ impl App {
             dirs::cache_dir().map(|p| p.join("mcman"))
         });
 
-        let mut app = Self {
+        let app = Self {
             http_client,
             server: Arc::new(RwLock::new(None)),
             network: Arc::new(RwLock::new(None)),

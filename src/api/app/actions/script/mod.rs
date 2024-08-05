@@ -2,7 +2,7 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use crate::api::{app::{App, APP_VERSION}, models::server::Server, tools::java::get_java_installation_for, utils::script::Shell};
+use crate::api::{app::{App, APP_VERSION}, models::server::Server, utils::script::Shell};
 
 impl App {
     async fn get_script_lines_for(&self, shell: &Shell, server: &Server) -> Result<Vec<String>> {

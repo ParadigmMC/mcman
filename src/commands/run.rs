@@ -1,8 +1,8 @@
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
-use anyhow::{bail, Context, Result};
+use anyhow::Result;
 
-use crate::api::{app::App, tools::java::{get_java_installation_for, JavaProcess}, ws::WebsocketServer};
+use crate::api::{app::App, tools::java::JavaProcess};
 
 #[derive(clap::Args)]
 pub struct RunArgs {

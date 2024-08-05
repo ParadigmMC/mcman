@@ -1,6 +1,6 @@
 use std::{path::Path, str::FromStr};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -33,11 +33,15 @@ impl FromStr for ModpackSource {
 impl ModpackSource {
     pub fn accessor(&self, base: &Path) -> Result<Accessor> {
         let str = match self {
-            Self::Local { path } => &base.join(path).to_string_lossy().into_owned(),
+            Self::Local { path } => &base.join(path)
+                .canonicalize()
+                .with_context(|| format!("Resolving path: {:?}", base.join(path)))?
+                .to_string_lossy()
+                .into_owned(),
             Self::Remote { url } => url,
         };
 
-        Ok(Accessor::from(str)?)
+        Ok(Accessor::from(str).with_context(|| "Creating Accessor")?)
     }
 }
 

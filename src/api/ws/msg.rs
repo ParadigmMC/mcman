@@ -1,12 +1,17 @@
+
+
 use serde::{Deserialize, Serialize};
 use tokio_tungstenite::tungstenite::Message;
 
-use crate::api::models::{network::Network, server::Server};
+use crate::api::models::{network::Network, server::Server, Source};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", content = "data", rename_all = "snake_case")]
 pub enum MsgIn {
-
+    AddSource {
+        to: ServerOrNetwork,
+        source: Source,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

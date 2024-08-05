@@ -1,8 +1,8 @@
 use std::path::Path;
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::Result;
 
-use crate::api::{app::App, step::{FileMeta, StepResult}, tools::{self, java::{JavaProcess, JavaVersion}}};
+use crate::api::{app::App, step::{FileMeta, StepResult}};
 
 impl App {
     pub(super) async fn execute_step_remove_file(

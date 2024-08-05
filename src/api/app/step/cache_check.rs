@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use futures::{StreamExt, TryStreamExt};
 use tokio::{fs::File, io::BufWriter};
 use tokio_util::io::ReaderStream;

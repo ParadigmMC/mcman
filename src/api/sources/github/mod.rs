@@ -34,6 +34,11 @@ impl<'a> GithubAPI<'a> {
         let cached_data = self.0.cache.try_get_json::<CachedData<T>>(&path)?;
 
         let mut headers = HeaderMap::new();
+
+        if let Some(token) = &self.0.options.github_token {
+            headers.insert("Authorization", HeaderValue::from_str(token)?);
+        }
+
         if let Some(cached_data) = &cached_data {
             headers.insert("if-none-match", HeaderValue::from_str(&cached_data.etag)?);
         }

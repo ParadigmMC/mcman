@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{bail, Context, Result};
 use futures::TryStreamExt;
 
 use crate::api::{app::App, step::{FileMeta, StepResult}, utils::fs::create_parents};

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 use models::{ModrinthFile, ModrinthProject, ModrinthVersion};
+use reqwest::header::{HeaderMap, HeaderValue};
 use serde::de::DeserializeOwned;
 
 use crate::api::{
@@ -16,7 +17,18 @@ pub struct ModrinthAPI<'a>(pub &'a App);
 
 impl<'a> ModrinthAPI<'a> {
     pub async fn fetch_api<T: DeserializeOwned>(&self, url: String) -> Result<T> {
-        self.0.http_get_json(&*format!("{}/{url}", self.0.options.api_urls.modrinth)).await
+        let mut headers = HeaderMap::new();
+
+        if let Some(token) = &self.0.options.modrinth_token {
+            headers.insert("Authorization", HeaderValue::from_str(token)?);
+        }
+
+        self.0
+            .http_get_json_with(
+                &*format!("{}/{url}", self.0.options.api_urls.modrinth),
+                |req| req.headers(headers),
+            )
+            .await
     }
 
     pub async fn fetch_project(&self, id: &str) -> Result<ModrinthProject> {
@@ -52,7 +64,8 @@ impl<'a> ModrinthAPI<'a> {
             return Ok(id.to_owned());
         }
 
-        let res: ModrinthProjectCheckResponse = self.fetch_api(format!("project/{slug}/check")).await?;
+        let res: ModrinthProjectCheckResponse =
+            self.fetch_api(format!("project/{slug}/check")).await?;
 
         let mut ids = store.unwrap_or_default();
         ids.insert(slug.to_owned(), res.id.clone());
@@ -137,8 +150,6 @@ impl<'a> ModrinthAPI<'a> {
         let id = self.get_id(id).await?;
         let (file, _) = self.fetch_file(&id, version).await?;
 
-        Ok(vec![
-            Step::RemoveFile(FileMeta::filename(file.filename))
-        ])
+        Ok(vec![Step::RemoveFile(FileMeta::filename(file.filename))])
     }
 }

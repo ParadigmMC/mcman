@@ -12,6 +12,8 @@ pub struct AppOptions {
     pub github_token: Option<String>,
     #[config(env = "CF_API_TOKEN")]
     pub curseforge_token: Option<String>,
+    #[config(env = "MODRINTH_API_TOKEN")]
+    pub modrinth_token: Option<String>,
 
     #[config(default = false)]
     pub use_curseforge_api: bool,

@@ -33,6 +33,9 @@ enum Commands {
     #[command(alias = "md", subcommand)]
     Markdown(commands::markdown::Commands),
     Migrate(commands::migrate::Args),
+    #[command(alias = "ws")]
+    WebSocket(commands::websocket::Args),
+    Update(commands::update::Args),
 }
 
 #[tokio::main]
@@ -66,5 +69,7 @@ async fn main() -> Result<()> {
         Commands::Java(args) => commands::java::run(app, args).await,
         Commands::Markdown(args) => commands::markdown::run(app, args).await,
         Commands::Migrate(args) => commands::migrate::run(app, args).await,
+        Commands::WebSocket(args) => commands::websocket::run(app, args).await,
+        Commands::Update(args) => commands::update::run(app, args).await,
     }
 }

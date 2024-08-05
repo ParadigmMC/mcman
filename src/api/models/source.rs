@@ -57,9 +57,12 @@ impl Source {
 
     pub fn accessor(&self, relative_to: &Path) -> Result<Accessor> {
         match &self.source_type {
-            SourceType::File { path } => Ok(Accessor::Local(path.into())),
-            SourceType::Folder { path } => Ok(Accessor::Local(path.into())),
-            SourceType::Modpack { modpack, .. } => modpack.accessor(relative_to),
+            SourceType::File { path } => Ok(Accessor::Local(relative_to.join(path).canonicalize()
+                .with_context(|| format!("Resolving path: {:?}", relative_to.join(path)))?)),
+            SourceType::Folder { path } => Ok(Accessor::Local(relative_to.join(path).canonicalize()
+                .with_context(|| format!("Resolving path: {:?}", relative_to.join(path)))?)),
+            SourceType::Modpack { modpack, .. } => modpack.accessor(relative_to)
+                .with_context(|| "Getting Modpack Accessor"),
         }
     }
 

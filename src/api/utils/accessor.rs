@@ -11,7 +11,7 @@ use crate::api::app::App;
 pub enum Accessor {
     Local(PathBuf),
     Remote(reqwest::Url),
-    ZipLocal(ZipArchive<std::fs::File>),
+    ZipLocal((PathBuf, ZipArchive<std::fs::File>)),
     //ZipRemote(SomeSortOfTempFile, ZipArchive<std::fs::File>),
 }
 
@@ -20,7 +20,7 @@ impl ToString for Accessor {
         match self {
             Accessor::Local(path) => path.to_string_lossy().into_owned(),
             Accessor::Remote(url) => url.to_string(),
-            Accessor::ZipLocal(_) => String::from("a zip archive"),
+            Accessor::ZipLocal((path ,_)) => path.to_string_lossy().into_owned(),
         }
     }
 }
@@ -32,16 +32,17 @@ impl Accessor {
         } else if str.ends_with(".zip") || str.ends_with(".mrpack") {
             let file = std::fs::File::open(str)?;
             let archive = ZipArchive::new(file)?;
-            Ok(Self::ZipLocal(archive))
+            Ok(Self::ZipLocal((PathBuf::from(str), archive)))
         } else {
             Ok(Self::Local(PathBuf::from(str)))
         }
     }
 
     /// Try listing a directory
+    #[allow(unused)]
     pub async fn dir(&self) -> Result<Vec<String>> {
         match self {
-            Accessor::ZipLocal(zip) => Ok(zip.file_names().map(ToOwned::to_owned).collect()),
+            Accessor::ZipLocal((_, zip)) => Ok(zip.file_names().map(ToOwned::to_owned).collect()),
             Accessor::Local(path) => Ok(path
                 .read_dir()?
                 .filter_map(|r| r.ok())
@@ -57,7 +58,7 @@ impl Accessor {
             Accessor::Local(base) => Ok(serde_json::from_reader(std::fs::File::open(
                 base.join(path),
             )?)?),
-            Accessor::ZipLocal(zip) => Ok(serde_json::from_reader(zip.by_name(path)?)?),
+            Accessor::ZipLocal((_, zip)) => Ok(serde_json::from_reader(zip.by_name(path)?)?),
             Accessor::Remote(url) => Ok(app.http_get_json(url.join(path)?).await?),
         }
     }
@@ -68,7 +69,7 @@ impl Accessor {
             Accessor::Local(base) => Ok(toml::from_str(
                 &tokio::fs::read_to_string(base.join(path)).await?,
             )?),
-            Accessor::ZipLocal(zip) => {
+            Accessor::ZipLocal((_, zip)) => {
                 let file = zip.by_name(path)?;
 
                 Ok(toml::from_str(&std::io::read_to_string(file)?)?)

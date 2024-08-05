@@ -84,6 +84,7 @@ impl App {
 
     /// Process a single file. Calls [`Self::should_bootstrap_file`] on the file to decide if it should process it
     /// or copy it.
+    #[allow(unused)]
     pub async fn action_bootstrap_file(
         self: Arc<Self>,
         output_base: &Path,
