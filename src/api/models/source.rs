@@ -26,7 +26,7 @@ pub enum SourceType {
 
     Modpack {
         #[serde(flatten)]
-        modpack: ModpackSource,        
+        modpack_source: ModpackSource,        
         modpack_type: ModpackType,
     },
 }
@@ -39,8 +39,8 @@ impl FromStr for SourceType {
         
         Ok(match ty {
             "file" | "f" => SourceType::File { path: val.into() },
-            "packwiz" | "pw" => SourceType::Modpack { modpack: ModpackSource::from_str(val)?, modpack_type: ModpackType::Packwiz },
-            "mrpack" => SourceType::Modpack { modpack: ModpackSource::from_str(val)?, modpack_type: ModpackType::MRPack },
+            "packwiz" | "pw" => SourceType::Modpack { modpack_source: ModpackSource::from_str(val)?, modpack_type: ModpackType::Packwiz },
+            "mrpack" => SourceType::Modpack { modpack_source: ModpackSource::from_str(val)?, modpack_type: ModpackType::MRPack },
             _ => bail!("Unknown source identifier type: {ty}"),
         })
     }
@@ -61,7 +61,7 @@ impl Source {
                 .with_context(|| format!("Resolving path: {:?}", relative_to.join(path)))?)),
             SourceType::Folder { path } => Ok(Accessor::Local(relative_to.join(path).canonicalize()
                 .with_context(|| format!("Resolving path: {:?}", relative_to.join(path)))?)),
-            SourceType::Modpack { modpack, .. } => modpack.accessor(relative_to)
+            SourceType::Modpack { modpack_source: modpack, .. } => modpack.accessor(relative_to)
                 .with_context(|| "Getting Modpack Accessor"),
         }
     }
@@ -84,7 +84,7 @@ impl Source {
 
             SourceType::Folder { .. } => Ok(vec![]),
 
-            SourceType::Modpack { modpack, modpack_type } => {
+            SourceType::Modpack { modpack_source: modpack, modpack_type } => {
                 let accessor = modpack.accessor(relative_to)?;
                 match modpack_type {
                     ModpackType::MRPack => resolve_mrpack_addons(app, accessor).await,

@@ -2,16 +2,15 @@ use std::sync::Arc;
 
 use anyhow::Result;
 
-use crate::api::{app::App, tools::git};
+use crate::api::app::App;
 
 #[derive(clap::Args)]
 pub struct Args {
-    
+    filename: Option<String>,
 }
 
 pub async fn run(app: Arc<App>, args: Args) -> Result<()> {
-    println!("{:#?}", git::version_check());
+    
 
     Ok(())
 }
-

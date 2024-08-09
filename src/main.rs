@@ -1,7 +1,7 @@
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
 use anyhow::Result;
-use api::{app::App, models::{server::{Server, SERVER_TOML}, Source, SourceType}, utils::logger::init_logger};
+use api::{app::App, models::{packwiz::{PackwizPack, PACK_TOML}, server::{Server, SERVER_TOML}, ModpackSource, ModpackType, Source, SourceType}, utils::{logger::init_logger, toml::try_find_toml_upwards}};
 use clap::Parser;
 
 mod api;
@@ -32,6 +32,8 @@ enum Commands {
     Java(commands::java::Commands),
     #[command(alias = "md", subcommand)]
     Markdown(commands::markdown::Commands),
+    #[command(subcommand)]
+    Export(commands::export::Commands),
     Migrate(commands::migrate::Args),
     #[command(alias = "ws")]
     WebSocket(commands::websocket::Args),
@@ -61,6 +63,23 @@ async fn main() -> Result<()> {
         }
     }
 
+    if let Ok(Some((base, _))) = try_find_toml_upwards::<PackwizPack>(PACK_TOML) {
+        let mut wg = app.server.write().await;
+        // if no server.toml etc and is inside a packwiz folder
+        if wg.is_none() {
+            let (_, server) = wg.get_or_insert_with(|| (
+                base.into(),
+                Server::default()
+            ));
+            server.sources.push(Source {
+                source_type: SourceType::Modpack {
+                    modpack_source: ModpackSource::Local { path: String::from(PACK_TOML), can_update: false },
+                    modpack_type: ModpackType::Packwiz,
+                }
+            });
+        }
+    }
+
     match args.command {
         Commands::Init(args) => commands::init::run(app, args).await,
         Commands::Sources(args) => commands::sources::run(app, args).await,
@@ -71,5 +90,6 @@ async fn main() -> Result<()> {
         Commands::Migrate(args) => commands::migrate::run(app, args).await,
         Commands::WebSocket(args) => commands::websocket::run(app, args).await,
         Commands::Update(args) => commands::update::run(app, args).await,
+        Commands::Export(args) => commands::export::run(app, args).await,
     }
 }

@@ -10,3 +10,4 @@ pub mod zip;
 pub mod toml;
 pub mod fs;
 pub mod logger;
+pub mod update_writer;
