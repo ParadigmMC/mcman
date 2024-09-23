@@ -268,8 +268,6 @@ pub enum ReviewState {
     PartiallyReviewed,
 }
 
-///
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct VersionsFilter {
     pub limit: i64,
