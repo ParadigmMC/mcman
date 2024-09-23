@@ -17,7 +17,7 @@ mod version;
 pub use self::{assets::*, manifest::*, rulematcher::*, version::*};
 
 impl VersionInfo {
-    pub fn into_step(&self, ty: DownloadType) -> Option<Vec<Step>> {
+    pub fn as_step(&self, ty: DownloadType) -> Option<Vec<Step>> {
         let file = self.downloads.get(&ty)?;
 
         let filename = format!("{}-{ty:?}.jar", self.id);
@@ -67,8 +67,8 @@ impl<'a> VanillaAPI<'a> {
 
         let version: VersionInfo = self.0.http_get_json(indexed.url).await?;
 
-        let steps = version
-            .into_step(env)
+        let steps: Vec<Step> = version
+            .as_step(env)
             .ok_or(anyhow!("Cant find download"))?;
 
         Ok(steps)
