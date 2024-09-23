@@ -36,10 +36,10 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
         match Version::parse(env!("CARGO_PKG_VERSION"))?.cmp(&latest_ver) {
             Ordering::Equal => {
                 println!(" > up to date!");
-            }
+            },
             Ordering::Greater => {
                 println!(" {}", style("> version is newer (dev/unreleased)").yellow());
-            }
+            },
             Ordering::Less => {
                 println!(
                     " {}\n {} {} => {}\n {} {}/releases/tag/{latest_ver}",
@@ -50,7 +50,7 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                     style("|").cyan(),
                     env!("CARGO_PKG_REPOSITORY"),
                 );
-            }
+            },
         }
     }
 

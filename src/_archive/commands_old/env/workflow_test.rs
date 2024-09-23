@@ -1,7 +1,6 @@
-use std::{io::Write, path::Path};
+use std::{fs, path::Path};
 
 use anyhow::Result;
-use std::fs::File;
 
 use crate::{app::App, util::env::get_git_root};
 
@@ -10,8 +9,11 @@ pub fn run(app: &App) -> Result<()> {
         .join(".github")
         .join("workflows");
 
-    let mut f = File::create(path.join("test.yml"))?;
-    f.write_all(include_bytes!("../../../res/workflows/test.yml"))?;
+    fs::write(
+        path.join("test.yml"),
+        include_bytes!("../../../res/workflows/test.yml"),
+    )?;
+
     app.success("test.yml workflow created");
 
     Ok(())

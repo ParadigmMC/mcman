@@ -11,7 +11,7 @@ use rpackwiz::model::{
     DownloadMode, HashFormat, Mod, ModDownload, ModUpdate, Pack, PackFile, PackIndex,
 };
 use serde::de::DeserializeOwned;
-use tokio::{fs::File, io::AsyncWriteExt};
+use tokio::fs::{self, File};
 use walkdir::WalkDir;
 
 use crate::{
@@ -32,7 +32,7 @@ impl FileProvider {
             Self::LocalFolder(folder) => {
                 let str = tokio::fs::read_to_string(folder.join(path)).await?;
                 Ok(toml::from_str(&str)?)
-            }
+            },
             Self::RemoteURL(http_client, url) => {
                 let contents = http_client
                     .get(url.join(path)?)
@@ -43,7 +43,7 @@ impl FileProvider {
                     .await?;
 
                 Ok(toml::from_str(&contents)?)
-            }
+            },
         }
     }
 }
@@ -112,7 +112,7 @@ impl<'a> PackwizInterop<'a> {
                 match &source {
                     FileProvider::LocalFolder(folder) => {
                         tokio::fs::copy(folder.join(&file.file), output_path).await?;
-                    }
+                    },
                     FileProvider::RemoteURL(_, url) => {
                         self.0
                             .download_resolved(
@@ -140,7 +140,7 @@ impl<'a> PackwizInterop<'a> {
                                     .insert_after(&pb, ProgressBar::new_spinner()),
                             )
                             .await?;
-                    }
+                    },
                 }
             }
         }
@@ -235,10 +235,10 @@ impl<'a> PackwizInterop<'a> {
 
         progress_bar.set_message("Saving index...");
 
-        let mut f = File::create(output_dir.join("index.toml")).await?;
         let content = toml::to_string_pretty(&index)?;
         let index_hash = App::hash_sha256(&content);
-        f.write_all(content.as_bytes()).await?;
+
+        fs::write(output_dir.join("index.toml"), content).await?;
 
         let pack = Pack {
             pack_format: "packwiz:1.1.0".to_owned(),
@@ -262,9 +262,7 @@ impl<'a> PackwizInterop<'a> {
             },
         };
 
-        let mut f = File::create(output_dir.join("pack.toml")).await?;
-        f.write_all(toml::to_string_pretty(&pack)?.as_bytes())
-            .await?;
+        fs::write(output_dir.join("pack.toml"), toml::to_string_pretty(&pack)?).await?;
 
         progress_bar.finish_and_clear();
         self.0.success("Exported to packwiz successfully");
@@ -301,12 +299,10 @@ impl<'a> PackwizInterop<'a> {
             let filename = format!("{}.pw.toml", m.name);
             let path = output_dir.join("mods").join(&filename);
 
-            let mut f = File::create(path).await?;
-
             let content = toml::to_string_pretty(&m)?;
             let hash = App::hash_sha256(&content);
 
-            f.write_all(content.as_bytes()).await?;
+            fs::write(path, content).await?;
 
             self.0.notify(Prefix::Exported, format!("mods/{filename}"));
 

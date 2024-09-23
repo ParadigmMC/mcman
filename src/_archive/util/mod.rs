@@ -10,11 +10,9 @@ pub mod md;
 pub struct SelectItem<T>(pub T, pub Cow<'static, str>);
 
 impl<T> ToString for SelectItem<T> {
+    #[inline(always)]
     fn to_string(&self) -> String {
-        match &self.1 {
-            Cow::Borrowed(s) => (*s).to_string(),
-            Cow::Owned(s) => s.clone(),
-        }
+        self.1.to_string()
     }
 }
 
@@ -50,7 +48,7 @@ pub fn get_latest_semver(list: &[String]) -> Option<String> {
                         (Ok(_), Err(_)) => Ordering::Greater,
                         _ => Ordering::Equal,
                     }
-                }
+                },
                 (Some(_), None) => Ordering::Greater,
                 (None, Some(_)) => Ordering::Less,
                 _ => Ordering::Equal,

@@ -3,7 +3,7 @@ use std::{collections::HashMap, fmt::Debug, path::PathBuf, process::Child, time:
 use anyhow::{Context, Result};
 use console::style;
 use indicatif::{FormattedDuration, ProgressBar};
-use tokio::{fs::File, io::AsyncWriteExt};
+use tokio::fs;
 
 use crate::{
     app::{AddonType, App, Resolvable, ResolvedFile},
@@ -97,10 +97,7 @@ impl<'a> BuildContext<'a> {
         }
 
         if self.app.server.launcher.eula_args && !self.app.server.jar.supports_eula_args() {
-            File::create(self.output_dir.join("eula.txt"))
-                .await?
-                .write_all(b"eula=true\n")
-                .await?;
+            fs::write(self.output_dir.join("eula.txt"), b"eula=true\n").await?;
             self.app.log("eula.txt written");
         }
 

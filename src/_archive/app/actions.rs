@@ -6,7 +6,6 @@ use crate::{
 };
 
 use super::{AddonType, App, Prefix};
-use std::borrow::Cow;
 
 impl App {
     pub fn save_changes(&self) -> Result<()> {
@@ -36,8 +35,8 @@ impl App {
             SoftwareType::Unknown => self.select(
                 "Import as?",
                 &[
-                    SelectItem(AddonType::Mod, Cow::Borrowed("Mod")),
-                    SelectItem(AddonType::Plugin, Cow::Borrowed("Plugin")),
+                    SelectItem(AddonType::Mod, "Mod".into()),
+                    SelectItem(AddonType::Plugin, "Plugin".into()),
                 ],
             )?,
         };
@@ -79,13 +78,10 @@ impl App {
                 .server
                 .worlds
                 .keys()
-                .map(|k| SelectItem(k.clone(), Cow::Owned(k.clone())))
+                .map(|k| SelectItem(k.clone(), k.clone().into()))
                 .collect();
 
-            items.push(SelectItem(
-                "+".to_owned(),
-                Cow::Borrowed("+ New world entry"),
-            ));
+            items.push(SelectItem("+".to_owned(), "+ New world entry".into()));
 
             self.select(prompt, &items)?
         };

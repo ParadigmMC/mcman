@@ -108,7 +108,7 @@ impl Resolvable for Downloadable {
             Self::Hangar { id, version } => app.hangar().resolve_source(id, version).await,
             Self::GithubRelease { repo, tag, asset } => {
                 app.github().resolve_source(repo, tag, asset).await
-            }
+            },
             Self::Jenkins {
                 url,
                 job,
@@ -118,7 +118,7 @@ impl Resolvable for Downloadable {
                 app.jenkins()
                     .resolve_source(url, job, build, artifact)
                     .await
-            }
+            },
             Self::Maven {
                 url,
                 group,
@@ -129,7 +129,7 @@ impl Resolvable for Downloadable {
                 app.maven()
                     .resolve_source(url, group, artifact, version, filename)
                     .await
-            }
+            },
         }
     }
 }

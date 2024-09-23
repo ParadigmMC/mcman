@@ -1,5 +1,4 @@
 use std::{
-    borrow::Cow,
     collections::HashMap,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -36,7 +35,7 @@ impl GithubWaitRatelimit<reqwest::Response> for reqwest::Response {
     async fn wait_ratelimit(self) -> Result<Self> {
         Ok(match self.headers().get("x-ratelimit-remaining") {
             Some(h) => {
-                if String::from_utf8_lossy(h.as_bytes()) == "1" {
+                if h.as_bytes() == b"1" {
                     let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
                     let ratelimit_reset =
                         String::from_utf8_lossy(self.headers()["x-ratelimit-reset"].as_bytes())
@@ -47,7 +46,7 @@ impl GithubWaitRatelimit<reqwest::Response> for reqwest::Response {
                 }
 
                 self
-            }
+            },
 
             None => self.error_for_status()?,
         })
@@ -235,7 +234,7 @@ impl<'a> GithubAPI<'a> {
             ),
             filename: asset.name,
             cache: CacheStrategy::File {
-                namespace: Cow::Borrowed(CACHE_DIR),
+                namespace: CACHE_DIR.into(),
                 path: cached_file_path,
             },
             size: Some(asset.size),

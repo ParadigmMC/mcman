@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap, time::Duration};
+use std::{collections::HashMap, time::Duration};
 
 use anyhow::{anyhow, Result};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -20,14 +20,10 @@ pub struct ModrinthProject {
     //pub body: String,
     pub project_type: String,
     // ...
-    #[serde(default = "empty")]
+    #[serde(default)]
     pub id: String,
     //pub team: String,
     pub versions: Vec<String>,
-}
-
-fn empty() -> String {
-    String::new()
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -110,7 +106,7 @@ pub trait ModrinthWaitRatelimit<T> {
 impl ModrinthWaitRatelimit<reqwest::Response> for reqwest::Response {
     async fn wait_ratelimit(self) -> Result<Self> {
         let res = if let Some(h) = self.headers().get("x-ratelimit-remaining") {
-            if String::from_utf8_lossy(h.as_bytes()) == "1" {
+            if h.as_bytes() == b"1" {
                 let ratelimit_reset =
                     String::from_utf8_lossy(self.headers()["x-ratelimit-reset"].as_bytes())
                         .parse::<u64>()?;
@@ -225,16 +221,17 @@ impl<'a> ModrinthAPI<'a> {
     }
 
     pub fn get_modrinth_facets(&self) -> String {
-        let mut arr: Vec<Vec<String>> = vec![];
+        let mut arr: Vec<[String; 1]> = vec![];
 
         if self.0.server.jar.get_software_type() != SoftwareType::Proxy {
-            arr.push(vec![format!("versions:{}", self.0.mc_version())]);
+            arr.push([format!("versions:{}", self.0.mc_version())]);
         }
 
         if let Some(n) = self.get_modrinth_name() {
-            arr.push(vec![format!("categories:{n}")]);
+            arr.push([format!("categories:{n}")]);
+
             if n == "quilt" {
-                arr.push(vec![format!("categories:fabric")]);
+                arr.push([format!("categories:fabric")]);
             }
         }
 
@@ -300,7 +297,7 @@ impl<'a> ModrinthAPI<'a> {
             url: file.url,
             filename: file.filename,
             cache: CacheStrategy::File {
-                namespace: Cow::Borrowed("modrinth"),
+                namespace: "modrinth".into(),
                 path: cached_file_path,
             },
             size: Some(file.size),

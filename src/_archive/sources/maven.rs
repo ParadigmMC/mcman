@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap};
+use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 
@@ -171,7 +171,7 @@ impl<'a> MavenAPI<'a> {
                     .or_else(|| versions.iter().find(|v| v.contains(&id)))
                     .ok_or(anyhow!("Couldn't resolve maven artifact version (url={url},g={group_id},a={artifact_id})"))?
                     .clone()
-            }
+            },
         };
 
         Ok(version)
@@ -216,7 +216,7 @@ impl<'a> MavenAPI<'a> {
             url: download_url,
             filename: file,
             cache: CacheStrategy::File {
-                namespace: Cow::Borrowed("maven"),
+                namespace: "maven".into(),
                 path: cached_file_path,
             },
             size: None,

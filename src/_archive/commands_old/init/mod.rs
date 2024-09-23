@@ -4,11 +4,9 @@ use dialoguer::{theme::ColorfulTheme, Input};
 use indicatif::ProgressBar;
 use rpackwiz::model::Pack;
 use std::{
-    borrow::Cow,
     env,
     ffi::OsStr,
     fs::{self, File},
-    io::Write,
     path::Path,
 };
 use tempfile::Builder;
@@ -103,7 +101,7 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
     match &ty {
         InitType::Normal | InitType::MRPack(_) => {
             app.server.name = app.prompt_string_filled("Server name?", &app.server.name)?;
-        }
+        },
         InitType::Packwiz(source) => {
             let pack = source
                 .parse_toml::<Pack>("pack.toml")
@@ -111,11 +109,11 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                 .context("Reading pack.toml - does it exist?")?;
 
             app.server.name = app.prompt_string_filled("Server name?", &pack.name)?;
-        }
+        },
         InitType::Network => {
             app.network.as_mut().unwrap().name =
                 app.prompt_string_filled("Network name?", &app.network.as_ref().unwrap().name)?;
-        }
+        },
     }
 
     match &ty {
@@ -125,15 +123,15 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                 &[
                     SelectItem(
                         SoftwareType::Normal,
-                        Cow::Borrowed("Normal Server (vanilla, spigot, paper etc.)"),
+                        "Normal Server (vanilla, spigot, paper etc.)".into(),
                     ),
                     SelectItem(
                         SoftwareType::Modded,
-                        Cow::Borrowed("Modded Server (forge, fabric, quilt etc.)"),
+                        "Modded Server (forge, fabric, quilt etc.)".into(),
                     ),
                     SelectItem(
                         SoftwareType::Proxy,
-                        Cow::Borrowed("Proxy Server (velocity, bungeecord, waterfall etc.)"),
+                        "Proxy Server (velocity, bungeecord, waterfall etc.)".into(),
                     ),
                 ],
             )?;
@@ -158,7 +156,7 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
 
                 app.prompt_string_default("Server version?", &latest_ver)?
             };
-        }
+        },
 
         InitType::Network => {
             let nw = app.network.as_mut().unwrap();
@@ -169,7 +167,7 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                 .interact_text()?;
 
             nw.port = port;
-        }
+        },
         InitType::MRPack(src) => {
             let tmp_dir = Builder::new().prefix("mcman-mrpack-import").tempdir()?;
 
@@ -191,10 +189,10 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
             app.mrpack()
                 .import_all(MRPackReader::from_reader(f)?, None)
                 .await?;
-        }
+        },
         InitType::Packwiz(src) => {
             app.packwiz().import_from_source(src.clone()).await?;
-        }
+        },
     }
 
     match ty {
@@ -208,7 +206,7 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
     }
 
     match ty {
-        InitType::Network => {}
+        InitType::Network => {},
         _ => {
             if let Some(ref mut nw) = app.network {
                 if nw.servers.contains_key(&app.server.name) {
@@ -225,7 +223,7 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                     app.info("Added server entry to network.toml");
                 }
             }
-        }
+        },
     }
 
     //env
@@ -235,8 +233,10 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
         fs::create_dir_all("./config")?;
 
         if app.server.jar.get_software_type() != SoftwareType::Proxy {
-            let mut f = File::create("./config/server.properties")?;
-            f.write_all(include_bytes!("../../../res/server.properties"))?;
+            fs::write(
+                "./config/server.properties",
+                include_bytes!("../../../res/server.properties"),
+            )?;
         }
     }
 
@@ -257,8 +257,8 @@ pub async fn run(base_app: BaseApp, args: Args) -> Result<()> {
                 if app.confirm("Render markdown now?")? {
                     app.markdown().update_files().await?;
                 }
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
 

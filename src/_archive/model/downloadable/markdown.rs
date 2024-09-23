@@ -14,28 +14,28 @@ impl Downloadable {
                 } else {
                     format!("Custom {hyperlink}")
                 }
-            }
+            },
             Self::GithubRelease { repo, .. } => {
                 format!("[{repo}](https://github.com/{repo})")
-            }
+            },
             Self::Hangar { id, .. } => {
                 format!("[{id}](https://hangar.papermc.io/{id})")
-            }
+            },
             Self::Jenkins { url, job, .. } => {
                 format!("[{job}]({})", JenkinsAPI::get_url(url, job))
-            }
+            },
             Self::Maven { url, group, .. } => {
                 format!("[{g}]({url}/{g})", g = group.replace('.', "/"))
-            }
+            },
             Self::Spigot { id, .. } => {
                 format!("[{id}](https://www.spigotmc.org/resources/{id})")
-            }
+            },
             Self::Modrinth { id, .. } => {
                 format!("[{id}](https://modrinth.com/mod/{id})")
-            }
+            },
             Self::CurseRinth { id, .. } => {
                 format!("`{id}`<sup>[CF](https://www.curseforge.com/minecraft/mc-mods/{id}) [CR](https://curserinth.kuylar.dev/mod/{id})</sup>")
-            }
+            },
         }
     }
 
@@ -56,7 +56,7 @@ impl Downloadable {
     pub fn fields_to_map(&self) -> IndexMap<Cow<'static, str>, String> {
         let mut map = IndexMap::new();
 
-        map.insert(Cow::Borrowed("Type"), self.get_type_name());
+        map.insert("Type".into(), self.get_type_name());
 
         let (project_url, asset, version) = match self {
             Self::Url { url, filename, .. } => (
@@ -67,7 +67,7 @@ impl Downloadable {
 
             Self::GithubRelease { repo, tag, asset } => {
                 (repo.clone(), Some(asset.clone()), Some(tag.clone()))
-            }
+            },
 
             Self::Modrinth { id, version }
             | Self::CurseRinth { id, version }
@@ -98,14 +98,14 @@ impl Downloadable {
             ),
         };
 
-        map.insert(Cow::Borrowed("Project/URL"), project_url);
+        map.insert("Project/URL".into(), project_url);
 
         if let Some(version) = version {
-            map.insert(Cow::Borrowed("Version/Release"), version);
+            map.insert("Version/Release".into(), version);
         }
 
         if let Some(asset) = asset {
-            map.insert(Cow::Borrowed("Asset/File"), asset);
+            map.insert("Asset/File".into(), asset);
         }
 
         map
@@ -125,12 +125,12 @@ impl Downloadable {
                 } else {
                     "URL".to_string()
                 }
-            }
+            },
             Self::Maven {
                 group, artifact, ..
             } => {
                 format!("Maven:{group}.{artifact}")
-            }
+            },
         }
     }
 }

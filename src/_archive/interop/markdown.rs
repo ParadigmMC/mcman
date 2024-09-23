@@ -1,10 +1,9 @@
-use std::{borrow::Cow, fs::File, io::Write, time::Duration};
+use std::{borrow::Cow, fs, time::Duration};
 
 use anyhow::{Context, Result};
 use indexmap::IndexMap;
 use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
 use regex::Regex;
-use tokio::io::AsyncWriteExt;
 
 use crate::{
     app::{App, Prefix},
@@ -21,7 +20,6 @@ pub struct MarkdownAPI<'a>(pub &'a App);
 
 impl<'a> MarkdownAPI<'a> {
     pub fn init_server(&self) -> Result<()> {
-        let mut f = File::create(self.0.server.path.join("README.md"))?;
         let readme_content = include_str!("../../res/default_readme")
             .replace("{SERVER_NAME}", &self.0.server.name)
             .replace(
@@ -33,19 +31,20 @@ impl<'a> MarkdownAPI<'a> {
                 },
             );
 
-        f.write_all(readme_content.as_bytes())?;
-
-        Ok(())
+        Ok(fs::write(
+            self.0.server.path.join("README.md"),
+            readme_content,
+        )?)
     }
 
     pub fn init_network(&self) -> Result<()> {
-        let mut f = File::create(self.0.network.as_ref().unwrap().path.join("README.md"))?;
         let readme_content = include_str!("../../res/default_readme_network")
             .replace("{NETWORK_NAME}", &self.0.network.as_ref().unwrap().name);
 
-        f.write_all(readme_content.as_bytes())?;
-
-        Ok(())
+        Ok(fs::write(
+            self.0.network.as_ref().unwrap().path.join("README.md"),
+            readme_content,
+        )?)
     }
 
     pub async fn update_files(&self) -> Result<()> {
@@ -101,8 +100,7 @@ impl<'a> MarkdownAPI<'a> {
                     .to_string();
             }
 
-            let mut f = tokio::fs::File::create(&path).await?;
-            f.write_all(content.as_bytes()).await?;
+            tokio::fs::write(&path, content).await?;
 
             self.0.notify(Prefix::Rendered, filename.to_string());
         }
@@ -167,8 +165,8 @@ impl<'a> MarkdownAPI<'a> {
     pub fn table_server(&self) -> MarkdownTable {
         let mut map = IndexMap::new();
 
-        map.insert(Cow::Borrowed("Version"), self.0.server.mc_version.clone());
-        map.insert(Cow::Borrowed("Type"), self.0.server.jar.get_md_link());
+        map.insert("Version".into(), self.0.server.mc_version.clone());
+        map.insert("Type".into(), self.0.server.jar.get_md_link());
 
         map.extend(self.0.server.jar.get_metadata());
 
@@ -182,11 +180,8 @@ impl<'a> MarkdownAPI<'a> {
             for (name, serv) in &nw.servers {
                 let mut map = IndexMap::new();
 
-                map.insert(
-                    Cow::Borrowed("Name"),
-                    format!("[`{name}`](./servers/{name}/)"),
-                );
-                map.insert(Cow::Borrowed("Port"), serv.port.to_string());
+                map.insert("Name".into(), format!("[`{name}`](./servers/{name}/)"));
+                map.insert("Port".into(), serv.port.to_string());
 
                 table.add_from_map(map);
             }
@@ -230,15 +225,15 @@ impl<'a> MarkdownAPI<'a> {
 
     pub async fn table_world(&self, world: &World) -> Result<MarkdownTable> {
         let mut table = MarkdownTable::with_headers(vec![
-            Cow::Borrowed("Name"),
-            Cow::Borrowed("Description"),
-            Cow::Borrowed("Version"),
+            "Name".into(),
+            "Description".into(),
+            "Version".into(),
         ]);
 
         if let Some(dl) = &world.download {
             let mut map = self.fetch_downloadable_info(dl).await?;
             map.insert(
-                Cow::Borrowed("Name"),
+                "Name".into(),
                 format!("**(World Download)** {}", map["Name"]),
             );
             table.add_from_map(map);
@@ -275,13 +270,13 @@ impl<'a> MarkdownAPI<'a> {
                     sanitize(&proj.description)?,
                     version.clone(),
                 )
-            }
+            },
 
             Downloadable::CurseRinth { id, version } => {
                 let proj = self.0.curserinth().fetch_project(id).await?;
 
                 (format!("{} <sup>[CF](https://www.curseforge.com/minecraft/mc-mods/{id}) [CR](https://curserinth.kuylar.dev/mod/{id})</sup>", proj.title, id = proj.slug), sanitize(&proj.description)?, version.clone())
-            }
+            },
 
             Downloadable::Spigot { id, version } => {
                 let (name, desc) = self.0.spigot().fetch_info(id).await?;
@@ -291,7 +286,7 @@ impl<'a> MarkdownAPI<'a> {
                     sanitize(&desc)?,
                     version.clone(),
                 )
-            }
+            },
 
             Downloadable::Hangar { id, version } => {
                 let proj = mcapi::hangar::fetch_project(&self.0.http_client, id).await?;
@@ -305,7 +300,7 @@ impl<'a> MarkdownAPI<'a> {
                     sanitize(&proj.description)?,
                     version.clone(),
                 )
-            }
+            },
 
             Downloadable::GithubRelease { repo, tag, asset } => {
                 let desc = self.0.github().fetch_repo_description(repo).await?;
@@ -315,7 +310,7 @@ impl<'a> MarkdownAPI<'a> {
                     sanitize(&desc)?,
                     format!("{tag} / `{asset}`"),
                 )
-            }
+            },
 
             Downloadable::Jenkins {
                 url,
@@ -330,7 +325,7 @@ impl<'a> MarkdownAPI<'a> {
                     sanitize(&desc)?,
                     format!("{build} / `{artifact}`"),
                 )
-            }
+            },
 
             Downloadable::Maven {
                 version, artifact, ..
@@ -353,9 +348,9 @@ impl<'a> MarkdownAPI<'a> {
         };
 
         Ok(IndexMap::from([
-            (Cow::Borrowed("Name"), name),
-            (Cow::Borrowed("Description"), description),
-            (Cow::Borrowed("Version"), version),
+            ("Name".into(), name),
+            ("Description".into(), description),
+            ("Version".into(), version),
         ]))
     }
 }

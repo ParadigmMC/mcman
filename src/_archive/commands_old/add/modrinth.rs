@@ -1,5 +1,4 @@
 use anyhow::{bail, Context, Result};
-use std::borrow::Cow;
 
 use crate::{
     app::{App, Prefix},
@@ -16,9 +15,9 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
     let search_type = app.select(
         "Which project type?",
         &[
-            SelectItem("mod", Cow::Borrowed("Mods")),
-            SelectItem("datapack", Cow::Borrowed("Datapacks")),
-            SelectItem("modpack", Cow::Borrowed("Modpacks")),
+            SelectItem("mod", "Mods".into()),
+            SelectItem("datapack", "Datapacks".into()),
+            SelectItem("modpack", "Modpacks".into()),
         ],
     )?;
 
@@ -44,14 +43,15 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
         .map(|p| {
             SelectItem(
                 p.clone(),
-                Cow::Owned(format!(
+                format!(
                     "{} [{}]\n{s:w$}{}",
                     p.title,
                     p.slug,
                     p.description,
                     s = " ",
                     w = 4
-                )),
+                )
+                .into(),
             )
         })
         .collect::<Vec<_>>();
@@ -71,7 +71,7 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
             .map(|v| {
                 SelectItem(
                     v.clone(),
-                    Cow::Owned(format!("[{}]: {}", v.version_number, v.name)),
+                    format!("[{}]: {}", v.version_number, v.name).into(),
                 )
             })
             .collect::<Vec<_>>(),
@@ -82,8 +82,8 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
             app.select(
                 "Import as...",
                 &[
-                    SelectItem("datapack", Cow::Borrowed("Datapack")),
-                    SelectItem("mod", Cow::Borrowed("Mod/Plugin")),
+                    SelectItem("datapack", "Datapack".into()),
+                    SelectItem("mod", "Mod/Plugin".into()),
                 ],
             )?
         } else {
@@ -94,7 +94,7 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
     } {
         "modpack" => {
             todo!("Modpack importing currently unsupported")
-        }
+        },
         "mod" => {
             app.add_addon_inferred(Downloadable::Modrinth {
                 id: project.slug.clone(),
@@ -104,7 +104,7 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
             app.save_changes()?;
             app.notify(Prefix::Imported, format!("{} from modrinth", project.title));
             app.refresh_markdown().await?;
-        }
+        },
         "datapack" => {
             app.add_datapack(Downloadable::Modrinth {
                 id: project.slug.clone(),
@@ -113,7 +113,7 @@ pub async fn run(mut app: App, args: Args) -> Result<()> {
 
             app.save_changes()?;
             app.refresh_markdown().await?;
-        }
+        },
         ty => bail!("Unsupported modrinth project type: '{ty}'"),
     }
 

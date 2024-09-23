@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap};
+use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 use mcapi::fabric::{FabricInstaller, FabricLoader, FABRIC_META_URL};
@@ -59,7 +59,7 @@ impl<'a> FabricAPI<'a> {
             ),
             filename: cached_file_path.clone(),
             cache: CacheStrategy::File {
-                namespace: Cow::Borrowed("fabric"),
+                namespace: "fabric".into(),
                 path: cached_file_path,
             },
             size: None,

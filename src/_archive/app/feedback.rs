@@ -30,7 +30,7 @@ macro_rules! enum_to_string {
 
 impl From<ProgressPrefix> for Cow<'static, str> {
     fn from(val: ProgressPrefix) -> Self {
-        Cow::Borrowed(enum_to_string!(
+        enum_to_string!(
             val,
             ProgressPrefix,
             Resolving,
@@ -39,7 +39,8 @@ impl From<ProgressPrefix> for Cow<'static, str> {
             Copying,
             Fetching,
             Exporting,
-        ))
+        )
+        .into()
     }
 }
 
@@ -102,8 +103,9 @@ impl Prefix {
 }
 
 impl From<Prefix> for Cow<'static, str> {
+    #[inline(always)]
     fn from(val: Prefix) -> Self {
-        Cow::Borrowed(val.as_str().trim_start())
+        val.as_str().trim_start().into()
     }
 }
 

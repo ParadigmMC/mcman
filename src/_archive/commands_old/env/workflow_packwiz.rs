@@ -1,7 +1,6 @@
-use std::{io::Write, path::Path};
+use std::{fs, path::Path};
 
 use anyhow::Result;
-use std::fs::File;
 
 use crate::{app::App, util::env::get_git_root};
 
@@ -10,8 +9,11 @@ pub fn run(app: &App) -> Result<()> {
         .join(".github")
         .join("workflows");
 
-    let mut f = File::create(path.join("packwiz.yml"))?;
-    f.write_all(include_bytes!("../../../res/workflows/packwiz.yml"))?;
+    fs::write(
+        path.join("packwiz.yml"),
+        include_bytes!("../../../res/workflows/packwiz.yml"),
+    )?;
+
     app.success("packwiz.yml workflow created");
 
     Ok(())

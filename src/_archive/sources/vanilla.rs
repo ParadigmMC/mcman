@@ -1,6 +1,6 @@
 use crate::app::{App, CacheStrategy, ResolvedFile};
 use anyhow::{anyhow, Context, Result};
-use std::{borrow::Cow, collections::HashMap};
+use std::collections::HashMap;
 
 pub struct VanillaAPI<'a>(pub &'a App);
 
@@ -47,7 +47,7 @@ impl<'a> VanillaAPI<'a> {
             url: file.url.clone(),
             filename: cached_file_path.clone(),
             cache: CacheStrategy::File {
-                namespace: Cow::Borrowed(CACHE_DIR),
+                namespace: CACHE_DIR.into(),
                 path: cached_file_path,
             },
             size: Some(file.size as u64),

@@ -148,7 +148,7 @@ impl App {
                     }
                 }
                 list
-            }
+            },
             AddonType::Mod => {
                 let mut list: Vec<Downloadable> = self.server.mods.clone();
                 if let Some(nw) = &self.network {
@@ -173,7 +173,7 @@ impl App {
                     }
                 }
                 list
-            }
+            },
         }
     }
 

@@ -1,8 +1,7 @@
 use std::{
     collections::HashMap,
     env,
-    fs::{read_to_string, File},
-    io::Write,
+    fs::{self, read_to_string},
     path::{Path, PathBuf},
 };
 
@@ -87,11 +86,10 @@ impl Network {
     }
 
     pub fn save(&self) -> Result<()> {
-        let cfg_str = toml::to_string_pretty(&self)?;
-        let mut f = File::create(self.path.join("network.toml"))?;
-        f.write_all(cfg_str.as_bytes())?;
-
-        Ok(())
+        Ok(fs::write(
+            self.path.join("network.toml"),
+            toml::to_string_pretty(&self)?,
+        )?)
     }
 
     pub fn next_port(&self) -> u16 {

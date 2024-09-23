@@ -1,6 +1,5 @@
 use anyhow::{anyhow, Result};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::borrow::Cow;
 
 use crate::app::{App, CacheStrategy, ResolvedFile};
 
@@ -109,7 +108,7 @@ impl<'a> CurserinthAPI<'a> {
                 versions.first().ok_or(anyhow!(
                     "No compatible versions for CurseRinth project '{id}' (version 'latest')"
                 ))?
-            }
+            },
             ver => unfiltered_versions
                 .iter()
                 .find(|v| v.id == ver)
@@ -152,7 +151,7 @@ impl<'a> CurserinthAPI<'a> {
             url: file.url,
             filename: file.filename,
             cache: CacheStrategy::File {
-                namespace: Cow::Borrowed("curserinth"),
+                namespace: "curserinth".into(),
                 path: cached_file_path,
             },
             size: Some(file.size),

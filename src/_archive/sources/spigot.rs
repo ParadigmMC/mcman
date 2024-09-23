@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap};
+use std::collections::HashMap;
 
 use anyhow::Result;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -85,7 +85,7 @@ impl<'a> SpigotAPI<'a> {
             ),
             filename,
             cache: CacheStrategy::File {
-                namespace: Cow::Borrowed(CACHE_DIR),
+                namespace: CACHE_DIR.into(),
                 path: cached_file_path,
             },
             size: None,

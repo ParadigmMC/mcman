@@ -98,7 +98,7 @@ impl ServerType {
             Self::Velocity {} | Self::BungeeCord {} | Self::Waterfall {} => SoftwareType::Proxy,
             Self::PaperMC { project, .. } if project == "velocity" || project == "waterfall" => {
                 SoftwareType::Proxy
-            }
+            },
             Self::Quilt { .. }
             | Self::Fabric { .. }
             | Self::NeoForge { .. }
@@ -166,11 +166,11 @@ impl Resolvable for ServerType {
             ServerType::Vanilla {} => app.vanilla().resolve_source(version).await,
             ServerType::PaperMC { project, build } => {
                 app.papermc().resolve_source(project, version, build).await
-            }
+            },
             ServerType::Purpur { build } => app.purpur().resolve_source(version, build).await,
             ServerType::Fabric { loader, installer } => {
                 app.fabric().resolve_source(loader, installer).await
-            }
+            },
             ServerType::Quilt { installer, .. } => app.quilt().resolve_installer(installer).await,
             ServerType::NeoForge { loader } => app.neoforge().resolve_source(loader).await,
             ServerType::Forge { loader } => app.forge().resolve_source(loader).await,
@@ -179,17 +179,17 @@ impl Resolvable for ServerType {
                 app.papermc()
                     .resolve_source("paper", version, "latest")
                     .await
-            }
+            },
             ServerType::Velocity {} => {
                 app.papermc()
                     .resolve_source("velocity", version, "latest")
                     .await
-            }
+            },
             ServerType::Waterfall {} => {
                 app.papermc()
                     .resolve_source("waterfall", version, "latest")
                     .await
-            }
+            },
             ServerType::BungeeCord {} => bungeecord().resolve_source(app).await,
             ServerType::Downloadable { inner } => inner.resolve_source(app).await,
         }

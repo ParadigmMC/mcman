@@ -385,7 +385,7 @@ impl<'a> DevSession<'a> {
                 TestResult::Success => {
                     self.builder.app.success("Test passed");
                     process::exit(0);
-                }
+                },
                 TestResult::Crashed | TestResult::Failed => {
                     mp.suspend(|| {
                         println!("{} Test failed!", ColorfulTheme::default().error_prefix);
@@ -485,7 +485,7 @@ impl<'a> DevSession<'a> {
                     }
 
                     process::exit(1);
-                }
+                },
             }
         }
 
@@ -508,13 +508,13 @@ impl<'a> DevSession<'a> {
                             tx.blocking_send(Command::Log(String::from("Reloaded hotreload.toml")))
                                 .unwrap();
                             *guard = updated;
-                        }
+                        },
                         Err(e) => {
                             tx.blocking_send(Command::Log(format!(
                                 "Error reloading hotreload.toml: {e}"
                             )))
                             .unwrap();
-                        }
+                        },
                     }
                 }
             },
@@ -562,18 +562,18 @@ impl<'a> DevSession<'a> {
                                     "reload confirm\n".to_owned(),
                                 ))
                                 .expect("tx send err");
-                            }
+                            },
                             HotReloadAction::Restart => {
                                 tx.blocking_send(Command::SendCommand("stop\nend\n".to_owned()))
                                     .expect("tx send err");
                                 tx.blocking_send(Command::WaitUntilExit)
                                     .expect("tx send err");
                                 tx.blocking_send(Command::Start).expect("tx send err");
-                            }
+                            },
                             HotReloadAction::RunCommand(cmd) => {
                                 tx.blocking_send(Command::SendCommand(format!("{cmd}\n")))
                                     .expect("tx send err");
-                            }
+                            },
                         }
                     }
                 }
@@ -639,18 +639,18 @@ impl<'a> DevSession<'a> {
                                     "reload confirm\n".to_owned(),
                                 ))
                                 .expect("tx send err");
-                            }
+                            },
                             HotReloadAction::Restart => {
                                 tx.blocking_send(Command::SendCommand("stop\nend\n".to_owned()))
                                     .expect("tx send err");
                                 tx.blocking_send(Command::WaitUntilExit)
                                     .expect("tx send err");
                                 tx.blocking_send(Command::Start).expect("tx send err");
-                            }
+                            },
                             HotReloadAction::RunCommand(cmd) => {
                                 tx.blocking_send(Command::SendCommand(format!("{cmd}\n")))
                                     .expect("tx send err");
-                            }
+                            },
                         }
                     }
                 }

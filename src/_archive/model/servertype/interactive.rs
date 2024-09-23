@@ -1,6 +1,5 @@
 use anyhow::Result;
 use dialoguer::{theme::ColorfulTheme, Select};
-use std::borrow::Cow;
 
 use crate::util::SelectItem;
 
@@ -9,10 +8,10 @@ use super::ServerType;
 impl ServerType {
     pub fn select_jar_interactive() -> Result<Self> {
         let items = vec![
-            SelectItem(0, Cow::Borrowed("Vanilla    - No patches")),
-            SelectItem(1, Cow::Borrowed("PaperMC    - Spigot fork, most popular")),
-            SelectItem(2, Cow::Borrowed("Purpur     - Paper fork")),
-            SelectItem(3, Cow::Borrowed("BuildTools - Spigot or CraftBukkit")),
+            SelectItem(0, "Vanilla    - No patches".into()),
+            SelectItem(1, "PaperMC    - Spigot fork, most popular".into()),
+            SelectItem(2, "Purpur     - Paper fork".into()),
+            SelectItem(3, "BuildTools - Spigot or CraftBukkit".into()),
         ];
 
         let jar_type = Select::with_theme(&ColorfulTheme::default())
@@ -32,16 +31,16 @@ impl ServerType {
                     SelectItem(
                         Self::BuildTools {
                             args: vec![],
-                            software: Cow::Borrowed("spigot"),
+                            software: "spigot".into(),
                         },
-                        Cow::Borrowed("Spigot"),
+                        "Spigot".into(),
                     ),
                     SelectItem(
                         Self::BuildTools {
                             args: vec![],
-                            software: Cow::Borrowed("craftbukkit"),
+                            software: "craftbukkit".into(),
                         },
-                        Cow::Borrowed("CraftBukkit"),
+                        "CraftBukkit".into(),
                     ),
                 ];
 
@@ -52,7 +51,7 @@ impl ServerType {
                     .interact()?;
 
                 items[idx].0.clone()
-            }
+            },
             _ => unreachable!(),
         })
     }

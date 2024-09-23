@@ -22,7 +22,7 @@ impl<'a> BuildContext<'a> {
                         "@libraries/net/neoforged/forge/{mcver}-{l}/unix_args.txt"
                     )],
                 }
-            }
+            },
             ServerType::Forge { loader } => {
                 let l = self.app.forge().resolve_version(loader).await?;
 
@@ -34,7 +34,7 @@ impl<'a> BuildContext<'a> {
                         "@libraries/net/minecraftforge/forge/{mcver}-{l}/unix_args.txt"
                     )],
                 }
-            }
+            },
             _ => StartupMethod::Jar(serverjar_name.to_owned()),
         })
     }

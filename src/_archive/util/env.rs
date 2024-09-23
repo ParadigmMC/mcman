@@ -1,7 +1,6 @@
 use std::{
     ffi::OsStr,
-    fs::{self, File},
-    io::Write,
+    fs,
     path::{Path, PathBuf},
     process::Command,
 };
@@ -76,9 +75,9 @@ pub fn write_gitignore() -> Result<PathBuf> {
         }
     }
 
-    let contents = list.join(if has_r { "\r\n" } else { "\n" }) + if has_r { "\r\n" } else { "\n" };
+    let newline = if has_r { "\r\n" } else { "\n" };
 
-    fs::write(&gitignore_path, contents)?;
+    fs::write(&gitignore_path, list.join(newline) + newline)?;
 
     Ok(gitignore_path)
 }
@@ -132,15 +131,17 @@ where
 }
 
 pub fn write_dockerfile(folder: &Path) -> Result<()> {
-    let mut f = File::create(folder.join("Dockerfile"))?;
-    f.write_all(include_bytes!("../../res/default_dockerfile"))?;
-    Ok(())
+    Ok(fs::write(
+        folder.join("Dockerfile"),
+        include_bytes!("../../res/default_dockerfile"),
+    )?)
 }
 
 pub fn write_dockerignore(folder: &Path) -> Result<()> {
-    let mut f = File::create(folder.join(".dockerignore"))?;
-    f.write_all(include_bytes!("../../res/default_dockerignore"))?;
-    Ok(())
+    Ok(fs::write(
+        folder.join(".dockerignore"),
+        include_bytes!("../../res/default_dockerignore"),
+    )?)
 }
 
 pub fn get_docker_version() -> Result<String> {

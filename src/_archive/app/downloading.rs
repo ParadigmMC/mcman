@@ -1,4 +1,4 @@
-use std::{borrow::Cow, fmt::Debug, fs, path::PathBuf, time::Duration};
+use std::{fmt::Debug, fs, path::PathBuf, time::Duration};
 
 use anyhow::{bail, Context, Result};
 use digest::{Digest, DynDigest};
@@ -144,18 +144,18 @@ impl App {
                 match self.select(
                     &message,
                     &[
-                        SelectItem(0, Cow::Borrowed("Delete folder and download")),
-                        SelectItem(1, Cow::Borrowed("Skip file")),
-                        SelectItem(2, Cow::Borrowed("Bail")),
+                        SelectItem(0, "Delete folder and download".into()),
+                        SelectItem(1, "Skip file".into()),
+                        SelectItem(2, "Bail".into()),
                     ],
                 )? {
                     0 => {
                         tokio::fs::remove_dir_all(&file_path).await?;
-                    }
+                    },
                     1 => {
                         self.notify(Prefix::SkippedWarning, progress_bar.message());
                         return Ok(resolved);
-                    }
+                    },
                     2 => bail!(message),
                     _ => unreachable!(),
                 }
@@ -208,10 +208,10 @@ impl App {
                             cached.to_string_lossy()
                         ));
                         None
-                    }
+                    },
                     _ => Some((cached, cached_size)),
                 }
-            }
+            },
             _ => None,
         } {
             progress_bar.disable_steady_tick();
@@ -276,9 +276,9 @@ impl App {
                     }
 
                     progress_bar.set_length(len);
-                }
+                },
                 (Some(size), None) | (None, Some(size)) => progress_bar.set_length(size),
-                _ => {}
+                _ => {},
             }
 
             progress_bar.disable_steady_tick();
@@ -318,7 +318,7 @@ impl App {
             if let Some(cached_file_path) = match &resolved.cache {
                 CacheStrategy::File { namespace, path } => {
                     self.get_cache(namespace).map(|c| c.path(path))
-                }
+                },
                 CacheStrategy::Indexed { .. } => todo!(),
                 CacheStrategy::None => None,
             } {

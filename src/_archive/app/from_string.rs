@@ -1,4 +1,4 @@
-use std::{borrow::Cow, path::Path};
+use std::path::Path;
 
 use anyhow::{bail, Context, Result};
 
@@ -21,28 +21,28 @@ impl App {
                         id: id.to_owned(),
                         version: version.to_owned(),
                     })
-                }
+                },
                 ("cr" | "cf" | "curseforge" | "curserinth", id) => {
                     let (id, version) = id.split_once(',').unwrap_or((id, "latest"));
                     Ok(Downloadable::CurseRinth {
                         id: id.to_owned(),
                         version: version.to_owned(),
                     })
-                }
+                },
                 ("hangar" | "h", id) => {
                     let (id, version) = id.split_once(',').unwrap_or((id, "latest"));
                     Ok(Downloadable::Hangar {
                         id: id.to_owned(),
                         version: version.to_owned(),
                     })
-                }
+                },
                 ("spigot" | "spiget", id) => {
                     let (id, version) = id.split_once(',').unwrap_or((id, "latest"));
                     Ok(Downloadable::Spigot {
                         id: id.to_owned(),
                         version: version.to_owned(),
                     })
-                }
+                },
                 ("ghrel" | "gh" | "github", id) => {
                     let (repo, tag) = id.split_once(',').unwrap_or((id, "latest"));
 
@@ -51,7 +51,7 @@ impl App {
                         tag: tag.to_owned(),
                         asset: "first".to_owned(),
                     })
-                }
+                },
                 (ty, _) => bail!("Unknown identifier '{ty}'"),
             }
         } else {
@@ -76,7 +76,7 @@ impl App {
                     id: id.to_owned().to_owned(),
                     version: version.to_owned().to_owned(),
                 })
-            }
+            },
 
             (Some("modrinth.com"), ["mod" | "plugin" | "datapack", id, rest @ ..]) => {
                 let version = if let ["version", v] = rest {
@@ -95,11 +95,12 @@ impl App {
                             .map(|v| {
                                 SelectItem(
                                     v.clone(),
-                                    Cow::Owned(if v.version_number == v.name {
+                                    if v.version_number == v.name {
                                         v.version_number.clone()
                                     } else {
                                         format!("[{}] {}", v.version_number, v.name)
-                                    }),
+                                    }
+                                    .into(),
                                 )
                             })
                             .collect::<Vec<_>>(),
@@ -112,7 +113,7 @@ impl App {
                     id: id.to_owned().to_owned(),
                     version: version.clone(),
                 })
-            }
+            },
 
             (Some("curserinth.kuylar.dev"), ["mod", id, rest @ ..]) => {
                 let version = if let ["version", v] = rest {
@@ -131,11 +132,12 @@ impl App {
                             .map(|v| {
                                 SelectItem(
                                     v.clone(),
-                                    Cow::Owned(if v.version_number == v.name {
+                                    if v.version_number == v.name {
                                         v.version_number.clone()
                                     } else {
                                         format!("[{}] {}", v.version_number, v.name)
-                                    }),
+                                    }
+                                    .into(),
                                 )
                             })
                             .collect::<Vec<_>>(),
@@ -148,7 +150,7 @@ impl App {
                     id: (*id).to_string(),
                     version,
                 })
-            }
+            },
 
             // https://www.curseforge.com/minecraft/mc-mods/betterwithpatches
             (Some("www.curseforge.com"), ["minecraft", "mc-mods", id, rest @ ..]) => {
@@ -170,11 +172,12 @@ impl App {
                             .map(|v| {
                                 SelectItem(
                                     v.clone(),
-                                    Cow::Owned(if v.version_number == v.name {
+                                    if v.version_number == v.name {
                                         v.version_number.clone()
                                     } else {
                                         format!("[{}] {}", v.version_number, v.name)
-                                    }),
+                                    }
+                                    .into(),
                                 )
                             })
                             .collect::<Vec<_>>(),
@@ -184,7 +187,7 @@ impl App {
                 };
 
                 Ok(Downloadable::CurseRinth { id, version })
-            }
+            },
 
             // https://www.spigotmc.org/resources/http-requests.101253/
             (Some("www.spigotmc.org"), ["resources", id]) => Ok(Downloadable::Spigot {
@@ -212,17 +215,18 @@ impl App {
                             "Select a release",
                             &[SelectItem(
                                 "latest".to_owned(),
-                                Cow::Borrowed("Always use latest release"),
+                                "Always use latest release".into(),
                             )]
                             .into_iter()
                             .chain(releases.iter().map(|r| {
                                 SelectItem(
                                     r.tag_name.clone(),
-                                    Cow::Owned(if r.tag_name == r.name {
+                                    if r.tag_name == r.name {
                                         r.name.clone()
                                     } else {
                                         format!("[{}] {}", r.tag_name, r.name)
-                                    }),
+                                    }
+                                    .into(),
                                 )
                             }))
                             .collect::<Vec<_>>(),
@@ -231,42 +235,44 @@ impl App {
                         (version, None)
                     };
 
-                let asset = if let Some(a) = asset {
-                    a
-                } else {
-                    let rel = self.github().fetch_release(&repo, &tag).await?;
-
-                    if rel.assets.len() <= 1 {
-                        "first".to_owned()
+                let asset =
+                    if let Some(a) = asset {
+                        a
                     } else {
-                        match self.select(
-                            "Which asset to use?",
-                            &[SelectItem(
-                                Some("first".to_owned()),
-                                Cow::Owned(format!(
-                                    "Use the first asset ('{}' for '{}')",
-                                    rel.assets[0].name, rel.tag_name
-                                )),
-                            )]
-                            .into_iter()
-                            .chain(rel.assets.iter().map(|a| {
-                                SelectItem(Some(a.name.clone()), Cow::Owned(a.name.clone()))
-                            }))
-                            .chain(vec![SelectItem(None, Cow::Borrowed("Set manually"))])
-                            .collect::<Vec<_>>(),
-                        )? {
-                            Some(a) => a,
-                            None => self.prompt_string("Enter asset name")?,
+                        let rel = self.github().fetch_release(&repo, &tag).await?;
+
+                        if rel.assets.len() <= 1 {
+                            "first".to_owned()
+                        } else {
+                            match self.select(
+                                "Which asset to use?",
+                                &[SelectItem(
+                                    Some("first".to_owned()),
+                                    format!(
+                                        "Use the first asset ('{}' for '{}')",
+                                        rel.assets[0].name, rel.tag_name
+                                    )
+                                    .into(),
+                                )]
+                                .into_iter()
+                                .chain(rel.assets.iter().map(|a| {
+                                    SelectItem(Some(a.name.clone()), a.name.clone().into())
+                                }))
+                                .chain(vec![SelectItem(None, "Set manually".into())])
+                                .collect::<Vec<_>>(),
+                            )? {
+                                Some(a) => a,
+                                None => self.prompt_string("Enter asset name")?,
+                            }
                         }
-                    }
-                };
+                    };
 
                 Ok(Downloadable::GithubRelease {
                     repo,
                     tag: tag.to_string(),
                     asset,
                 })
-            }
+            },
 
             (domain, path) => {
                 let def = match domain {
@@ -278,15 +284,15 @@ impl App {
                         } else {
                             0
                         }
-                    }
+                    },
                 };
 
                 let selection = self.select_with_default(
                     urlstr,
                     &[
-                        SelectItem(0, Cow::Borrowed("Add as Custom URL")),
-                        SelectItem(1, Cow::Borrowed("Add as Jenkins")),
-                        SelectItem(2, Cow::Borrowed("Add as Maven")),
+                        SelectItem(0, "Add as Custom URL".into()),
+                        SelectItem(1, "Add as Jenkins".into()),
+                        SelectItem(2, "Add as Maven".into()),
                     ],
                     def,
                 )?;
@@ -310,7 +316,7 @@ impl App {
                             filename: Some(input),
                             desc: if desc.is_empty() { None } else { Some(desc) },
                         })
-                    }
+                    },
                     1 => {
                         // TODO: ...
                         let j_url = if self.confirm(&format!(
@@ -359,7 +365,7 @@ impl App {
                             build,
                             artifact,
                         })
-                    }
+                    },
                     2 => {
                         let mut repo = None;
                         let mut group_id = None;
@@ -432,10 +438,8 @@ impl App {
                             )?,
                         };
 
-                        let mut versions = vec![SelectItem(
-                            "latest".to_owned(),
-                            Cow::Borrowed("Always use latest"),
-                        )];
+                        let mut versions =
+                            vec![SelectItem("latest".to_owned(), "Always use latest".into())];
 
                         for v in self
                             .maven()
@@ -443,7 +447,7 @@ impl App {
                             .await?
                             .versions
                         {
-                            versions.push(SelectItem(v.clone(), Cow::Owned(v.clone())));
+                            versions.push(SelectItem(v.clone(), v.clone().into()));
                         }
 
                         let version = self.select("Which version?", &versions)?;
@@ -464,10 +468,10 @@ impl App {
                             version,
                             filename,
                         })
-                    }
+                    },
                     _ => unreachable!(),
                 }
-            }
+            },
         }
     }
 }

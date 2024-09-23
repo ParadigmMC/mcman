@@ -1,9 +1,4 @@
-use std::{
-    collections::HashMap,
-    fs::{self, File},
-    io::Write,
-    path::PathBuf,
-};
+use std::{collections::HashMap, fs, path::PathBuf};
 
 use anyhow::{anyhow, Result};
 use glob::Pattern;
@@ -80,9 +75,7 @@ impl HotReloadConfig {
     }
 
     pub fn save(&self) -> Result<()> {
-        let cfg_str = toml::to_string_pretty(&self)?;
-        let mut f = File::create(&self.path)?;
-        f.write_all(cfg_str.as_bytes())?;
+        fs::write(&self.path, toml::to_string_pretty(&self)?)?;
 
         Ok(())
     }

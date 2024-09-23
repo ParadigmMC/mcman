@@ -47,7 +47,7 @@ impl<'a> BuildContext<'a> {
                             .context("resolving quilt loader version id (latest/latest-beta)")?
                     ),
                 }
-            }
+            },
             ServerType::NeoForge { loader } => InstallMethod::Installer {
                 name: "NeoForged Installer",
                 label: "nfi",
@@ -93,7 +93,7 @@ impl<'a> BuildContext<'a> {
                         }
                     ),
                 }
-            }
+            },
             _ => InstallMethod::SingleJar,
         })
     }
@@ -187,13 +187,13 @@ impl<'a> BuildContext<'a> {
                 }
 
                 jar_name
-            }
+            },
             InstallMethod::SingleJar => {
                 self.downloadable(&self.app.server.jar, "", None)
                     .await?
                     .1
                     .filename
-            }
+            },
         };
 
         Ok(serverjar_name)
@@ -237,8 +237,7 @@ impl<'a> BuildContext<'a> {
             let buf = buf.trim();
 
             if !buf.is_empty() {
-                log_file.write_all(buf.as_bytes()).await?;
-                log_file.write_all(b"\n").await?;
+                log_file.write_all(format!("{buf}\n").as_bytes()).await?;
 
                 if let Some(last_line) = buf.split('\n').last() {
                     spinner.set_message(last_line.to_string());

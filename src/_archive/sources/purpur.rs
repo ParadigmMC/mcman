@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap};
+use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -60,7 +60,7 @@ impl<'a> PurpurAPI<'a> {
             url: format!("{API_URL}/{version}/{}/download", resolved_build.build),
             filename: cached_file_path.clone(),
             cache: CacheStrategy::File {
-                namespace: Cow::Borrowed(CACHE_DIR),
+                namespace: CACHE_DIR.into(),
                 path: cached_file_path,
             },
             size: None,

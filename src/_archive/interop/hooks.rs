@@ -96,7 +96,7 @@ impl<'a> HooksAPI<'a> {
                     self.0.success(format!("Hook {filename}"));
                 } else {
                     match hook.onfail {
-                        HookFailBehavior::Ignore => {}
+                        HookFailBehavior::Ignore => {},
                         HookFailBehavior::Warn => self.0.warn(format!("Hook {filename} failed")),
                         HookFailBehavior::Error => bail!("Hook {filename} failed"),
                     }

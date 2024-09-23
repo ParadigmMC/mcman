@@ -1,17 +1,16 @@
 use indexmap::IndexMap;
 use std::borrow::Cow;
 
+#[derive(Default)]
 pub struct MarkdownTable {
     pub headers: Vec<Cow<'static, str>>,
     pub rows: Vec<Vec<String>>,
 }
 
 impl MarkdownTable {
+    #[inline(always)]
     pub fn new() -> Self {
-        Self {
-            headers: vec![],
-            rows: vec![],
-        }
+        Self::default()
     }
 
     pub fn with_headers(headers: Vec<Cow<'static, str>>) -> Self {

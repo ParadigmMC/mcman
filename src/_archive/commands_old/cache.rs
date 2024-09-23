@@ -29,7 +29,7 @@ pub fn run(commands: Commands) -> Result<()> {
             match commands {
                 Commands::Path => {
                     println!("{}", cache_folder.to_string_lossy());
-                }
+                },
 
                 Commands::List { detailed } => {
                     println!(
@@ -65,11 +65,11 @@ pub fn run(commands: Commands) -> Result<()> {
                     }
 
                     println!(" {all} entries in {namespaces} namespaces in total");
-                }
+                },
 
                 Commands::Open => {
                     opener::open(cache_folder).context("Opening cache folder")?;
-                }
+                },
 
                 Commands::Clear => {
                     let pb = ProgressBar::new_spinner()
@@ -89,11 +89,11 @@ pub fn run(commands: Commands) -> Result<()> {
 
                     pb.finish_and_clear();
                     println!(" Cache has been cleared");
-                }
+                },
             }
 
             Ok(())
-        }
+        },
 
         None => bail!("Cache directory was missing, maybe it's disabled?"),
     }

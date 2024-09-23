@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap};
+use std::collections::HashMap;
 
 use anyhow::{anyhow, Context, Result};
 use mcapi::hangar::{Platform, ProjectVersion};
@@ -59,16 +59,16 @@ impl<'a> HangarAPI<'a> {
             ServerType::Velocity {} => Some(mcapi::hangar::Platform::Velocity),
             ServerType::PaperMC { project, .. } if project == "waterfall" => {
                 Some(mcapi::hangar::Platform::Waterfall)
-            }
+            },
             ServerType::PaperMC { project, .. } if project == "velocity" => {
                 Some(mcapi::hangar::Platform::Velocity)
-            }
+            },
             ServerType::PaperMC { project, .. } if project == "paper" => {
                 Some(mcapi::hangar::Platform::Paper)
-            }
+            },
             ServerType::Paper {} | ServerType::Purpur { .. } => {
                 Some(mcapi::hangar::Platform::Paper)
-            }
+            },
             _ => None,
         }
     }
@@ -107,7 +107,7 @@ impl<'a> HangarAPI<'a> {
             url: download.get_url(),
             filename: download.get_file_info().name,
             cache: CacheStrategy::File {
-                namespace: Cow::Borrowed("hangar"),
+                namespace: "hangar".into(),
                 path: cached_file_path,
             },
             size: Some(download.get_file_info().size_bytes as u64),
