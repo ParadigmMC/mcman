@@ -41,7 +41,7 @@ impl App {
         Ok(())
     }
 
-    /// Adds an addon to the new_lockfile
+    /// Adds an addon to the `new_lockfile`
     pub async fn add_addon_to_lockfile(self: Arc<Self>, addon: Addon) {
         self.new_lockfile.write().await.addons.push(addon);
     }

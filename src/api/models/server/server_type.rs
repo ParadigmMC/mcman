@@ -5,7 +5,7 @@ use crate::api::{
     models::{Addon, AddonTarget, AddonType, Environment},
     sources::buildtools,
     step::Step,
-    utils::serde::*,
+    utils::serde::str_latest,
 };
 use anyhow::{anyhow, Result};
 use schemars::JsonSchema;
@@ -52,36 +52,36 @@ impl TryFrom<HashMap<String, String>> for ServerJar {
             server_type = Some(ServerType::Fabric {
                 loader: v,
                 installer: String::from("latest"),
-            })
+            });
         }
 
         if let Some(v) = value.get("fabric-loader").cloned() {
             server_type = Some(ServerType::Fabric {
                 loader: v,
                 installer: String::from("latest"),
-            })
+            });
         }
 
         if let Some(v) = value.get("quilt").cloned() {
             server_type = Some(ServerType::Quilt {
                 loader: v,
                 installer: String::from("latest"),
-            })
+            });
         }
 
         if let Some(v) = value.get("quilt-loader").cloned() {
             server_type = Some(ServerType::Quilt {
                 loader: v,
                 installer: String::from("latest"),
-            })
+            });
         }
 
         if let Some(v) = value.get("forge").cloned() {
-            server_type = Some(ServerType::Forge { loader: v })
+            server_type = Some(ServerType::Forge { loader: v });
         }
 
         if let Some(v) = value.get("neoforge").cloned() {
-            server_type = Some(ServerType::NeoForge { loader: v })
+            server_type = Some(ServerType::NeoForge { loader: v });
         }
 
         Ok(ServerJar {
@@ -162,7 +162,7 @@ impl ServerJar {
             ServerType::BuildTools { .. }
             | ServerType::PaperMC { .. }
             | ServerType::Purpur { .. } => ServerFlavor::Patched,
-            ServerType::Custom { flavor, .. } => flavor.clone(),
+            ServerType::Custom { flavor, .. } => *flavor,
             ServerType::Fabric { .. }
             | ServerType::Forge { .. }
             | ServerType::Quilt { .. }

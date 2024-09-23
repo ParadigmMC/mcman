@@ -61,7 +61,7 @@ pub async fn resolve_buildtools_jar(app: &App) -> Result<(String, FileMeta)> {
         .await
 }
 
-/// Resolve steps for using BuildTools to compile a server jar
+/// Resolve steps for using `BuildTools` to compile a server jar
 pub async fn resolve_compile_steps(
     _app: &App,
     jar_name: &str,

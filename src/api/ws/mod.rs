@@ -1,4 +1,4 @@
-//! WebSocket Server implementation for third party editors
+//! `WebSocket` Server implementation for third party editors
 
 use std::sync::Arc;
 

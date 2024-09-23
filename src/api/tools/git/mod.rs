@@ -4,7 +4,7 @@ use anyhow::{anyhow, Result};
 
 pub const GIT: &str = "git";
 
-static GIT_VERSION: LazyLock<Option<String>> = LazyLock::new(|| version_check());
+static GIT_VERSION: LazyLock<Option<String>> = LazyLock::new(version_check);
 
 pub fn require_git() -> Result<()> {
     GIT_VERSION

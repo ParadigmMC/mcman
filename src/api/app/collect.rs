@@ -44,7 +44,7 @@ impl App {
         let mut addons = vec![];
 
         for (relative_to, source) in self.collect_sources().await? {
-            addons.extend_from_slice(&source.resolve_addons(&self, &relative_to).await?);
+            addons.extend_from_slice(&source.resolve_addons(self, &relative_to).await?);
         }
 
         Ok(addons)

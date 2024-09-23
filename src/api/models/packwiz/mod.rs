@@ -16,7 +16,7 @@ use super::{server::ServerJar, Addon, AddonTarget};
 pub async fn resolve_packwiz_serverjar(app: &App, mut accessor: Accessor) -> Result<ServerJar> {
     let pack: PackwizPack = accessor.toml(app, PACK_TOML).await?;
 
-    Ok(ServerJar::try_from(pack.versions.clone())?)
+    ServerJar::try_from(pack.versions.clone())
 }
 
 pub async fn resolve_packwiz_addons(app: &App, mut accessor: Accessor) -> Result<Vec<Addon>> {

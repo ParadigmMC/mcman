@@ -25,7 +25,7 @@ pub async fn unzip<T: Read + Seek>(reader: T, to: &Path, prefix: Option<String>)
             files = files
                 .into_iter()
                 .map(|f| f.replacen(&prefix, "", 1))
-                .collect()
+                .collect();
         }
     }
 

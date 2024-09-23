@@ -10,9 +10,9 @@ impl App {
         if let Some((_, server)) = &*self.server.read().await {
             println!("Installing server jar");
 
-            let jar = server.get_jar(&self).await?;
+            let jar = server.get_jar(self).await?;
 
-            let steps = jar.resolve_steps(&self, Environment::Server).await?;
+            let steps = jar.resolve_steps(self, Environment::Server).await?;
 
             self.execute_steps(base, &steps).await?;
         }

@@ -45,7 +45,7 @@ impl Accessor {
             Accessor::ZipLocal((_, zip)) => Ok(zip.file_names().map(ToOwned::to_owned).collect()),
             Accessor::Local(path) => Ok(path
                 .read_dir()?
-                .filter_map(|r| r.ok())
+                .filter_map(std::result::Result::ok)
                 .map(|n| n.file_name().to_string_lossy().into_owned())
                 .collect()),
             Accessor::Remote(_) => Err(anyhow!("cannot dir() Accessor::Remote")),

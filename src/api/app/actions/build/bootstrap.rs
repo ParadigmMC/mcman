@@ -61,7 +61,7 @@ impl App {
 
         let x = input_base.clone();
         futures::stream::iter(WalkDir::new(*input_base.clone()))
-            .map(|res| res.with_context({ || format!("Bootstrapping folder: {x:?}") }))
+            .map(|res| res.with_context(|| format!("Bootstrapping folder: {x:?}")))
             .try_for_each_concurrent(Some(MAX_CONCURRENT_TASKS), move |entry| {
                 let app = self.clone();
                 let output_base = output_base.clone();
@@ -75,7 +75,7 @@ impl App {
                         &output_base,
                         &input_base,
                         entry.path(),
-                        &changed_variables,
+                        changed_variables,
                     )
                     .await
                     .with_context(|| format!("Bootstrapping file: {:?}", entry.path()))

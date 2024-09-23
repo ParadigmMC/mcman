@@ -1,6 +1,6 @@
-//! https://github.com/Manishearth/pathdiff
+//! <https://github.com/Manishearth/pathdiff>
 
-use std::path::*;
+use std::path::{Component, Path, PathBuf};
 
 use anyhow::{anyhow, Result};
 

@@ -37,8 +37,7 @@ impl AddonTarget {
         Self::from_str(
             &Path::new(path)
                 .parent()
-                .map(|p| p.to_string_lossy().into_owned())
-                .unwrap_or(".".to_owned()),
+                .map_or(".".to_owned(), |p| p.to_string_lossy().into_owned()),
         )
     }
 

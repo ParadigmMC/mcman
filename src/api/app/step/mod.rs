@@ -12,8 +12,8 @@ mod remove_file;
 use super::App;
 
 impl App {
-    /// Execute a list of steps, taking care of their StepResult's.
-    /// Skips the next step when a step returns StepResult::Skip
+    /// Execute a list of steps, taking care of their `StepResult`'s.
+    /// Skips the next step when a step returns `StepResult::Skip`
     pub async fn execute_steps(&self, dir: &Path, steps: &[Step]) -> Result<()> {
         let mut iter = steps.iter();
 
@@ -43,7 +43,7 @@ impl App {
                 .await
                 .with_context(|| format!("URL: {url}"))
                 .with_context(|| format!("File: {metadata:?}"))
-                .with_context(|| format!("Downloading a file")),
+                .with_context(|| "Downloading a file".to_string()),
 
             Step::ExecuteJava {
                 args,

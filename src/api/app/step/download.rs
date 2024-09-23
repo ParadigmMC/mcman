@@ -40,7 +40,7 @@ impl App {
 
         let target_destination = cache_destination.as_ref().unwrap_or(&output_destination);
 
-        create_parents(&target_destination).await?;
+        create_parents(target_destination).await?;
         let target_file = tokio::fs::File::create(&target_destination)
             .await
             .with_context(|| format!("Creating file: {}", target_destination.display()))?;
@@ -55,7 +55,7 @@ impl App {
         }
 
         if let Some((_, hasher, content)) = hasher {
-            let hash = hex::encode(&hasher.finalize());
+            let hash = hex::encode(hasher.finalize());
 
             if hash != content {
                 bail!("Mismatched hash!");

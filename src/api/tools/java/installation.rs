@@ -47,7 +47,7 @@ pub async fn get_java_installations() -> &'static Vec<JavaInstallation> {
 pub async fn get_java_installation_for(ver: JavaVersion) -> Option<JavaInstallation> {
     get_java_installations()
         .await
-        .into_iter()
+        .iter()
         .find(|v| v.version == ver)
         .cloned()
 }

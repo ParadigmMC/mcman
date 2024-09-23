@@ -23,10 +23,10 @@ pub struct SpigotAPI<'a>(pub &'a App);
 
 impl<'a> SpigotAPI<'a> {
     pub async fn fetch_api<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
-        Ok(self
+        self
             .0
             .http_get_json(format!("{}/{url}", self.0.options.api_urls.spiget))
-            .await?)
+            .await
     }
 
     pub async fn fetch_resource(&self, id: &str) -> Result<SpigotResource> {

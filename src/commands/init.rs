@@ -54,9 +54,7 @@ pub async fn init_server(app: Arc<App>, args: Args) -> Result<()> {
     }
 
     let name: String = args
-        .name
-        .map(Ok)
-        .unwrap_or_else(|| cliclack::input("Name of the server?").interact())?;
+        .name.map_or_else(|| cliclack::input("Name of the server?").interact(), Ok)?;
 
     let mut server = Server {
         name,
@@ -82,9 +80,7 @@ pub async fn action_init_network(app: Arc<App>, args: Args) -> Result<()> {
     let path = dir.join(NETWORK_TOML);
 
     let name: String = args
-        .name
-        .map(Ok)
-        .unwrap_or_else(|| cliclack::input("Name of the network?").interact())?;
+        .name.map_or_else(|| cliclack::input("Name of the network?").interact(), Ok)?;
 
     let mut nw = Network {
         name,

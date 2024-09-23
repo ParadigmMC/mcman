@@ -15,13 +15,13 @@ impl Update for CurseforgeHasher {
             data.iter()
                 .copied()
                 .filter(|&e| e != 9 && e != 10 && e != 13 && e != 32),
-        )
+        );
     }
 }
 
 impl Reset for CurseforgeHasher {
     fn reset(&mut self) {
-        self.0 = Vec::new()
+        self.0 = Vec::new();
     }
 }
 

@@ -23,11 +23,11 @@ impl App {
 
         let java = tools::java::get_java_installations()
             .await
-            .into_iter()
+            .iter()
             .find(|j| j.version >= version.unwrap_or_default())
             .ok_or(anyhow!(
                 "Java with version {} or higher not found, cannot proceed",
-                version.map(|v| v.to_string()).unwrap_or("any".to_owned())
+                version.map_or("any".to_owned(), |v| v.to_string())
             ))?;
 
         let mut proc = JavaProcess::new(&dir.canonicalize()?, &java.path, args)?;
@@ -44,8 +44,7 @@ impl App {
             bail!(
                 "Java process exited with code {}",
                 res.code()
-                    .map(|x| x.to_string())
-                    .unwrap_or("unknown".to_owned())
+                    .map_or("unknown".to_owned(), |x| x.to_string())
             );
         }
 

@@ -2,7 +2,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{borrow::ToOwned, collections::HashMap, env};
 
-use crate::api::utils::serde::*;
+use crate::api::utils::serde::is_default;
 
 mod preset_flags;
 pub use preset_flags::*;

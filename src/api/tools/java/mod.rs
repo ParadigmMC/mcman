@@ -54,14 +54,14 @@ impl JavaProcess {
             .stdout(Stdio::piped())
             .stdin(Stdio::piped())
             .spawn()
-            .with_context(|| format!("Spawning java process"))?;
+            .with_context(|| "Spawning java process".to_string())?;
 
         log::info!("Child process spawned");
 
         Ok(Self { child })
     }
 
-    pub fn lines<F>(&mut self, f: F) -> ()
+    pub fn lines<F>(&mut self, f: F)
     where
         F: Fn(&str) + Send + 'static,
     {

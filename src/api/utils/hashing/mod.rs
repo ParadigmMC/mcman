@@ -55,5 +55,5 @@ pub fn get_best_hash(hashes: &HashMap<HashFormat, String>) -> Option<(HashFormat
         .or(hashes.get_key_value(&HashFormat::Md5))
         .or(hashes.get_key_value(&HashFormat::Sha1))
         .or(hashes.get_key_value(&HashFormat::Curseforge))
-        .map(|(k, v)| (k.clone(), v.clone()))
+        .map(|(k, v)| (*k, v.clone()))
 }

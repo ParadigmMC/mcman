@@ -95,7 +95,7 @@ impl Source {
 
     pub fn modpack_type(&self) -> Option<ModpackType> {
         match &self.source_type {
-            SourceType::Modpack { modpack_type, .. } => Some(modpack_type.clone()),
+            SourceType::Modpack { modpack_type, .. } => Some(*modpack_type),
             _ => None,
         }
     }

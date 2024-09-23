@@ -69,7 +69,7 @@ impl App {
 
         let full = res.bytes().await?;
 
-        Ok(serde_json::from_slice(&full)
-            .with_context(|| format!("JSON parsing error: {}", String::from_utf8_lossy(&full)))?)
+        serde_json::from_slice(&full)
+            .with_context(|| format!("JSON parsing error: {}", String::from_utf8_lossy(&full)))
     }
 }

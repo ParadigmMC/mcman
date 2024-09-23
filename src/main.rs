@@ -77,7 +77,7 @@ async fn main() -> Result<()> {
         let mut wg = app.server.write().await;
         // if no server.toml etc and is inside a packwiz folder
         if wg.is_none() {
-            let (_, server) = wg.get_or_insert_with(|| (base.into(), Server::default()));
+            let (_, server) = wg.get_or_insert_with(|| (base, Server::default()));
             server.sources.push(Source {
                 source_type: SourceType::Modpack {
                     modpack_source: ModpackSource::Local {

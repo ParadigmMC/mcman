@@ -22,7 +22,7 @@ pub async fn resolve_steps_for_url(
     };
 
     Ok(vec![Step::Download {
-        url: url.into(),
+        url,
         metadata,
     }])
 }

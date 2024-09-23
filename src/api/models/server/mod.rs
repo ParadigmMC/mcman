@@ -63,7 +63,7 @@ impl Default for Server {
 }
 
 impl Server {
-    /// Gets the ServerJar via `jar` OR `Source` where `type=modpack`
+    /// Gets the `ServerJar` via `jar` OR `Source` where `type=modpack`
     pub async fn get_jar(&self, app: &App) -> Result<ServerJar> {
         let relative_to = app.server.read().await.as_ref().map(|(p, _)| p.clone());
 
@@ -86,8 +86,7 @@ impl Server {
         if let Some(v) = self.launcher.java_version {
             get_java_installation_for(v)
                 .await
-                .map(|j| j.path.to_string_lossy().into_owned())
-                .unwrap_or(String::from("java"))
+                .map_or(String::from("java"), |j| j.path.to_string_lossy().into_owned())
         } else {
             String::from("java")
         }
@@ -96,7 +95,7 @@ impl Server {
     pub fn get_execution_arguments(&self) -> Vec<String> {
         self.jar
             .as_ref()
-            .map(|s| s.get_execution_arguments())
+            .map(server_type::ServerJar::get_execution_arguments)
             .unwrap_or_default()
     }
 

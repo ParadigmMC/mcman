@@ -68,7 +68,7 @@ impl<'a> PaperMCAPI<'a> {
         version: &str,
         build: &str,
     ) -> Result<Vec<Step>> {
-        let resolved_build = self.fetch_build(project, &version, build).await?;
+        let resolved_build = self.fetch_build(project, version, build).await?;
 
         let download = resolved_build.downloads.get("application")
             .ok_or(anyhow!("downloads['application'] missing for papermc project {project} {version}, build {build} ({})", resolved_build.build))?;

@@ -102,7 +102,7 @@ pub async fn migrate_server() -> Result<()> {
     };
 
     write_toml(&std::env::current_dir()?, "addons.toml", &file)
-        .with_context(|| format!("Writing addons.toml"))?;
+        .with_context(|| "Writing addons.toml".to_string())?;
 
     let source = Source {
         source_type: SourceType::File {
@@ -173,7 +173,7 @@ pub async fn migrate_server() -> Result<()> {
     std::fs::copy("./server.toml", "./__v1__server.toml")?;
 
     write_toml(&std::env::current_dir()?, "server.toml", &server)
-        .with_context(|| format!("Writing server.toml"))?;
+        .with_context(|| "Writing server.toml".to_string())?;
 
     println!("Migrated! You may now delete the backup file if there are no issues.");
 

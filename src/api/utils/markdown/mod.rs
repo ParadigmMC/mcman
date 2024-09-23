@@ -69,6 +69,12 @@ pub struct MarkdownTable {
     pub rows: Vec<Vec<String>>,
 }
 
+impl Default for MarkdownTable {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MarkdownTable {
     pub fn new() -> Self {
         Self {
@@ -96,7 +102,7 @@ impl MarkdownTable {
         }
 
         fn join(li: impl Iterator<Item = String>) -> String {
-            li.collect::<Vec<_>>().join("")
+            li.collect::<String>()
         }
 
         let header = wrap(

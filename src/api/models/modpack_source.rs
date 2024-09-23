@@ -47,6 +47,6 @@ impl ModpackSource {
             Self::Remote { url } => url,
         };
 
-        Ok(Accessor::from(str).with_context(|| "Creating Accessor")?)
+        Accessor::from(str).with_context(|| "Creating Accessor")
     }
 }

@@ -109,9 +109,9 @@ pub fn convert_hashes(hashes: Vec<CurseforgeFileHash>) -> HashMap<HashFormat, St
     map
 }
 
-impl Into<HashFormat> for CurseforgeHashAlgo {
-    fn into(self) -> HashFormat {
-        match self {
+impl From<CurseforgeHashAlgo> for HashFormat {
+    fn from(val: CurseforgeHashAlgo) -> Self {
+        match val {
             CurseforgeHashAlgo::Sha1 => HashFormat::Sha1,
             CurseforgeHashAlgo::Md5 => HashFormat::Md5,
         }

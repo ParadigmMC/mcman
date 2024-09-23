@@ -1,4 +1,4 @@
-use crate::api::utils::serde::*;
+use crate::api::utils::serde::str_latest;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use super::LegacyDownloadable;

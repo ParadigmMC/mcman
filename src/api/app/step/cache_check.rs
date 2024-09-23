@@ -76,7 +76,7 @@ impl App {
                         hasher.update(&item);
                     }
 
-                    let hash = hex::encode(&hasher.finalize());
+                    let hash = hex::encode(hasher.finalize());
 
                     if content == hash {
                         // size and hash match, skip rest of the steps
@@ -146,7 +146,7 @@ impl App {
         }
 
         if let Some((_, hasher, content)) = hasher {
-            let hash = hex::encode(&hasher.finalize());
+            let hash = hex::encode(hasher.finalize());
 
             if hash != content {
                 // TODO: print warning

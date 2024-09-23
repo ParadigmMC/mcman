@@ -15,7 +15,7 @@ use super::{server::ServerJar, Addon, AddonTarget, AddonType};
 pub async fn resolve_mrpack_serverjar(app: &App, mut accessor: Accessor) -> Result<ServerJar> {
     let index: MRPackIndex = accessor.json(app, MRPACK_INDEX_FILE).await?;
 
-    Ok(ServerJar::try_from(index.dependencies.clone())?)
+    ServerJar::try_from(index.dependencies.clone())
 }
 
 pub async fn resolve_mrpack_addons(app: &App, mut accessor: Accessor) -> Result<Vec<Addon>> {

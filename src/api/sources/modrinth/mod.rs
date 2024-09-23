@@ -40,7 +40,7 @@ impl<'a> ModrinthAPI<'a> {
     }
 
     pub async fn fetch_versions(&self, id: &str) -> Result<Vec<ModrinthVersion>> {
-        Ok(self.fetch_all_versions(id).await?)
+        self.fetch_all_versions(id).await
     }
 
     pub async fn fetch_version(&self, id: &str, version: &str) -> Result<ModrinthVersion> {
@@ -60,7 +60,7 @@ impl<'a> ModrinthAPI<'a> {
         let path = "modrinth/ids.json";
         let store = self.0.cache.try_get_json::<HashMap<String, String>>(path)?;
 
-        if let Some(id) = store.as_ref().map(|ids| ids.get(slug)).flatten() {
+        if let Some(id) = store.as_ref().and_then(|ids| ids.get(slug)) {
             return Ok(id.to_owned());
         }
 

@@ -146,7 +146,7 @@ pub struct PistonLibraryDownload {
     pub artifact: PistonFile,
 
     /// Conditional files that may be needed to be downloaded alongside the library
-    /// The HashMap key specifies a classifier as additional information for downloading files
+    /// The `HashMap` key specifies a classifier as additional information for downloading files
     pub classifiers: Option<HashMap<String, PistonFile>>,
 }
 
@@ -174,9 +174,9 @@ pub struct PistonFile {
     pub size: u64,
     pub url: String,
 
-    /// (AssetIndex only) The game version ID the assets are for
+    /// (`AssetIndex` only) The game version ID the assets are for
     pub id: Option<String>,
-    /// (AssetIndex only) The size of the game version's assets
+    /// (`AssetIndex` only) The size of the game version's assets
     pub total_size: Option<u64>,
 
     /// Only present on library files

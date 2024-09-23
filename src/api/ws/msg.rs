@@ -29,8 +29,8 @@ pub enum MsgOut {
     },
 }
 
-impl Into<Message> for MsgOut {
-    fn into(self) -> Message {
-        Message::text(serde_json::to_string(&self).unwrap())
+impl From<MsgOut> for Message {
+    fn from(val: MsgOut) -> Self {
+        Message::text(serde_json::to_string(&val).unwrap())
     }
 }
