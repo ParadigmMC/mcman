@@ -20,8 +20,7 @@ impl App {
             .read()
             .await
             .as_ref()
-            .map(|lock| lock.vars.clone())
-            .unwrap_or_default()
+            .map_or_else(Default::default, |lock| lock.vars.clone())
         {
             if !self
                 .resolve_variable_value(k)

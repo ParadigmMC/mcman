@@ -38,7 +38,7 @@ impl App {
             // ---
             // actual logic here
 
-            let expr = cap.get(1).map(|x| x.as_str()).unwrap_or_default();
+            let expr = cap.get(1).map_or_else(Default::default, |x| x.as_str());
             let (replaced, vars) = self.resolve_variable_expression(expr).await?;
             used_vars.extend(vars);
             new.push_str(&replaced);

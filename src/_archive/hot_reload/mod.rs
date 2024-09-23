@@ -700,8 +700,7 @@ impl<'a> DevSession<'a> {
                 .app
                 .network
                 .as_ref()
-                .map(|nw| nw.path.join("groups"))
-                .unwrap_or_default(),
+                .map_or_else(Default::default, |nw| nw.path.join("groups"))
         )?;
 
         if self.hot_reload.is_some() {

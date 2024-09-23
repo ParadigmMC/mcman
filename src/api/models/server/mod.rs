@@ -95,10 +95,10 @@ impl Server {
     }
 
     pub fn get_execution_arguments(&self) -> Vec<String> {
-        self.jar
-            .as_ref()
-            .map(server_type::ServerJar::get_execution_arguments)
-            .unwrap_or_default()
+        self.jar.as_ref().map_or_else(
+            Default::default,
+            server_type::ServerJar::get_execution_arguments,
+        )
     }
 
     pub fn get_arguments(&self) -> Vec<String> {

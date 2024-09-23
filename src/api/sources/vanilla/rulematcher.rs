@@ -190,7 +190,7 @@ where
 {
     DOLLAR_REGEX
         .replace_all(input, |caps: &regex::Captures| {
-            let var_name = caps.get(1).map(|v| v.as_str()).unwrap_or_default();
+            let var_name = caps.get(1).map_or_else(Default::default, |v| v.as_str());
 
             if let Some(v) = replacer(var_name) {
                 v

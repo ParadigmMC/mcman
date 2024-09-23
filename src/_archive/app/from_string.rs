@@ -66,8 +66,7 @@ impl App {
         match (
             url.domain(),
             url.path_segments()
-                .map(Iterator::collect::<Vec<_>>)
-                .unwrap_or_default()
+                .map_or_else(Default::default, Iterator::collect::<Vec<_>>)
                 .as_slice(),
         ) {
             // https://cdn.modrinth.com/data/{ID}/versions/{VERSION}/{FILENAME}

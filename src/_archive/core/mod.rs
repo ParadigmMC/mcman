@@ -142,8 +142,7 @@ impl<'a> BuildContext<'a> {
     /// Save `new_lockfile`
     pub fn write_lockfile(&mut self) -> Result<()> {
         if std::env::var("MCMAN_DISABLE_LOCKFILE")
-            .map(|s| s == "true")
-            .unwrap_or_default()
+            .map_or(false, |s| s == "true")
         {
             self.app.dbg("lockfile disabled");
         } else {

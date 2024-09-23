@@ -183,7 +183,6 @@ impl<'a> JenkinsAPI<'a> {
             .await?["description"]
             .take()
             .as_str()
-            .map(ToOwned::to_owned)
-            .unwrap_or_default())
+            .map_or_else(Default::default, ToOwned::to_owned))
     }
 }
