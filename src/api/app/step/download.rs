@@ -1,4 +1,5 @@
 use std::path::Path;
+use tokio::fs::{self, File};
 
 use anyhow::{bail, Context, Result};
 use futures::TryStreamExt;
@@ -41,7 +42,7 @@ impl App {
         let target_destination = cache_destination.as_ref().unwrap_or(&output_destination);
 
         create_parents(target_destination).await?;
-        let target_file = tokio::fs::File::create(&target_destination)
+        let target_file = File::create(&target_destination)
             .await
             .with_context(|| format!("Creating file: {}", target_destination.display()))?;
         let mut target_writer = tokio::io::BufWriter::new(target_file);
@@ -64,7 +65,7 @@ impl App {
 
         if let Some(cache_destination) = cache_destination {
             create_parents(&output_destination).await?;
-            tokio::fs::copy(&cache_destination, &output_destination).await?;
+            fs::copy(&cache_destination, &output_destination).await?;
         }
 
         println!("Downloaded {}", metadata.filename);

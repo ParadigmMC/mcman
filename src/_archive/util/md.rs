@@ -48,17 +48,15 @@ impl MarkdownTable {
     }
 
     pub fn render(&self) -> String {
-        let mut col_lengths = vec![];
-
-        for idx in 0..self.headers.len() {
+        let mut col_lengths = (0..self.headers.len()).map(|idx| {
             let mut li = vec![self.headers[idx].len()];
 
             li.extend(self.rows.iter().map(|row| row[idx].len()));
 
-            col_lengths.push(li.into_iter().max().expect("col lengths iter max none"));
-        }
+            li.into_iter().max().expect("col lengths iter max none")
+        }).collect::<Vec<_>>();
 
-        let mut lines = vec![];
+        let mut lines = Vec::with_capacity(2);
 
         lines.push({
             let cols = col_lengths

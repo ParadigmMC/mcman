@@ -1,4 +1,5 @@
 use std::path::Path;
+use tokio::fs;
 
 use anyhow::Result;
 
@@ -18,7 +19,7 @@ impl App {
         let path = dir.join(&metadata.filename);
 
         if path.exists() {
-            tokio::fs::remove_file(path).await?;
+            fs::remove_file(path).await?;
         } else {
             println!("{path:?} does not exist, cant delete");
         }

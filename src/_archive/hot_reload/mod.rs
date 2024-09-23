@@ -423,13 +423,7 @@ impl<'a> DevSession<'a> {
                             let content = std::fs::read_to_string(&latest_log_path)
                                 .context("Reading latest.log file")?;
 
-                            let is_crash = if test_result == TestResult::Crashed {
-                                true
-                            } else {
-                                content.contains(LINE_CRASHED)
-                            };
-
-                            let crash_log_path = if is_crash {
+                            let crash_log_path = if test_result == TestResult::Crashed || content.contains(LINE_CRASHED) {
                                 let folder = self.builder.output_dir.join("crash-reports");
                                 if !folder.exists() {
                                     bail!("crash-reports folder doesn't exist, cant upload to mclo.gs");

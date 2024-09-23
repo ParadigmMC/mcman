@@ -2,7 +2,10 @@ use std::path::Path;
 
 use anyhow::{Context, Result};
 use futures::{StreamExt, TryStreamExt};
-use tokio::{fs::File, io::BufWriter};
+use tokio::{
+    fs::{self, File},
+    io::BufWriter,
+};
 use tokio_util::io::ReaderStream;
 
 use crate::api::{
@@ -56,7 +59,7 @@ impl App {
                 // size mismatch
                 // TODO: print warning
                 println!("WARNING size mismatch: {}", metadata.filename);
-                tokio::fs::remove_file(&output_path)
+                fs::remove_file(&output_path)
                     .await
                     .with_context(|| format!("Deleting file: {}", output_path.display()))?;
                 //return Ok(StepResult::Continue);
@@ -87,7 +90,7 @@ impl App {
                         // hash mismatch
                         // TODO: print warning
                         println!("WARNING Hash mismatch: {}", metadata.filename);
-                        tokio::fs::remove_file(&output_path)
+                        fs::remove_file(&output_path)
                             .await
                             .context("hash mismatch remove file")?;
                     }
@@ -151,8 +154,8 @@ impl App {
             if hash != content {
                 // TODO: print warning
                 println!("WARNING Hash Mismatch on CacheCopy: {}", metadata.filename);
-                tokio::fs::remove_file(&output_path).await?;
-                tokio::fs::remove_file(&cached_path).await?;
+                fs::remove_file(&output_path).await?;
+                fs::remove_file(&cached_path).await?;
                 return Ok(StepResult::Continue);
             }
         }

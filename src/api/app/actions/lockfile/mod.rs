@@ -1,4 +1,5 @@
 use std::{path::Path, sync::Arc};
+use tokio::fs;
 
 use anyhow::Result;
 
@@ -25,7 +26,7 @@ impl App {
         if path.exists() {
             let mut existing_lockfile = self.existing_lockfile.write().await;
             *existing_lockfile = Some(serde_json::from_str::<Lockfile>(
-                &tokio::fs::read_to_string(base.join(LOCKFILE)).await?,
+                &fs::read_to_string(base.join(LOCKFILE)).await?,
             )?);
         }
 
@@ -36,7 +37,7 @@ impl App {
     pub async fn write_lockfile(&self, base: &Path) -> Result<()> {
         let lockfile = self.new_lockfile.read().await;
 
-        tokio::fs::write(base.join(LOCKFILE), serde_json::to_vec(&*lockfile)?).await?;
+        fs::write(base.join(LOCKFILE), serde_json::to_vec(&*lockfile)?).await?;
 
         Ok(())
     }

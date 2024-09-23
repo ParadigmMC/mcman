@@ -45,7 +45,7 @@ impl<'a> BuildContext<'a> {
             .with_message(banner);
         progress_bar.enable_steady_tick(Duration::from_millis(250));
 
-        tokio::fs::create_dir_all(&self.output_dir)
+        fs::create_dir_all(&self.output_dir)
             .await
             .context("Creating output directory")?;
 

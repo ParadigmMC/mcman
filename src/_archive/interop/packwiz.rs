@@ -30,7 +30,7 @@ impl FileProvider {
     pub async fn parse_toml<T: DeserializeOwned>(&self, path: &str) -> Result<T> {
         match self {
             Self::LocalFolder(folder) => {
-                let str = tokio::fs::read_to_string(folder.join(path)).await?;
+                let str = fs::read_to_string(folder.join(path)).await?;
                 Ok(toml::from_str(&str)?)
             },
             Self::RemoteURL(http_client, url) => {
@@ -111,7 +111,7 @@ impl<'a> PackwizInterop<'a> {
 
                 match &source {
                     FileProvider::LocalFolder(folder) => {
-                        tokio::fs::copy(folder.join(&file.file), output_path).await?;
+                        fs::copy(folder.join(&file.file), output_path).await?;
                     },
                     FileProvider::RemoteURL(_, url) => {
                         self.0
@@ -290,7 +290,7 @@ impl<'a> PackwizInterop<'a> {
             )?)
             .with_prefix(ProgressPrefix::Exporting);
 
-        tokio::fs::create_dir_all(output_dir.join("mods")).await?;
+        fs::create_dir_all(output_dir.join("mods")).await?;
         for dl in self.0.server.mods.iter().progress_with(pb.clone()) {
             pb.set_message(dl.to_short_string());
 
@@ -354,7 +354,7 @@ impl<'a> PackwizInterop<'a> {
             let source = self.0.server.path.join("config").join(&rel_path);
             let dest = output_dir.join(&rel_path);
 
-            tokio::fs::create_dir_all(dest.parent().unwrap())
+            fs::create_dir_all(dest.parent().unwrap())
                 .await
                 .context("Creating parent directory")?;
 

@@ -334,17 +334,13 @@ impl App {
                             let mut job = String::new();
 
                             if let Some(mut segments) = url.path_segments() {
-                                loop {
-                                    if segments.next().unwrap_or_default() == "job" {
-                                        if let Some(job_name) = segments.next() {
-                                            if !job.is_empty() {
-                                                job += "/";
-                                            }
-
-                                            job += job_name;
-                                        } else {
-                                            break;
+                                while let Some("job") = segments.next() {
+                                    if let Some(job_name) = segments.next() {
+                                        if !job.is_empty() {
+                                            job += "/";
                                         }
+
+                                        job += job_name;
                                     } else {
                                         break;
                                     }

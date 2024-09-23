@@ -24,7 +24,7 @@ impl App {
         if res
             .headers()
             .get("x-ratelimit-remaining")
-            .is_some_and(|x| String::from_utf8_lossy(x.as_bytes()) == "1")
+            .is_some_and(|x| x.as_bytes() == b"1")
         {
             log::info!("Hit ratelimit");
 

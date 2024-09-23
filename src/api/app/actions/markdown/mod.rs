@@ -46,14 +46,10 @@ impl App {
     ) -> Result<HashMap<String, String>> {
         let markdown_options = self.get_markdown_options().await.unwrap_or_default();
 
-        let mut map = HashMap::new();
-
-        map.insert(
+        Ok(HashMap::from([(
             String::from("addons"),
             markdown_options.render_addons(&metadata.addons),
-        );
-
-        Ok(map)
+        )]))
     }
 
     pub async fn render_addon_metadata(&self, metadata: Vec<AddonMetadata>) -> Result<String> {

@@ -1,4 +1,5 @@
-use std::{fmt, path::PathBuf};
+use std::{fmt, fs::File, path::PathBuf};
+use tokio::fs;
 
 use anyhow::{anyhow, Result};
 use reqwest::Url;
@@ -11,8 +12,8 @@ use crate::api::app::App;
 pub enum Accessor {
     Local(PathBuf),
     Remote(reqwest::Url),
-    ZipLocal((PathBuf, ZipArchive<std::fs::File>)),
-    //ZipRemote(SomeSortOfTempFile, ZipArchive<std::fs::File>),
+    ZipLocal((PathBuf, ZipArchive<File>)),
+    //ZipRemote(SomeSortOfTempFile, ZipArchive<File>),
 }
 
 impl fmt::Display for Accessor {
@@ -31,7 +32,7 @@ impl Accessor {
         if str.starts_with("http://") || str.starts_with("https://") {
             Ok(Self::Remote(Url::parse(str)?))
         } else if str.ends_with(".zip") || str.ends_with(".mrpack") {
-            let file = std::fs::File::open(str)?;
+            let file = File::open(str)?;
             let archive = ZipArchive::new(file)?;
             Ok(Self::ZipLocal((PathBuf::from(str), archive)))
         } else {
@@ -56,9 +57,7 @@ impl Accessor {
     /// Read a JSON file
     pub async fn json<T: DeserializeOwned>(&mut self, app: &App, path: &str) -> Result<T> {
         match self {
-            Self::Local(base) => Ok(serde_json::from_reader(std::fs::File::open(
-                base.join(path),
-            )?)?),
+            Self::Local(base) => Ok(serde_json::from_reader(File::open(base.join(path))?)?),
             Self::ZipLocal((_, zip)) => Ok(serde_json::from_reader(zip.by_name(path)?)?),
             Self::Remote(url) => Ok(app.http_get_json(url.join(path)?).await?),
         }
@@ -67,9 +66,7 @@ impl Accessor {
     /// Read a TOML file
     pub async fn toml<T: DeserializeOwned>(&mut self, app: &App, path: &str) -> Result<T> {
         match self {
-            Self::Local(base) => Ok(toml::from_str(
-                &tokio::fs::read_to_string(base.join(path)).await?,
-            )?),
+            Self::Local(base) => Ok(toml::from_str(&fs::read_to_string(base.join(path)).await?)?),
             Self::ZipLocal((_, zip)) => {
                 let file = zip.by_name(path)?;
 

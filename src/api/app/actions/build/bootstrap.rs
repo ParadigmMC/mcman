@@ -1,4 +1,5 @@
 use std::{collections::HashSet, path::Path, sync::Arc};
+use tokio::fs;
 
 use anyhow::{Context, Result};
 use futures::{StreamExt, TryStreamExt};
@@ -126,7 +127,7 @@ impl App {
         let output_path = output_base.join(&relative);
 
         if self.should_bootstrap_file(file).await {
-            let original_contents = tokio::fs::read_to_string(file)
+            let original_contents = fs::read_to_string(file)
                 .await
                 .with_context(|| format!("Reading contents of {file:?}"))?;
 
@@ -134,14 +135,14 @@ impl App {
                 self.vars_replace_content(&original_contents).await?;
 
             create_parents(&output_path).await?;
-            tokio::fs::write(&output_path, bootstrapped_contents.as_ref())
+            fs::write(&output_path, bootstrapped_contents.as_ref())
                 .await
                 .with_context(|| format!("Writing to {output_path:?}"))?;
 
             log::info!("Bootstrapped: {relative:?}");
         } else {
             create_parents(&output_path).await?;
-            tokio::fs::copy(file, &output_path)
+            fs::copy(file, &output_path)
                 .await
                 .with_context(|| format!("Copying {file:?} to {output_path:?}"))?;
 

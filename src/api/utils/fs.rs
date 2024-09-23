@@ -1,5 +1,6 @@
 use std::{
     ffi::OsStr,
+    fs,
     path::{Path, PathBuf},
 };
 
@@ -18,7 +19,7 @@ pub fn create_parents_sync(path: &Path) -> Result<()> {
     let parent = path
         .parent()
         .ok_or(anyhow!("Getting parent of: {path:?}"))?;
-    std::fs::create_dir_all(parent).with_context(|| format!("Creating directory: {parent:?}"))
+    fs::create_dir_all(parent).with_context(|| format!("Creating directory: {parent:?}"))
 }
 
 pub fn some_if_exists<T: ?Sized + AsRef<OsStr>>(path: &T) -> Option<PathBuf> {

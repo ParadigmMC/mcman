@@ -4,7 +4,7 @@ use indicatif::ProgressBar;
 use sha2::Sha256;
 use std::{collections::HashMap, marker::Unpin, path::PathBuf};
 use tokio::{
-    fs::File,
+    fs::{self, File},
     io::{AsyncRead, AsyncWrite},
 };
 use tokio_stream::StreamExt;
@@ -64,7 +64,7 @@ impl App {
             if is_temp {
                 pb.set_message("Cleaning up...");
 
-                tokio::fs::remove_file(&file_path)
+                fs::remove_file(&file_path)
                     .await
                     .context(format!("Deleting {}", file_path.display()))?;
             }
