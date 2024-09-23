@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs, path::PathBuf};
+use std::{collections::HashMap, fs, str::FromStr, path::PathBuf};
 
 use anyhow::{anyhow, Result};
 use glob::Pattern;
@@ -14,10 +14,10 @@ pub enum HotReloadAction {
     RunCommand(String),
 }
 
-impl TryFrom<String> for HotReloadAction {
-    type Error = anyhow::Error;
+impl FromStr for HotReloadAction {
+    type Err = anyhow::Error;
 
-    fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         if value.starts_with('/') {
             Ok(Self::RunCommand(
                 value.strip_prefix('/').unwrap().to_string(),
@@ -28,16 +28,6 @@ impl TryFrom<String> for HotReloadAction {
                 "restart" => Ok(Self::Restart),
                 _ => Err(anyhow!("Cant parse HotReloadAction: {value}")),
             }
-        }
-    }
-}
-
-impl From<HotReloadAction> for String {
-    fn from(val: HotReloadAction) -> Self {
-        match val {
-            HotReloadAction::Reload => String::from("reload"),
-            HotReloadAction::Restart => String::from("restart"),
-            HotReloadAction::RunCommand(cmd) => format!("/{cmd}"),
         }
     }
 }
@@ -75,9 +65,7 @@ impl HotReloadConfig {
     }
 
     pub fn save(&self) -> Result<()> {
-        fs::write(&self.path, toml::to_string_pretty(&self)?)?;
-
-        Ok(())
+        Ok(fs::write(&self.path, toml::to_string_pretty(&self)?)?)
     }
 }
 

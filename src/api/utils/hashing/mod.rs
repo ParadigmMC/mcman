@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 use anyhow::anyhow;
 use curseforge::CurseforgeHasher;
@@ -33,16 +33,16 @@ impl HashFormat {
     }
 }
 
-impl TryFrom<String> for HashFormat {
-    type Error = anyhow::Error;
+impl FromStr for HashFormat {
+    type Err = anyhow::Error;
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        match value.as_str() {
-            "sha256" => Ok(HashFormat::Sha256),
-            "sha512" => Ok(HashFormat::Sha512),
-            "sha1" => Ok(HashFormat::Sha1),
-            "md5" => Ok(HashFormat::Md5),
-            "murmur2" => Ok(HashFormat::Curseforge),
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "sha256" => Ok(Self::Sha256),
+            "sha512" => Ok(Self::Sha512),
+            "sha1" => Ok(Self::Sha1),
+            "md5" => Ok(Self::Md5),
+            "murmur2" => Ok(Self::Curseforge),
             fmt => Err(anyhow!("Unknown HashFormat {fmt}")),
         }
     }
