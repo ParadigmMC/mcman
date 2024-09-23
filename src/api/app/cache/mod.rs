@@ -39,7 +39,7 @@ impl Cache {
                 let reader = BufReader::new(file);
 
                 Ok(serde_json::from_reader(reader)?)
-            }
+            },
 
             None => Ok(None),
         }
@@ -61,7 +61,7 @@ impl Cache {
                 serde_json::to_writer(writer, data)?;
 
                 Ok(())
-            }
+            },
 
             _ => Ok(()),
         }

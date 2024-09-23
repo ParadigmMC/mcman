@@ -3,9 +3,15 @@
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
-use futures::{stream::{SplitSink, SplitStream}, SinkExt, StreamExt};
+use futures::{
+    stream::{SplitSink, SplitStream},
+    SinkExt, StreamExt,
+};
 use msg::{MsgIn, MsgOut};
-use tokio::{net::{TcpListener, TcpStream}, sync::RwLock};
+use tokio::{
+    net::{TcpListener, TcpStream},
+    sync::RwLock,
+};
 use tokio_tungstenite::{accept_async, tungstenite::Message, WebSocketStream};
 
 use super::app::App;
@@ -29,8 +35,9 @@ impl WebsocketServer {
     }
 
     pub async fn start(self: Arc<Self>, addr: &str) -> Result<()> {
-        let listener = TcpListener::bind(addr).await
-        .with_context(|| format!("Listening to addr: {addr}"))?;
+        let listener = TcpListener::bind(addr)
+            .await
+            .with_context(|| format!("Listening to addr: {addr}"))?;
 
         while let Ok((stream, addr)) = listener.accept().await {
             println!("New connection: {addr:?}");
@@ -57,7 +64,7 @@ impl WebsocketServer {
             let event: MsgIn = serde_json::from_str(&text)?;
             self.clone().handle_event(event).await?;
         }
-    
+
         Ok(())
     }
 
@@ -82,17 +89,6 @@ impl WebsocketServer {
     }
 
     pub async fn handle_event(self: Arc<Self>, event: MsgIn) -> Result<()> {
-        
-        
         Ok(())
     }
 }
-
-
-
-
-
-
-
-
-

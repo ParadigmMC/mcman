@@ -1,8 +1,18 @@
-use std::{path::{Path, PathBuf}, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use anyhow::Result;
 
-use crate::api::{app::App, models::{network::{Network, NETWORK_TOML}, server::{Server, SERVER_TOML}}, utils::toml::write_toml};
+use crate::api::{
+    app::App,
+    models::{
+        network::{Network, NETWORK_TOML},
+        server::{Server, SERVER_TOML},
+    },
+    utils::toml::write_toml,
+};
 
 #[derive(clap::Args)]
 pub struct Args {
@@ -43,7 +53,10 @@ pub async fn init_server(app: Arc<App>, args: Args) -> Result<()> {
         }
     }
 
-    let name: String = args.name.map(Ok).unwrap_or_else(|| cliclack::input("Name of the server?").interact())?;
+    let name: String = args
+        .name
+        .map(Ok)
+        .unwrap_or_else(|| cliclack::input("Name of the server?").interact())?;
 
     let mut server = Server {
         name,
@@ -68,10 +81,14 @@ pub async fn action_init_network(app: Arc<App>, args: Args) -> Result<()> {
     let dir = PathBuf::from(args.dir);
     let path = dir.join(NETWORK_TOML);
 
-    let name: String = args.name.map(Ok).unwrap_or_else(|| cliclack::input("Name of the network?").interact())?;
+    let name: String = args
+        .name
+        .map(Ok)
+        .unwrap_or_else(|| cliclack::input("Name of the network?").interact())?;
 
     let mut nw = Network {
-        name, ..Default::default()
+        name,
+        ..Default::default()
     };
 
     {

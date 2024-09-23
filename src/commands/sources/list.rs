@@ -33,9 +33,8 @@ pub async fn run(app: Arc<App>, args: Args) -> Result<()> {
             style(idx.to_string() + ".").cyan().bold(),
             style(source.source_name()).bold(),
             match source.source_type {
-                SourceType::Modpack { modpack_type, .. } => format!(
-                    "/{}", style(modpack_type.to_string()).bold()
-                ),
+                SourceType::Modpack { modpack_type, .. } =>
+                    format!("/{}", style(modpack_type.to_string()).bold()),
                 _ => String::new(),
             }
         );
@@ -44,7 +43,12 @@ pub async fn run(app: Arc<App>, args: Args) -> Result<()> {
 
         if args.with_addons {
             for (idx, addon) in source.resolve_addons(&app, base).await?.iter().enumerate() {
-                println!("   {}. {} {}", style(idx).bold(), addon.addon_type.to_string(), style(addon.target.as_str()).dim());
+                println!(
+                    "   {}. {} {}",
+                    style(idx).bold(),
+                    addon.addon_type.to_string(),
+                    style(addon.target.as_str()).dim()
+                );
             }
         }
     }

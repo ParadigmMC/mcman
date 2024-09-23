@@ -8,5 +8,3 @@ pub struct BootstrappedFile {
     pub hash: Option<String>,
     pub vars: Vec<String>,
 }
-
-

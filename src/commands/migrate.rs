@@ -2,12 +2,19 @@ use std::{path::PathBuf, sync::Arc};
 
 use anyhow::{Context, Result};
 
-use crate::api::{app::App, models::{legacy::{LegacyDownloadable, LegacyServer, LegacyServerType}, markdown::MarkdownOptions, server::{PaperMCProject, Server, ServerFlavor, ServerJar, ServerType}, Addon, AddonListFile, AddonTarget, AddonType, Environment, Source, SourceType}, utils::toml::{read_toml, write_toml}};
+use crate::api::{
+    app::App,
+    models::{
+        legacy::{LegacyDownloadable, LegacyServer, LegacyServerType},
+        markdown::MarkdownOptions,
+        server::{PaperMCProject, Server, ServerFlavor, ServerJar, ServerType},
+        Addon, AddonListFile, AddonTarget, AddonType, Environment, Source, SourceType,
+    },
+    utils::toml::{read_toml, write_toml},
+};
 
 #[derive(clap::Args)]
-pub struct Args {
-
-}
+pub struct Args {}
 
 pub async fn run(_app: Arc<App>, _args: Args) -> Result<()> {
     if PathBuf::from("./server.toml").exists() {
@@ -29,9 +36,35 @@ pub fn migrate_downloadable(downloadable: LegacyDownloadable) -> AddonType {
         LegacyDownloadable::CurseRinth { id, version } => AddonType::Curseforge { id, version },
         LegacyDownloadable::Spigot { id, version } => AddonType::Spigot { id, version },
         LegacyDownloadable::Hangar { id, version } => AddonType::Hangar { id, version },
-        LegacyDownloadable::GithubRelease { repo, tag, asset } => AddonType::GithubRelease { repo, version: tag, filename: asset },
-        LegacyDownloadable::Jenkins { url, job, build, artifact } => AddonType::Jenkins { url, job, build, artifact },
-        LegacyDownloadable::Maven { url, group, artifact, version, filename } => AddonType::MavenArtifact { url, group, artifact, version, filename },
+        LegacyDownloadable::GithubRelease { repo, tag, asset } => AddonType::GithubRelease {
+            repo,
+            version: tag,
+            filename: asset,
+        },
+        LegacyDownloadable::Jenkins {
+            url,
+            job,
+            build,
+            artifact,
+        } => AddonType::Jenkins {
+            url,
+            job,
+            build,
+            artifact,
+        },
+        LegacyDownloadable::Maven {
+            url,
+            group,
+            artifact,
+            version,
+            filename,
+        } => AddonType::MavenArtifact {
+            url,
+            group,
+            artifact,
+            version,
+            filename,
+        },
     }
 }
 
@@ -72,7 +105,9 @@ pub async fn migrate_server() -> Result<()> {
         .with_context(|| format!("Writing addons.toml"))?;
 
     let source = Source {
-        source_type: SourceType::File { path: String::from("./addons.toml") }
+        source_type: SourceType::File {
+            path: String::from("./addons.toml"),
+        },
     };
 
     let server = Server {
@@ -89,25 +124,46 @@ pub async fn migrate_server() -> Result<()> {
         jar: Some(ServerJar {
             mc_version: legacy_server.mc_version,
             server_type: match legacy_server.jar {
-                LegacyServerType::Vanilla {  } => ServerType::Vanilla {  },
-                LegacyServerType::PaperMC { project, build } => ServerType::PaperMC { project: serde_json::from_value::<PaperMCProject>(serde_json::Value::String(project))?, build },
+                LegacyServerType::Vanilla {} => ServerType::Vanilla {},
+                LegacyServerType::PaperMC { project, build } => ServerType::PaperMC {
+                    project: serde_json::from_value::<PaperMCProject>(serde_json::Value::String(
+                        project,
+                    ))?,
+                    build,
+                },
                 LegacyServerType::Purpur { build } => ServerType::Purpur { build },
-                LegacyServerType::Fabric { loader, installer } => ServerType::Fabric { loader, installer },
-                LegacyServerType::Quilt { loader, installer } => ServerType::Quilt { loader, installer },
+                LegacyServerType::Fabric { loader, installer } => {
+                    ServerType::Fabric { loader, installer }
+                },
+                LegacyServerType::Quilt { loader, installer } => {
+                    ServerType::Quilt { loader, installer }
+                },
                 LegacyServerType::NeoForge { loader } => ServerType::NeoForge { loader },
                 LegacyServerType::Forge { loader } => ServerType::Forge { loader },
-                LegacyServerType::BuildTools { software, args } => ServerType::BuildTools { craftbukkit: software == "craftbukkit", args },
-                LegacyServerType::Paper {  } => ServerType::PaperMC { project: PaperMCProject::Paper, build: String::from("latest") },
-                LegacyServerType::Velocity {  } => ServerType::PaperMC { project: PaperMCProject::Velocity, build: String::from("latest") },
-                LegacyServerType::Waterfall {  } => ServerType::PaperMC { project: PaperMCProject::Waterfall, build: String::from("latest") },
-                LegacyServerType::BungeeCord {  } => todo!(),
+                LegacyServerType::BuildTools { software, args } => ServerType::BuildTools {
+                    craftbukkit: software == "craftbukkit",
+                    args,
+                },
+                LegacyServerType::Paper {} => ServerType::PaperMC {
+                    project: PaperMCProject::Paper,
+                    build: String::from("latest"),
+                },
+                LegacyServerType::Velocity {} => ServerType::PaperMC {
+                    project: PaperMCProject::Velocity,
+                    build: String::from("latest"),
+                },
+                LegacyServerType::Waterfall {} => ServerType::PaperMC {
+                    project: PaperMCProject::Waterfall,
+                    build: String::from("latest"),
+                },
+                LegacyServerType::BungeeCord {} => todo!(),
                 LegacyServerType::Downloadable { inner } => {
                     let flavor = ServerFlavor::Patched;
 
                     ServerType::Custom {
                         inner: migrate_downloadable(inner),
                         flavor,
-                        exec: None
+                        exec: None,
                     }
                 },
             },

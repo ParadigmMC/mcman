@@ -73,7 +73,6 @@ impl ToString for MdColumn {
     }
 }
 
-
 #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum MdSort {
@@ -82,4 +81,3 @@ pub enum MdSort {
     #[default]
     None,
 }
-

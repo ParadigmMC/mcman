@@ -60,7 +60,9 @@ impl<'a> GithubAPI<'a> {
         } else {
             let etag = response.headers().get("etag").cloned();
 
-            let json: T = response.json().await
+            let json: T = response
+                .json()
+                .await
                 .with_context(|| format!("Github: JSON decoding: {url}"))?;
 
             if let Some(etag) = etag {
@@ -101,9 +103,7 @@ impl<'a> GithubAPI<'a> {
 
         let release = match tag {
             "latest" => releases.first(),
-            tag => releases
-                .iter()
-                .find(|r| r.tag_name == tag),
+            tag => releases.iter().find(|r| r.tag_name == tag),
         }
         .ok_or(anyhow!(
             "Github release '{tag}' not found on repository '{repo}'"
@@ -179,7 +179,7 @@ impl<'a> GithubAPI<'a> {
 
         Ok(vec![
             Step::CacheCheck(metadata.clone()),
-            Step::Download { url, metadata }
+            Step::Download { url, metadata },
         ])
     }
 

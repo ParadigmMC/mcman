@@ -1,17 +1,27 @@
-use crate::api::{models::metadata::AddonMetadata, utils::markdown::{HeaderAlignment, MarkdownHeader, MarkdownTable}};
+use crate::api::{
+    models::metadata::AddonMetadata,
+    utils::markdown::{HeaderAlignment, MarkdownHeader, MarkdownTable},
+};
 
 use super::{MarkdownOptions, MarkdownOutput, MdColumn};
 
 impl MarkdownOptions {
     pub fn render_addons(&self, list: Vec<AddonMetadata>) -> String {
-        self.table_addons(list, self.output_type).render(self.output_type)
+        self.table_addons(list, self.output_type)
+            .render(self.output_type)
     }
 
     pub fn table_addons(&self, list: Vec<AddonMetadata>, output: MarkdownOutput) -> MarkdownTable {
         let mut table = MarkdownTable::new();
 
         for column in &self.columns {
-            table.headers.push(MarkdownHeader(self.titles.get(column).cloned().unwrap_or_else(|| column.to_string()), HeaderAlignment::default()));
+            table.headers.push(MarkdownHeader(
+                self.titles
+                    .get(column)
+                    .cloned()
+                    .unwrap_or_else(|| column.to_string()),
+                HeaderAlignment::default(),
+            ));
         }
 
         for meta in &list {
@@ -23,7 +33,9 @@ impl MarkdownOptions {
                         if let Some(link) = &meta.link {
                             match output {
                                 MarkdownOutput::ASCII => format!("[{}]({})", meta.name, link),
-                                MarkdownOutput::HTML => format!("<a href={}>{}</a>", link, meta.name),
+                                MarkdownOutput::HTML => {
+                                    format!("<a href={}>{}</a>", link, meta.name)
+                                },
                             }
                         } else {
                             meta.name.clone()
@@ -41,7 +53,7 @@ impl MarkdownOptions {
                     }),
                 }
             }
-            
+
             table.add_row(row);
         }
 

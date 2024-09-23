@@ -1,5 +1,5 @@
-use std::{collections::HashMap, path::PathBuf};
 use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, path::PathBuf};
 
 mod bootstrapped_file;
 pub use bootstrapped_file::*;

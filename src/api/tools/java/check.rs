@@ -19,7 +19,11 @@ pub fn check_java(path: &Path) -> Option<JavaInstallation> {
 
     let tempdir = tempfile::tempdir().ok()?.into_path();
     let file_path = tempdir.join("JavaInfo.class");
-    std::fs::write(&file_path, include_bytes!("../../../../res/java/JavaInfo.class")).ok()?;
+    std::fs::write(
+        &file_path,
+        include_bytes!("../../../../res/java/JavaInfo.class"),
+    )
+    .ok()?;
 
     let output = Command::new(&path)
         .arg("-cp")

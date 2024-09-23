@@ -2,7 +2,13 @@ use std::{path::Path, sync::Arc};
 
 use anyhow::Result;
 
-use crate::api::{app::App, models::{lockfile::{Lockfile, LOCKFILE}, Addon}};
+use crate::api::{
+    app::App,
+    models::{
+        lockfile::{Lockfile, LOCKFILE},
+        Addon,
+    },
+};
 
 impl App {
     pub async fn reset_lockfile(&self) -> Result<()> {
@@ -15,10 +21,12 @@ impl App {
     /// Read .mcman.lock from the output directory
     pub async fn read_existing_lockfile(&self, base: &Path) -> Result<()> {
         let path = base.join(LOCKFILE);
-        
+
         if path.exists() {
             let mut existing_lockfile = self.existing_lockfile.write().await;
-            *existing_lockfile = Some(serde_json::from_str::<Lockfile>(&tokio::fs::read_to_string(base.join(LOCKFILE)).await?)?);
+            *existing_lockfile = Some(serde_json::from_str::<Lockfile>(
+                &tokio::fs::read_to_string(base.join(LOCKFILE)).await?,
+            )?);
         }
 
         Ok(())

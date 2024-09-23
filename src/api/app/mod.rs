@@ -13,10 +13,10 @@ pub mod cache;
 mod collect;
 mod http;
 mod io;
+mod logging;
 pub mod options;
 mod step;
 mod vars;
-mod logging;
 pub use logging::*;
 
 pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");

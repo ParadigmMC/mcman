@@ -13,31 +13,42 @@ impl App {
 
         println!("Found {} addons", addons.len());
 
-        let (addons_to_add, addons_to_remove): (Vec<Addon>, Vec<Addon>) = if let Some(lockfile) = &*self.existing_lockfile.read().await {
-            let mut old = HashSet::new();
-            old.extend(lockfile.addons.clone());
+        let (addons_to_add, addons_to_remove): (Vec<Addon>, Vec<Addon>) =
+            if let Some(lockfile) = &*self.existing_lockfile.read().await {
+                let mut old = HashSet::new();
+                old.extend(lockfile.addons.clone());
 
-            let mut new = HashSet::new();
-            new.extend(addons);
+                let mut new = HashSet::new();
+                new.extend(addons);
 
-            (new.difference(&old).map(ToOwned::to_owned).collect(), old.difference(&new).map(ToOwned::to_owned).collect())
-        } else {
-            (addons, vec![])
-        };
+                (
+                    new.difference(&old).map(ToOwned::to_owned).collect(),
+                    old.difference(&new).map(ToOwned::to_owned).collect(),
+                )
+            } else {
+                (addons, vec![])
+            };
 
-        println!("Installing {} addons, removing {} addons", addons_to_add.len(), addons_to_remove.len());
+        println!(
+            "Installing {} addons, removing {} addons",
+            addons_to_add.len(),
+            addons_to_remove.len()
+        );
 
         for addon in &addons_to_remove {
             self.clone().action_remove_addon(&base, addon).await?;
         }
 
-        stream::iter(addons_to_add).map(Ok).try_for_each_concurrent(
-            Some(20),
-            move |addon| {
+        stream::iter(addons_to_add)
+            .map(Ok)
+            .try_for_each_concurrent(Some(20), move |addon| {
                 let app = self.clone();
                 let base = base.clone();
                 async move {
-                    let x = app.clone().action_install_addon(&base, &addon).await
+                    let x = app
+                        .clone()
+                        .action_install_addon(&base, &addon)
+                        .await
                         .with_context(|| format!("{addon:#?}"));
 
                     if x.is_ok() {
@@ -46,8 +57,8 @@ impl App {
 
                     x
                 }
-            }
-        ).await?;
+            })
+            .await?;
 
         Ok(())
     }

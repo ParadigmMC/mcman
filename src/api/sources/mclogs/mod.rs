@@ -61,4 +61,3 @@ impl<T> From<MaybeSuccess<T>> for Result<T> {
         }
     }
 }
-

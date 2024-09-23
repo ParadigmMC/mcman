@@ -27,7 +27,10 @@ impl FromStr for ModpackSource {
         if s.starts_with("http") {
             Ok(ModpackSource::Remote { url: s.into() })
         } else {
-            Ok(ModpackSource::Local { path: s.into(), can_update: false })
+            Ok(ModpackSource::Local {
+                path: s.into(),
+                can_update: false,
+            })
         }
     }
 }
@@ -35,7 +38,8 @@ impl FromStr for ModpackSource {
 impl ModpackSource {
     pub fn accessor(&self, base: &Path) -> Result<Accessor> {
         let str = match self {
-            Self::Local { path, .. } => &base.join(path)
+            Self::Local { path, .. } => &base
+                .join(path)
                 .canonicalize()
                 .with_context(|| format!("Resolving path: {:?}", base.join(path)))?
                 .to_string_lossy()
@@ -46,4 +50,3 @@ impl ModpackSource {
         Ok(Accessor::from(str).with_context(|| "Creating Accessor")?)
     }
 }
-

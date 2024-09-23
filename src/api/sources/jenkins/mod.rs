@@ -5,7 +5,11 @@ use anyhow::{anyhow, Context, Result};
 mod models;
 pub use models::*;
 
-use crate::api::{app::App, step::{CacheLocation, FileMeta, Step}, utils::{hashing::HashFormat, url::url_to_folder}};
+use crate::api::{
+    app::App,
+    step::{CacheLocation, FileMeta, Step},
+    utils::{hashing::HashFormat, url::url_to_folder},
+};
 
 static SUCCESS_STR: &str = "SUCCESS";
 
@@ -117,15 +121,19 @@ impl<'a> JenkinsAPI<'a> {
         }
 
         let metadata = FileMeta {
-            cache: Some(CacheLocation("jenkins".into(), format!(
-                "{}/{}/{}/{}",
-                url_to_folder(url),
-                job,
-                build.number,
-                artifact.file_name,
-            ))),
+            cache: Some(CacheLocation(
+                "jenkins".into(),
+                format!(
+                    "{}/{}/{}/{}",
+                    url_to_folder(url),
+                    job,
+                    build.number,
+                    artifact.file_name,
+                ),
+            )),
             hashes,
-            filename: custom_filename.unwrap_or(artifact.file_name)
+            filename: custom_filename
+                .unwrap_or(artifact.file_name)
                 .replace("${build}", build.number.to_string().as_str()),
             ..Default::default()
         };
@@ -143,9 +151,14 @@ impl<'a> JenkinsAPI<'a> {
         artifact: &str,
         custom_filename: Option<String>,
     ) -> Result<Vec<Step>> {
-        let (url, metadata) = self.resolve_artifact(url, job, build, artifact, custom_filename).await?;
+        let (url, metadata) = self
+            .resolve_artifact(url, job, build, artifact, custom_filename)
+            .await?;
 
-        Ok(vec![Step::CacheCheck(metadata.clone()), Step::Download { url, metadata }])
+        Ok(vec![
+            Step::CacheCheck(metadata.clone()),
+            Step::Download { url, metadata },
+        ])
     }
 
     pub async fn resolve_remove_steps(
@@ -156,7 +169,9 @@ impl<'a> JenkinsAPI<'a> {
         artifact: &str,
         custom_filename: Option<String>,
     ) -> Result<Vec<Step>> {
-        let (_, metadata) = self.resolve_artifact(url, job, build, artifact, custom_filename).await?;
+        let (_, metadata) = self
+            .resolve_artifact(url, job, build, artifact, custom_filename)
+            .await?;
 
         Ok(vec![Step::RemoveFile(metadata)])
     }

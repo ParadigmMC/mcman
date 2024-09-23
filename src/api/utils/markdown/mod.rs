@@ -6,13 +6,14 @@ use crate::api::models::markdown::MarkdownOutput;
 
 pub struct MarkdownTableGenerator<T>
 where
-    T: Serialize {
+    T: Serialize,
+{
     items: Vec<T>,
 }
 
 impl<T> MarkdownTableGenerator<T>
 where
-    T: Serialize + std::fmt::Debug
+    T: Serialize + std::fmt::Debug,
 {
     pub fn new(items: Vec<T>) -> Self {
         Self { items }
@@ -39,7 +40,9 @@ where
 
             for (key, value) in &map {
                 if !table.headers.iter().any(|h| h.0 == *key) {
-                    table.headers.push(MarkdownHeader(key.clone(), HeaderAlignment::default()));
+                    table
+                        .headers
+                        .push(MarkdownHeader(key.clone(), HeaderAlignment::default()));
                     row.push(value.to_string());
                 }
             }
@@ -96,22 +99,29 @@ impl MarkdownTable {
             li.collect::<Vec<_>>().join("")
         }
 
-        let header = 
-            wrap("thead", wrap("tr", join(
-                self.headers.iter().map(|h| wrap("th", h.0.clone()))
-            )));
+        let header = wrap(
+            "thead",
+            wrap(
+                "tr",
+                join(self.headers.iter().map(|h| wrap("th", h.0.clone()))),
+            ),
+        );
 
-        let body = wrap("tbody", join(
-            self.rows
-                .iter()
-                .map(|row| wrap("tr", join(row.iter().map(|cell| wrap("td", cell.clone())))
-        ))));
+        let body = wrap(
+            "tbody",
+            join(
+                self.rows
+                    .iter()
+                    .map(|row| wrap("tr", join(row.iter().map(|cell| wrap("td", cell.clone()))))),
+            ),
+        );
 
         wrap("table", header + &body)
     }
 
     pub fn render_ascii(&self) -> String {
-        let header_lengths = self.headers
+        let header_lengths = self
+            .headers
             .iter()
             .enumerate()
             .map(|(i, MarkdownHeader(h, _))| {

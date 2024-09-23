@@ -3,7 +3,11 @@ use std::path::Path;
 use anyhow::{bail, Context, Result};
 use futures::TryStreamExt;
 
-use crate::api::{app::App, step::{FileMeta, StepResult}, utils::fs::create_parents};
+use crate::api::{
+    app::App,
+    step::{FileMeta, StepResult},
+    utils::fs::create_parents,
+};
 
 impl App {
     // if FileMeta has cache location,
@@ -11,7 +15,12 @@ impl App {
     //   copy from cache
     // else
     //   download to destination dir
-    pub(super) async fn execute_step_download(&self, dir: &Path, url: &str, metadata: &FileMeta) -> Result<StepResult> {
+    pub(super) async fn execute_step_download(
+        &self,
+        dir: &Path,
+        url: &str,
+        metadata: &FileMeta,
+    ) -> Result<StepResult> {
         let cache_destination = self.cache.loc(metadata.cache.as_ref());
         let output_destination = dir.join(&metadata.filename);
 
@@ -21,8 +30,8 @@ impl App {
         match (metadata.size, content_length) {
             (Some(a), Some(b)) if a != b => {
                 bail!("Mismatched Content-Length! Expected {a}, recieved {b}");
-            }
-            _ => {}
+            },
+            _ => {},
         }
 
         let mut stream = res.bytes_stream();
@@ -30,9 +39,10 @@ impl App {
         let mut hasher = metadata.get_hasher();
 
         let target_destination = cache_destination.as_ref().unwrap_or(&output_destination);
-        
+
         create_parents(&target_destination).await?;
-        let target_file = tokio::fs::File::create(&target_destination).await
+        let target_file = tokio::fs::File::create(&target_destination)
+            .await
             .with_context(|| format!("Creating file: {}", target_destination.display()))?;
         let mut target_writer = tokio::io::BufWriter::new(target_file);
 
@@ -41,8 +51,7 @@ impl App {
                 digest.update(&item);
             }
 
-            tokio::io::copy(&mut item.as_ref(), &mut target_writer)
-                .await?;
+            tokio::io::copy(&mut item.as_ref(), &mut target_writer).await?;
         }
 
         if let Some((_, hasher, content)) = hasher {

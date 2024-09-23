@@ -1,5 +1,5 @@
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use crate::api::utils::serde::*;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use super::LegacyDownloadable;
 
@@ -97,4 +97,3 @@ where
 {
     Ok(LegacyServerType::from(Bridge::deserialize(deserializer)?))
 }
-

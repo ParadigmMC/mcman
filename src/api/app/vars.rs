@@ -12,11 +12,17 @@ lazy_static! {
 
 impl App {
     // this is a modified regex::Regex::replace_all
-    pub async fn vars_replace_content<'h>(&self, haystack: &'h str) -> Result<(Cow<'h, str>, HashSet<String>)> {
+    pub async fn vars_replace_content<'h>(
+        &self,
+        haystack: &'h str,
+    ) -> Result<(Cow<'h, str>, HashSet<String>)> {
         let mut used_vars = HashSet::new();
-        
-        let mut it = REPLACEMENT_REGEX.captures_iter(haystack).enumerate().peekable();
-        
+
+        let mut it = REPLACEMENT_REGEX
+            .captures_iter(haystack)
+            .enumerate()
+            .peekable();
+
         if it.peek().is_none() {
             return Ok((Cow::Borrowed(haystack), HashSet::new()));
         }
@@ -31,14 +37,14 @@ impl App {
 
             // ---
             // actual logic here
-            
+
             let expr = cap.get(1).map(|x| x.as_str()).unwrap_or_default();
             let (replaced, vars) = self.resolve_variable_expression(expr).await?;
             used_vars.extend(vars);
             new.push_str(&replaced);
 
             // ---
-            
+
             last_match = m.end();
         }
 
@@ -47,7 +53,10 @@ impl App {
         Ok((Cow::Owned(new), HashSet::new()))
     }
 
-    pub async fn resolve_variable_expression(&self, expr: &str) -> Result<(String, HashSet<String>)> {
+    pub async fn resolve_variable_expression(
+        &self,
+        expr: &str,
+    ) -> Result<(String, HashSet<String>)> {
         let mut visited = HashSet::new();
         visited.insert(expr.to_owned());
 
@@ -75,7 +84,7 @@ impl App {
         if let Ok(v) = std::env::var(key) {
             return Some(v);
         }
-        
+
         None
     }
 }

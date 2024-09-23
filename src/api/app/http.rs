@@ -36,7 +36,7 @@ impl App {
                     let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
                     let amount = ratelimit_reset - now;
                     Some(amount)
-                }
+                },
                 Some("modrinth.com") => Some(ratelimit_reset),
                 _ => None,
             };
@@ -57,7 +57,14 @@ impl App {
         self.http_get_json_with(url, |x| x).await
     }
 
-    pub async fn http_get_json_with<T: DeserializeOwned, F: FnOnce(reqwest::RequestBuilder) -> reqwest::RequestBuilder>(&self, url: impl IntoUrl, f: F) -> Result<T> {
+    pub async fn http_get_json_with<
+        T: DeserializeOwned,
+        F: FnOnce(reqwest::RequestBuilder) -> reqwest::RequestBuilder,
+    >(
+        &self,
+        url: impl IntoUrl,
+        f: F,
+    ) -> Result<T> {
         let res = self.http_get_with(url, f).await?;
 
         let full = res.bytes().await?;

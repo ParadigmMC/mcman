@@ -32,16 +32,16 @@ impl JavaInstallation {
 static JAVA_INSTALLATIONS: OnceCell<Vec<JavaInstallation>> = OnceCell::const_new();
 
 pub async fn get_java_installations() -> &'static Vec<JavaInstallation> {
-    JAVA_INSTALLATIONS.get_or_init(|| async {
-        let paths = find::collect_possible_java_paths();
+    JAVA_INSTALLATIONS
+        .get_or_init(|| async {
+            let paths = find::collect_possible_java_paths();
 
-        futures::stream::iter(paths)
-            .filter_map(|path| async move {
-                check_java(&path)
-            })
-            .collect()
-            .await
-    }).await
+            futures::stream::iter(paths)
+                .filter_map(|path| async move { check_java(&path) })
+                .collect()
+                .await
+        })
+        .await
 }
 
 pub async fn get_java_installation_for(ver: JavaVersion) -> Option<JavaInstallation> {

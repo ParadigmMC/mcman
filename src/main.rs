@@ -1,7 +1,17 @@
+#![allow(dead_code, unused_variables)]
+
 use std::{path::Path, sync::Arc};
 
 use anyhow::Result;
-use api::{app::App, models::{packwiz::{PackwizPack, PACK_TOML}, server::{Server, SERVER_TOML}, ModpackSource, ModpackType, Source, SourceType}, utils::{logger::init_logger, toml::try_find_toml_upwards}};
+use api::{
+    app::App,
+    models::{
+        packwiz::{PackwizPack, PACK_TOML},
+        server::{Server, SERVER_TOML},
+        ModpackSource, ModpackType, Source, SourceType,
+    },
+    utils::{logger::init_logger, toml::try_find_toml_upwards},
+};
 use clap::Parser;
 
 mod api;
@@ -52,14 +62,14 @@ async fn main() -> Result<()> {
 
     if !args.src.is_empty() {
         let mut wg = app.server.write().await;
-        let (_, server) = wg.get_or_insert_with(|| (
-            std::env::current_dir().unwrap().join(SERVER_TOML),
-            Server::default()
-        ));
+        let (_, server) = wg.get_or_insert_with(|| {
+            (
+                std::env::current_dir().unwrap().join(SERVER_TOML),
+                Server::default(),
+            )
+        });
         for source_type in args.src {
-            server.sources.push(Source {
-                source_type
-            });
+            server.sources.push(Source { source_type });
         }
     }
 
@@ -67,15 +77,15 @@ async fn main() -> Result<()> {
         let mut wg = app.server.write().await;
         // if no server.toml etc and is inside a packwiz folder
         if wg.is_none() {
-            let (_, server) = wg.get_or_insert_with(|| (
-                base.into(),
-                Server::default()
-            ));
+            let (_, server) = wg.get_or_insert_with(|| (base.into(), Server::default()));
             server.sources.push(Source {
                 source_type: SourceType::Modpack {
-                    modpack_source: ModpackSource::Local { path: String::from(PACK_TOML), can_update: false },
+                    modpack_source: ModpackSource::Local {
+                        path: String::from(PACK_TOML),
+                        can_update: false,
+                    },
                     modpack_type: ModpackType::Packwiz,
-                }
+                },
             });
         }
     }

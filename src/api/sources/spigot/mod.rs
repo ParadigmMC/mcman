@@ -4,7 +4,10 @@ mod models;
 pub use models::*;
 use serde::de::DeserializeOwned;
 
-use crate::api::{app::App, step::{CacheLocation, FileMeta, Step}};
+use crate::api::{
+    app::App,
+    step::{CacheLocation, FileMeta, Step},
+};
 
 pub fn resource_id(slug: &str) -> &str {
     if let Some(i) = slug.find('.') {
@@ -20,15 +23,14 @@ pub struct SpigotAPI<'a>(pub &'a App);
 
 impl<'a> SpigotAPI<'a> {
     pub async fn fetch_api<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
-        Ok(self.0.http_get_json(format!("{}/{url}", self.0.options.api_urls.spiget)).await?)
+        Ok(self
+            .0
+            .http_get_json(format!("{}/{url}", self.0.options.api_urls.spiget))
+            .await?)
     }
 
     pub async fn fetch_resource(&self, id: &str) -> Result<SpigotResource> {
-        self
-            .fetch_api::<SpigotResource>(&format!(
-                "resources/{}",
-                resource_id(id)
-            ))
+        self.fetch_api::<SpigotResource>(&format!("resources/{}", resource_id(id)))
             .await
     }
 
@@ -41,11 +43,8 @@ impl<'a> SpigotAPI<'a> {
     }
 
     pub async fn fetch_version(&self, id: &str, version: &str) -> Result<SpigotVersionDetailed> {
-        self.fetch_api(&format!(
-            "resources/{}/versions/{version}",
-            resource_id(id)
-        ))
-        .await
+        self.fetch_api(&format!("resources/{}/versions/{version}", resource_id(id)))
+            .await
     }
 
     pub async fn resolve_steps(&self, id: &str, version: &str) -> Result<Vec<Step>> {
@@ -57,7 +56,10 @@ impl<'a> SpigotAPI<'a> {
         );
 
         let metadata = FileMeta {
-            cache: Some(CacheLocation("spiget".into(), format!("{}/{}.jar", resource_id(id), version))),
+            cache: Some(CacheLocation(
+                "spiget".into(),
+                format!("{}/{}.jar", resource_id(id), version),
+            )),
             filename: format!("spigot-{}-{}.jar", resource_id(id), version),
             ..Default::default()
         };
@@ -69,10 +71,10 @@ impl<'a> SpigotAPI<'a> {
     }
 
     pub async fn resolve_remove_steps(&self, id: &str, version: &str) -> Result<Vec<Step>> {
-        Ok(vec![
-            Step::RemoveFile(FileMeta::filename(format!("spigot-{}-{}.jar", resource_id(id), version)))
-        ])
+        Ok(vec![Step::RemoveFile(FileMeta::filename(format!(
+            "spigot-{}-{}.jar",
+            resource_id(id),
+            version
+        )))])
     }
 }
-
-

@@ -4,7 +4,14 @@ use anyhow::{anyhow, Result};
 use toml_edit::DocumentMut;
 use zip::ZipArchive;
 
-use crate::api::{app::App, models::{mrpack::MRPackIndex, packwiz::{PackwizPack, PackwizPackIndex}, ModpackSource, ModpackType, Source, SourceType}};
+use crate::api::{
+    app::App,
+    models::{
+        mrpack::MRPackIndex,
+        packwiz::{PackwizPack, PackwizPackIndex},
+        ModpackSource, ModpackType, Source, SourceType,
+    },
+};
 
 use super::toml::read_toml;
 
@@ -41,5 +48,4 @@ impl UpdateWriter {
             _ => Err(anyhow!("Can't make an UpdateWriter")),
         } */
     }
-
 }

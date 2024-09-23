@@ -29,14 +29,17 @@ where
     }
 
     fn try_diff_to<P>(&self, path: P) -> anyhow::Result<PathBuf>
-        where
-            P: AsRef<Path>,
-            Self: AsRef<Path>
+    where
+        P: AsRef<Path>,
+        Self: AsRef<Path>,
     {
-        diff_paths(&path, self)
-            .ok_or(anyhow!("Can't diff paths
+        diff_paths(&path, self).ok_or(anyhow!(
+            "Can't diff paths
 Base: {}
-Path: {}", self.as_ref().display(), path.as_ref().display()))
+Path: {}",
+            self.as_ref().display(),
+            path.as_ref().display()
+        ))
     }
 }
 
@@ -83,7 +86,7 @@ where
                     comps.push(a);
                     comps.extend(ita.by_ref());
                     break;
-                }
+                },
                 (None, _) => comps.push(Component::ParentDir),
                 (Some(a), Some(b)) if comps.is_empty() && a == b => (),
                 (Some(a), Some(b)) if b == Component::CurDir => comps.push(a),
@@ -96,7 +99,7 @@ where
                     comps.push(a);
                     comps.extend(ita.by_ref());
                     break;
-                }
+                },
             }
         }
         Some(comps.iter().map(|c| c.as_os_str()).collect())

@@ -37,6 +37,9 @@ pub struct ApiUrls {
     pub mclogs: String,
     #[config(default = "https://api.papermc.io/v2", env = "API_URL_MCLOGS")]
     pub papermc: String,
-    #[config(default = "https://raw.githubusercontent.com/ParadigmMC/mcman-meta/main", env = "API_URL_MCMAN_META")]
+    #[config(
+        default = "https://raw.githubusercontent.com/ParadigmMC/mcman-meta/main",
+        env = "API_URL_MCMAN_META"
+    )]
     pub mcman_meta: String,
 }

@@ -2,7 +2,13 @@ use std::{collections::HashMap, sync::Arc};
 
 use anyhow::Result;
 
-use crate::api::{app::App, models::{markdown::MarkdownOptions, metadata::{AddonMetadata, MetadataContainer}}};
+use crate::api::{
+    app::App,
+    models::{
+        markdown::MarkdownOptions,
+        metadata::{AddonMetadata, MetadataContainer},
+    },
+};
 
 impl App {
     pub async fn get_markdown_options(&self) -> Option<MarkdownOptions> {
@@ -31,17 +37,21 @@ impl App {
     pub async fn get_metadata(self: Arc<Self>) -> Result<MetadataContainer> {
         let addons = self.get_all_addon_metadata().await?;
 
-        Ok(MetadataContainer {
-            addons
-        })
+        Ok(MetadataContainer { addons })
     }
 
-    pub async fn render_metadata(&self, metadata: MetadataContainer) -> Result<HashMap<String, String>> {
+    pub async fn render_metadata(
+        &self,
+        metadata: MetadataContainer,
+    ) -> Result<HashMap<String, String>> {
         let markdown_options = self.get_markdown_options().await.unwrap_or_default();
 
         let mut map = HashMap::new();
 
-        map.insert(String::from("addons"), markdown_options.render_addons(metadata.addons));
+        map.insert(
+            String::from("addons"),
+            markdown_options.render_addons(metadata.addons),
+        );
 
         Ok(map)
     }

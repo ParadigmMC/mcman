@@ -66,9 +66,24 @@ impl ToString for AddonType {
             AddonType::Curseforge { id, version } => format!("Curseforge/{id} [{version}]"),
             AddonType::Spigot { id, version } => format!("Spigot/{id} [{version}]"),
             AddonType::Hangar { id, version } => format!("Hangar/{id} [{version}]"),
-            AddonType::GithubRelease { repo, version, filename } => format!("Github/{repo} [{version}; {filename}]"),
-            AddonType::Jenkins { url, job, build, artifact } => format!("Jenkins/{job} [{build}; {artifact}]"),
-            AddonType::MavenArtifact { url, group, artifact, version, filename } => format!("Maven/{group}.{artifact} [{version}; {filename}]"),
+            AddonType::GithubRelease {
+                repo,
+                version,
+                filename,
+            } => format!("Github/{repo} [{version}; {filename}]"),
+            AddonType::Jenkins {
+                url,
+                job,
+                build,
+                artifact,
+            } => format!("Jenkins/{job} [{build}; {artifact}]"),
+            AddonType::MavenArtifact {
+                url,
+                group,
+                artifact,
+                version,
+                filename,
+            } => format!("Maven/{group}.{artifact} [{version}; {filename}]"),
         }
     }
 }

@@ -110,7 +110,7 @@ impl PistonRuleMatcher {
             PistonRule::Disallow(constraint) => {
                 // Fuck it
                 !self.match_constraint(constraint)
-            }
+            },
         }
     }
 
@@ -158,10 +158,10 @@ impl PistonRuleMatcher {
                             // bad
                             ArgumentValue::Many(li) => {
                                 li.iter().for_each(|v| list.push(v.to_owned()));
-                            }
+                            },
                         };
                     }
-                }
+                },
             }
         }
 

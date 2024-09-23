@@ -57,13 +57,27 @@ impl App {
             if let Some((network_path, network)) = &*self.network.read().await {
                 // - network.toml
                 // - groups/global/**
-                list.push(network_path.parent().unwrap().join("groups").join("global").join("config"));
-    
+                list.push(
+                    network_path
+                        .parent()
+                        .unwrap()
+                        .join("groups")
+                        .join("global")
+                        .join("config"),
+                );
+
                 if let Some(entry) = network.servers.get(&server.name) {
                     for group in &entry.groups {
                         // - network.toml
                         // - groups/<name>/**
-                        list.push(network_path.parent().unwrap().join("groups").join(group).join("config"));
+                        list.push(
+                            network_path
+                                .parent()
+                                .unwrap()
+                                .join("groups")
+                                .join(group)
+                                .join("config"),
+                        );
                     }
                 }
             }

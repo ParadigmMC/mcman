@@ -5,9 +5,9 @@ use anyhow::Result;
 use crate::api::app::App;
 
 pub mod addons;
+pub mod bootstrap;
 pub mod server_jar;
 pub mod worlds;
-pub mod bootstrap;
 
 impl App {
     /// Builds the entire server

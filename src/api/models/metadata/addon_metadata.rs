@@ -1,7 +1,12 @@
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::api::{app::App, models::{Addon, AddonType}, sources::{jenkins::jenkins_job_url, maven::maven_artifact_url}, utils::url::get_filename_from_url};
+use crate::api::{
+    app::App,
+    models::{Addon, AddonType},
+    sources::{jenkins::jenkins_job_url, maven::maven_artifact_url},
+    utils::url::get_filename_from_url,
+};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum AddonMetadataSource {
@@ -61,7 +66,10 @@ impl AddonMetadataSource {
 
     pub fn icon_url(&self) -> String {
         // TODO !!!!!!!!!!!!!!!!!!!!!
-        format!("https://raw.githubusercontent.com/ParadigmMC/mcman/v2/res/icons/{}.png", self.into_str())
+        format!(
+            "https://raw.githubusercontent.com/ParadigmMC/mcman/v2/res/icons/{}.png",
+            self.into_str()
+        )
     }
 }
 
@@ -122,17 +130,16 @@ impl Addon {
 
                 Ok(AddonMetadata {
                     name: proj.name,
-                    link: Some(format!("https://hangar.papermc.io/{}", proj.namespace.to_string())),
+                    link: Some(format!(
+                        "https://hangar.papermc.io/{}",
+                        proj.namespace.to_string()
+                    )),
                     description: Some(proj.description),
                     source: AddonMetadataSource::Hangar,
                     version: Some(version.to_owned()),
                 })
             },
-            AddonType::GithubRelease {
-                repo,
-                version,
-                ..
-            } => {
+            AddonType::GithubRelease { repo, version, .. } => {
                 let desc = app.github().fetch_repo_description(repo).await?;
 
                 Ok(AddonMetadata {
@@ -165,15 +172,13 @@ impl Addon {
                 artifact,
                 version,
                 ..
-            } => {
-                Ok(AddonMetadata {
-                    name: artifact.to_owned(),
-                    link: Some(maven_artifact_url(url, group, artifact)),
-                    description: None,
-                    source: AddonMetadataSource::Maven,
-                    version: Some(version.to_owned()),
-                })
-            },
+            } => Ok(AddonMetadata {
+                name: artifact.to_owned(),
+                link: Some(maven_artifact_url(url, group, artifact)),
+                description: None,
+                source: AddonMetadataSource::Maven,
+                version: Some(version.to_owned()),
+            }),
         }
     }
 }

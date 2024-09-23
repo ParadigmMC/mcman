@@ -18,7 +18,10 @@ impl App {
         let mut iter = steps.iter();
 
         while let Some(step) = iter.next() {
-            let res = self.execute_step(dir, step).await.with_context(|| format!("Executing steps: {steps:#?}"))?;
+            let res = self
+                .execute_step(dir, step)
+                .await
+                .with_context(|| format!("Executing steps: {steps:#?}"))?;
             if res == StepResult::Skip {
                 _ = iter.next();
             }
@@ -30,27 +33,28 @@ impl App {
     /// Execute a single step and return its result
     pub async fn execute_step(&self, dir: &Path, step: &Step) -> Result<StepResult> {
         match step {
-            Step::CacheCheck(metadata) => self.execute_step_cache_check(dir, metadata).await
+            Step::CacheCheck(metadata) => self
+                .execute_step_cache_check(dir, metadata)
+                .await
                 .with_context(|| format!("Checking for cache for {metadata:?}")),
 
-            Step::Download { url, metadata } => {
-                self.execute_step_download(dir, url, metadata).await
-                    .with_context(|| format!("URL: {url}"))
-                    .with_context(|| format!("File: {metadata:?}"))
-                    .with_context(|| format!("Downloading a file"))
-            }
+            Step::Download { url, metadata } => self
+                .execute_step_download(dir, url, metadata)
+                .await
+                .with_context(|| format!("URL: {url}"))
+                .with_context(|| format!("File: {metadata:?}"))
+                .with_context(|| format!("Downloading a file")),
 
             Step::ExecuteJava {
                 args,
                 java_version,
-                label
+                label,
             } => {
-                self.execute_step_execute_java(dir, args, *java_version, label).await
+                self.execute_step_execute_java(dir, args, *java_version, label)
+                    .await
             },
 
-            Step::RemoveFile(metadata) => {
-                self.execute_step_remove_file(dir, metadata).await
-            },
+            Step::RemoveFile(metadata) => self.execute_step_remove_file(dir, metadata).await,
         }
     }
 }

@@ -21,7 +21,6 @@ pub struct CurseforgeMod {
     pub latest_files: Vec<CurseforgeFile>,
 }
 
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CurseforgeModLinks {
@@ -46,7 +45,6 @@ pub struct CurseforgeFile {
     pub game_versions: Vec<String>,
     pub dependencies: Vec<CurseforgeDependency>,
 }
-
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]

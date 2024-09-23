@@ -1,4 +1,7 @@
-use std::{io::{Read, Seek, Write}, path::Path};
+use std::{
+    io::{Read, Seek, Write},
+    path::Path,
+};
 
 use anyhow::{Context, Result};
 use walkdir::WalkDir;
@@ -12,16 +15,19 @@ use super::{fs::create_parents_sync, pathdiff::DiffTo};
 pub async fn unzip<T: Read + Seek>(reader: T, to: &Path, prefix: Option<String>) -> Result<()> {
     let mut archive = ZipArchive::new(reader)?;
 
-    let mut files = archive.file_names().map(ToOwned::to_owned).collect::<Vec<_>>();
+    let mut files = archive
+        .file_names()
+        .map(ToOwned::to_owned)
+        .collect::<Vec<_>>();
 
     if let Some(prefix) = prefix.map(|p| format!("{p}/")) {
         if files.iter().all(|f| f.starts_with(&prefix)) {
-            files = files.into_iter()
+            files = files
+                .into_iter()
                 .map(|f| f.replacen(&prefix, "", 1))
                 .collect()
         }
     }
-
 
     for filename in files {
         if filename.ends_with('/') {
@@ -37,7 +43,7 @@ pub async fn unzip<T: Read + Seek>(reader: T, to: &Path, prefix: Option<String>)
 
         std::io::copy(&mut file, &mut target_file)?;
     }
-    
+
     Ok(())
 }
 

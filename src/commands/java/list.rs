@@ -22,8 +22,12 @@ pub async fn run(_app: Arc<App>, args: Args) -> Result<()> {
     for install in installs {
         println!(
             "{}",
-            style(format!("Java {}, {}", install.version, install.architecture))
-            .cyan().bold()
+            style(format!(
+                "Java {}, {}",
+                install.version, install.architecture
+            ))
+            .cyan()
+            .bold()
         );
 
         println!("  Path: {}", style(install.path.display()).dim());

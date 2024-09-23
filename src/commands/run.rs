@@ -16,10 +16,7 @@ pub async fn run(app: Arc<App>, args: RunArgs) -> Result<()> {
     super::build::run(app.clone(), args.build_args).await?;
 
     let (java, args) = if let Some((_, server)) = &*app.server.read().await {
-        (
-            server.get_java().await,
-            server.get_arguments()
-        )
+        (server.get_java().await, server.get_arguments())
     } else {
         unreachable!();
     };
@@ -46,4 +43,3 @@ pub async fn run(app: Arc<App>, args: RunArgs) -> Result<()> {
 
     Ok(())
 }
-

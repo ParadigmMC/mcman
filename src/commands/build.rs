@@ -1,4 +1,7 @@
-use std::{path::{Path, PathBuf}, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use anyhow::{anyhow, Result};
 
@@ -12,12 +15,16 @@ pub struct BuildArgs {
 
 impl BuildArgs {
     pub async fn get_base_dir(&self, app: &App) -> Result<PathBuf> {
-        Ok(app.server
+        Ok(app
+            .server
             .read()
             .await
             .as_ref()
             .ok_or(anyhow!("No `server.toml` found"))?
-            .0.parent().unwrap().to_owned()
+            .0
+            .parent()
+            .unwrap()
+            .to_owned()
             .join(&self.output))
     }
 }
@@ -26,7 +33,7 @@ pub async fn run(app: Arc<App>, args: BuildArgs) -> Result<()> {
     let base = args.get_base_dir(&app).await?;
 
     log::info!("Build output: {base:?}");
-    
+
     app.action_build(&base).await?;
 
     log::info!("Build complete");

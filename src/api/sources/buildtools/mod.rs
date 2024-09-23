@@ -1,6 +1,10 @@
 use anyhow::{anyhow, Result};
 
-use crate::api::{app::App, step::{FileMeta, Step}, tools::java::JavaVersion};
+use crate::api::{
+    app::App,
+    step::{FileMeta, Step},
+    tools::java::JavaVersion,
+};
 
 pub const BUILDTOOLS_JENKINS_URL: &str = "https://hub.spigotmc.org/jenkins";
 pub const BUILDTOOLS_JENKINS_JOB: &str = "BuildTools";
@@ -14,7 +18,14 @@ pub async fn resolve_steps(
 ) -> Result<Vec<Step>> {
     let (url, metadata) = resolve_buildtools_jar(app).await?;
 
-    let exec_steps = resolve_compile_steps(app, &metadata.filename, craftbukkit, custom_args, mc_version).await?;
+    let exec_steps = resolve_compile_steps(
+        app,
+        &metadata.filename,
+        craftbukkit,
+        custom_args,
+        mc_version,
+    )
+    .await?;
 
     let mut steps = vec![
         Step::CacheCheck(metadata.clone()),
@@ -32,20 +43,20 @@ pub async fn resolve_remove_steps(
     _custom_args: &Vec<String>,
     _mc_version: &str,
 ) -> Result<Vec<Step>> {
-    Ok(vec![Step::RemoveFile(FileMeta::filename(String::from("server.jar")))])
+    Ok(vec![Step::RemoveFile(FileMeta::filename(String::from(
+        "server.jar",
+    )))])
 }
 
 /// Resolve BuildTools.jar from jenkins
-pub async fn resolve_buildtools_jar(
-    app: &App,
-) -> Result<(String, FileMeta)> {
+pub async fn resolve_buildtools_jar(app: &App) -> Result<(String, FileMeta)> {
     app.jenkins()
         .resolve_artifact(
             BUILDTOOLS_JENKINS_URL,
             BUILDTOOLS_JENKINS_JOB,
             "latest",
             BUILDTOOLS_JENKINS_ARTIFACT,
-            Some("BuildTools-${build}.jar".to_owned())
+            Some("BuildTools-${build}.jar".to_owned()),
         )
         .await
 }
@@ -66,7 +77,7 @@ pub async fn resolve_compile_steps(
         mc_version.to_owned(),
         String::from("--final-name"),
         String::from("server.jar"),
-    ];    
+    ];
 
     if craftbukkit {
         args.push(String::from("--compile"));
@@ -88,7 +99,7 @@ pub async fn resolve_compile_steps(
             args,
             java_version: Some(get_java_version_for(mc_version)?),
             label: "BuildTools".to_owned(),
-        }
+        },
     ])
 }
 
@@ -100,7 +111,11 @@ pub fn get_java_version_for(mc_version: &str) -> Result<JavaVersion> {
     let mut split = mc_version.split('.');
     split.next().ok_or(anyhow!("Error parsing mc_version"))?;
 
-    match split.next().ok_or(anyhow!("Error parsing mc_version"))?.parse::<i32>()? {
+    match split
+        .next()
+        .ok_or(anyhow!("Error parsing mc_version"))?
+        .parse::<i32>()?
+    {
         ..=16 => Ok(8),
         17 => Ok(16),
         _ => Ok(17),

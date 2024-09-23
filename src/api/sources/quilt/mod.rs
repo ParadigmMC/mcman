@@ -21,21 +21,33 @@ impl<'a> QuiltAPI<'a> {
 
         let installer = self.resolve_steps_jar(quilt_installer).await?;
 
-        let jar_name = installer.iter()
+        let jar_name = installer
+            .iter()
             .find_map(|s| {
-                if let Step::CacheCheck(m) = s { Some(m) } else { None }
+                if let Step::CacheCheck(m) = s {
+                    Some(m)
+                } else {
+                    None
+                }
             })
             .unwrap()
-            .filename.clone();
+            .filename
+            .clone();
 
         steps.extend(installer);
 
         if env.server() {
-            steps.extend(self.resolve_steps_build(&jar_name, mc_version, quilt_loader, &Environment::Server).await?);
+            steps.extend(
+                self.resolve_steps_build(&jar_name, mc_version, quilt_loader, &Environment::Server)
+                    .await?,
+            );
         }
 
         if env.client() {
-            steps.extend(self.resolve_steps_build(&jar_name, mc_version, quilt_loader, &Environment::Client).await?);
+            steps.extend(
+                self.resolve_steps_build(&jar_name, mc_version, quilt_loader, &Environment::Client)
+                    .await?,
+            );
         }
 
         Ok(steps)
@@ -76,19 +88,17 @@ impl<'a> QuiltAPI<'a> {
         match env {
             Environment::Server => {
                 args.push(String::from("--download-server"));
-            }
+            },
             Environment::Client => {
                 args.push(String::from("--no-profile"));
-            }
+            },
             _ => {},
         }
 
-        Ok(vec![
-            Step::ExecuteJava {
-                args,
-                java_version: None,
-                label: String::from("QuiltInstaller"),
-            }
-        ])
+        Ok(vec![Step::ExecuteJava {
+            args,
+            java_version: None,
+            label: String::from("QuiltInstaller"),
+        }])
     }
 }

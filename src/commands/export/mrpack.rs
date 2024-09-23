@@ -10,7 +10,5 @@ pub struct Args {
 }
 
 pub async fn run(app: Arc<App>, args: Args) -> Result<()> {
-    
-
     Ok(())
 }

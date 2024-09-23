@@ -7,7 +7,7 @@ pub struct AddonListFile {
     #[serde(default = "Vec::new")]
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub addons: Vec<Addon>,
-    
+
     // backwards compatability
     #[serde(default = "Vec::new")]
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -23,23 +23,21 @@ impl AddonListFile {
             self.addons,
             self.mods
                 .into_iter()
-                .map(|addon_type| {
-                    Addon {
-                        environment: None,
-                        addon_type,
-                        target: AddonTarget::Mods,
-                    }
+                .map(|addon_type| Addon {
+                    environment: None,
+                    addon_type,
+                    target: AddonTarget::Mods,
                 })
                 .collect(),
             self.plugins
                 .into_iter()
-                .map(|addon_type| {
-                    Addon {
-                        environment: None,
-                        addon_type,
-                        target: AddonTarget::Plugins,
-                    }
-                }).collect()
-        ].concat()
+                .map(|addon_type| Addon {
+                    environment: None,
+                    addon_type,
+                    target: AddonTarget::Plugins,
+                })
+                .collect(),
+        ]
+        .concat()
     }
 }

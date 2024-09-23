@@ -16,11 +16,14 @@ pub struct Args {
 pub async fn run(app: Arc<App>, args: Args) -> Result<()> {
     let metadata = app.get_metadata().await?;
 
-    std::fs::write(args.output, if args.pretty {
-        serde_json::to_string_pretty(&metadata)
-    } else {
-        serde_json::to_string(&metadata)
-    }?)?;
+    std::fs::write(
+        args.output,
+        if args.pretty {
+            serde_json::to_string_pretty(&metadata)
+        } else {
+            serde_json::to_string(&metadata)
+        }?,
+    )?;
 
     Ok(())
 }

@@ -4,9 +4,9 @@ use anyhow::Result;
 
 use crate::api::app::App;
 
-pub mod render;
-pub mod print;
 pub mod json;
+pub mod print;
+pub mod render;
 
 #[derive(clap::Subcommand)]
 pub enum Commands {

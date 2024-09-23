@@ -2,7 +2,10 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use crate::api::{app::App, step::{FileMeta, StepResult}};
+use crate::api::{
+    app::App,
+    step::{FileMeta, StepResult},
+};
 
 impl App {
     pub(super) async fn execute_step_remove_file(

@@ -1,7 +1,11 @@
 use std::collections::HashMap;
 
 use crate::api::{
-    app::App, models::{Addon, AddonTarget, AddonType, Environment}, sources::buildtools, step::Step, utils::serde::*
+    app::App,
+    models::{Addon, AddonTarget, AddonType, Environment},
+    sources::buildtools,
+    step::Step,
+    utils::serde::*,
 };
 use anyhow::{anyhow, Result};
 use schemars::JsonSchema;
@@ -45,19 +49,31 @@ impl TryFrom<HashMap<String, String>> for ServerJar {
         let mut server_type = None;
 
         if let Some(v) = value.get("fabric").cloned() {
-            server_type = Some(ServerType::Fabric { loader: v, installer: String::from("latest") })
+            server_type = Some(ServerType::Fabric {
+                loader: v,
+                installer: String::from("latest"),
+            })
         }
 
         if let Some(v) = value.get("fabric-loader").cloned() {
-            server_type = Some(ServerType::Fabric { loader: v, installer: String::from("latest") })
+            server_type = Some(ServerType::Fabric {
+                loader: v,
+                installer: String::from("latest"),
+            })
         }
 
         if let Some(v) = value.get("quilt").cloned() {
-            server_type = Some(ServerType::Quilt { loader: v, installer: String::from("latest") })
+            server_type = Some(ServerType::Quilt {
+                loader: v,
+                installer: String::from("latest"),
+            })
         }
 
         if let Some(v) = value.get("quilt-loader").cloned() {
-            server_type = Some(ServerType::Quilt { loader: v, installer: String::from("latest") })
+            server_type = Some(ServerType::Quilt {
+                loader: v,
+                installer: String::from("latest"),
+            })
         }
 
         if let Some(v) = value.get("forge").cloned() {
@@ -69,7 +85,10 @@ impl TryFrom<HashMap<String, String>> for ServerJar {
         }
 
         Ok(ServerJar {
-            mc_version: value.get("minecraft").ok_or(anyhow!("Can't resolve minecraft version"))?.clone(),
+            mc_version: value
+                .get("minecraft")
+                .ok_or(anyhow!("Can't resolve minecraft version"))?
+                .clone(),
             server_type: server_type.ok_or(anyhow!("Can't resolve a ServerType"))?,
         })
     }
@@ -131,7 +150,7 @@ pub enum ServerType {
 
         #[serde(default)]
         flavor: ServerFlavor,
-        
+
         #[serde(default)]
         exec: Option<String>,
     },
@@ -148,17 +167,29 @@ impl ServerJar {
             | ServerType::Forge { .. }
             | ServerType::Quilt { .. }
             | ServerType::NeoForge { .. } => ServerFlavor::Modded,
-            ServerType::Vanilla {  } => ServerFlavor::Vanilla,
+            ServerType::Vanilla {} => ServerFlavor::Vanilla,
         }
     }
 
     pub async fn resolve_steps(&self, app: &App, env: Environment) -> Result<Vec<Step>> {
         match &self.server_type {
             ServerType::Vanilla {} => app.vanilla().resolve_steps(&self.mc_version, env).await,
-            ServerType::PaperMC { project, build } => app.papermc().resolve_steps(&project.to_string(), &self.mc_version, build).await,
+            ServerType::PaperMC { project, build } => {
+                app.papermc()
+                    .resolve_steps(&project.to_string(), &self.mc_version, build)
+                    .await
+            },
             ServerType::Purpur { build } => todo!(),
-            ServerType::Fabric { loader, installer } => app.fabric().resolve_steps(&self.mc_version, loader, installer, &env).await,
-            ServerType::Quilt { loader, installer } => app.quilt().resolve_steps(&self.mc_version, installer, loader, &env).await,
+            ServerType::Fabric { loader, installer } => {
+                app.fabric()
+                    .resolve_steps(&self.mc_version, loader, installer, &env)
+                    .await
+            },
+            ServerType::Quilt { loader, installer } => {
+                app.quilt()
+                    .resolve_steps(&self.mc_version, installer, loader, &env)
+                    .await
+            },
             ServerType::NeoForge { loader } => todo!(),
             ServerType::Forge { loader } => todo!(),
             ServerType::BuildTools { craftbukkit, args } => {
@@ -169,7 +200,9 @@ impl ServerJar {
                     environment: Some(env),
                     addon_type: inner.clone(),
                     target: AddonTarget::Custom(String::from(".")),
-                }.resolve_steps(app).await
+                }
+                .resolve_steps(app)
+                .await
             },
         }
     }
@@ -177,7 +210,8 @@ impl ServerJar {
     pub fn get_execution_arguments(&self) -> Vec<String> {
         match &self.server_type {
             ServerType::Forge { .. } => todo!(),
-            ServerType::Custom { exec, .. } => exec.clone()
+            ServerType::Custom { exec, .. } => exec
+                .clone()
                 .unwrap_or(String::from("-jar server.jar"))
                 .split_whitespace()
                 .map(ToOwned::to_owned)
@@ -188,9 +222,12 @@ impl ServerJar {
 
     pub async fn update(&mut self, app: &App) -> Result<bool> {
         match self.server_type.clone() {
-            ServerType::Vanilla {  } => Ok(false),
+            ServerType::Vanilla {} => Ok(false),
             ServerType::PaperMC { project, build } => {
-                let new_build = app.papermc().fetch_builds(&project.to_string(), &self.mc_version).await?
+                let new_build = app
+                    .papermc()
+                    .fetch_builds(&project.to_string(), &self.mc_version)
+                    .await?
                     .builds
                     .into_iter()
                     .map(|b| b.build)
@@ -198,16 +235,36 @@ impl ServerJar {
                     .unwrap()
                     .to_string();
 
-                self.server_type = ServerType::PaperMC { project: project.clone(), build: new_build.clone() };
+                self.server_type = ServerType::PaperMC {
+                    project: project.clone(),
+                    build: new_build.clone(),
+                };
 
                 Ok(new_build != build)
             },
             ServerType::Purpur { build } => todo!(),
             ServerType::Fabric { loader, installer } => {
-                let latest_loader = app.fabric().fetch_loaders().await?.first().unwrap().version.clone();
-                let latest_installer = app.fabric().fetch_installers().await?.first().unwrap().version.clone();
+                let latest_loader = app
+                    .fabric()
+                    .fetch_loaders()
+                    .await?
+                    .first()
+                    .unwrap()
+                    .version
+                    .clone();
+                let latest_installer = app
+                    .fabric()
+                    .fetch_installers()
+                    .await?
+                    .first()
+                    .unwrap()
+                    .version
+                    .clone();
 
-                self.server_type = ServerType::Fabric { loader: latest_loader.clone(), installer: latest_installer.clone() };
+                self.server_type = ServerType::Fabric {
+                    loader: latest_loader.clone(),
+                    installer: latest_installer.clone(),
+                };
 
                 Ok(loader != latest_loader || installer != latest_installer)
             },

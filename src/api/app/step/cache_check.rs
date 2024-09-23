@@ -5,7 +5,11 @@ use futures::{StreamExt, TryStreamExt};
 use tokio::{fs::File, io::BufWriter};
 use tokio_util::io::ReaderStream;
 
-use crate::api::{app::App, step::{FileMeta, StepResult}, utils::fs::create_parents};
+use crate::api::{
+    app::App,
+    step::{FileMeta, StepResult},
+    utils::fs::create_parents,
+};
 
 impl App {
     // cache | output | to do
@@ -13,7 +17,11 @@ impl App {
     //   x   |        | copy from cache
     //       |   x    | StepResult::Continue
     //       |        | StepResult::Continue
-    pub(super) async fn execute_step_cache_check(&self, dir: &Path, metadata: &FileMeta) -> Result<StepResult> {
+    pub(super) async fn execute_step_cache_check(
+        &self,
+        dir: &Path,
+        metadata: &FileMeta,
+    ) -> Result<StepResult> {
         let output_path = dir.join(&metadata.filename);
 
         let Some(cached_path) = self.cache.loc(metadata.cache.as_ref()) else {
@@ -24,13 +32,17 @@ impl App {
             return Ok(StepResult::Continue);
         }
 
-        let cached_meta = cached_path.metadata()
+        let cached_meta = cached_path
+            .metadata()
             .context("Getting metadata of a cached file")?;
         let cached_size = cached_meta.len();
 
-        let output_size = if output_path.try_exists()
-            .context("Checking if output file exists")? {
-            let meta = output_path.metadata()
+        let output_size = if output_path
+            .try_exists()
+            .context("Checking if output file exists")?
+        {
+            let meta = output_path
+                .metadata()
                 .context("Checking metadata of output file")?;
             Some(meta.len())
         } else {
@@ -44,7 +56,8 @@ impl App {
                 // size mismatch
                 // TODO: print warning
                 println!("WARNING size mismatch: {}", metadata.filename);
-                tokio::fs::remove_file(&output_path).await
+                tokio::fs::remove_file(&output_path)
+                    .await
                     .with_context(|| format!("Deleting file: {}", output_path.display()))?;
                 //return Ok(StepResult::Continue);
             } else {
@@ -55,12 +68,16 @@ impl App {
                         .with_context(|| format!("Opening file: {}", output_path.display()))?;
                     let mut stream = ReaderStream::new(output_file);
 
-                    while let Some(item) = stream.try_next().await.with_context(|| "Reading stream into hasher")? {
+                    while let Some(item) = stream
+                        .try_next()
+                        .await
+                        .with_context(|| "Reading stream into hasher")?
+                    {
                         hasher.update(&item);
                     }
 
                     let hash = hex::encode(&hasher.finalize());
-                    
+
                     if content == hash {
                         // size and hash match, skip rest of the steps
                         // TODO: print info
@@ -70,15 +87,19 @@ impl App {
                         // hash mismatch
                         // TODO: print warning
                         println!("WARNING Hash mismatch: {}", metadata.filename);
-                        tokio::fs::remove_file(&output_path).await.context("hash mismatch remove file")?;
+                        tokio::fs::remove_file(&output_path)
+                            .await
+                            .context("hash mismatch remove file")?;
                     }
                 } else {
                     // FileInfo doesn't have any hashes
                     // so we must check from cache
                     // return skip if equal, do nothing otherwise to fallback copyfromcache
-                    let target_file = File::open(&output_path).await
+                    let target_file = File::open(&output_path)
+                        .await
                         .with_context(|| format!("Opening target: {}", output_path.display()))?;
-                    let cached_file = File::open(&cached_path).await
+                    let cached_file = File::open(&cached_path)
+                        .await
                         .with_context(|| format!("Opening cached: {}", cached_path.display()))?;
 
                     let mut target_stream = ReaderStream::new(target_file);

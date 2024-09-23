@@ -20,7 +20,7 @@ impl ToString for Accessor {
         match self {
             Accessor::Local(path) => path.to_string_lossy().into_owned(),
             Accessor::Remote(url) => url.to_string(),
-            Accessor::ZipLocal((path ,_)) => path.to_string_lossy().into_owned(),
+            Accessor::ZipLocal((path, _)) => path.to_string_lossy().into_owned(),
         }
     }
 }
@@ -73,13 +73,13 @@ impl Accessor {
                 let file = zip.by_name(path)?;
 
                 Ok(toml::from_str(&std::io::read_to_string(file)?)?)
-            }
+            },
             Accessor::Remote(url) => {
                 let res = app.http_get(url.join(path)?).await?;
                 let content = res.text().await?;
 
                 Ok(toml::from_str(&content)?)
-            }
+            },
         }
     }
 }

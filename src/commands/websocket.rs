@@ -13,7 +13,9 @@ pub struct Args {
 pub async fn run(app: Arc<App>, args: Args) -> Result<()> {
     let ws = WebsocketServer::new(app);
 
-    ws.start(&args.addr).await.context("Running WebSocket Server")?;
+    ws.start(&args.addr)
+        .await
+        .context("Running WebSocket Server")?;
 
     Ok(())
 }

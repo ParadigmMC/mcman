@@ -71,7 +71,7 @@ impl ServerLauncher {
         if self.nogui && !matches!(self.preset_flags, PresetFlags::Proxy) {
             args.push(String::from("--nogui"));
         }
-        
+
         args.extend(self.game_args.split_whitespace().map(ToOwned::to_owned));
 
         args

@@ -4,7 +4,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::api::models::{hooks::Hook, launcher::ServerLauncher};
 
-use super::{LegacyClientSideMod, LegacyDownloadable, LegacyMarkdownOptions, LegacyServerOptions, LegacyServerType, LegacyWorld};
+use super::{
+    LegacyClientSideMod, LegacyDownloadable, LegacyMarkdownOptions, LegacyServerOptions,
+    LegacyServerType, LegacyWorld,
+};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(default)]

@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-mod filemeta;
 mod cache_location;
+mod filemeta;
 
-pub use filemeta::*;
 pub use cache_location::*;
+pub use filemeta::*;
 
 use super::tools::java::JavaVersion;
 

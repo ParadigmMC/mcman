@@ -3,15 +3,16 @@ use anyhow::{anyhow, Result};
 mod models;
 pub use models::*;
 
-use crate::api::{app::App, step::{CacheLocation, FileMeta, Step}, utils::url::url_to_folder};
+use crate::api::{
+    app::App,
+    step::{CacheLocation, FileMeta, Step},
+    utils::url::url_to_folder,
+};
 
 pub struct MavenAPI<'a>(pub &'a App);
 
 pub fn maven_artifact_url(url: &str, group_id: &str, artifact_id: &str) -> String {
-    format!(
-        "{url}/{}/{artifact_id}",
-        group_id.replace(['.', ':'], "/")
-    )
+    format!("{url}/{}/{artifact_id}", group_id.replace(['.', ':'], "/"))
 }
 
 pub fn maven_metadata_url(url: &str, group_id: &str, artifact_id: &str) -> String {
@@ -104,18 +105,21 @@ impl<'a> MavenAPI<'a> {
         );
 
         let metadata = FileMeta {
-            cache: Some(CacheLocation("maven".into(), format!(
-                "{}/{}/{artifact_id}/{version}/{file}",
-                url_to_folder(url),
-                group_id.replace('.', "/"),
-            ))),
+            cache: Some(CacheLocation(
+                "maven".into(),
+                format!(
+                    "{}/{}/{artifact_id}/{version}/{file}",
+                    url_to_folder(url),
+                    group_id.replace('.', "/"),
+                ),
+            )),
             filename: file,
             ..Default::default()
         };
 
         Ok((download_url, metadata))
     }
-    
+
     pub async fn resolve_steps(
         &self,
         url: &str,
@@ -124,11 +128,13 @@ impl<'a> MavenAPI<'a> {
         version: &str,
         file: &str,
     ) -> Result<Vec<Step>> {
-        let (url, metadata) = self.resolve(url, group_id, artifact_id, version, file).await?;
+        let (url, metadata) = self
+            .resolve(url, group_id, artifact_id, version, file)
+            .await?;
 
         Ok(vec![
             Step::CacheCheck(metadata.clone()),
-            Step::Download { url, metadata }
+            Step::Download { url, metadata },
         ])
     }
 
@@ -140,7 +146,9 @@ impl<'a> MavenAPI<'a> {
         version: &str,
         file: &str,
     ) -> Result<Vec<Step>> {
-        let (_, metadata) = self.resolve(url, group_id, artifact_id, version, file).await?;
+        let (_, metadata) = self
+            .resolve(url, group_id, artifact_id, version, file)
+            .await?;
 
         Ok(vec![Step::RemoveFile(metadata)])
     }
