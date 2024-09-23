@@ -76,9 +76,9 @@ impl WebsocketServer {
         let mut to_remove = vec![];
 
         for (i, client) in clients.iter_mut().enumerate() {
-            if let Err(_) = client.send(msg.clone()).await {
+            if client.send(msg.clone()).await.is_err() {
                 to_remove.push(i);
-            };
+            }
         }
 
         for i in to_remove {

@@ -40,7 +40,7 @@ impl App {
         server: &Server,
         base: &Path,
     ) -> Result<()> {
-        let script = shell.generate_script(self.get_script_lines_for(&shell, server).await?);
+        let script = shell.generate_script(&self.get_script_lines_for(&shell, server).await?);
 
         tokio::fs::write(base.join(format!("start.{}", shell.file_ext())), script).await?;
 

@@ -1,5 +1,6 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, JsonSchema)]
 #[serde(rename_all = "lowercase")]
@@ -9,12 +10,12 @@ pub enum ModpackType {
     Unsup,
 }
 
-impl ToString for ModpackType {
-    fn to_string(&self) -> String {
+impl fmt::Display for ModpackType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ModpackType::Packwiz => String::from("Packwiz"),
-            ModpackType::MRPack => String::from("MRPack"),
-            ModpackType::Unsup => String::from("Unsup"),
+            Self::Packwiz => write!(f, "Packwiz"),
+            Self::MRPack => write!(f, "MRPack"),
+            Self::Unsup => write!(f, "Unsup"),
         }
     }
 }

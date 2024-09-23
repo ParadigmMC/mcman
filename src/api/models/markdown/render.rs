@@ -6,12 +6,12 @@ use crate::api::{
 use super::{MarkdownOptions, MarkdownOutput, MdColumn};
 
 impl MarkdownOptions {
-    pub fn render_addons(&self, list: Vec<AddonMetadata>) -> String {
-        self.table_addons(list, self.output_type)
+    pub fn render_addons(&self, list: &[AddonMetadata]) -> String {
+        self.table_addons(&list, self.output_type)
             .render(self.output_type)
     }
 
-    pub fn table_addons(&self, list: Vec<AddonMetadata>, output: MarkdownOutput) -> MarkdownTable {
+    pub fn table_addons(&self, list: &[AddonMetadata], output: MarkdownOutput) -> MarkdownTable {
         let mut table = MarkdownTable::new();
 
         for column in &self.columns {
@@ -24,7 +24,7 @@ impl MarkdownOptions {
             ));
         }
 
-        for meta in &list {
+        for meta in list {
             let mut row = vec![];
 
             for column in &self.columns {

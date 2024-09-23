@@ -124,9 +124,8 @@ impl Source {
                 }
                 .with_context(|| {
                     format!(
-                        "Source: Modpack/{} => {}",
-                        modpack_type.to_string(),
-                        modpack.accessor(relative_to).unwrap().to_string()
+                        "Source: Modpack/{modpack_type} => {}",
+                        modpack.accessor(relative_to).unwrap()
                     )
                 })
             },

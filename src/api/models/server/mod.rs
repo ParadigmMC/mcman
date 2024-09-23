@@ -86,7 +86,9 @@ impl Server {
         if let Some(v) = self.launcher.java_version {
             get_java_installation_for(v)
                 .await
-                .map_or(String::from("java"), |j| j.path.to_string_lossy().into_owned())
+                .map_or(String::from("java"), |j| {
+                    j.path.to_string_lossy().into_owned()
+                })
         } else {
             String::from("java")
         }

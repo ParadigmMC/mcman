@@ -50,7 +50,7 @@ impl App {
 
         map.insert(
             String::from("addons"),
-            markdown_options.render_addons(metadata.addons),
+            markdown_options.render_addons(&metadata.addons),
         );
 
         Ok(map)
@@ -59,7 +59,7 @@ impl App {
     pub async fn render_addon_metadata(&self, metadata: Vec<AddonMetadata>) -> Result<String> {
         let markdown_options = self.get_markdown_options().await.unwrap_or_default();
 
-        let table = markdown_options.table_addons(metadata, markdown_options.output_type);
+        let table = markdown_options.table_addons(&metadata, markdown_options.output_type);
 
         Ok(table.render(markdown_options.output_type))
     }

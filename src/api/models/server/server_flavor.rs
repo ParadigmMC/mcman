@@ -12,40 +12,23 @@ pub enum ServerFlavor {
 }
 
 impl ServerFlavor {
-    pub fn supports_datapacks(&self) -> bool {
-        match self {
-            ServerFlavor::Proxy => false,
-            _ => true,
-        }
+    pub const fn supports_datapacks(self) -> bool {
+        !matches!(self, Self::Proxy)
     }
 
-    pub fn supports_mods(&self) -> bool {
-        match self {
-            ServerFlavor::Modded => true,
-            _ => false,
-        }
+    pub const fn supports_mods(self) -> bool {
+        matches!(self, Self::Modded)
     }
 
-    pub fn supports_plugins(&self) -> bool {
-        match self {
-            ServerFlavor::Vanilla => false,
-            ServerFlavor::Modded => false,
-            ServerFlavor::Patched => true,
-            ServerFlavor::Proxy => true,
-        }
+    pub const fn supports_plugins(self) -> bool {
+        matches!(self, Self::Patched | Self::Proxy)
     }
 
-    pub fn supports_nogui(&self) -> bool {
-        match self {
-            ServerFlavor::Proxy => false,
-            _ => true,
-        }
+    pub const fn supports_nogui(self) -> bool {
+        !matches!(self, Self::Proxy)
     }
 
-    pub fn supports_eula_args(&self) -> bool {
-        match self {
-            ServerFlavor::Patched => true,
-            _ => false,
-        }
+    pub const fn supports_eula_args(self) -> bool {
+        matches!(self, Self::Patched)
     }
 }

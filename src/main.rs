@@ -1,5 +1,3 @@
-#![allow(dead_code, unused_mut, clippy::unused_async, unused_variables, unreachable_code, unused_imports)]
-
 use std::{path::Path, sync::Arc};
 
 use anyhow::Result;

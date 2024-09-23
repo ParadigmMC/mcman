@@ -97,29 +97,32 @@ impl MarkdownTable {
     }
 
     pub fn render_html(&self) -> String {
-        fn wrap(tag: &'static str, content: String) -> String {
-            format!("<{tag}>{content}</{tag}>")
-        }
-
-        fn join(li: impl Iterator<Item = String>) -> String {
-            li.collect::<String>()
-        }
+        let wrap = |tag, content| format!("<{tag}>{content}</{tag}>");
 
         let header = wrap(
             "thead",
             wrap(
                 "tr",
-                join(self.headers.iter().map(|h| wrap("th", h.0.clone()))),
+                self.headers
+                    .iter()
+                    .map(|h| wrap("th", h.0.clone()))
+                    .collect(),
             ),
         );
 
         let body = wrap(
             "tbody",
-            join(
-                self.rows
-                    .iter()
-                    .map(|row| wrap("tr", join(row.iter().map(|cell| wrap("td", cell.clone()))))),
-            ),
+            self.rows
+                .iter()
+                .map(|row| {
+                    wrap(
+                        "tr",
+                        row.iter()
+                            .map(|cell| wrap("td", cell.clone()))
+                            .collect::<String>(),
+                    )
+                })
+                .collect(),
         );
 
         wrap("table", header + &body)

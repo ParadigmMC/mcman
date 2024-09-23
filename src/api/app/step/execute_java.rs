@@ -32,19 +32,14 @@ impl App {
 
         let mut proc = JavaProcess::new(&dir.canonicalize()?, &java.path, args)?;
 
-        fn on_line(line: &str) {
-            println!("| {line}");
-        }
-
-        proc.lines(on_line);
+        proc.lines(|line| println!("| {line}"));
 
         let res = proc.wait().await?;
 
         if !res.success() {
             bail!(
                 "Java process exited with code {}",
-                res.code()
-                    .map_or("unknown".to_owned(), |x| x.to_string())
+                res.code().map_or("unknown".to_owned(), |x| x.to_string())
             );
         }
 

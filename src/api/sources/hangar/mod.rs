@@ -60,10 +60,9 @@ impl<'a> HangarAPI<'a> {
             cache: Some(CacheLocation(
                 "hangar".into(),
                 format!(
-                    "{}/{}/{}_{}",
+                    "{}/{}/{platform}_{}",
                     id.split_once('/').map_or(id, |(_, id)| id),
                     version.name,
-                    platform.to_string(),
                     file.name,
                 ),
             )),

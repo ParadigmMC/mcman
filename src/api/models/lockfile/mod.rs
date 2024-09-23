@@ -8,14 +8,12 @@ use super::Addon;
 
 pub const LOCKFILE: &str = ".mcman.lock";
 
-#[derive(Debug, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Lockfile {
     pub vars: HashMap<String, String>,
     pub addons: Vec<Addon>,
     pub bootstrapped_files: HashMap<PathBuf, BootstrappedFile>,
 }
-
 
 pub enum LockfileMessage {
     BootstrapFile(PathBuf, BootstrappedFile),

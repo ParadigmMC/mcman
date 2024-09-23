@@ -1,5 +1,8 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::fmt;
+
+use super::Addon;
 
 #[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq, JsonSchema)]
 #[serde(tag = "type", rename_all = "lowercase")]
@@ -58,32 +61,32 @@ pub enum AddonType {
     },
 }
 
-impl ToString for AddonType {
-    fn to_string(&self) -> String {
+impl fmt::Display for AddonType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            AddonType::Url { url } => format!("Url [{url}]"),
-            AddonType::Modrinth { id, version } => format!("Modrinth/{id} [{version}]"),
-            AddonType::Curseforge { id, version } => format!("Curseforge/{id} [{version}]"),
-            AddonType::Spigot { id, version } => format!("Spigot/{id} [{version}]"),
-            AddonType::Hangar { id, version } => format!("Hangar/{id} [{version}]"),
-            AddonType::GithubRelease {
+            Self::Url { url } => write!(f, "Url [{url}]"),
+            Self::Modrinth { id, version } => write!(f, "Modrinth/{id} [{version}]"),
+            Self::Curseforge { id, version } => write!(f, "Curseforge/{id} [{version}]"),
+            Self::Spigot { id, version } => write!(f, "Spigot/{id} [{version}]"),
+            Self::Hangar { id, version } => write!(f, "Hangar/{id} [{version}]"),
+            Self::GithubRelease {
                 repo,
                 version,
                 filename,
-            } => format!("Github/{repo} [{version}; {filename}]"),
-            AddonType::Jenkins {
+            } => write!(f, "Github/{repo} [{version}; {filename}]"),
+            Self::Jenkins {
                 url,
                 job,
                 build,
                 artifact,
-            } => format!("Jenkins/{job} [{build}; {artifact}]"),
-            AddonType::MavenArtifact {
+            } => write!(f, "Jenkins/{job} [{build}; {artifact}]"),
+            Self::MavenArtifact {
                 url,
                 group,
                 artifact,
                 version,
                 filename,
-            } => format!("Maven/{group}.{artifact} [{version}; {filename}]"),
+            } => write!(f, "Maven/{group}.{artifact} [{version}; {filename}]"),
         }
     }
 }

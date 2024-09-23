@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt,
+};
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -9,9 +12,9 @@ pub struct Namespace {
     pub slug: String,
 }
 
-impl ToString for Namespace {
-    fn to_string(&self) -> String {
-        format!("{}/{}", self.owner, self.slug)
+impl fmt::Display for Namespace {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}/{}", self.owner, self.slug)
     }
 }
 
@@ -177,12 +180,12 @@ impl From<&str> for Platform {
     }
 }
 
-impl ToString for Platform {
-    fn to_string(&self) -> String {
+impl fmt::Display for Platform {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::Paper => "PAPER".to_owned(),
-            Self::Waterfall => "WATERFALL".to_owned(),
-            Self::Velocity => "VELOCITY".to_owned(),
+            Self::Paper => write!(f, "PAPER"),
+            Self::Waterfall => write!(f, "WATERFALL"),
+            Self::Velocity => write!(f, "VELOCITY"),
         }
     }
 }

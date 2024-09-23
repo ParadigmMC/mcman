@@ -69,7 +69,6 @@ impl<'a> CurseforgeAPI<'a> {
             filename: file.display_name,
             hashes: convert_hashes(file.hashes),
             size: Some(file.file_length),
-            ..Default::default()
         };
 
         Ok(vec![
@@ -92,7 +91,6 @@ impl<'a> CurseforgeAPI<'a> {
             filename: file.display_name,
             hashes: convert_hashes(file.hashes),
             size: Some(file.file_length),
-            ..Default::default()
         };
 
         Ok(vec![Step::RemoveFile(metadata)])

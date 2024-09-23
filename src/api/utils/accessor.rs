@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{fmt, path::PathBuf};
 
 use anyhow::{anyhow, Result};
 use reqwest::Url;
@@ -15,12 +15,13 @@ pub enum Accessor {
     //ZipRemote(SomeSortOfTempFile, ZipArchive<std::fs::File>),
 }
 
-impl ToString for Accessor {
-    fn to_string(&self) -> String {
+impl fmt::Display for Accessor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Accessor::Local(path) => path.to_string_lossy().into_owned(),
-            Accessor::Remote(url) => url.to_string(),
-            Accessor::ZipLocal((path, _)) => path.to_string_lossy().into_owned(),
+            Self::Local(path) | Self::ZipLocal((path, _)) => {
+                write!(f, "{}", path.to_string_lossy())
+            },
+            Self::Remote(url) => url.fmt(f),
         }
     }
 }

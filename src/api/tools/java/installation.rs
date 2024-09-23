@@ -19,10 +19,8 @@ impl JavaInstallation {
     pub fn parse_version(version: &str) -> Result<JavaVersion> {
         let mut split = version.split('.');
 
-        let str = match (split.next(), split.next()) {
-            (Some("1"), Some(ver)) => ver,
-            (Some(ver), _) => ver,
-            _ => bail!("Invalid JRE version"),
+        let ((Some("1"), Some(str)) | (Some(str), _)) = (split.next(), split.next()) else {
+            bail!("Invalid JRE version");
         };
 
         Ok(str.parse::<u32>()?)

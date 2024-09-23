@@ -54,7 +54,7 @@ impl PackwizModUpdate {
 }
 
 impl PackwizModDownload {
-    pub async fn from_steps(steps: &Vec<Step>) -> Self {
+    pub async fn from_steps(steps: &[Step]) -> Self {
         todo!()
     }
 }

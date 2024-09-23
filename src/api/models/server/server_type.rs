@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 
 use crate::api::{
     app::App,
@@ -25,12 +25,12 @@ pub enum PaperMCProject {
     Waterfall,
 }
 
-impl ToString for PaperMCProject {
-    fn to_string(&self) -> String {
+impl fmt::Display for PaperMCProject {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::Paper => "paper".to_owned(),
-            Self::Waterfall => "waterfall".to_owned(),
-            Self::Velocity => "velocity".to_owned(),
+            Self::Paper => write!(f, "paper"),
+            Self::Waterfall => write!(f, "waterfall"),
+            Self::Velocity => write!(f, "velocity"),
         }
     }
 }
@@ -222,7 +222,7 @@ impl ServerJar {
 
     pub async fn update(&mut self, app: &App) -> Result<bool> {
         match self.server_type.clone() {
-            ServerType::Vanilla {} => Ok(false),
+            ServerType::Vanilla {} | ServerType::BuildTools { .. } => Ok(false),
             ServerType::PaperMC { project, build } => {
                 let new_build = app
                     .papermc()
@@ -271,7 +271,6 @@ impl ServerJar {
             ServerType::Quilt { loader, installer } => todo!(),
             ServerType::NeoForge { loader } => todo!(),
             ServerType::Forge { loader } => todo!(),
-            ServerType::BuildTools { .. } => Ok(false),
             ServerType::Custom { .. } => todo!(),
         }
     }

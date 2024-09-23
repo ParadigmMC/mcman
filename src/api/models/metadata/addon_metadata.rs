@@ -43,28 +43,28 @@ impl AddonMetadataSource {
             .join("\n")
     }
 
-    pub fn into_str(&self) -> &'static str {
+    pub fn into_str(self) -> &'static str {
         match self {
-            AddonMetadataSource::Modrinth => "modrinth",
-            AddonMetadataSource::Hangar => "hangar",
-            AddonMetadataSource::Spigot => "spigot",
-            AddonMetadataSource::Other => "other",
-            AddonMetadataSource::Github => "github",
-            AddonMetadataSource::Jenkins => "jenkins",
-            AddonMetadataSource::Maven => "maven",
-            AddonMetadataSource::Curseforge => "curseforge",
+            Self::Modrinth => "modrinth",
+            Self::Hangar => "hangar",
+            Self::Spigot => "spigot",
+            Self::Other => "other",
+            Self::Github => "github",
+            Self::Jenkins => "jenkins",
+            Self::Maven => "maven",
+            Self::Curseforge => "curseforge",
         }
     }
 
-    pub fn markdown_tag(&self) -> String {
+    pub fn markdown_tag(self) -> String {
         format!("![{}]", self.into_str())
     }
 
-    pub fn html(&self) -> String {
+    pub fn html(self) -> String {
         format!("<img src='{}'>", self.icon_url())
     }
 
-    pub fn icon_url(&self) -> String {
+    pub fn icon_url(self) -> String {
         // TODO !!!!!!!!!!!!!!!!!!!!!
         format!(
             "https://raw.githubusercontent.com/ParadigmMC/mcman/v2/res/icons/{}.png",
@@ -130,10 +130,7 @@ impl Addon {
 
                 Ok(AddonMetadata {
                     name: proj.name,
-                    link: Some(format!(
-                        "https://hangar.papermc.io/{}",
-                        proj.namespace.to_string()
-                    )),
+                    link: Some(format!("https://hangar.papermc.io/{}", proj.namespace)),
                     description: Some(proj.description),
                     source: AddonMetadataSource::Hangar,
                     version: Some(version.to_owned()),

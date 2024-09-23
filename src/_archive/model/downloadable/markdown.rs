@@ -39,7 +39,7 @@ impl Downloadable {
         }
     }
 
-    pub fn get_type_name(&self) -> String {
+    pub const fn get_type_name(&self) -> &'static str {
         match self {
             Self::Url { .. } => "URL",
             Self::GithubRelease { .. } => "GithubRel",
@@ -50,7 +50,6 @@ impl Downloadable {
             Self::Spigot { .. } => "Spigot",
             Self::Maven { .. } => "Maven",
         }
-        .to_owned()
     }
 
     pub fn fields_to_map(&self) -> IndexMap<Cow<'static, str>, String> {

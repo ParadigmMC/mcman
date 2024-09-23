@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -61,14 +61,14 @@ pub enum MdColumn {
     Link,
 }
 
-impl ToString for MdColumn {
-    fn to_string(&self) -> String {
+impl fmt::Display for MdColumn {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            MdColumn::Icon => String::from("."),
-            MdColumn::Name => String::from("Name"),
-            MdColumn::Description => String::from("Description"),
-            MdColumn::Version => String::from("Version"),
-            MdColumn::Link => String::from("Link"),
+            Self::Icon => write!(f, "."),
+            Self::Name => write!(f, "Name"),
+            Self::Description => write!(f, "Description"),
+            Self::Version => write!(f, "Version"),
+            Self::Link => write!(f, "Link"),
         }
     }
 }

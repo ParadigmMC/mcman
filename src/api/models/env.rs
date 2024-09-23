@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 use super::mrpack::{Env, EnvSupport};
 
@@ -13,23 +14,23 @@ pub enum Environment {
     Client,
 }
 
-impl ToString for Environment {
-    fn to_string(&self) -> String {
+impl fmt::Display for Environment {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Environment::Both => String::from("both"),
-            Environment::Server => String::from("server"),
-            Environment::Client => String::from("client"),
+            Self::Both => write!(f, "both"),
+            Self::Server => write!(f, "server"),
+            Self::Client => write!(f, "client"),
         }
     }
 }
 
 impl Environment {
-    pub fn server(&self) -> bool {
-        matches!(&self, Environment::Server | Environment::Both)
+    pub const fn server(self) -> bool {
+        matches!(self, Self::Server | Self::Both)
     }
 
-    pub fn client(&self) -> bool {
-        matches!(&self, Environment::Client | Environment::Both)
+    pub const fn client(self) -> bool {
+        matches!(self, Self::Client | Self::Both)
     }
 }
 

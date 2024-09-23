@@ -34,11 +34,12 @@ pub fn str_default() -> String {
     "default".to_owned()
 }
 
-pub fn bool_true() -> bool {
+pub const fn bool_true() -> bool {
     true
 }
 
-pub fn is_true(b: &bool) -> bool {
+#[allow(clippy::trivially_copy_pass_by_ref)]
+pub const fn is_true(b: &bool) -> bool {
     *b
 }
 

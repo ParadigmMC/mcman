@@ -13,7 +13,7 @@ pub const BUILDTOOLS_JENKINS_ARTIFACT: &str = "BuildTools.jar";
 pub async fn resolve_steps(
     app: &App,
     craftbukkit: bool,
-    custom_args: &Vec<String>,
+    custom_args: &[String],
     mc_version: &str,
 ) -> Result<Vec<Step>> {
     let (url, metadata) = resolve_buildtools_jar(app).await?;
@@ -40,7 +40,7 @@ pub async fn resolve_steps(
 pub async fn resolve_remove_steps(
     _app: &App,
     _craftbukkit: bool,
-    _custom_args: &Vec<String>,
+    _custom_args: &[String],
     _mc_version: &str,
 ) -> Result<Vec<Step>> {
     Ok(vec![Step::RemoveFile(FileMeta::filename(String::from(
@@ -66,7 +66,7 @@ pub async fn resolve_compile_steps(
     _app: &App,
     jar_name: &str,
     craftbukkit: bool,
-    custom_args: &Vec<String>,
+    custom_args: &[String],
     mc_version: &str,
 ) -> Result<Vec<Step>> {
     let mut args = vec![
@@ -80,11 +80,10 @@ pub async fn resolve_compile_steps(
     ];
 
     if craftbukkit {
-        args.push(String::from("--compile"));
-        args.push(String::from("craftbukkit"));
+        args.extend([String::from("--compile"), String::from("craftbukkit")]);
     }
 
-    args.extend(custom_args.clone());
+    args.extend(custom_args.iter().cloned());
 
     //let build_number = jar_name.split(&['-', '.']).nth(1).unwrap().parse::<i32>()?;
 

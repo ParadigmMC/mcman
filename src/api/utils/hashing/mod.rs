@@ -22,13 +22,13 @@ pub enum HashFormat {
 }
 
 impl HashFormat {
-    pub fn get_digest(&self) -> Box<dyn DynDigest + Send> {
+    pub fn get_digest(self) -> Box<dyn DynDigest + Send> {
         match self {
-            HashFormat::Sha256 => Box::new(sha2::Sha256::new()),
-            HashFormat::Sha512 => Box::new(sha2::Sha512::new()),
-            HashFormat::Sha1 => Box::new(sha1::Sha1::new()),
-            HashFormat::Md5 => Box::new(md5::Md5::new()),
-            HashFormat::Curseforge => Box::new(CurseforgeHasher::new()),
+            Self::Sha256 => Box::new(sha2::Sha256::new()),
+            Self::Sha512 => Box::new(sha2::Sha512::new()),
+            Self::Sha1 => Box::new(sha1::Sha1::new()),
+            Self::Md5 => Box::new(md5::Md5::new()),
+            Self::Curseforge => Box::new(CurseforgeHasher::new()),
         }
     }
 }

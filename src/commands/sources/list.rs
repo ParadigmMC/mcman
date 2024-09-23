@@ -46,7 +46,7 @@ pub async fn run(app: Arc<App>, args: Args) -> Result<()> {
                 println!(
                     "   {}. {} {}",
                     style(idx).bold(),
-                    addon.addon_type.to_string(),
+                    addon.addon_type,
                     style(addon.target.as_str()).dim()
                 );
             }

@@ -21,10 +21,7 @@ pub async fn resolve_steps_for_url(
         ..Default::default()
     };
 
-    Ok(vec![Step::Download {
-        url,
-        metadata,
-    }])
+    Ok(vec![Step::Download { url, metadata }])
 }
 
 pub async fn resolve_remove_steps_for_url(
