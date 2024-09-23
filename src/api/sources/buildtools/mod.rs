@@ -83,7 +83,7 @@ pub async fn resolve_compile_steps(
         args.extend([String::from("--compile"), String::from("craftbukkit")]);
     }
 
-    args.extend(custom_args.iter().cloned());
+    args.extend(custom_args.into_iter().cloned());
 
     //let build_number = jar_name.split(&['-', '.']).nth(1).unwrap().parse::<i32>()?;
 

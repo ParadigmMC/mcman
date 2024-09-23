@@ -68,22 +68,22 @@ impl<'a> BuildContext<'a> {
         let server_jar = self.download_server_jar().await?;
         self.app.ci("::endgroup::");
 
-        if self.skip_stages.iter().all(|s| s.as_str() != "plugins") {
+        if self.skip_stages.iter().all(|s| s != "plugins") {
             self.download_addons(AddonType::Plugin).await?;
         }
 
-        if self.skip_stages.iter().all(|s| s.as_str() != "mods") {
+        if self.skip_stages.iter().all(|s| s != "mods") {
             self.download_addons(AddonType::Mod).await?;
         }
 
         if !self.app.server.worlds.is_empty()
-            && self.skip_stages.iter().all(|s| s.as_str() != "worlds")
+            && self.skip_stages.iter().all(|s| s != "worlds")
         {
             self.process_worlds().await?;
         }
 
         if self.app.server.path.join("config").exists()
-            && self.skip_stages.iter().all(|s| s.as_str() != "bootstrap")
+            && self.skip_stages.iter().all(|s| s != "bootstrap")
         {
             self.bootstrap_files().await?;
         }
@@ -142,7 +142,7 @@ impl<'a> BuildContext<'a> {
     /// Save `new_lockfile`
     pub fn write_lockfile(&mut self) -> Result<()> {
         if std::env::var("MCMAN_DISABLE_LOCKFILE")
-            .map(|s| s.as_str() == "true")
+            .map(|s| s == "true")
             .unwrap_or_default()
         {
             self.app.dbg("lockfile disabled");

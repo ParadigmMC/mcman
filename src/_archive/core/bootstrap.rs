@@ -139,7 +139,7 @@ impl<'a> BuildContext<'a> {
                 .options
                 .bootstrap_exts
                 .iter()
-                .any(|s| s.as_str() == ext)
+                .any(|s| s == ext)
     }
 
     pub async fn bootstrap_file(

@@ -27,9 +27,9 @@ impl AddonTarget {
 
     pub fn as_str(&self) -> &str {
         match self {
-            AddonTarget::Mods => "mods",
-            AddonTarget::Plugins => "plugins",
-            AddonTarget::Custom(path) => path.as_str(),
+            Self::Mods => "mods",
+            Self::Plugins => "plugins",
+            Self::Custom(path) => path,
         }
     }
 
