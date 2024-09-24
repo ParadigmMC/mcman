@@ -56,28 +56,28 @@ impl Accessor {
 
     /// Read a JSON file
     pub async fn json<T: DeserializeOwned>(&mut self, app: &App, path: &str) -> Result<T> {
-        match self {
-            Self::Local(base) => Ok(serde_json::from_reader(File::open(base.join(path))?)?),
-            Self::ZipLocal((_, zip)) => Ok(serde_json::from_reader(zip.by_name(path)?)?),
-            Self::Remote(url) => Ok(app.http_get_json(url.join(path)?).await?),
-        }
+        Ok(match self {
+            Self::Local(base) => serde_json::from_reader(File::open(base.join(path))?)?,
+            Self::ZipLocal((_, zip)) => serde_json::from_reader(zip.by_name(path)?)?,
+            Self::Remote(url) => app.http_get_json(url.join(path)?).await?,
+        })
     }
 
     /// Read a TOML file
     pub async fn toml<T: DeserializeOwned>(&mut self, app: &App, path: &str) -> Result<T> {
-        match self {
-            Self::Local(base) => Ok(toml::from_str(&fs::read_to_string(base.join(path)).await?)?),
+        Ok(match self {
+            Self::Local(base) => toml::from_str(&fs::read_to_string(base.join(path)).await?)?,
             Self::ZipLocal((_, zip)) => {
                 let file = zip.by_name(path)?;
 
-                Ok(toml::from_str(&std::io::read_to_string(file)?)?)
+                toml::from_str(&std::io::read_to_string(file)?)?
             },
             Self::Remote(url) => {
                 let res = app.http_get(url.join(path)?).await?;
                 let content = res.text().await?;
 
-                Ok(toml::from_str(&content)?)
+                toml::from_str(&content)?
             },
-        }
+        })
     }
 }

@@ -27,24 +27,24 @@ impl UpdateWriter {
         todo!();
 
         /* match &source.source_type {
-            SourceType::File { path } => Ok(Self::File(path, read_toml(relative_to.join(path).to_path_buf())?)),
+            SourceType::File { path } => Self::File(path, read_toml(relative_to.join(path).to_path_buf())?)),
             SourceType::Folder { path } => unimplemented!(),
             SourceType::Modpack {
                 modpack_source: ModpackSource::Local { path, can_update: true },
                 modpack_type
-            } => match modpack_type {
-                ModpackType::MRPack => Ok(Self::MRPack(
+            } => Ok(match modpack_type {
+                ModpackType::MRPack => Self::MRPack(
                     relative_to.join(path).to_path_buf(),
                     ZipArchive::new(std::fs::File::open(relative_to.join(path))?)?,
                     todo!()
-                )),
-                ModpackType::Packwiz => Ok(Self::Packwiz(
+                ),
+                ModpackType::Packwiz => Self::Packwiz(
                     relative_to.join(path),
                     todo!(),
                     todo!(),
-                )),
+                ),
                 ModpackType::Unsup => unimplemented!(),
-            },
+            }),
             _ => Err(anyhow!("Can't make an UpdateWriter")),
         } */
     }

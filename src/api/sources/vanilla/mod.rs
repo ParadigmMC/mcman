@@ -67,9 +67,7 @@ impl<'a> VanillaAPI<'a> {
 
         let version: VersionInfo = self.0.http_get_json(indexed.url).await?;
 
-        let steps: Vec<Step> = version
-            .as_step(env)
-            .ok_or(anyhow!("Cant find download"))?;
+        let steps: Vec<Step> = version.as_step(env).ok_or(anyhow!("Cant find download"))?;
 
         Ok(steps)
     }

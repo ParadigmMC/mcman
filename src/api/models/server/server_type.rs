@@ -221,8 +221,8 @@ impl ServerJar {
     }
 
     pub async fn update(&mut self, app: &App) -> Result<bool> {
-        match self.server_type.clone() {
-            ServerType::Vanilla {} | ServerType::BuildTools { .. } => Ok(false),
+        Ok(match self.server_type.clone() {
+            ServerType::Vanilla {} | ServerType::BuildTools { .. } => false,
             ServerType::PaperMC { project, build } => {
                 let new_build = app
                     .papermc()
@@ -240,7 +240,7 @@ impl ServerJar {
                     build: new_build.clone(),
                 };
 
-                Ok(new_build != build)
+                new_build != build
             },
             ServerType::Purpur { build } => todo!(),
             ServerType::Fabric { loader, installer } => {
@@ -266,12 +266,12 @@ impl ServerJar {
                     installer: latest_installer.clone(),
                 };
 
-                Ok(loader != latest_loader || installer != latest_installer)
+                loader != latest_loader || installer != latest_installer
             },
             ServerType::Quilt { loader, installer } => todo!(),
             ServerType::NeoForge { loader } => todo!(),
             ServerType::Forge { loader } => todo!(),
             ServerType::Custom { .. } => todo!(),
-        }
+        })
     }
 }

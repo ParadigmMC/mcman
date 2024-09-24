@@ -110,13 +110,15 @@ pub fn get_java_version_for(mc_version: &str) -> Result<JavaVersion> {
     let mut split = mc_version.split('.');
     split.next().ok_or(anyhow!("Error parsing mc_version"))?;
 
-    match split
-        .next()
-        .ok_or(anyhow!("Error parsing mc_version"))?
-        .parse::<i32>()?
-    {
-        ..=16 => Ok(8),
-        17 => Ok(16),
-        _ => Ok(17),
-    }
+    Ok(
+        match split
+            .next()
+            .ok_or(anyhow!("Error parsing mc_version"))?
+            .parse::<i32>()?
+        {
+            ..=16 => 8,
+            17 => 16,
+            _ => 17,
+        },
+    )
 }

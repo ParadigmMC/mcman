@@ -63,7 +63,7 @@ impl App {
     pub async fn dl_from_url(&self, urlstr: &str) -> Result<Downloadable> {
         let url = reqwest::Url::parse(urlstr)?;
 
-        match (
+        Ok(match (
             url.domain(),
             url.path_segments()
                 .map_or_else(Default::default, Iterator::collect::<Vec<_>>)
@@ -71,10 +71,10 @@ impl App {
         ) {
             // https://cdn.modrinth.com/data/{ID}/versions/{VERSION}/{FILENAME}
             (Some("cdn.modrinth.com"), ["data", id, "versions", version, _filename]) => {
-                Ok(Downloadable::Modrinth {
+                Downloadable::Modrinth {
                     id: id.to_owned().to_owned(),
                     version: version.to_owned().to_owned(),
-                })
+                }
             },
 
             (Some("modrinth.com"), ["mod" | "plugin" | "datapack", id, rest @ ..]) => {
@@ -108,10 +108,10 @@ impl App {
                     version.id.clone()
                 };
 
-                Ok(Downloadable::Modrinth {
+                Downloadable::Modrinth {
                     id: id.to_owned().to_owned(),
                     version: version.clone(),
-                })
+                }
             },
 
             (Some("curserinth.kuylar.dev"), ["mod", id, rest @ ..]) => {
@@ -145,10 +145,10 @@ impl App {
                     version.id.clone()
                 };
 
-                Ok(Downloadable::CurseRinth {
+                Downloadable::CurseRinth {
                     id: (*id).to_string(),
                     version,
-                })
+                }
             },
 
             // https://www.curseforge.com/minecraft/mc-mods/betterwithpatches
@@ -185,14 +185,14 @@ impl App {
                     version.id.clone()
                 };
 
-                Ok(Downloadable::CurseRinth { id, version })
+                Downloadable::CurseRinth { id, version }
             },
 
             // https://www.spigotmc.org/resources/http-requests.101253/
-            (Some("www.spigotmc.org"), ["resources", id]) => Ok(Downloadable::Spigot {
+            (Some("www.spigotmc.org"), ["resources", id]) => Downloadable::Spigot {
                 id: (*id).to_string(),
                 version: "latest".to_owned(),
-            }),
+            },
 
             // https://github.com/{owner}/{repo}/releases/{'tag'|'download'}/{tag}/{filename}
             (Some("github.com"), [owner, repo_name, rest @ ..]) => {
@@ -266,11 +266,11 @@ impl App {
                         }
                     };
 
-                Ok(Downloadable::GithubRelease {
+                Downloadable::GithubRelease {
                     repo,
                     tag: tag.to_string(),
                     asset,
-                })
+                }
             },
 
             (domain, path) => {
@@ -310,11 +310,11 @@ impl App {
                         let desc =
                             self.prompt_string_default("Optional description/comment?", "")?;
 
-                        Ok(Downloadable::Url {
+                        Downloadable::Url {
                             url: urlstr.to_owned(),
                             filename: Some(input),
                             desc: if desc.is_empty() { None } else { Some(desc) },
-                        })
+                        }
                     },
                     1 => {
                         // TODO: ...
@@ -354,12 +354,12 @@ impl App {
                         let build = self.prompt_string_filled("Build", "latest")?;
                         let artifact = self.prompt_string_filled("Artifact", "first")?;
 
-                        Ok(Downloadable::Jenkins {
+                        Downloadable::Jenkins {
                             url: j_url,
                             job,
                             build,
                             artifact,
-                        })
+                        }
                     },
                     2 => {
                         let mut repo = None;
@@ -456,17 +456,17 @@ impl App {
                             self.prompt_string_default("Filename?", "${artifact}-${version}.jar")?
                         };
 
-                        Ok(Downloadable::Maven {
+                        Downloadable::Maven {
                             url: repo,
                             group,
                             artifact,
                             version,
                             filename,
-                        })
+                        }
                     },
                     _ => unreachable!(),
                 }
             },
-        }
+        })
     }
 }

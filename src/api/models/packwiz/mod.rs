@@ -39,17 +39,17 @@ pub async fn resolve_packwiz_addons(app: &App, mut accessor: Accessor) -> Result
 
 impl PackwizModUpdate {
     pub fn from_addon_type(addon_type: &AddonType) -> Result<Option<Self>> {
-        match addon_type.clone() {
-            AddonType::Modrinth { id, version } => Ok(Some(Self::Modrinth {
+        Ok(match addon_type.clone() {
+            AddonType::Modrinth { id, version } => Some(Self::Modrinth {
                 mod_id: id,
                 version,
-            })),
-            AddonType::Curseforge { id, version } => Ok(Some(Self::Curseforge {
+            }),
+            AddonType::Curseforge { id, version } => Some(Self::Curseforge {
                 file_id: version.parse()?,
                 project_id: id.parse()?,
-            })),
-            _ => Ok(None),
-        }
+            }),
+            _ => None,
+        })
     }
 }
 

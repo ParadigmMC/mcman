@@ -27,7 +27,7 @@ impl Cache {
 
     /// Tries to read a json file from cache. Returns `None` if it's not in cache or there is not a cache folder
     pub fn try_get_json<T: DeserializeOwned>(&self, path: &str) -> Result<Option<T>> {
-        match &self.0 {
+        Ok(match &self.0 {
             Some(base) => {
                 let fullpath = base.join(path);
 
@@ -38,32 +38,28 @@ impl Cache {
                 let file = File::open(fullpath)?;
                 let reader = BufReader::new(file);
 
-                Ok(serde_json::from_reader(reader)?)
+                serde_json::from_reader(reader)?
             },
 
-            None => Ok(None),
-        }
+            None => None,
+        })
     }
 
     /// Try to write a json file to cache. Does nothing if there is no cache folder
     pub fn try_write_json<T: serde::Serialize>(&self, path: &str, data: &T) -> Result<()> {
-        match &self.0 {
-            Some(base) => {
-                let fullpath = base.join(path);
+        if let Some(base) = &self.0 {
+            let fullpath = base.join(path);
 
-                create_parents_sync(&fullpath)?;
+            create_parents_sync(&fullpath)?;
 
-                let writer = BufWriter::new(
-                    File::create(&fullpath)
-                        .context(format!("Creating cache file at: {}", fullpath.display()))?,
-                );
+            let writer = BufWriter::new(
+                File::create(&fullpath)
+                    .context(format!("Creating cache file at: {}", fullpath.display()))?,
+            );
 
-                serde_json::to_writer(writer, data)?;
-
-                Ok(())
-            },
-
-            _ => Ok(()),
+            serde_json::to_writer(writer, data)?;
         }
+
+        Ok(())
     }
 }

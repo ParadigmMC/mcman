@@ -84,68 +84,68 @@ pub struct AddonMetadata {
 
 impl Addon {
     pub async fn resolve_metadata(&self, app: &App) -> Result<AddonMetadata> {
-        match &self.addon_type {
-            AddonType::Url { url } => Ok(AddonMetadata {
+        Ok(match &self.addon_type {
+            AddonType::Url { url } => AddonMetadata {
                 name: get_filename_from_url(url),
                 description: None,
                 link: Some(url.to_owned()),
                 source: AddonMetadataSource::Other,
                 version: None,
-            }),
+            },
             AddonType::Modrinth { id, version } => {
                 let proj = app.modrinth().fetch_project(id).await?;
 
-                Ok(AddonMetadata {
+                AddonMetadata {
                     name: proj.title,
                     description: Some(proj.description),
                     version: Some(version.to_owned()),
                     link: Some(format!("https://modrinth.com/{}", proj.slug)),
                     source: AddonMetadataSource::Modrinth,
-                })
+                }
             },
             AddonType::Curseforge { id, version } => {
                 let m = app.curseforge().fetch_mod(id).await?;
 
-                Ok(AddonMetadata {
+                AddonMetadata {
                     name: m.name,
                     description: Some(m.summary),
                     version: Some(version.to_owned()),
                     link: Some(m.links.website_url),
                     source: AddonMetadataSource::Curseforge,
-                })
+                }
             },
             AddonType::Spigot { id, version } => {
                 let r = app.spigot().fetch_resource(id).await?;
 
-                Ok(AddonMetadata {
+                AddonMetadata {
                     name: r.name,
                     description: Some(r.tag),
                     version: Some(version.to_owned()),
                     link: Some(format!("https://www.spigotmc.org/resources/{id}")),
                     source: AddonMetadataSource::Curseforge,
-                })
+                }
             },
             AddonType::Hangar { id, version } => {
                 let proj = app.hangar().fetch_project(id).await?;
 
-                Ok(AddonMetadata {
+                AddonMetadata {
                     name: proj.name,
                     link: Some(format!("https://hangar.papermc.io/{}", proj.namespace)),
                     description: Some(proj.description),
                     source: AddonMetadataSource::Hangar,
                     version: Some(version.to_owned()),
-                })
+                }
             },
             AddonType::GithubRelease { repo, version, .. } => {
                 let desc = app.github().fetch_repo_description(repo).await?;
 
-                Ok(AddonMetadata {
+                AddonMetadata {
                     name: repo.to_owned(),
                     description: Some(desc),
                     link: Some(format!("https://github.com/{repo}")),
                     source: AddonMetadataSource::Github,
                     version: Some(version.to_owned()),
-                })
+                }
             },
             AddonType::Jenkins {
                 url,
@@ -155,13 +155,13 @@ impl Addon {
             } => {
                 let description = app.jenkins().fetch_description(url, job).await?;
 
-                Ok(AddonMetadata {
+                AddonMetadata {
                     name: artifact.to_owned(),
                     link: Some(jenkins_job_url(url, job)),
                     description,
                     source: AddonMetadataSource::Jenkins,
                     version: Some(build.to_owned()),
-                })
+                }
             },
             AddonType::MavenArtifact {
                 url,
@@ -169,13 +169,13 @@ impl Addon {
                 artifact,
                 version,
                 ..
-            } => Ok(AddonMetadata {
+            } => AddonMetadata {
                 name: artifact.to_owned(),
                 link: Some(maven_artifact_url(url, group, artifact)),
                 description: None,
                 source: AddonMetadataSource::Maven,
                 version: Some(version.to_owned()),
-            }),
-        }
+            },
+        })
     }
 }
