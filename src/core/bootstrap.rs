@@ -184,12 +184,25 @@ impl<'a> BuildContext<'a> {
                     "Reading from '{}' ; [{pretty_path}]",
                     source.display()
                 ))?;
+                let permissions = fs::metadata(&source)
+                    .await
+                    .context(format!(
+                        "Getting metadata of '{}' ; [{pretty_path}]",
+                        source.display()
+                    ))?
+                    .permissions();
 
                 let bootstrapped_contents = self.bootstrap_content(&config_contents);
 
                 fs::write(&dest, bootstrapped_contents)
                     .await
                     .context(format!("Writing to '{}' ; [{pretty_path}]", dest.display()))?;
+                fs::set_permissions(&dest, permissions)
+                    .await
+                    .context(format!(
+                        "Setting permissions for '{}' ; [{pretty_path}]",
+                        dest.display()
+                    ))?;
             } else {
                 // ? idk why but read_to_string and fs::write works with 'dest' but fs::copy doesnt
                 fs::copy(&source, &dest).await.context(format!(
