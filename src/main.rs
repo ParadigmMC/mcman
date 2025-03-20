@@ -73,6 +73,11 @@ enum Commands {
     /// Eject - remove everything related to mcman
     #[command(hide = true)]
     Eject,
+
+    /// Generate autocompletion for shell
+    /// (requires feature "autocomplete")
+    #[cfg(feature = "autocomplete")]
+    Completions(commands::completions::CompletionArgs),
 }
 
 #[tokio::main]
@@ -85,6 +90,12 @@ async fn main() -> Result<()> {
     }
 
     let args = Cli::parse();
+
+    #[cfg(feature = "autocomplete")]
+    if let Commands::Completions(args) = &args.command {
+        commands::completions::run(args)?;
+    };
+
     let base_app = BaseApp::new()?;
 
     match args.command {

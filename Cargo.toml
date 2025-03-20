@@ -31,6 +31,7 @@ struct_excessive_bools = "allow"
 anyhow = "1.0"
 cached = "0.47"
 clap = { version = "4.4", features = ["derive"] }
+clap_complete = { version = "4.5", optional = true }
 confique = { version = "0.2", default-features = false, features = ["toml"] }
 console = "0.15"
 dialoguer = "0.11"
@@ -61,3 +62,7 @@ tokio-util = { version = "0.7", features = ["io"] }
 toml = "0.8"
 walkdir = "2.4"
 zip = "0.6"
+
+[features]
+autocomplete = ["clap_complete"]
+default = ["autocomplete"]
