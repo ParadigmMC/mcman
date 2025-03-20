@@ -8,44 +8,110 @@ use crate::{
     model::ServerType,
 };
 
+pub async fn get_project_version(
+    http_client: &reqwest::Client,
+    id: &str,
+    filter: Option<mcapi::hangar::PlatformFilter>,
+    platform_version: Option<String>,
+    plugin_version: Option<&str>,
+) -> Result<mcapi::hangar::ProjectVersion> {
+    // Use the provided filter or create a default one.
+    let mut current_filter = filter.unwrap_or_default();
+
+    // Closure to search for a version in a page.
+    let find_version =
+        |versions: &[mcapi::hangar::ProjectVersion]| -> Option<mcapi::hangar::ProjectVersion> {
+            let mut compatible_versions = versions.iter().filter(|v| {
+                if let (Some(platform), Some(platform_version)) =
+                    (&current_filter.platform, &platform_version)
+                {
+                    v.platform_dependencies
+                        .get(&platform)
+                        .unwrap()
+                        .contains(&platform_version)
+                } else {
+                    true
+                }
+            });
+
+            if let Some(plugin_version) = plugin_version {
+                compatible_versions
+                    .find(|v| v.name == plugin_version)
+                    .or_else(|| versions.iter().find(|v| v.name.contains(plugin_version)))
+                    .cloned()
+            } else {
+                compatible_versions.next().cloned()
+            }
+        };
+
+    loop {
+        // Fetch the current page of versions.
+        let versions =
+            mcapi::hangar::fetch_project_versions(http_client, id, Some(current_filter.clone()))
+                .await?;
+
+        // Try to find the desired version.
+        if let Some(found) = find_version(&versions.result) {
+            return Ok(found);
+        }
+
+        // If we got less than `limit` items, no more pages are available.
+        if versions.result.len() < current_filter.limit as usize {
+            break;
+        }
+
+        // Prepare for the next page.
+        current_filter.offset += current_filter.limit;
+    }
+
+    // Return a detailed error if no version was found.
+    if let Some(plugin_version) = plugin_version {
+        Err(anyhow!(
+            "No compatible versions ('{}') for Hangar project '{}'",
+            plugin_version,
+            id
+        ))
+    } else {
+        Err(anyhow!(
+            "No compatible versions for Hangar project '{}'",
+            id
+        ))
+    }
+}
+
 pub struct HangarAPI<'a>(pub &'a App);
 
 impl<'a> HangarAPI<'a> {
     pub async fn fetch_hangar_version(&self, id: &str, version: &str) -> Result<ProjectVersion> {
-        let filter = self.get_versions_filter();
+        let filter = self.get_platform_filter();
+        let platform_version = if filter.platform.is_some() {
+            Some(self.0.mc_version().to_owned())
+        } else {
+            None
+        };
 
         let version = if version == "latest" {
-            let versions =
-                mcapi::hangar::fetch_project_versions(&self.0.http_client, id, Some(filter))
-                    .await?;
-
-            versions
-                .result
-                .first()
-                .ok_or(anyhow!("No compatible versions for Hangar project '{id}'"))?
-                .clone()
+            get_project_version(
+                &self.0.http_client,
+                id,
+                Some(filter),
+                platform_version,
+                None,
+            )
+            .await?
         } else if version.contains('$') {
-            let versions =
-                mcapi::hangar::fetch_project_versions(&self.0.http_client, id, Some(filter))
-                    .await?;
-
             let version = version
                 .replace("${mcver}", self.0.mc_version())
                 .replace("${mcversion}", self.0.mc_version());
 
-            versions
-                .result
-                .iter()
-                .find(|v| v.name == version)
-                .cloned()
-                .or(versions
-                    .result
-                    .iter()
-                    .find(|v| v.name.contains(&version))
-                    .cloned())
-                .ok_or(anyhow!(
-                    "No compatible versions ('{version}') for Hangar project '{id}'"
-                ))?
+            get_project_version(
+                &self.0.http_client,
+                id,
+                Some(filter),
+                platform_version,
+                Some(&version),
+            )
+            .await?
         } else {
             mcapi::hangar::fetch_project_version(&self.0.http_client, id, version).await?
         };
@@ -73,14 +139,9 @@ impl<'a> HangarAPI<'a> {
         }
     }
 
-    pub fn get_versions_filter(&self) -> mcapi::hangar::VersionsFilter {
+    pub fn get_platform_filter(&self) -> mcapi::hangar::PlatformFilter {
         let platform = self.get_platform();
-        mcapi::hangar::VersionsFilter {
-            platform_version: if platform.is_some() {
-                Some(self.0.mc_version().to_owned())
-            } else {
-                None
-            },
+        mcapi::hangar::PlatformFilter {
             platform,
             ..Default::default()
         }
