@@ -61,7 +61,7 @@ impl App {
 
     #[allow(clippy::too_many_lines)]
     pub async fn dl_from_url(&self, urlstr: &str) -> Result<Downloadable> {
-        let url = reqwest::Url::parse(urlstr)?;
+        let url = reqwest::Url::parse(urlstr.trim_end_matches('/'))?;
 
         match (
             url.domain(),
