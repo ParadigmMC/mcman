@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use walkdir::WalkDir;
-use zip::{write::FileOptions, ZipArchive, ZipWriter};
+use zip::{write::{ExtendedFileOptions, FileOptions}, ZipArchive, ZipWriter};
 
 use crate::api::app::APP_VERSION;
 
@@ -60,11 +60,11 @@ pub async fn zip<T: Write + Seek>(writer: T, folder: &Path) -> Result<()> {
         let path = path.to_string_lossy();
 
         if entry.file_type().is_dir() {
-            archive.add_directory(path, FileOptions::default())?;
+            archive.add_directory(path, FileOptions::<ExtendedFileOptions>::default())?;
             continue;
         }
 
-        archive.start_file(path, FileOptions::default())?;
+        archive.start_file(path, FileOptions::<ExtendedFileOptions>::default())?;
 
         let mut file = std::fs::File::open(entry.path())?;
         std::io::copy(&mut file, &mut archive)?;
