@@ -8,3 +8,6 @@ pub mod run;
 pub mod sources;
 pub mod update;
 pub mod websocket;
+
+#[cfg(feature = "autocomplete")]
+pub mod completions;

@@ -1,7 +1,0 @@
-name = "Example quilt"
-
-[jar]
-type = "quilt"
-mc_version = "1.21"
-installer = "0.9.2"
-loader = "0.26.0"

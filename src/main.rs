@@ -46,6 +46,11 @@ enum Commands {
     #[command(alias = "ws")]
     WebSocket(commands::websocket::Args),
     Update(commands::update::Args),
+
+    /// Generate autocompletion for shell
+    /// (requires feature "autocomplete")
+    #[cfg(feature = "autocomplete")]
+    Completions(commands::completions::CompletionArgs),
 }
 
 #[tokio::main]
@@ -99,5 +104,8 @@ async fn main() -> Result<()> {
         Commands::WebSocket(args) => commands::websocket::run(app, args).await,
         Commands::Update(args) => commands::update::run(app, args).await,
         Commands::Export(args) => commands::export::run(app, args).await,
+
+        #[cfg(feature = "autocomplete")]
+        Commands::Completions(args) => commands::completions::run(&args),
     }
 }
