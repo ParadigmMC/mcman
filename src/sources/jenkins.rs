@@ -103,10 +103,15 @@ impl<'a> JenkinsAPI<'a> {
         build: &str,
         artifact: &str,
     ) -> Result<(JenkinsBuildItem, JenkinsArtifact)> {
+        let job = &job
+            .replace("${mcver}", self.0.mc_version())
+            .replace("${mcversion}", self.0.mc_version());
+
         let selected_build = self
             .fetch_build(url, job, build)
             .await
             .context("Fetching jenkins build")?;
+
         let artifacts = self
             .fetch_artifacts(&selected_build.url)
             .await
