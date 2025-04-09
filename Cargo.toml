@@ -41,7 +41,7 @@ glob = "0.3"
 hex = "0.4"
 indexmap = "2.1"
 indicatif = "0.17"
-mcapi = { git = "https://github.com/ParadigmMC/mcapi.git" }
+mcapi = { git = "https://github.com/ParadigmMC/mcapi.git" , branch = "main" }
 md-5 = "0.10"
 notify-debouncer-full = { version = "0.3" }
 opener = "0.6"
