@@ -4,7 +4,7 @@ use crate::{app::App, app::ResolvedFile, util};
 
 pub static NEOFORGE_MAVEN: &str = "https://maven.neoforged.net/releases";
 pub static NEOFORGE_GROUP: &str = "net.neoforged";
-pub static NEOFORGE_ARTIFACT: &str = "forge";
+pub static NEOFORGE_ARTIFACT: &str = "neoforge";
 pub static NEOFORGE_FILENAME: &str = "${artifact}-${version}-installer.jar";
 
 pub struct NeoforgeAPI<'a>(pub &'a App);
@@ -17,18 +17,23 @@ impl<'a> NeoforgeAPI<'a> {
             .fetch_versions(NEOFORGE_MAVEN, NEOFORGE_GROUP, NEOFORGE_ARTIFACT)
             .await?;
 
-        Ok(versions
-            .iter()
-            .filter_map(|s| {
-                let (m, l) = s.split_once('-')?;
+        let mc_version = self.0.mc_version();
+        let trimmed = mc_version.strip_prefix("1.").unwrap_or(mc_version);
 
-                if m == self.0.mc_version() {
-                    Some(l.to_owned())
-                } else {
-                    None
-                }
-            })
-            .collect())
+        let mut candidates = versions
+            .iter()
+            .filter(|v| !v.contains("beta"))
+            .filter(|v| v.starts_with(trimmed))
+            .cloned()
+            .collect::<Vec<_>>();
+
+        candidates.sort_by(|a, b| Self::version_key(b).cmp(&Self::version_key(a)));
+
+        Ok(candidates.into_iter().take(1).collect())
+    }
+
+    fn version_key(v: &str) -> Vec<u32> {
+        v.split('.').filter_map(|s| s.parse::<u32>().ok()).collect()
     }
 
     pub async fn fetch_latest(&self) -> Result<String> {
@@ -55,11 +60,7 @@ impl<'a> NeoforgeAPI<'a> {
                 NEOFORGE_MAVEN,
                 NEOFORGE_GROUP,
                 NEOFORGE_ARTIFACT,
-                &format!(
-                    "{}-{}",
-                    self.0.mc_version(),
-                    self.resolve_version(loader).await?
-                ),
+                &format!("{}", self.resolve_version(loader).await?),
                 NEOFORGE_FILENAME,
             )
             .await

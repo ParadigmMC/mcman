@@ -16,10 +16,10 @@ impl<'a> BuildContext<'a> {
 
                 StartupMethod::Custom {
                     windows: vec![format!(
-                        "@libraries/net/neoforged/forge/{mcver}-{l}/win_args.txt"
+                        "@libraries/net/neoforged/neoforge/{l}/win_args.txt"
                     )],
                     linux: vec![format!(
-                        "@libraries/net/neoforged/forge/{mcver}-{l}/unix_args.txt"
+                        "@libraries/net/neoforged/neoforge/{l}/unix_args.txt"
                     )],
                 }
             }
