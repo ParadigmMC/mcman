@@ -258,7 +258,7 @@ impl App {
                     if k.starts_with("NW_SERVER_") {
                         let (name, ty) = k.strip_prefix("NW_SERVER_").unwrap().split_once('_')?;
 
-                        let serv = nw.servers.get(&name.to_lowercase())?;
+                        let serv = nw.servers.get(name)?;
 
                         let ip = env::var(format!("IP_{name}"))
                             .ok()
