@@ -137,12 +137,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d297deb1925b89f2ccc13d7635fa0714f12c87adce1c75356b39ca9b7178567"
 
 [[package]]
-name = "base64"
-version = "0.22.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
-
-[[package]]
 name = "base64ct"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1024,13 +1018,13 @@ checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
 [[package]]
 name = "mcapi"
 version = "0.2.0"
-source = "git+https://github.com/ParadigmMC/mcapi.git#3c8884a6b928475bc4e5b70c49ef59c3ac92e3dd"
+source = "git+https://github.com/ParadigmMC/mcapi.git#10d4278b58cd94f3bb672376f736cdbc83572b31"
 dependencies = [
  "lazy_static",
- "os-version",
+ "os_info",
  "regex",
  "reqwest",
- "roxmltree 0.18.1",
+ "roxmltree",
  "serde",
  "serde_json",
  "thiserror",
@@ -1060,7 +1054,7 @@ dependencies = [
  "pathdiff",
  "regex",
  "reqwest",
- "roxmltree 0.19.0",
+ "roxmltree",
  "rpackwiz",
  "semver",
  "serde",
@@ -1222,15 +1216,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
-name = "os-version"
-version = "0.2.0"
+name = "os_info"
+version = "3.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a8a1fed76ac765e39058ca106b6229a93c5a60292a1bd4b602ce2be11e1c020"
+checksum = "41fc863e2ca13dc2d5c34fb22ea4a588248ac14db929616ba65c45f21744b1e9"
 dependencies = [
- "anyhow",
- "plist",
- "uname",
- "winapi",
+ "log",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1309,19 +1301,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "69d3587f8a9e599cc7ec2c00e331f71c4e69a5f9a4b8a6efd5b07466b9736f9a"
 
 [[package]]
-name = "plist"
-version = "1.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eac26e981c03a6e53e0aee43c113e3202f5581d5360dae7bd2c70e800dd0451d"
-dependencies = [
- "base64 0.22.1",
- "indexmap",
- "quick-xml",
- "serde",
- "time",
-]
-
-[[package]]
 name = "portable-atomic"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1340,15 +1319,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95fc56cda0b5c3325f5fbbd7ff9fda9e02bb00bb3dac51252d2f1bfa1cb8cc8c"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "quick-xml"
-version = "0.32.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d3a6e5838b60e0e8fa7a43f22ade549a37d61f8bdbe636d0d7816191de969c2"
-dependencies = [
- "memchr",
 ]
 
 [[package]]
@@ -1421,7 +1391,7 @@ version = "0.11.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37b1ae8d9ac08420c66222fb9096fc5de435c3c48542bc5336c51892cffafb41"
 dependencies = [
- "base64 0.21.7",
+ "base64",
  "bytes",
  "encoding_rs",
  "futures-core",
@@ -1469,15 +1439,6 @@ dependencies = [
  "spin",
  "untrusted",
  "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "roxmltree"
-version = "0.18.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "862340e351ce1b271a378ec53f304a5558f7db87f3769dc655a8f6ecbb68b302"
-dependencies = [
- "xmlparser",
 ]
 
 [[package]]
@@ -1539,7 +1500,7 @@ version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1c74cae0a4cf6ccbbf5f359f08efdf8ee7e1dc532573bf0db71968cb56b1448c"
 dependencies = [
- "base64 0.21.7",
+ "base64",
 ]
 
 [[package]]
@@ -1804,12 +1765,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a7619e19bc266e0f9c5e6686659d394bc57973859340060a69221e57dbc0c40"
 dependencies = [
  "deranged",
- "itoa",
  "num-conv",
  "powerfmt",
  "serde",
  "time-core",
- "time-macros",
 ]
 
 [[package]]
@@ -1817,16 +1776,6 @@ name = "time-core"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c9e9a38711f559d9e3ce1cdb06dd7c5b8ea546bc90052da6d06bb76da74bb07c"
-
-[[package]]
-name = "time-macros"
-version = "0.2.22"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3526739392ec93fd8b359c8e98514cb3e8e021beb4e5f597b00a0221f8ed8a49"
-dependencies = [
- "num-conv",
- "time-core",
-]
 
 [[package]]
 name = "tinyvec"
@@ -2011,15 +1960,6 @@ name = "typenum"
 version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
-
-[[package]]
-name = "uname"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b72f89f0ca32e4db1c04e2a72f5345d59796d4866a1ee0609084569f73683dc8"
-dependencies = [
- "libc",
-]
 
 [[package]]
 name = "unicode-bidi"
@@ -2384,12 +2324,6 @@ dependencies = [
  "cfg-if",
  "windows-sys 0.48.0",
 ]
-
-[[package]]
-name = "xmlparser"
-version = "0.13.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "66fee0b777b0f5ac1c69bb06d361268faafa61cd4682ae064a171c16c433e9e4"
 
 [[package]]
 name = "zerocopy"
