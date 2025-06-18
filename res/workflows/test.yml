@@ -38,13 +38,13 @@ jobs:
       run: |
         mcman run --test
     - name: Archive log
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: latest.log
         path: |
           server/logs/latest.log
     - name: Archive crash reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: steps.test.outcome == 'failure'
       with:
         name: crash
