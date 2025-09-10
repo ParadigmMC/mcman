@@ -44,7 +44,7 @@ indicatif = "0.18"
 mcapi = { git = "https://github.com/ParadigmMC/mcapi.git" }
 md-5 = "0.10"
 notify-debouncer-full = { version = "0.3" }
-opener = "0.6"
+opener = "0.8"
 pathdiff = { git = "https://github.com/Manishearth/pathdiff.git" }
 rpackwiz = { git = "https://github.com/vgskye/rpackwiz.git" }
 regex = "1.10"
