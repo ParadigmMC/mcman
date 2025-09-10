@@ -48,7 +48,7 @@ opener = "0.6"
 pathdiff = { git = "https://github.com/Manishearth/pathdiff.git" }
 rpackwiz = { git = "https://github.com/vgskye/rpackwiz.git" }
 regex = "1.10"
-reqwest = { version = "0.11", features = ["json", "stream", "rustls-tls"], default-features = false }
+reqwest = { version = "0.12", features = ["json", "stream", "rustls-tls"], default-features = false }
 roxmltree = "0.19"
 semver = "1.0"
 serde = { version = "1.0", features = ["derive"] }
