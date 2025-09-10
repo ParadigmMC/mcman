@@ -8,7 +8,7 @@ jobs:
     steps:
       - name: Download artifacts
         id: download-artifact
-        uses: dawidd6/action-download-artifact@v3
+        uses: dawidd6/action-download-artifact@v11
         with:
           workflow: build.yml
           workflow_conclusion: success
