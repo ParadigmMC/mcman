@@ -59,7 +59,7 @@ tempfile = "3.9"
 tokio = { version = "1.35", features = ["macros", "rt", "rt-multi-thread", "process", "signal", "io-std"] }
 tokio-stream = "0.1"
 tokio-util = { version = "0.7", features = ["io"] }
-toml = "0.8"
+toml = "0.9"
 walkdir = "2.4"
 zip = "0.6"
 
