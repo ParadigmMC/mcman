@@ -1340,7 +1340,7 @@ dependencies = [
  "clap",
  "clap_complete",
  "confique",
- "console 0.15.11",
+ "console 0.16.1",
  "dialoguer",
  "digest",
  "dirs",
