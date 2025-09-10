@@ -15,9 +15,16 @@ keywords = [
 categories = ["command-line-utilities", "config"]
 
 [profile.release]
-strip = true
-lto = true
 opt-level = "s"
+strip = true
+
+[profile.release-lto]
+inherits = "release"
+lto = true
+
+[profile.release-lto-thin]
+inherits = "release-lto"
+lto = "thin"
 
 [lints.clippy]
 all = "deny"
