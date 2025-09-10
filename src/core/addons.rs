@@ -1,4 +1,4 @@
-use std::{collections::HashSet, time::Duration};
+use std::{collections::HashSet, io::ErrorKind, time::Duration};
 
 use anyhow::Result;
 use indicatif::{FormattedDuration, ProgressBar, ProgressIterator, ProgressStyle};
@@ -73,7 +73,17 @@ impl<'a> BuildContext<'a> {
 
         for removed_file in existing_files.difference(&files_list) {
             pb.set_message(removed_file.clone());
-            fs::remove_file(self.output_dir.join(addon_type.folder()).join(removed_file)).await?;
+            match fs::remove_file(self.output_dir.join(addon_type.folder()).join(removed_file))
+                .await
+            {
+                Err(err) if err.kind() == ErrorKind::NotFound => {
+                    self.app.warn(
+                        "File scheduled to be deleted did not exist, possibly deleted externally",
+                    );
+                    Ok(())
+                }
+                o => o,
+            }?;
         }
 
         pb.finish_and_clear();
