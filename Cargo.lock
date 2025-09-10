@@ -1024,13 +1024,13 @@ checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
 [[package]]
 name = "mcapi"
 version = "0.2.0"
-source = "git+https://github.com/ParadigmMC/mcapi.git#3c8884a6b928475bc4e5b70c49ef59c3ac92e3dd"
+source = "git+https://github.com/ParadigmMC/mcapi.git#10d4278b58cd94f3bb672376f736cdbc83572b31"
 dependencies = [
  "lazy_static",
- "os-version",
+ "os_info",
  "regex",
  "reqwest",
- "roxmltree 0.18.1",
+ "roxmltree",
  "serde",
  "serde_json",
  "thiserror",
@@ -1060,7 +1060,7 @@ dependencies = [
  "pathdiff",
  "regex",
  "reqwest",
- "roxmltree 0.19.0",
+ "roxmltree",
  "rpackwiz",
  "semver",
  "serde",
@@ -1222,15 +1222,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
-name = "os-version"
-version = "0.2.0"
+name = "os_info"
+version = "3.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a8a1fed76ac765e39058ca106b6229a93c5a60292a1bd4b602ce2be11e1c020"
+checksum = "d0e1ac5fde8d43c34139135df8ea9ee9465394b2d8d20f032d38998f64afffc3"
 dependencies = [
- "anyhow",
+ "log",
  "plist",
- "uname",
- "winapi",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1469,15 +1468,6 @@ dependencies = [
  "spin",
  "untrusted",
  "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "roxmltree"
-version = "0.18.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "862340e351ce1b271a378ec53f304a5558f7db87f3769dc655a8f6ecbb68b302"
-dependencies = [
- "xmlparser",
 ]
 
 [[package]]
@@ -2013,15 +2003,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
 
 [[package]]
-name = "uname"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b72f89f0ca32e4db1c04e2a72f5345d59796d4866a1ee0609084569f73683dc8"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "unicode-bidi"
 version = "0.3.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2384,12 +2365,6 @@ dependencies = [
  "cfg-if",
  "windows-sys 0.48.0",
 ]
-
-[[package]]
-name = "xmlparser"
-version = "0.13.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "66fee0b777b0f5ac1c69bb06d361268faafa61cd4682ae064a171c16c433e9e4"
 
 [[package]]
 name = "zerocopy"
